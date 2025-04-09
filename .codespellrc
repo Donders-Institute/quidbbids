@@ -1,3 +1,4 @@
+[codespell]
 --skip=.git,*.pdf,*.svg,go.sum
 --check-hidden
 --ignore-regex=\b(PULS|TE|ALS)\b

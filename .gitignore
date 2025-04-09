@@ -1,0 +1,11 @@
+*.m~
+*.asv
+*.autosave
+*.mat
+.idea
+*.IMA
+docs/_build
+.vscode
+venv
+.DS_Store
+Thumbs.db

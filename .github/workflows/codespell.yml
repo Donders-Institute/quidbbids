@@ -4,9 +4,10 @@ name: Codespell
 
 on:
   push:
-    branches: [master]
+    branches: [main]
+    tags-ignore: ['*']      # Explicitly ignore tags to avoid running twice
   pull_request:
-    branches: [master]
+    branches: [main]
 
 permissions:
   contents: read

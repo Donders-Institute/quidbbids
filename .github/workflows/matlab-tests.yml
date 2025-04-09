@@ -2,9 +2,9 @@ name: MATLAB Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -21,7 +21,7 @@ jobs:
       - name: Run MATLAB Tests
         uses: matlab-actions/run-tests@v2
         with:
-          test-folder: '+tests'
+          select-by-folder: '+tests'
           source-folder: '+QuBIDS'
           test-results-junit: test-results.xml
 

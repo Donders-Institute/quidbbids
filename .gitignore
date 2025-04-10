@@ -6,6 +6,9 @@
 *.IMA
 docs/_build
 .vscode
-venv
+resources/
 .DS_Store
 Thumbs.db
+.gitattributes
+Marzwi.prj
+

@@ -21,6 +21,5 @@ jobs:
       - name: Run MATLAB Tests
         uses: matlab-actions/run-tests@v2
         with:
-          select-by-folder: '+tests'
+          select-by-folder: 'tests'
           source-folder: '.'
-          start-in-folder: '${{ github.workspace }}'  # Explicit working directory

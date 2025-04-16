@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  matlab-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -15,11 +15,8 @@ jobs:
 
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v2
-        with:
-          release: latest
 
       - name: Run MATLAB Tests
         uses: matlab-actions/run-tests@v2
         with:
-          select-by-folder: 'tests'
-          source-folder: '.'
+          select-by-folder: tests

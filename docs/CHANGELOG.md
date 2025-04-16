@@ -4,4 +4,4 @@
 
 ## [dev]
 
-[dev]: https://github.com/Donders-Institute/qubids/compare/0.0.1...HEAD
+[dev]: https://github.com/Donders-Institute/quidbbids/compare/0.0.1...HEAD

@@ -2,4 +2,4 @@
 skip = .git,*.pdf,*.svg,go.sum
 check-hidden = true
 ignore-regex = \b(PULS|TE|ALS)\b
-ignore-words-list = uptodate,QuBIDS
+ignore-words-list = uptodate,QuIDBBIDS

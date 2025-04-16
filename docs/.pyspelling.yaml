@@ -29,7 +29,7 @@ matrix:
   pipeline:
   - pyspelling.filters.text:
   sources:
-  - qubids/cli/*.m
+  - quidbbids/cli/*.m
   hunspell:
     d: en_US
   aspell:

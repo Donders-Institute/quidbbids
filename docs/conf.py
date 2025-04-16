@@ -20,15 +20,13 @@ except ModuleNotFoundError:
 
 # -- Project information -----------------------------------------------------
 
-project    = 'QuBIDS'
-copyright  = f"2018-{date.today().year}, Marcel Zwiers"
+project    = 'QuIDBBIDS'
+copyright  = f"2025-{date.today().year}, Jose Marques"
 author     = 'Marcel Zwiers'
 master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags from file
-with open(Path(__file__).parents[1]/'pyproject.toml', 'rb') as fid:
-    release = tomllib.load(fid)['project']['version']
-
+release = Path(__file__).parents[1]/'VERSION.txt').read_text().strip()
 
 # -- General configuration ---------------------------------------------------
 
@@ -60,7 +58,7 @@ highlight_language = "none"
 # Replace the "View page source" link with "Edit on GitHub"
 html_context = {
   'display_github': True,
-  'github_repo': 'qubids',
+  'github_repo': 'quidbbids',
   'github_user': 'Donders-Institute',
   'github_version': 'master',
   'conf_py_path': '/doc/',          # Needs leading and trailing slashes
@@ -71,5 +69,5 @@ html_context = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 
 html_static_path = ['_static']
-html_favicon     = "./_static/qubids_logo.png"
-# html_logo        = "./_static/qubids_logo_small.png"
+html_favicon     = "./_static/quidbbids_logo.png"
+# html_logo        = "./_static/quidbbids_logo_small.png"

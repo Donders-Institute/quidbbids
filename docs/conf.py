@@ -26,7 +26,7 @@ author     = 'Marcel Zwiers'
 master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags from file
-release = Path(__file__).parents[1]/'VERSION.txt').read_text().strip()
+release = (Path(__file__).parents[1]/'+qb'/'VERSION.txt').read_text().strip()
 
 # -- General configuration ---------------------------------------------------
 

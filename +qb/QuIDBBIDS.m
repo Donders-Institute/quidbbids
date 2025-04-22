@@ -4,7 +4,7 @@ classdef QuIDBBIDS
     % | (_) | || || || |) | _ \ _ \| || |) \__ \
     %  \__\_\\_,_|___|___/|___/___/___|___/|___/
     %
-    % For more information, see <a href="matlab: web('https://github.com/Donders-Institute/quidbbids')">the QuIDBBIDS GitHub repository</a>
+    % For more information, see the <a href="matlab: web('https://github.com/Donders-Institute/quidbbids')">QuIDBBIDS GitHub repository</a>
 
     properties
         layout

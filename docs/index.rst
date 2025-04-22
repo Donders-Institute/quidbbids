@@ -12,14 +12,13 @@
    :hidden:
    :caption: Usage
 
+..
    workflow
+   options
 
 .. toctree::
    :maxdepth: 3
    :hidden:
    :caption: Miscellaneous
 
-   tutorial
-   troubleshooting
-   screenshots
    CHANGELOG

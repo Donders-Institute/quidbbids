@@ -12,7 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+        with:
+          submodules: true      # Checks out submodules recursively
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v2
 

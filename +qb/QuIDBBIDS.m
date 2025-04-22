@@ -14,7 +14,7 @@ classdef QuIDBBIDS
         function obj = QuIDBBIDS(varargin)
 
             % Set the Matlab-path
-            root = fileparts(fileparts(mfilename));
+            root = fileparts(fileparts(mfilename("fullpath")));
             if isempty(which("bids.layout"))
                 BIDS = fullfile(root, "bids-matlab");
                 if exist(BIDS, "dir")

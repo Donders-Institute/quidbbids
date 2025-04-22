@@ -3,10 +3,16 @@ Installation
 
 QuIDBBIDS can be installed directly on your operating system, or in a so-called container. Direct installation is simpler and lighter, but containerized installations are better guaranteed to always work and be reproducible. Below you find instructions for direct installation, followed by instructions for installation in a container.
 
+Requirements
+------------
+- `Matlab <https://nl.mathworks.com/products/matlab.html>` (R2024b or later)
+- `SPM <https://www.fil.ion.ucl.ac.uk/spm/>`__ (SPM12 or later)
+- `bids-matlab <https://github.com/bids-standard/bids-matlab>`__
+
 QuIDBBIDS installation
 ----------------------
 
-QuIDBBIDS is a Matlab package and can be installed on Linux, MS Windows and on OS-X computers, as long as a Matlab installation (R20224b or higher) is available on the system.
+QuIDBBIDS is a Matlab toolbox and can be installed on Linux, MS Windows and on OS-X computers, as long as a Matlab installation (R20224b or higher) is available on the system. Stable releases can be downloaded from the Matlab central `fileexchange <https://nl.mathworks.com/matlabcentral/fileexchange>`__ or from `GitHub <https://github.com/orgs/Donders-Institute/packages?repo_name=quidbbids>`__. After downloading, you can add the (unzipper) QuIDBBIDS folder to your Matlab path yourself (NB: that is without subfolders), or simply double click on the ``QuIDBBIDS.mltbx`` file in your Matlab  to the downloaded run ``mpminstall("C:\Users\YourName\Downloads\QuIDBBIDS")`` in your Matlab command window. or  .
 
 If you have a working Git installation, then you can install QuIDBBIDS directly on your system, which is the easiest solution to manage your installed version. In your command-line interface/shell (e.g. bash on Linux or powershell on Windows):
 

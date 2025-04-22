@@ -1,6 +1,6 @@
-[submodule "spm_readwrite_nii"]
-	path = spm_readwrite_nii
-	url = https://github.com/VUIIS/spm_readwrite_nii.git
 [submodule "bids-matlab"]
 	path = bids-matlab
 	url = https://github.com/bids-standard/bids-matlab.git
+[submodule "spm"]
+	path = spm
+	url = https://github.com/spm/spm.git

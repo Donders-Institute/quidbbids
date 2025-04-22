@@ -1,4 +1,4 @@
-name: MATLAB Tests
+name: Tests
 
 on:
   push:

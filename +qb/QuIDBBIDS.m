@@ -4,6 +4,9 @@ classdef QuIDBBIDS
     % | (_) | || || || |) | _ \ _ \| || |) \__ \
     %  \__\_\\_,_|___|___/|___/___/___|___/|___/
     %
+    % Quantitative Imaging Derived Biomarkers in BIDS
+    % ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+    %
     % For more information, see the <a href="matlab: web('https://github.com/Donders-Institute/quidbbids')">QuIDBBIDS GitHub repository</a>
 
     properties
@@ -24,13 +27,13 @@ classdef QuIDBBIDS
                     error("Cannot find 'bids-matlab' path: " + BIDS)
                 end
             end
-            if isempty(which("nifti"))
-                nii = fullfile(root, "spm_readwrite_nii");
-                if exist(nii, "dir")
-                    disp("Adding path: " + nii)
-                    addpath(nii)
+            if isempty(which("spm"))
+                spm = fullfile(root, "spm");
+                if exist(spm, "dir")
+                    disp("Adding path: " + spm)
+                    addpath(spm)
                 else
-                    error("Cannot find 'spm_readwrite_nii' path: " + nii)
+                    error("Cannot find 'spm' path: " + spm)
                 end
             end
 

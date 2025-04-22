@@ -13,7 +13,7 @@ classdef QuIDBBIDS
     methods
         function obj = QuIDBBIDS(varargin)
 
-            % Set the Matlab-path
+            % Set the Matlab-path to the dependencies
             root = fileparts(fileparts(mfilename("fullpath")));
             if isempty(which("bids.layout"))
                 BIDS = fullfile(root, "bids-matlab");

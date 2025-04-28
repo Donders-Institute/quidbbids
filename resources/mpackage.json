@@ -4,7 +4,7 @@
     "id": "b3e77067-ceb3-48f4-b6c0-12be885c111d",
     "formerNames": [],
     "displayName": "QuIDBBIDS",
-    "summary": "",
+    "summary": "QuIDBBIDS is a Matlab package for pre-processing and biomarker extraction from quantitative MR images that are organized according to the BIDS standard.",
     "description": "Quantitative Imaging Derived Biomarkers in BIDS",
     "provider": {
         "name": "",

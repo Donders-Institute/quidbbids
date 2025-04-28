@@ -1,0 +1,19 @@
+{
+    "name": "QuIDBBIDS",
+    "version": "0.0.2",
+    "id": "b3e77067-ceb3-48f4-b6c0-12be885c111d",
+    "formerNames": [],
+    "displayName": "QuIDBBIDS",
+    "summary": "",
+    "description": "Quantitative Imaging Derived Biomarkers in BIDS",
+    "provider": {
+        "name": "",
+        "organization": "Donders Institute for Brain, Cognition and Behaviour",
+        "email": "",
+        "url": "https://www.ru.nl/en/donders-institute"
+    },
+    "folders": [],
+    "dependencies": ["bids-matlab"],
+    "releaseCompatibility": "",
+    "schemaVersion": "1.0.0"
+}

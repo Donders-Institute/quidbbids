@@ -24,21 +24,12 @@ If you have a working Git installation, then you can install QuIDBBIDS directly 
 
 To install QuIDBBIDS on your system / activated virtual environment (see above) run one of the following commands in :
 
-.. code-block:: console
-
-   $ pip install QuIDBBIDS                       # Use this to install the QuIDBBIDS-framework only and independently install the software dependencies of the plugin(s) (such as dcm2niix)
-   $ pip install QuIDBBIDS[dcm2niix2bids]        # Use this when you want to convert conventional MR imaging data with the dcm2niix2bids plugin and would like to have dcm2niix pip-installed
-   $ pip install QuIDBBIDS[spec2nii2bids]        # Use this when you want to convert MR spectroscopy data with the spec2nii2bids plugin
-   $ pip install QuIDBBIDS[deface]               # Use this when you want to deface anatomical MRI scans. NB: Requires FSL (but see the Apptainer file for doing a minimal install)
-   $ pip install QuIDBBIDS[deface,spec2nii2bids] # Use this when you want to deface anatomical MRI scans and convert MRS data with the spec2nii2bids plugin
-   $ pip install QuIDBBIDS[all]                  # Use this to install all extra packages
-
 These install commands can be run independently and will give you the latest stable release of QuIDBBIDS and its `plugins <./options.html#dcm2niix2bids-plugin>`__. Alternatively, if you need to use the very latest (development/unstable) version of the software, you can also install QuIDBBIDS directly from the github source code repository, e.g. like this:
 
 .. code-block:: console
 
-   $ pip install "git+https://github.com/Donders-Institute/QuIDBBIDS"                          # The QuIDBBIDS-framework only
-   $ pip install "QuIDBBIDS[dcm2niix2bids]@git+https://github.com/Donders-Institute/QuIDBBIDS"  # The QuIDBBIDS-framework + dcm2niix2bids plugin
+   $ git clone https://github.com/Donders-Institute/QuIDBBIDS.git                         # The QuIDBBIDS-toolbox only
+   $ pip clone --recurse-submodules https://github.com/Donders-Institute/QuIDBBIDS.git    # The QuIDBBIDS-toolbox + dependencies
 
 If you do not have git (or any other version control system) installed you can `download <https://github.com/Donders-Institute/QuIDBBIDS>`__ and unzip the code yourself in a folder named e.g. 'QuIDBBIDS' and run:
 

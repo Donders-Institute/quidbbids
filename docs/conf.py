@@ -10,12 +10,9 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
+import json
 from pathlib import Path
 from datetime import date
-try:
-    import tomllib
-except ModuleNotFoundError:
-    import tomli as tomllib
 
 
 # -- Project information -----------------------------------------------------
@@ -26,7 +23,8 @@ author     = 'Marcel Zwiers'
 master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags from file
-release = (Path(__file__).parents[1]/'+qb'/'VERSION.txt').read_text().strip()
+with open(Path(__file__).parents[1]/'resources'/'mpackage.json') as fid:
+  release = json.load(fid)['version']
 
 # -- General configuration ---------------------------------------------------
 

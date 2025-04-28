@@ -7,7 +7,8 @@
 docs/_build
 .vscode
 venv/
-resources/
+resources/*
+!resources/mpackage.json
 .DS_Store
 Thumbs.db
 QuIDBBIDS.prj

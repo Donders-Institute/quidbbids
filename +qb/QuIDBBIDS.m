@@ -10,21 +10,32 @@ classdef QuIDBBIDS
     % For more information, see the <a href="matlab: web('https://github.com/Donders-Institute/quidbbids')">QuIDBBIDS GitHub repository</a>
 
     properties
-        layout
+        bidsdir
     end
 
     methods
-        function obj = QuIDBBIDS(varargin)
+        function obj = QuIDBBIDS(bidsdir)
+            % QuIDBBIDS constructor
+            arguments
+                bidsdir {mustBeFolder}
+            end
+
+            obj.bidsdir = bidsdir;
 
             % Set the Matlab-path to the dependencies
             root = fileparts(fileparts(mfilename("fullpath")));
             if isempty(which("bids.layout"))
-                BIDS = fullfile(root, "bids-matlab");
-                if exist(BIDS, "dir")
-                    disp("Adding path: " + BIDS)
-                    addpath(BIDS)
+                if any(strcmp("bids-matlab", matlab.addons.installedAddons().Name))
+                    disp("Enabling add-on: bids-matlab")
+                    matlab.addons.enableAddon("bids-matlab")
                 else
-                    error("Cannot find 'bids-matlab' path: " + BIDS)
+                    BIDS = fullfile(root, "bids-matlab");
+                    if exist(BIDS, "dir")
+                        disp("Adding path: " + BIDS)
+                        addpath(BIDS)
+                    else
+                        error("Cannot find 'bids-matlab' add-on/path, please make sure it is installed")
+                    end
                 end
             end
             if isempty(which("spm"))
@@ -33,12 +44,9 @@ classdef QuIDBBIDS
                     disp("Adding path: " + spm)
                     addpath(spm)
                 else
-                    error("Cannot find 'spm' path: " + spm)
+                    error("Cannot find 'spm' on the MATLAB-path, please make sure it is installed")
                 end
             end
-
-            % Load the BIDS-layout
-            obj.layout = bids.layout(varargin{:});
 
         end
     end

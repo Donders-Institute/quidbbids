@@ -33,6 +33,8 @@ If you like to use the latest (development/unstable) code and have a working Git
    $ git clone https://github.com/Donders-Institute/QuIDBBIDS.git                         # This installs the QuIDBBIDS-package only
    $ git clone --recurse-submodules https://github.com/Donders-Institute/QuIDBBIDS.git    # This installs the QuIDBBIDS-package + all dependencies
 
+Add the cloned QuIDBBIDS folder to your MATLAB path (without subfolders).
+
 .. note::
    As listed above, QuIDBBIDS has a number of dependencies that are required for the package to work. Not all of these dependencies may not have been automatically installed when you installed QuIDBBIDS. In that case, you should install them manually.
 

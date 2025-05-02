@@ -12,7 +12,7 @@ classdef TestQuIDBBIDS < matlab.unittest.TestCase
 
         function test_constructor(testCase)
             % Test basic object construction
-            obj = qb.QuIDBBIDS();
+            obj = qb.QuIDBBIDS('.');
             testCase.verifyClass(obj, 'qb.QuIDBBIDS');
         end
     

@@ -58,7 +58,7 @@ html_context = {
   'display_github': True,
   'github_repo': 'quidbbids',
   'github_user': 'Donders-Institute',
-  'github_version': 'master',
+  'github_version': 'main',
   'conf_py_path': '/doc/',          # Needs leading and trailing slashes
 }
 
@@ -67,5 +67,9 @@ html_context = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 
 html_static_path = ['_static']
-html_favicon     = "./_static/quidbbids_logo.png"
-# html_logo        = "./_static/quidbbids_logo_small.png"
+# html_favicon     = "./_static/quidbbids_logo.png"
+html_logo        = "./_static/quidbbids_logo.png"
+html_theme_options = {
+    'logo_only':        True,   # Only show logo (no project name)
+    'version_selector': False,  # Optional: Hide version
+}

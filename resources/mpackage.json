@@ -7,13 +7,13 @@
     "summary": "QuIDBBIDS is a Matlab package for pre-processing and biomarker extraction from quantitative MR images that are organized according to the BIDS standard.",
     "description": "Quantitative Imaging Derived Biomarkers in BIDS",
     "provider": {
-        "name": "",
+        "name": "Radboud University",
         "organization": "Donders Institute for Brain, Cognition and Behaviour",
         "email": "",
         "url": "https://www.ru.nl/en/donders-institute"
     },
     "folders": [],
-    "dependencies": ["bids-matlab"],
+    "dependencies": ["bids-matlab", "despot1", "EPG-X", "MP-PCA-Denoising",  "mwi", "qsub", "sepia", "spm"],
     "releaseCompatibility": "",
     "schemaVersion": "1.0.0"
 }

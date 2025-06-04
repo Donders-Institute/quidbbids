@@ -4,3 +4,21 @@
 [submodule "spm"]
 	path = spm
 	url = https://github.com/spm/spm.git
+[submodule "despot1"]
+	path = despot1
+	url = https://github.com/kschan0214/despot1.git
+[submodule "mwi"]
+	path = mwi
+	url = https://github.com/kschan0214/mwi.git
+[submodule "EPG-X"]
+	path = EPG-X
+	url = https://github.com/mriphysics/EPG-X.git
+[submodule "sepia"]
+	path = sepia
+	url = https://github.com/kschan0214/sepia.git
+[submodule "qsub"]
+	path = qsub
+	url = https://github.com/fieldtrip/qsub.git
+[submodule "MP-PCA-Denoising"]
+	path = MP-PCA-Denoising
+	url = https://github.com/Neurophysics-CFIN/MP-PCA-Denoising.git

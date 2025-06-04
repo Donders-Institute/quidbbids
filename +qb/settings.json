@@ -1,0 +1,86 @@
+{
+    "converted_dwi_dir": {
+        "description": "",
+        "value": "${bids_ses_dir}/dwi"
+    },
+    "converted_anat_dir": {
+        "description": "",
+        "value": "${bids_ses_dir}/anat"
+    },
+    "converted_b1_dir": {
+        "description": "",
+        "value": "${bids_ses_dir}/fmap"
+    },
+    "derivative_ANTs_dir": {
+        "description": "",
+        "value": "${derivative_dir}/ANTs/${subj_label}"
+    },
+    "derivative_SIEMENS_dir": {
+        "description": "",
+        "value": "${bids_ses_dir}"
+    },
+    "derivative_FSL_dir": {
+        "description": "",
+        "value": "${derivative_dir}/FSL/${subj_label}"
+    },
+    "derivative_MRI_SYNTHSEG_dir": {
+        "description": "",
+        "value": "${derivative_dir}/MRI_SYNTHSEG/${subj_label}"
+    },
+    "derivative_MP2RAGE_dir": {
+        "description": "",
+        "value": "${derivative_dir}/MP2RAGE/${subj_label}"
+    },
+    "derivative_ROMEO_dir": {
+        "description": "",
+        "value": "${derivative_dir}/ROMEO/${subj_label}"
+    },
+    "derivative_DESPOT1_dir": {
+        "description": "",
+        "value": "${derivative_dir}/DESPOT1/${subj_label}"
+    },
+    "derivative_SEPIA_dir": {
+        "description": "",
+        "value": "${derivative_dir}/SEPIA/${subj_label}"
+    },
+    "derivative_MWI_dir": {
+        "description": "",
+        "value": "${derivative_dir}/MWI/${subj_label}"
+    },
+    "derivative_R2star_dir": {
+        "description": "",
+        "value": "${derivative_dir}/R2star/${subj_label}"
+    },
+    "derivative_R1R2s_dir": {
+        "description": "",
+        "value": "${derivative_dir}/SimultaneousR1R2star/${subj_label}"
+    },
+    "ANTs_gre_within_dir": {
+        "description": "",
+        "value": "${derivative_ANTs_dir}/gre_within_protocol_transformation"
+    },
+    "ANTs_gre_apply_within_dir": {
+        "description": "",
+        "value": "${derivative_ANTs_dir}/gre_within_protocol_space"
+    },
+    "FSL_gre_within_dir": {
+        "description": "",
+        "value": "${derivative_FSL_dir}/gre_within_protocol_transformation"
+    },
+    "FSL_gre_apply_within_dir": {
+        "description": "",
+        "value": "${derivative_FSL_dir}/gre_within_protocol_space"
+    },
+    "ANTs_b1_b12gre_dir": {
+        "description": "",
+        "value": "${derivative_ANTs_dir}/b1_2_gre_transformation"
+    },
+    "ANTs_b1_apply_gre_dir": {
+        "description": "",
+        "value": "${derivative_ANTs_dir}/b1_2_gre_space"
+    },
+    "prot_ANTs_dir": {
+        "description": "",
+        "value": "${ANTs_b1_apply_gre_dir}"
+    }
+}

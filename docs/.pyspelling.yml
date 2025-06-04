@@ -24,18 +24,3 @@ matrix:
     wordlists:
     - docs/_static/dictionary-custom.txt
     output: docs/_build/dictionary-html.dic
-
-- name: cli
-  pipeline:
-  - pyspelling.filters.text:
-  sources:
-  - quidbbids/cli/*.m
-  hunspell:
-    d: en_US
-  aspell:
-    lang: en
-    d: en_US
-  dictionary:
-    wordlists:
-    - docs/_static/dictionary-custom.txt
-    output: docs/_build/dictionary-cli.dic

@@ -6,7 +6,7 @@ Quantitative Imaging Derived Biomarkers in BIDS
 
 .. raw:: html
 
-   <img name="quidbbids-logo" src="https://github.com/Donders-Institute/quidbbids/blob/main/docs/_static/quidbbids_logo.png" height="200px" alt=" ">
+   <img name="quidbbids-logo" src="https://github.com/Donders-Institute/quidbbids/blob/main/docs/_static/quidbbids_logo.png" height="150px" alt=" ">
 
 QuIDBBIDS is a Matlab package for pre-processing and biomarker extraction from quantitative MR images that are organized according to the BIDS standard.
 

@@ -4,113 +4,238 @@ classdef QuIDBBIDS
     % | (_) | || || || |) | _ \ _ \| || |) \__ \
     %  \__\_\\_,_|___|___/|___/___/___|___/|___/
     %
-    % Quantitative Imaging Derived Biomarkers in bidspath
+    % Quantitative Imaging Derived Biomarkers in BIDS
     % ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
     %
+    % QuIDBBIDS provides a framework for pre-processing and estimation of
+    % quantitative MRI-derived biomarkers in the BIDS (Brain Imaging Data
+    % Structure) format. It integrates several toolboxes (such as SEPIA,
+    % SPM, ROMEO, and more) and facilitates standardized, reproducible
+    % workflows for quantitative MRI.
+    % 
     % For more information, see the <a href="matlab: web('https://github.com/Donders-Institute/quidbbids')">QuIDBBIDS GitHub repository</a>
 
-    %%
     properties
-        version
-        settings
-        settingsfile
+        config
+        configfile
         bidsdir
-        outputdir
-        layout
+        derivdir
+        workdir
+        BIDS
     end
 
-    %%
+
     methods
 
-        function obj = QuIDBBIDS(bidsdir, outputdir, settingsfile)
-            % QuIDBBIDS constructor
+        function obj = QuIDBBIDS(bidsdir, derivdir, workdir, configfile)
+            % Constructor for the QuIDBBIDS class
+            %
+            % OBJ = QuIDBBIDS(BIDSDIR, DERIVDIR, CONFIGFILE)
+            %
+            % Inputs:
+            %   BIDSDIR    - (Required) Path to the root BIDS dataset directory.
+            %   DERIVDIR   - (Optional) Path to the derivatives directory where output will be written.
+            %                Default: [BIDSDIR]/derivatives
+            %   CONFIGFILE - (Optional) Path to a TOML configuration file with pipeline settings.
+            %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.toml
+            %
+            % Properties:
+            %   config      - Configuration struct loaded from the config TOML file.
+            %   configfile  - Path to the active TOML configuration file.
+            %   bidsdir     - Root BIDS directory.
+            %   derivdir    - Derivatives directory where the output is stored. Default: bidsdir/derivatives/QuIDBBIDS
+            %   workdir     - Working directory for intermediate resuls. Default: derivdir/QuIDBBIDS_work.
+            %   BIDS        - BIDS layout object from bids-matlab.
 
+            % Parse the inputs
             arguments
-                bidsdir      {mustBeFolder}
-                outputdir    {mustBeTextScalar} = ""
-                settingsfile {mustBeTextScalar} = ""
+                bidsdir    {mustBeFolder}     = ""
+                derivdir   {mustBeTextScalar} = ""
+                workdir    {mustBeFolder}     = ""
+                configfile {mustBeTextScalar} = ""
             end
 
-            if outputdir == "" || isempty(outputdir)
-                outputdir = fullfile(bidsdir, "derivatives", "quidbbids");
-            end
-            if settingsfile == "" || isempty(settingsfile)
-                settingsfile = fullfile(bidsdir, "derivatives", "quidbbids", "code", "settings.json");
-            end
-
-            rootdir       = fileparts(fileparts(mfilename("fullpath")));
-            obj.bidsdir   = bidsdir;
-            obj.outputdir = outputdir;
-            obj.settings  = obj.getsettings(settingsfile);
-
-            % Set the Matlab-path to the dependencies
-            mpkg = jsondecode(fileread(fullfile(rootdir, "resources", "mpackage.json")));
-            deps = mpkg.dependencies;
-            if isfield(deps, "bids-matlab") && isfield(deps.bids-matlab, "path")     % = Future format???
-                obj.addtoolbox(deps.bids-matlab.path)
-            end
-            if isempty(which("bids.layout"))
-                if any(strcmp("bids-matlab", matlab.addons.installedAddons().Name))
-                    disp("Enabling add-on: bids-matlab")
-                    matlab.addons.enableAddon("bids-matlab")
-                else
-                    obj.addtoolbox(fullfile(rootdir, "bids-matlab"))
+            if isempty(bidsdir)
+                bidsdir = uigetdir(pwd, "Select the root BIDS directory");
+                if ~bidsdir
+                    return
                 end
             end
-            if isempty(which("spm"))
-                obj.addtoolbox(fullfile(rootdir, "spm"))
+            if isempty(derivdir)
+                derivdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS");
+            end
+            if isempty(workdir)
+                workdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS_work");
+            end
+            if isempty(configfile)
+                configfile = fullfile(bidsdir, "derivatives", "quidbbids", "code", "config.toml");
+            elseif isfolder(configfile)
+                error("The configfile must be a file, not a folder: " + configfile)
             end
 
-            obj.layout = bids.layout(bidsdir);
-        
+            % Set the Matlab-path for the dependencies
+            rootdir = fileparts(fileparts(mfilename("fullpath")));
+            for toolbox = dir(fullfile(rootdir, "dependencies"))'
+                toolpath = fullfile(rootdir, "dependencies", toolbox.name);
+                if toolbox.isdir && ~ismember(toolbox.name, {".", ".."})
+                    continue
+                elseif ismember(toolbox.name, ["sepia", "spm"])
+                    obj.addtoolbox(toolpath)
+                else
+                    obj.addtoolbox(toolpath, true)
+                end
+            end
+
+            % Initialize the QuIDBBIDS derivatives dataset. NB: matlab-bids does not handle strings but expects classic character vectors
+            if ~isfolder(derivdir)
+                bids.init(derivdir, ...
+                          'is_derivative', true,...
+                          'is_datalad_ds', false, ...
+                          'tolerant', true, ...
+                          'verbose', true)
+            end
+
+            % Index the raw dataset
+            obj.bidsdir    = string(bidsdir);
+            obj.derivdir   = derivdir;
+            obj.workdir    = workdir;
+            obj.configfile = configfile;
+            obj.config     = obj.getconfig(configfile);
+            obj.BIDS       = bids.layout(bidsdir, ...
+                                         'use_schema', true, ...
+                                         'index_derivatives', true, ...
+                                         'index_dependencies', false, ...
+                                         'filter', obj.config.bids.select, ...
+                                         'tolerant', true, ...
+                                         'verbose', true);
+            
         end
 
-        function settings = getsettings(~, settingsfile)
-            % FUNCTION settings = getsettings(settingsfile)
-            %
-            % Read/write the settings from the bidsdir or from the default settings in home
-            %
-            % INPUTS:
-            %   settingsfile - The JSON-file with all QuIDBBIDS settings. DEFAULT:
-            %                  bidsdir/derivatives/quidbbids/code/settings.json
-            % OUTPUTS:
-            %   settings     - A struct with all settings to run QuIDBBIDS
-            
-            % Create default settings if needed
-            settingsname = "settings.json";
-            def_settings = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), settingsname);
-            if ~isfile(def_settings)
-                disp("Creating default settings file: " + def_settings)
-                if ~isfolder(fileparts(def_settings))
-                    mkdir(fileparts(def_settings));
-                end
-                copyfile(fullfile(fileparts(mfilename("fullpath")), settingsname), def_settings)
-            end
+        function obj = configeditor(obj)
+            % Method signature for editing the configuration - implementation is in configeditor.m
+            obj = configeditor(obj);
+        end
 
-            % Create (if needed) and read the settingsfile
-            if ~isfile(settingsfile)
-                disp("Writing study settings to: " + settingsfile)
-                if ~isfolder(fileparts(settingsfile))
-                    mkdir(fileparts(settingsfile));
-                end
-                copyfile(def_settings, settingsfile)
-            end
-            settings = jsondecode(fileread(settingsfile));
+        function obj = prep(obj)
+            % Method signature for performing pre- and SEPIA-processing - implementation is in prep.m
+            obj = prep(obj);
+        end
+
+        function obj = fitSCR(obj)
+            % Method signature for fitting SCR model - implementation is in fitSCR.m
+            obj = fitSCR(obj);
+        end
+
+        function obj = fitMCR(obj)
+            % Method signature for fitting MCR model - implementation is in fitMCR.m
+            obj = fitMCR(obj);
+        end
+
+        function obj = fitMCRGPU(obj)
+            % Method signature for fitting MCR model using GPU - implementation is in fitMCRGPU.m
+            obj = fitMCRGPU(obj);
         end
 
     end
 
-    %%
+
+    methods(Static)
+
+        function config = getconfig(configfile, config)
+            % GETCONFIG Read and optionally write QuIDBBIDS configuration file.
+            %
+            % CONFIG = GETCONFIG(CONFIGFILE) reads the configuration from the specified CONFIGFILE.
+            % If it does not exist, a default configuration is copied from the user's HOME directory.
+            %
+            % CONFIG = GETCONFIG(CONFIGFILE, CONFIG) writes the provided CONFIG struct to CONFIGFILE
+            % in TOML format. This updates or creates the configuration file.
+            %
+            % Inputs:
+            %     CONFIGFILE        - Path to the TOML configuration file.
+            %     CONFIG (optional) - A struct with configuration parameters. If provided, GETCONFIG
+            %                         writes this struct to CONFIGFILE in TOML format.
+            %
+            % Output:
+            %     CONFIG - A struct with the loaded configuration settings.
+            %
+            % The function ensures that a default config exists in:
+            %     <HOME>/.quidbbids/<version>/config_default.toml
+            %
+            % Examples:
+            %     config = getconfig("myconfig.toml");
+            %     getconfig("myconfig.toml", config);
+            
+            arguments
+                configfile {mustBeTextScalar}
+                config (1,1) struct = struct()  % Optional configuration struct
+            end
+            
+            % Create a default configfile if it does not exist
+            config_default = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), "config_default.toml");
+            if ~isfile(config_default)
+                disp("Creating default configuration file: " + config_default)
+                [pth, name, ext] = fileparts(config_default);
+                [~,~] = mkdir(pth);
+                copyfile(fullfile(fileparts(mfilename("fullpath")), name + ext), config_default)
+            end
+
+            % Write or read the study configuration data (create if needed)
+            if nargin > 1
+                toml.write(configfile, config);
+            else
+                if ~isfile(configfile)
+                    disp("Writing study configurations to: " + configfile)
+                    [~,~] = mkdir(fileparts(configfile));
+                    copyfile(config_default, configfile)
+                end
+                config = toml.map_to_struct(toml.read(configfile));
+                if config.version ~= qb.version()
+                    warning("The config file version (" + config.version + ") does not match the current QuIDBBIDS version (" + qb.version() + "). Please update your config file if needed.")
+                end
+            end
+
+        end
+
+    end
+
+
     methods(Access = private)
 
-        function addtoolbox(~, toolpath)
-            % Add the toolbox rootfodler to the MATLAB path
+        function addtoolbox(obj, toolpath, recursive)
+            % Add an external toolbox to the MATLAB path.
+            %
+            % ADDTOOLBOX(TOOLPATH, RECURSIVE) checks if the specified toolbox is
+            % already available on the MATLAB path or installed as a MATLAB Add-On.
+            % If not it attempts to:
+            %   1. Enable it via the MATLAB Add-On manager if installed as an Add-On.
+            %   2. Otherwise, it adds the given folder to the MATLAB path.
+            %
+            % Inputs:
+            %   TOOLPATH  - Full path to the toolbox folder.
+            %   RECURSIVE - (Optional, logical) If true, use genpath to add the toolbox
+            %               folder recursively with all subfolders. Default: false
+
+            arguments
+                toolpath {mustBeFolder}
+                recursive (1,1) logical = false
+            end
+
             [~, toolname] = fileparts(toolpath);
-            if isfolder(toolpath)
+            if contains(path, filesep + toolname) || isdeployed
+                return
+            elseif any(strcmp(toolname, matlab.addons.installedAddons().Name)) && ~matlab.addons.isAddonEnabled(toolname)
+                disp("Enabling add-on: " + toolname)
+                matlab.addons.enableAddon(toolname)
+            elseif isfolder(toolpath)
                 disp("Adding path: " + toolpath)
+                if recursive
+                    addpath(genpath(toolpath))
+                else
+                    addpath(toolpath)
+                end
                 addpath(toolpath)
             else
-                error(["Cannot find '" toolname "' on the MATLAB-path, please make sure it is installed"])
+                error("Cannot find '" + toolname + "' on the MATLAB-path, please make sure it is installed")
             end
         end
 

@@ -1,4 +1,4 @@
-* text=auto
+* text eol=lf
 
 *.fig binary
 *.mat binary

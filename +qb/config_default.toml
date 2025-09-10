@@ -1,0 +1,107 @@
+# --------------------- Subject directory master ---------------------
+derivative_dir      = "bids_dir/derivatives"
+
+[bids]
+bids_ses_dir        = "bids_dir/subj_label"
+converted_dwi_dir   = "bids_dir/subj_label/dwi"
+converted_anat_dir  = "bids_dir/subj_label/anat"
+converted_b1_dir    = "bids_dir/subj_label/fmap"
+
+[derivatives]
+ANTs                = "bids_dir/derivatives/ANTs/subj_label"
+FSL                 = "bids_dir/derivatives/FSL/subj_label"
+MRI_SYNTHSEG        = "bids_dir/derivatives/MRI_SYNTHSEG/subj_label"
+MP2RAGE             = "bids_dir/derivatives/MP2RAGE/subj_label"
+ROMEO               = "bids_dir/derivatives/ROMEO/subj_label"
+DESPOT1             = "bids_dir/derivatives/DESPOT1/subj_label"
+SEPIA               = "bids_dir/derivatives/SEPIA/subj_label"
+MWI                 = "bids_dir/derivatives/MWI/subj_label"
+R2star              = "bids_dir/derivatives/R2star/subj_label"
+R1R2s               = "bids_dir/derivatives/SimultaneousR1R2star/subj_label"
+
+[ants]
+gre_within_dir      = "bids_dir/derivatives/ANTs/subj_label/gre_within_protocol_transformation"
+gre_apply_within_dir = "bids_dir/derivatives/ANTs/subj_label/gre_within_protocol_space"
+b1_b12gre_dir       = "bids_dir/derivatives/ANTs/subj_label/b1_2_gre_transformation"
+b1_apply_gre_dir    = "bids_dir/derivatives/ANTs/subj_label/b1_2_gre_space"
+prot_ANTs_dir       = "bids_dir/derivatives/ANTs/subj_label/b1_2_gre_space"
+
+# Optional / commented out in MATLAB
+# gre_across_dir = "bids_dir/derivatives/ANTs/subj_label/gre_across_protocols_transformation"
+# gre_apply_registration_dir = "bids_dir/derivatives/ANTs/subj_label/gre_across_protocols_space"
+# b1_b12mp2rage_dir = "bids_dir/derivatives/ANTs/subj_label/b1_2_mp2rage_transformation"
+# b1_apply_mp2rage_dir = "bids_dir/derivatives/ANTs/subj_label/b1_2_mp2rage_space"
+
+[fsl]
+gre_within_dir      = "bids_dir/derivatives/FSL/subj_label/gre_within_protocol_transformation"
+gre_apply_within_dir = "bids_dir/derivatives/FSL/subj_label/gre_within_protocol_space"
+
+
+# --------------------- GPU config ---------------------
+kappa_mw            = 0.36              # Jung, NI., myelin water density
+kappa_iew           = 0.86              # Jung, NI., intra-/extra-axonal water density
+
+# Fixed parameters
+[fixed_params]
+B0                  = 3.0               # Field strength, in tesla. TODO: Replace with sidecar data
+rho_mw              = 0.4186            # Computed as kappa_mw/kappa_iew
+E                   = 0.02
+x_i                 = -0.1
+x_a                 = -0.1
+B0dir               = [0.0, 0.0, 1.0]   # Replace with actual sepia_header{end}.B0_dir
+t1_mw               = 0.234
+
+# Fitting parameters
+[fitting]
+Nepoch              = 4000
+initialLearnRate    = 0.001
+decayRate           = 0
+convergenceValue    = -inf
+tol                 = 1e-8
+display             = false
+lossFunction        = "l1"
+start               = "prior"
+patience            = 20
+isFitExchange       = true
+isEPG               = false
+
+# DI-MWI sub-parameters
+[fitting.DIMWI]
+isFitIWF            = true
+isFitFreqMW         = true
+isFitFreqIW         = true
+isFitR2sEW          = true
+
+# --------------------- DiscardFirstEcho config ---------------------
+[algoParam]
+# General algorithm parameters
+isInvivo            = true          # true: use initial guesses for in vivo imaging
+isParallel          = false         # true: use parfor parallel processing
+DEBUG               = false         # true: debug mode
+isNormData          = false         # true: normalise data inside function
+
+# Fitting options
+maxIter             = 200
+fcnTol              = 1e-4
+stepTol             = 1e-4
+
+# Residual options
+numMagn             = true         # false: complex fitting
+isWeighted          = true
+weightMethod        = "quadratic_1stEcho"  # Options: '1stEcho' or 'quadratic_1stEcho'
+
+# T1 model
+isExchange          = true          # BM model
+isEPG               = true          # Using EPG-X
+npulse              = 50            # Number of pulses
+rfphase             = 150           # RF phase for EPG, degree. Phase increment for Philips = 150
+isT1mw              = false         # Fitting myelin water T1
+T1mw                = 0.234         # Fixed myelin water T1 in seconds (234e-3)
+
+# DI-MWI (false: no extra DWI info for DIMWI)
+[algoParam.DIMWI]
+isVic               = false
+isR2sEW             = false
+isFreqMW            = false
+isFreqIW            = false
+advancedStarting    = "default"     # Initial guess method. Options: 'default' or 'robust'

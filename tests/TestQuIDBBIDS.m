@@ -29,13 +29,13 @@ classdef TestQuIDBBIDS < matlab.unittest.TestCase
             testCase.assertClass(obj, 'qb.QuIDBBIDS');
         end
     
-        function test_getsettings(testCase)
+        function test_getconfig(testCase)
             % Test if settings are created correctly
             obj = qb.QuIDBBIDS(testCase.TmpDir);
-            settingsfile = fullfile(testCase.TmpDir, 'test.json');
-            testCase.assertFalse(isfile(settingsfile), 'Expected settingsfile not to exist');
-            testCase.assertClass(obj.getsettings(settingsfile), 'struct', 'Settings should be a struct');
-            testCase.assertTrue(isfile(settingsfile), 'Expected settingsfile to exist');
+            configfile = fullfile(testCase.TmpDir, 'config_test.toml');
+            testCase.assertFalse(isfile(configfile), sprintf('Configfile "%s" should not yet exist', configfile));
+            testCase.assertClass(obj.getconfig(configfile), 'struct', 'Settings should be a struct');
+            testCase.assertTrue(isfile(configfile), sprintf('Configfile "%s" not found', configfile));
         end
     end
     

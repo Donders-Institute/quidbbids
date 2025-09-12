@@ -13,7 +13,11 @@ classdef QuIDBBIDS
     % SPM, ROMEO, and more) and facilitates standardized, reproducible
     % workflows for quantitative MRI.
     % 
-    % For more information, see the <a href="matlab: web('https://github.com/Donders-Institute/quidbbids')">QuIDBBIDS GitHub repository</a>
+    % For comprehensive documentation with tutorials, examples, and API reference:
+    %
+    %   <a href="matlab: web('https://quidbbids.readthedocs.io')">Documentation on Read the Docs</a>
+    % 
+    % For more concise help on specific usage:
 
     properties
         config
@@ -56,19 +60,19 @@ classdef QuIDBBIDS
                 configfile {mustBeTextScalar} = ""
             end
 
-            if isempty(bidsdir)
+            if strlength(bidsdir) == 0
                 bidsdir = uigetdir(pwd, "Select the root BIDS directory");
                 if ~bidsdir
                     return
                 end
             end
-            if isempty(derivdir)
+            if strlength(derivdir) == 0
                 derivdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS");
             end
-            if isempty(workdir)
+            if strlength(workdir) == 0
                 workdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS_work");
             end
-            if isempty(configfile)
+            if strlength(configfile) == 0
                 configfile = fullfile(bidsdir, "derivatives", "quidbbids", "code", "config.toml");
             elseif isfolder(configfile)
                 error("The configfile must be a file, not a folder: " + configfile)
@@ -78,9 +82,9 @@ classdef QuIDBBIDS
             rootdir = fileparts(fileparts(mfilename("fullpath")));
             for toolbox = dir(fullfile(rootdir, "dependencies"))'
                 toolpath = fullfile(rootdir, "dependencies", toolbox.name);
-                if toolbox.isdir && ~ismember(toolbox.name, {".", ".."})
+                if toolbox.isdir && ~any(strcmp(toolbox.name, [".", ".."]))
                     continue
-                elseif ismember(toolbox.name, ["sepia", "spm"])
+                elseif ~any(strcmp(toolbox.name, ["sepia", "spm"]))
                     obj.addtoolbox(toolpath)
                 else
                     obj.addtoolbox(toolpath, true)

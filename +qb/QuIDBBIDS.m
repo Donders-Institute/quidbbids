@@ -93,7 +93,7 @@ classdef QuIDBBIDS
 
             % Initialize the QuIDBBIDS derivatives dataset. NB: matlab-bids does not handle strings but expects classic character vectors
             if ~isfolder(derivdir)
-                bids.init(derivdir, ...
+                bids.init(char(derivdir), ...
                           'is_derivative', true,...
                           'is_datalad_ds', false, ...
                           'tolerant', true, ...
@@ -117,12 +117,12 @@ classdef QuIDBBIDS
         end
 
         function obj = configeditor(obj)
-            % Method signature for editing the configuration - implementation is in configeditor.m
-            obj = configeditor(obj);
+            % Opens a GUI to edit the processing options that are stored in the study configuration file
+            obj = configeditor(obj);       % Implementation is in private/configeditor.m
         end
 
         function obj = prepSEPIA(obj)
-            % External toplevel QuIDBBIDS function that loops over subjects to perform pre- and SEPIA-processing
+            % Loops over subjects to perform preprocessing and run SEPIA QSM and R2-star pipelines
             %
             % Processing steps:
             % 
@@ -133,23 +133,23 @@ classdef QuIDBBIDS
             %    coregister the B1 images as well to the M0 (which is also in the common GRE space)
             % 3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
             %    to produce a minimal output mask (for Sepia)
-            % 4. Run the Sepia QSM and R2-star pipelines
+            % 4. Run the SEPIA QSM and R2-star pipelines
             obj = prepSEPIA(obj);       % Implementation is in private/prepSEPIA.m
         end
 
         function obj = fitSCR(obj)
-            % Method signature for fitting SCR model - implementation is in fitSCR.m
-            obj = fitSCR(obj);
+            % Loops over subjects to fit the SCR model
+            obj = fitSCR(obj);          % Implementation is in private/fitSCR.m
         end
 
         function obj = fitMCR(obj)
-            % Method signature for fitting MCR model - implementation is in fitMCR.m
-            obj = fitMCR(obj);
+            % Loops over subjects to fit the MCR model
+            obj = fitMCR(obj);          % Implementation is in private/fitMCR.m
         end
 
         function obj = fitMCRGPU(obj)
-            % Method signature for fitting MCR model using GPU - implementation is in fitMCRGPU.m
-            obj = fitMCRGPU(obj);
+            % Loops over subjects to fit the MCR model using GPU acceleration
+            obj = fitMCRGPU(obj);       % Implementation is in private/fitMCRGPU.m
         end
 
     end
@@ -158,7 +158,7 @@ classdef QuIDBBIDS
     methods(Static)
 
         function config = getconfig(configfile, config)
-            % GETCONFIG Read and optionally write QuIDBBIDS configuration file.
+            % Read and optionally write QuIDBBIDS configuration file.
             %
             % CONFIG = GETCONFIG(CONFIGFILE) reads the configuration from the specified CONFIGFILE.
             % If it does not exist, a default configuration is copied from the user's HOME directory.

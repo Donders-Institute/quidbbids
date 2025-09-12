@@ -1,5 +1,5 @@
 [codespell]
-skip = .git,*.pdf,*.svg,go.sum
+skip = .git,*.pdf,*.svg,go.sum,dependencies
 check-hidden = true
 ignore-regex = \b(PULS|TE|ALS)\b
 ignore-words-list = uptodate,QuIDBBIDS

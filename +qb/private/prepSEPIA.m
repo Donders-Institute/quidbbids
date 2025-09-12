@@ -1,16 +1,17 @@
-function obj = prepSEPIA(obj)
-% Method implementation for performing pre- and SEPIA-processing - Entry point is in QuIDBBIDS.m
+function prepSEPIA(obj, subjects)
+% Method implementation for performing pre- and SEPIA-processing - Entry point is in qb.QuIDBBIDS.m
 
 arguments
     obj qb.QuIDBBIDS
+    subjects struct
 end
 
 % Create the prepdir work directory
 obj.prepdir = fullfile(obj.workdir, mfilename);
 [~, ~]      = mkdir(obj.prepdir);
 
-% Process all subjects. TODO: consider splitting off the functions in the for-loop below to allow for qsubcellfun usage
-for subject = obj.BIDS.subjects
+% Process all subjects
+for subject = subjects
 
     if ~subject.anat || ~subject.fmap
         continue
@@ -285,4 +286,3 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
     end
 
 end
-bids.File

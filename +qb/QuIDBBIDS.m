@@ -49,19 +49,12 @@ classdef QuIDBBIDS
             %   CONFIGFILE - (Optional) Path to a TOML configuration file with pipeline settings.
             %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.toml
             %
-            % Properties:
-            %   config      - Configuration struct loaded from the config TOML file.
-            %   configfile  - Path to the active TOML configuration file.
-            %   bidsdir     - Root BIDS directory.
-            %   derivdir    - Derivatives directory where the output is stored. Default: bidsdir/derivatives/QuIDBBIDS
-            %   workdir     - Working directory for intermediate results.
-            %   BIDS        - BIDS layout object from bids-matlab.
-            %
             % Usage:
             %   obj = qb.QuIDBBIDS();               % Select BIDS root directory via GUI
             %   obj = qb.QuIDBBIDS(bids_dir);       % Specify BIDS root directory
+            %   etc.
             %
-            % See also: qb.QuIDBBIDS (the parent)
+            % See also: qb.QuIDBBIDS (for overview)
             
             % Parse the inputs
             arguments
@@ -133,11 +126,11 @@ classdef QuIDBBIDS
             % Usage:
             %   obj = obj.configeditor();
             %
-            % See also: qb.QuIDBBIDS (the parent)
+            % See also: qb.QuIDBBIDS (for overview)
             obj = configeditor(obj);       % Implementation is in private/configeditor.m
         end
 
-        function obj = prepSEPIA(obj)
+        function prepSEPIA(obj, subjects)
             % Loops over subjects to perform preprocessing and run SEPIA QSM and R2-star pipelines
             %
             % Processing steps:
@@ -151,41 +144,93 @@ classdef QuIDBBIDS
             %    to produce a minimal output mask (for Sepia)
             % 4. Run the SEPIA QSM and R2-star pipelines
             %
-            % Usage:
-            %   obj.prepSEPIA();
+            % Inputs:
+            %   SUBJECTS - (Optional) A matlab-bids struct array of subjects to process. Default: all
+            %              subjects in the BIDS dataset.
             %
-            % See also: qb.QuIDBBIDS (the parent)
-            obj = prepSEPIA(obj);       % Implementation is in private/prepSEPIA.m
+            % Usage:
+            %   obj.prepSEPIA()             % Process all subjects
+            %   obj.prepSEPIA(subjects)     % Specify a subset of subjects to process
+            %
+            % See also: qb.QuIDBBIDS (for overview)
+
+            % Process the subjects (the implementation is in private/prepSEPIA.m)
+            if nargin < 2 || isempty(subjects)
+                subjects = obj.BIDS.get_subjects();
+            end
+            if obj.config.useHPC
+                qsubcellfun(@prepSEPIA, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+            else
+                prepSEPIA(obj, subjects)
+            end
         end
 
-        function obj = fitSCR(obj)
+        function fitSCR(obj, subjects)
             % Loops over subjects to fit the SCR model
             %
-            % Usage:
-            %   obj.fitSCR();
+            % Inputs:
+            %   SUBJECTS - (Optional) A matlab-bids struct array of subjects to process. Default: all
+            %              subjects in the BIDS dataset.
             %
-            % See also: qb.QuIDBBIDS (the parent)
-            obj = fitSCR(obj);          % Implementation is in private/fitSCR.m
+            % Usage:
+            %   obj.fitSCR()            % Process all subjects
+            %   obj.fitSCR(subjects)    % Specify a subset of subjects to process
+            %
+            % See also: qb.QuIDBBIDS (for overview)
+
+            % Process the subjects (the implementation is in private/fitSCR.m)
+            if nargin < 2 || isempty(subjects)
+                subjects = obj.BIDS.get_subjects();
+            end
+            if obj.config.useHPC
+                qsubcellfun(@fitSCR, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+            else
+                fitSCR(obj, subjects)
+            end
         end
 
-        function obj = fitMCR(obj)
+        function fitMCR(obj, subjects)
             % Loops over subjects to fit the MCR model
             %
-            % Usage:
-            %   obj.fitMCR();
+            % Inputs:
+            %   SUBJECTS - (Optional) A matlab-bids struct array of subjects to process. Default: all
+            %              subjects in the BIDS dataset.
             %
-            % See also: qb.QuIDBBIDS (the parent)
-            obj = fitMCR(obj);          % Implementation is in private/fitMCR.m
+            % Usage:
+            %   obj.fitMCR()            % Process all subjects
+            %   obj.fitMCR(subjects)    % Specify a subset of subjects to process
+            %
+            % See also: qb.QuIDBBIDS (for overview)
+
+            % Process the subjects (the implementation is in private/fitMCR.m)
+            if nargin < 2 || isempty(subjects)
+                subjects = obj.BIDS.get_subjects();
+            end
+            if obj.config.useHPC
+                qsubcellfun(@fitMCR, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+            else
+                fitMCR(obj, subjects)
+            end
         end
 
-        function obj = fitMCRGPU(obj)
+        function fitMCRGPU(obj, subjects)
             % Loops over subjects to fit the MCR model using GPU acceleration
             %
             % Usage:
-            %   obj.fitMCRGPU();
+            %   obj.fitMCRGPU()             % Process all subjects
+            %   obj.fitMCRGPU(subjects)     % Specify a subset of subjects to process
             %
-            % See also: qb.QuIDBBIDS (the parent)
-            obj = fitMCRGPU(obj);       % Implementation is in private/fitMCRGPU.m
+            % See also: qb.QuIDBBIDS (for overview)
+
+            % Process the subjects (the implementation is in private/fitMCRGPU.m)
+            if nargin < 2 || isempty(subjects)
+                subjects = obj.BIDS.get_subjects();
+            end
+            if obj.config.useHPC
+                qsubcellfun(@fitMCRGPU, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+            else
+                fitMCRGPU(obj, subjects)
+            end
         end
 
     end
@@ -213,9 +258,9 @@ classdef QuIDBBIDS
             % The function ensures that a default config exists in:
             %     <HOME>/.quidbbids/<version>/config_default.toml
             %
-            % Examples:
-            %     config = getconfig("myconfig.toml");
-            %     getconfig("myconfig.toml", config);
+            % Usage:
+            %     config = obj.getconfig("myconfig.toml");
+            %     obj.getconfig("myconfig.toml", config);
             
             arguments
                 configfile {mustBeTextScalar}

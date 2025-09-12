@@ -7,40 +7,45 @@ classdef QuIDBBIDS
     % Quantitative Imaging Derived Biomarkers in BIDS
     % ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
     %
-    % QuIDBBIDS provides a framework for pre-processing and estimation of
-    % quantitative MRI-derived biomarkers in the BIDS (Brain Imaging Data
-    % Structure) format. It integrates several toolboxes (such as SEPIA,
-    % SPM, ROMEO, and more) and facilitates standardized, reproducible
-    % workflows for quantitative MRI.
-    % 
+    % QuIDBBIDS provides a framework for pre-processing and estimation of quantitative
+    % MRI-derived biomarkers in the BIDS (Brain Imaging Data Structure) format. It
+    % integrates several toolboxes (such as SPM, SEPIA, MWI and more) and facilitates
+    % standardized, reproducible workflows for quantitative MRI.
+    %
+    % Quick start - Create a QuIDBBIDS object for your BIDS dataset:
+    %
+    %   obj = qb.QuIDBBIDS();               % Select BIDS root directory via GUI
+    %   obj = qb.QuIDBBIDS(bids_dir);       % Specify BIDS root directory
+    %   obj = qb.QuIDBBIDS(bids_dir, ..);   % See constructor help for more details
+    %
     % For comprehensive documentation with tutorials, examples, and API reference:
     %
     %   <a href="matlab: web('https://quidbbids.readthedocs.io')">Documentation on Read the Docs</a>
     % 
-    % For more concise help on specific usage:
+    % For more concise help on the QuIDBBIDS object and its methods:
 
     properties
-        config
-        configfile
-        bidsdir
-        derivdir
-        workdir
-        BIDS
+        config      % Configuration struct loaded from the config TOML file
+        configfile  % Path to the active TOML configuration file
+        bidsdir     % Root BIDS directory
+        derivdir    % Derivatives directory where the output is stored
+        workdir     % Working directory for intermediate results
+        BIDS        % BIDS layout object from bids-matlab
     end
 
 
     methods
 
         function obj = QuIDBBIDS(bidsdir, derivdir, workdir, configfile)
-            % Constructor for the QuIDBBIDS class
+            % Initializes the QuIDBBIDS object for a given BIDS dataset
             %
             % OBJ = QuIDBBIDS(BIDSDIR, DERIVDIR, CONFIGFILE)
             %
             % Inputs:
-            %   BIDSDIR    - (Required) Path to the root BIDS dataset directory.
+            %   BIDSDIR    - (Optional) Path to the root BIDS dataset directory.
             %   DERIVDIR   - (Optional) Path to the derivatives directory where output will be written.
             %                Default: [BIDSDIR]/derivatives
-            %   WORKDIR    - Working directory for intermediate results. Default: derivdir/QuIDBBIDS_work.
+            %   WORKDIR    - (Optional) Working directory for intermediate results. Default: derivdir/QuIDBBIDS_work.
             %   CONFIGFILE - (Optional) Path to a TOML configuration file with pipeline settings.
             %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.toml
             %
@@ -51,7 +56,13 @@ classdef QuIDBBIDS
             %   derivdir    - Derivatives directory where the output is stored. Default: bidsdir/derivatives/QuIDBBIDS
             %   workdir     - Working directory for intermediate results.
             %   BIDS        - BIDS layout object from bids-matlab.
-
+            %
+            % Usage:
+            %   obj = qb.QuIDBBIDS();               % Select BIDS root directory via GUI
+            %   obj = qb.QuIDBBIDS(bids_dir);       % Specify BIDS root directory
+            %
+            % See also: qb.QuIDBBIDS (the parent)
+            
             % Parse the inputs
             arguments
                 bidsdir    {mustBeTextScalar} = ""
@@ -117,7 +128,12 @@ classdef QuIDBBIDS
         end
 
         function obj = configeditor(obj)
-            % Opens a GUI to edit the processing options that are stored in the study configuration file
+            % Opens a GUI to edit the processing options in the dataset configuration file
+            %
+            % Usage:
+            %   obj = obj.configeditor();
+            %
+            % See also: qb.QuIDBBIDS (the parent)
             obj = configeditor(obj);       % Implementation is in private/configeditor.m
         end
 
@@ -134,21 +150,41 @@ classdef QuIDBBIDS
             % 3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
             %    to produce a minimal output mask (for Sepia)
             % 4. Run the SEPIA QSM and R2-star pipelines
+            %
+            % Usage:
+            %   obj.prepSEPIA();
+            %
+            % See also: qb.QuIDBBIDS (the parent)
             obj = prepSEPIA(obj);       % Implementation is in private/prepSEPIA.m
         end
 
         function obj = fitSCR(obj)
             % Loops over subjects to fit the SCR model
+            %
+            % Usage:
+            %   obj.fitSCR();
+            %
+            % See also: qb.QuIDBBIDS (the parent)
             obj = fitSCR(obj);          % Implementation is in private/fitSCR.m
         end
 
         function obj = fitMCR(obj)
             % Loops over subjects to fit the MCR model
+            %
+            % Usage:
+            %   obj.fitMCR();
+            %
+            % See also: qb.QuIDBBIDS (the parent)
             obj = fitMCR(obj);          % Implementation is in private/fitMCR.m
         end
 
         function obj = fitMCRGPU(obj)
             % Loops over subjects to fit the MCR model using GPU acceleration
+            %
+            % Usage:
+            %   obj.fitMCRGPU();
+            %
+            % See also: qb.QuIDBBIDS (the parent)
             obj = fitMCRGPU(obj);       % Implementation is in private/fitMCRGPU.m
         end
 

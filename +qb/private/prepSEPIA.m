@@ -1,16 +1,5 @@
-function obj = prep(obj)
-% External toplevel QuIDBBIDS function that loops over subjects to perform preprocessing
-%
-% Processing steps:
-% 
-% 1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.
-%    The results are blurry but within the common GRE space, hence, iterate the computation
-%    with the input images that have been realigned to the target in the common space
-% 2. Coregister all MEGRE images to each T1w-like target image (using echo-1_mag), coregister
-%    the B1 images as well to the M0 (which is also in the common GRE space)
-% 3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
-%    to produce a minimal output mask (for Sepia)
-% 4. Run the Sepia QSM and R2-star pipelines
+function obj = prepSEPIA(obj)
+% Method implementation for performing pre- and SEPIA-processing - Entry point is in QuIDBBIDS.m
 
 arguments
     obj qb.QuIDBBIDS
@@ -28,8 +17,8 @@ for subject = obj.BIDS.subjects
     end
     fprintf("\n==> Processing: %s\n", subject.path);
     obj = create_common_T1like_M0(obj, subject);    % Processing step 1
-    obj = coreg_B1_FA_2common(obj, subject);        % Processing step 2
-    obj = create_FAmask(obj, subject);              % Processing step 3
+    obj = coreg_FAs_B1_2common(obj, subject);       % Processing step 2
+    obj = create_brainmask(obj, subject);           % Processing step 3
     obj = create_QSM_R2star_maps(obj, subject);     % Processing step 4
 
 end
@@ -101,9 +90,9 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
 end
 
 
-function obj = coreg_B1_FA_2common(obj, subject)
-% Coregister all MEGRE images to each T1w-like target image (using echo-1_mag), coregister
-% the B1 images as well to the M0 (which is also in the common GRE space)
+function obj = coreg_FAs_B1_2common(obj, subject)
+% Coregister all MEGRE FA-images to each T1w-like target image (using echo-1_mag),
+% coregister the B1 images as well to the M0 (which is also in the common GRE space)
 
 arguments
     obj qb.QuIDBBIDS
@@ -190,7 +179,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
 end
 
 
-function obj = create_FAmask(obj, subject)
+function obj = create_brainmask(obj, subject)
 % Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
 % to produce a minimal output mask (for Sepia)
 
@@ -219,8 +208,8 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         bfile.entities.part   = '';
         bfile.entities.echo   = '';
         run_command(sprintf("mri_synthstrip -i %s -m %s --no-csf", FAs_e1m{n}, bfile.path));
-        bids.util.jsonencode(fullfile(obj.prepdir, bfile.bids_path, bfile.json_filename), bfile.metadata);
         masks(:,:,:,n)        = spm_vol(bfile.path).dat();
+        % delete(bfile.path);    % Delete the individual mask to save space
     end
 
     % Combine the individual masks to create a minimal brain mask
@@ -286,12 +275,14 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         clear input
         input(1).name = Vphase.fname;
         input(2).name = Vmag.fname;
+        input(3).name = '';
         input(4).name = [output '_header.mat'];
-        sepiaIO(input, output, mask{1}, obj.config.SEPIA.QSM.algorParam)
+        sepiaIO(input, output, mask{1}, obj.config.prepSEPIA.QSMParam)
 
         % Run the SEPIA R2-star pipeline
-        sepiaIO(input, output, mask{1}, obj.config.SEPIA.R2star.algorParam)
+        sepiaIO(input, output, mask{1}, obj.config.prepSEPIA.R2starParam)
 
     end
 
 end
+bids.File

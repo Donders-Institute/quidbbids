@@ -36,6 +36,7 @@ classdef QuIDBBIDS
             %   BIDSDIR    - (Required) Path to the root BIDS dataset directory.
             %   DERIVDIR   - (Optional) Path to the derivatives directory where output will be written.
             %                Default: [BIDSDIR]/derivatives
+            %   WORKDIR    - Working directory for intermediate resuls. Default: derivdir/QuIDBBIDS_work.
             %   CONFIGFILE - (Optional) Path to a TOML configuration file with pipeline settings.
             %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.toml
             %
@@ -44,14 +45,14 @@ classdef QuIDBBIDS
             %   configfile  - Path to the active TOML configuration file.
             %   bidsdir     - Root BIDS directory.
             %   derivdir    - Derivatives directory where the output is stored. Default: bidsdir/derivatives/QuIDBBIDS
-            %   workdir     - Working directory for intermediate resuls. Default: derivdir/QuIDBBIDS_work.
+            %   workdir     - Working directory for intermediate resuls.
             %   BIDS        - BIDS layout object from bids-matlab.
 
             % Parse the inputs
             arguments
-                bidsdir    {mustBeFolder}     = ""
+                bidsdir    {mustBeTextScalar} = ""
                 derivdir   {mustBeTextScalar} = ""
-                workdir    {mustBeFolder}     = ""
+                workdir    {mustBeTextScalar} = ""
                 configfile {mustBeTextScalar} = ""
             end
 
@@ -116,9 +117,20 @@ classdef QuIDBBIDS
             obj = configeditor(obj);
         end
 
-        function obj = prep(obj)
-            % Method signature for performing pre- and SEPIA-processing - implementation is in prep.m
-            obj = prep(obj);
+        function obj = prepSEPIA(obj)
+            % External toplevel QuIDBBIDS function that loops over subjects to perform pre- and SEPIA-processing
+            %
+            % Processing steps:
+            % 
+            % 1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.
+            %    The results are blurry but within the common GRE space, hence, iterate the computation
+            %    with the input images that have been realigned to the target in the common space
+            % 2. Coregister all FA-MEGRE images to each T1w-like target image (using echo-1_mag), coregister
+            %    coregister the B1 images as well to the M0 (which is also in the common GRE space)
+            % 3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
+            %    to produce a minimal output mask (for Sepia)
+            % 4. Run the Sepia QSM and R2-star pipelines
+            obj = prepSEPIA(obj);       % Implementation is in private/prepSEPIA.m
         end
 
         function obj = fitSCR(obj)
@@ -199,9 +211,9 @@ classdef QuIDBBIDS
     end
 
 
-    methods(Access = private)
+    methods(Static, Access = private)
 
-        function addtoolbox(obj, toolpath, recursive)
+        function addtoolbox(toolpath, recursive)
             % Add an external toolbox to the MATLAB path.
             %
             % ADDTOOLBOX(TOOLPATH, RECURSIVE) checks if the specified toolbox is

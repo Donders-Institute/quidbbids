@@ -1,43 +1,12 @@
 # --------------------- Subject directory master ---------------------
-derivative_dir      = "bids_dir/derivatives"
+version             = "0.0.2"           # QuIDBBIDS version that should match the version in resources/mpackage.json
 
-[bids]
-bids_ses_dir        = "bids_dir/subj_label"
-converted_dwi_dir   = "bids_dir/subj_label/dwi"
-converted_anat_dir  = "bids_dir/subj_label/anat"
-converted_b1_dir    = "bids_dir/subj_label/fmap"
-
-[derivatives]
-ANTs                = "bids_dir/derivatives/ANTs/subj_label"
-FSL                 = "bids_dir/derivatives/FSL/subj_label"
-MRI_SYNTHSEG        = "bids_dir/derivatives/MRI_SYNTHSEG/subj_label"
-MP2RAGE             = "bids_dir/derivatives/MP2RAGE/subj_label"
-ROMEO               = "bids_dir/derivatives/ROMEO/subj_label"
-DESPOT1             = "bids_dir/derivatives/DESPOT1/subj_label"
-SEPIA               = "bids_dir/derivatives/SEPIA/subj_label"
-MWI                 = "bids_dir/derivatives/MWI/subj_label"
-R2star              = "bids_dir/derivatives/R2star/subj_label"
-R1R2s               = "bids_dir/derivatives/SimultaneousR1R2star/subj_label"
-
-[ants]
-gre_within_dir      = "bids_dir/derivatives/ANTs/subj_label/gre_within_protocol_transformation"
-gre_apply_within_dir = "bids_dir/derivatives/ANTs/subj_label/gre_within_protocol_space"
-b1_b12gre_dir       = "bids_dir/derivatives/ANTs/subj_label/b1_2_gre_transformation"
-b1_apply_gre_dir    = "bids_dir/derivatives/ANTs/subj_label/b1_2_gre_space"
-prot_ANTs_dir       = "bids_dir/derivatives/ANTs/subj_label/b1_2_gre_space"
-
-# Optional / commented out in MATLAB
-# gre_across_dir = "bids_dir/derivatives/ANTs/subj_label/gre_across_protocols_transformation"
-# gre_apply_registration_dir = "bids_dir/derivatives/ANTs/subj_label/gre_across_protocols_space"
-# b1_b12mp2rage_dir = "bids_dir/derivatives/ANTs/subj_label/b1_2_mp2rage_transformation"
-# b1_apply_mp2rage_dir = "bids_dir/derivatives/ANTs/subj_label/b1_2_mp2rage_space"
-
-[fsl]
-gre_within_dir      = "bids_dir/derivatives/FSL/subj_label/gre_within_protocol_transformation"
-gre_apply_within_dir = "bids_dir/derivatives/FSL/subj_label/gre_within_protocol_space"
-
+[bids.select]
+modality            = ["anat", "fmap"]
+suffix              = ["MEGRE", "TB1TFL"]
 
 # --------------------- GPU config ---------------------
+[GPU]
 kappa_mw            = 0.36              # Jung, NI., myelin water density
 kappa_iew           = 0.86              # Jung, NI., intra-/extra-axonal water density
 
@@ -72,7 +41,40 @@ isFitFreqMW         = true
 isFitFreqIW         = true
 isFitR2sEW          = true
 
-# --------------------- DiscardFirstEcho config ---------------------
+# QSM pipeline parameters
+[prepSEPIA.QSMParam]
+general.isBET               = 0
+general.isRefineBrainMask   = 0
+general.isInvert            = 0
+# Total field recovery algorithm parameters
+unwrap.echoCombMethod       = "Optimum weights"
+unwrap.unwrapMethod         = "SEGUE"
+unwrap.isEddyCorrect        = 0
+unwrap.isSaveUnwrappedEcho  = 1
+unwrap.excludeMaskThreshold = 0.4
+unwrap.excludeMethod        = "Weighting map"
+# Background field removal algorithm parameters
+bfr.refine_method           = "None"
+bfr.refine_order            = 4
+bfr.erode_radius            = 0
+bfr.erode_before_radius     = 0
+bfr.method                  = "VSHARP"
+bfr.radius                  = [12,11,10,9,8,7,6,5,4,3,2,1]
+# QSM algorithm parameters
+qsm.reference_tissue        = "CSF"
+qsm.method                  = "MRI Suscep. Calc."
+qsm.solver                  = "Iterative Tikhonov"
+qsm.lambda                  = 0.05
+qsm.tolerance               = 0.03
+
+# R2star pipeline parameters
+[prepSEPIA.R2starParam]
+general.isBET               = 0
+general.isInvert            = 0
+general.isRefineBrainMask   = 0
+r2s.method                  = "Trapezoidal"
+r2s.s0mode                  = "1st echo"
+
 [algoParam]
 # General algorithm parameters
 isInvivo            = true          # true: use initial guesses for in vivo imaging
@@ -86,9 +88,9 @@ fcnTol              = 1e-4
 stepTol             = 1e-4
 
 # Residual options
-numMagn             = true         # false: complex fitting
+numMagn             = true          # false: complex fitting
 isWeighted          = true
-weightMethod        = "quadratic_1stEcho"  # Options: '1stEcho' or 'quadratic_1stEcho'
+weightMethod        = "quadratic_1stEcho"  # Options: "1stEcho" or "quadratic_1stEcho"
 
 # T1 model
 isExchange          = true          # BM model
@@ -104,4 +106,4 @@ isVic               = false
 isR2sEW             = false
 isFreqMW            = false
 isFreqIW            = false
-advancedStarting    = "default"     # Initial guess method. Options: 'default' or 'robust'
+advancedStarting    = "default"     # Initial guess method. Options: "default" or "robust"

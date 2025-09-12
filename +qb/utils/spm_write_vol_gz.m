@@ -46,5 +46,5 @@ switch ext
     case '.nii'
         V = spm_write_vol(V, Y);
     otherwise
-        error('Unknown file extenstion %s in %s', ext, V.fname)
+        error('Unknown file extension %s in %s', ext, V.fname)
 end

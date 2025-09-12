@@ -29,5 +29,5 @@ switch ext
     case '.nii'
         V4 = spm_file_merge(V, fname, varargin{:});
     otherwise
-        error('Unknown file extenstion %s in %s', ext, fname)
+        error('Unknown file extension %s in %s', ext, fname)
 end

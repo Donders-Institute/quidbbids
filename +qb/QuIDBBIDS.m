@@ -40,7 +40,7 @@ classdef QuIDBBIDS
             %   BIDSDIR    - (Required) Path to the root BIDS dataset directory.
             %   DERIVDIR   - (Optional) Path to the derivatives directory where output will be written.
             %                Default: [BIDSDIR]/derivatives
-            %   WORKDIR    - Working directory for intermediate resuls. Default: derivdir/QuIDBBIDS_work.
+            %   WORKDIR    - Working directory for intermediate results. Default: derivdir/QuIDBBIDS_work.
             %   CONFIGFILE - (Optional) Path to a TOML configuration file with pipeline settings.
             %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.toml
             %
@@ -49,7 +49,7 @@ classdef QuIDBBIDS
             %   configfile  - Path to the active TOML configuration file.
             %   bidsdir     - Root BIDS directory.
             %   derivdir    - Derivatives directory where the output is stored. Default: bidsdir/derivatives/QuIDBBIDS
-            %   workdir     - Working directory for intermediate resuls.
+            %   workdir     - Working directory for intermediate results.
             %   BIDS        - BIDS layout object from bids-matlab.
 
             % Parse the inputs

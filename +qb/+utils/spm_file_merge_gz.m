@@ -43,7 +43,7 @@ switch ext
         V4 = spm_file_merge(V, fullfile(pth, name), varargin{:});
         gzip(V4(1).fname)
         delete(V4(1).fname, V{:})
-        V4 = spm_vol(V4(1).fname);
+        V4 = spm_vol([V4(1).fname '.gz']);
     case '.nii'
         V4 = spm_file_merge(V, fname, varargin{:});
     otherwise

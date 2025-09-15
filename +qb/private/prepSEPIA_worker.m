@@ -264,8 +264,11 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         % Create 4D mag and phase SEPIA/MCR input data
         bfile               = bids.File(phasefiles{1});
         bfile.entities.echo = '';
+        disp("Merging 4D mag/phase input data -> " + bfile.filename)
         Vphase              = spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
         bfile               = bids.File(magfiles{1});
+        bfile.entities.echo = '';
+        disp("Merging 4D mag/phase input data -> " + bfile.filename)
         Vmag                = spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
         delete(magfiles{:}, phasefiles{:})                                                      % Delete the redundant 3D source files to save space
 

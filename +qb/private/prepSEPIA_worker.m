@@ -9,7 +9,7 @@ end
 % Process all subjects
 for subject = subjects
 
-    if ~subject.anat || ~subject.fmap
+    if isempty(subject.anat) || isempty(subject.fmap)
         continue
     end
     fprintf("\n==> Processing: %s\n", subject.path);
@@ -41,8 +41,8 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
     
     % Get the echo-1 magnitude files and metadata for all flip angles of this run
     select  = {'sub',subject.name, 'ses',subject.session, 'modality','anat', 'echo',1, 'part','mag', 'run',run{1}};
-    FAs_e1m = bids.query(obj.BIDS, 'data', select);
-    meta    = bids.query(obj.BIDS, 'metadata', select);
+    FAs_e1m = bids.query(obj.BIDS, 'data', select{:});
+    meta    = bids.query(obj.BIDS, 'metadata', select{:});
     flips   = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
     if length(flips) <= 1
         error("Need at least two different flip angles to compute T1 and S0 maps, found:%s", sprintf(" %s", flips{:}));
@@ -104,15 +104,15 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
 
     % Get the echo-1 magnitude files and metadata for all flip angles of this run
     select  = {'sub',subject.name, 'ses',subject.session, 'modality','anat', 'echo',1, 'part','mag', 'run',run{1}};
-    FAs_e1m = bids.query(obj.BIDS, 'data', select);
-    meta    = bids.query(obj.BIDS, 'metadata', select);
+    FAs_e1m = bids.query(obj.BIDS, 'data', select{:});
+    meta    = bids.query(obj.BIDS, 'metadata', select{:});
     flips   = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
 
     % Realign all FA images to their synthetic targets
     for n = 1:length(flips)
 
         % Get the common synthetic FA target image
-        FAref = bids.query(BIDS_prep, 'data', {'sub',subject.name, 'ses',subject.session, 'modality','anat', 'desc',sprintf('FA%02dsynthetic', flips(n)), 'space','withinGRE', 'run',run{1}});
+        FAref = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'desc',sprintf('FA%02dsynthetic', flips(n)), 'space','withinGRE', 'run',run{1});
         if length(FAref) ~= 1
             error("Unexpected synthetic reference images found: %s", sprintf("\n%s", FAref{:}));
         end
@@ -123,7 +123,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
         % Save all resliced echo images for this flip angle
-        for echo = bids.query(obj.BIDS, 'data', {'sub',subject.name, 'ses',subject.session, 'modality','anat', 'run',run{1}})
+        for echo = bids.query(obj.BIDS, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'run',run{1})
             bfile = bids.File(echo{1});
             if bfile.metadata.FlipAngle ~= flips(n)
                 continue
@@ -144,9 +144,9 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
     end
 
     % Get the B1 images and the common M0 target image
-    B1famp = bids.query(obj.BIDS,  'data', {'sub',subject.name, 'ses',subject.session, 'modality','fmap', 'acq','famp', 'echo',[], 'run',run{1}});
-    B1anat = bids.query(obj.BIDS,  'data', {'sub',subject.name, 'ses',subject.session, 'modality','fmap', 'acq','anat', 'echo',[], 'run',run{1}});
-    M0ref  = bids.query(BIDS_prep, 'data', {'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'suffix','M0map', 'run',run{1}});
+    B1famp = bids.query(obj.BIDS,  'data', 'sub',subject.name, 'ses',subject.session, 'modality','fmap', 'acq','famp', 'echo',[], 'run',run{1});
+    B1anat = bids.query(obj.BIDS,  'data', 'sub',subject.name, 'ses',subject.session, 'modality','fmap', 'acq','anat', 'echo',[], 'run',run{1});
+    M0ref  = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'suffix','M0map', 'run',run{1});
     if length(B1famp) ~= 1 || length(B1anat) ~= 1
         error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}));
     end
@@ -192,7 +192,7 @@ BIDS_prep = bids.layout(obj.workdir, 'use_schema',false, 'index_derivatives',fal
 for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE')
 
     % Get the echo-1 magnitude file for all flip angles of this run
-    FAs_e1m = bids.query(BIDS_prep, 'data', {'sub',subject.name, 'ses',subject.session, 'modality','anat', 'echo',1, 'part','mag', 'space','withinGRE', 'run',run{1}});
+    FAs_e1m = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'echo',1, 'part','mag', 'space','withinGRE', 'run',run{1});
 
     % Create individual brain masks using mri_synthstrip
     Ve1m  = spm_vol(FAs_e1m{1});
@@ -233,8 +233,8 @@ BIDS_prep = bids.layout(obj.workdir, 'use_schema',false, 'index_derivatives',fal
 for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE')
 
     % Get the flip angles and brainmask for this run
-    FAs  = bids.query(BIDS_prep, 'desc', {'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'run',run{1}, 'echo',1});
-    mask = bids.query(BIDS_prep, 'data', {'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'label','brain', 'suffix','mask', 'run',run{1}});
+    FAs  = bids.query(BIDS_prep, 'desc', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'run',run{1}, 'echo',1);
+    mask = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'label','brain', 'suffix','mask', 'run',run{1});
     if length(FAs) < 2
         error("No flip angle images found in: %s", subject.path);
     end
@@ -246,8 +246,8 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
     for FA = FAs
 
         % Get the mag/phase echo images for this flip angle & run
-        magfiles   = bids.query(BIDS_prep, 'data', {'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1}});
-        phasefiles = bids.query(BIDS_prep, 'data', {'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','phase', 'run',run{1}});
+        magfiles   = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1});
+        phasefiles = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','phase', 'run',run{1});
 
         % Create 4D mag and phase SEPIA/MCR input data
         bfile               = bids.File(phasefiles{1});

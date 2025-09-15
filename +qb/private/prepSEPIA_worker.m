@@ -24,6 +24,13 @@ for subject = subjects
 
 end
 
+% Create a BIDS structure for the prepdir
+bids.init(char(obj.prepdir), ...
+          'is_derivative', true,...
+          'is_datalad_ds', false, ...
+          'tolerant', true, ...
+          'verbose', true)
+
 
 function obj = create_common_T1like_M0(obj, subject)
 % Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.

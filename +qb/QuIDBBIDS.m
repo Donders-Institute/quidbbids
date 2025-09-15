@@ -7,10 +7,10 @@ classdef QuIDBBIDS
     % Quantitative Imaging Derived Biomarkers in BIDS
     % ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
     %
-    % QuIDBBIDS provides a framework for pre-processing and estimation of quantitative
-    % MRI-derived biomarkers in the BIDS (Brain Imaging Data Structure) format. It
-    % integrates several toolboxes (such as SPM, SEPIA, MWI and more) and facilitates
-    % standardized, reproducible workflows for quantitative MRI.
+    % The QuIDBBIDS class provides a framework for pre-processing and estimation of
+    % quantitative MRI-derived biomarkers in the BIDS (Brain Imaging Data Structure)
+    % format. It integrates several toolboxes (such as SPM, SEPIA, MWI and more) and
+    % facilitates standardized, reproducible workflows for quantitative MRI.
     %
     % Quick start - Create a QuIDBBIDS object for your BIDS dataset:
     %
@@ -22,13 +22,13 @@ classdef QuIDBBIDS
     %
     %   <a href="matlab: web('https://quidbbids.readthedocs.io')">Documentation on Read the Docs</a>
     % 
-    % For more concise help on the QuIDBBIDS object and its methods:
+    % For more concise help on using a QuIDBBIDS object and its methods:
 
     properties
         config      % Configuration struct loaded from the config TOML file
         configfile  % Path to the active TOML configuration file
         bidsdir     % Root BIDS directory
-        derivdir    % Derivatives directory where the output is stored
+        derivdir    % QuIDBBIDS derivatives directory where the output is stored
         workdir     % Working directory for intermediate results
         BIDS        % BIDS layout object from bids-matlab
     end
@@ -43,8 +43,8 @@ classdef QuIDBBIDS
             %
             % Inputs:
             %   BIDSDIR    - (Optional) Path to the root BIDS dataset directory.
-            %   DERIVDIR   - (Optional) Path to the derivatives directory where output will be written.
-            %                Default: [BIDSDIR]/derivatives
+            %   DERIVDIR   - (Optional) Path to the QuIDBBIDS derivatives directory where output will be written.
+            %                Default: [BIDSDIR]/derivatives/QuIDBBIDS
             %   WORKDIR    - (Optional) Working directory for intermediate results. Default: derivdir/QuIDBBIDS_work.
             %   CONFIGFILE - (Optional) Path to a TOML configuration file with pipeline settings.
             %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.toml
@@ -77,7 +77,7 @@ classdef QuIDBBIDS
                 workdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS_work");
             end
             if strlength(configfile) == 0
-                configfile = fullfile(bidsdir, "derivatives", "quidbbids", "code", "config.toml");
+                configfile = fullfile(derivdir, "code", "config.toml");
             elseif isfolder(configfile)
                 error("The configfile must be a file, not a folder: " + configfile)
             end
@@ -154,14 +154,14 @@ classdef QuIDBBIDS
             %
             % See also: qb.QuIDBBIDS (for overview)
 
-            % Process the subjects (the implementation is in private/prepSEPIA.m)
+            % Process the subjects (the implementation is in private/prepSEPIA_worker.m)
             if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.get_subjects();
+                subjects = obj.BIDS.subjects();
             end
             if obj.config.useHPC
-                qsubcellfun(@prepSEPIA, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+                qsubcellfun(@prepSEPIA_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
             else
-                prepSEPIA(obj, subjects)
+                prepSEPIA_worker(obj, subjects)
             end
         end
 
@@ -178,14 +178,14 @@ classdef QuIDBBIDS
             %
             % See also: qb.QuIDBBIDS (for overview)
 
-            % Process the subjects (the implementation is in private/fitSCR.m)
+            % Process the subjects (the implementation is in private/fitSCR_worker.m)
             if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.get_subjects();
+                subjects = obj.BIDS.subjects();
             end
             if obj.config.useHPC
-                qsubcellfun(@fitSCR, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+                qsubcellfun(@fitSCR_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
             else
-                fitSCR(obj, subjects)
+                fitSCR_worker(obj, subjects)
             end
         end
 
@@ -202,14 +202,14 @@ classdef QuIDBBIDS
             %
             % See also: qb.QuIDBBIDS (for overview)
 
-            % Process the subjects (the implementation is in private/fitMCR.m)
+            % Process the subjects (the implementation is in private/fitMCR_worker.m)
             if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.get_subjects();
+                subjects = obj.BIDS.subjects();
             end
             if obj.config.useHPC
-                qsubcellfun(@fitMCR, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+                qsubcellfun(@fitMCR_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
             else
-                fitMCR(obj, subjects)
+                fitMCR_worker(obj, subjects)
             end
         end
 
@@ -222,14 +222,14 @@ classdef QuIDBBIDS
             %
             % See also: qb.QuIDBBIDS (for overview)
 
-            % Process the subjects (the implementation is in private/fitMCRGPU.m)
+            % Process the subjects (the implementation is in private/fitMCRGPU_worker.m)
             if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.get_subjects();
+                subjects = obj.BIDS.subjects();
             end
             if obj.config.useHPC
-                qsubcellfun(@fitMCRGPU, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+                qsubcellfun(@fitMCRGPU_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
             else
-                fitMCRGPU(obj, subjects)
+                fitMCRGPU_worker(obj, subjects)
             end
         end
 

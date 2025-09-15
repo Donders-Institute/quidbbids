@@ -207,20 +207,20 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
     Ve1m  = spm_vol(FAs_e1m{1});
     masks = zeros([Ve1m.dim length(FAs_e1m)]);
     for n = 1:length(FAs_e1m)
-        bfile                 = bids.File(FAs_e1m{n});
-        bfile.entities.label  = 'brain';
-        bfile.entities.desc   = sprintf('FA%02d', bfile.metadata.FlipAngle);
-        bfile.entities.suffix = 'mask';
-        bfile.entities.part   = '';
-        bfile.entities.echo   = '';
+        bfile                = bids.File(FAs_e1m{n});
+        bfile.entities.label = 'brain';
+        bfile.entities.desc  = sprintf('FA%02d', bfile.metadata.FlipAngle);
+        bfile.entities.part  = '';
+        bfile.entities.echo  = '';
+        bfile.suffix         = 'mask';
         run_command(sprintf("mri_synthstrip -i %s -m %s --no-csf", FAs_e1m{n}, bfile.path));
-        masks(:,:,:,n)        = spm_vol(bfile.path).dat();
+        masks(:,:,:,n)       = spm_vol(bfile.path).dat();
         % delete(bfile.path);    % Delete the individual mask to save space
     end
 
     % Combine the individual masks to create a minimal brain mask
-    bfile.entities.label = 'brain';
-    Ve1m.dt(1)           = spm_type('uint8');
+    bfile.entities.desc = 'minimal';
+    Ve1m.dt(1)          = spm_type('uint8');
     spm_write_vol_gz(Ve1m, all(masks,4), bfile.path);
     bids.util.jsonencode(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename), bfile.metadata);
 
@@ -244,7 +244,7 @@ BIDS_prep = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivative
 for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE')
 
     % Get the flip angles and brainmask for this run
-    FAs  = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'run',run{1}, 'echo',1);
+    FAs  = bids.query(BIDS_prep, 'descriptions', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'run',run{1}, 'echo',1);
     mask = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'label','brain', 'suffix','mask', 'run',run{1});
     if length(FAs) < 2
         error("No flip angle images found in: %s", subject.path);
@@ -254,7 +254,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
     end
 
     % Run the Sepia pipelines for each flip angle
-    for FA = FAs'
+    for FA = FAs
 
         % Get the mag/phase echo images for this flip angle & run
         magfiles   = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1});

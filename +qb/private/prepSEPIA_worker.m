@@ -165,7 +165,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
     Vin  = spm_vol(B1anat{1});
     x    = spm_coreg(Vref, Vin, struct('cost_fun', 'nmi'));
 
-    % Save the resliced B1 imagezs
+    % Save the resliced B1 images
     for B1vol = [B1anat, B1famp]
         Vin    = spm_vol(B1vol{1});
         volume = zeros(Vref.dim);

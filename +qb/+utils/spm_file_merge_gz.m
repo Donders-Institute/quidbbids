@@ -31,9 +31,7 @@ fname            = char(fname);
 switch ext
     case '.gz'
         if isstruct(V)
-            for i = 1:numel(V)
-                V{i} = V(i).fname;
-            end
+            V = arrayfun(@(s) s.fname, V, 'UniformOutput', false);
         end
         for i = 1:numel(V)
             if endsWith(V{i}, '.gz')
@@ -43,9 +41,9 @@ switch ext
             end
         end
         V4 = spm_file_merge(V, fullfile(pth, name), varargin{:});
-        gzip(V4.fname)
-        delete(V4.fname, V{:})
-        V4.fname = [V4.fname '.gz'];
+        gzip(V4(1).fname)
+        delete(V4(1).fname, V{:})
+        V4 = spm_vol(V4(1).fname);
     case '.nii'
         V4 = spm_file_merge(V, fname, varargin{:});
     otherwise

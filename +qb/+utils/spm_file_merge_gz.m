@@ -1,5 +1,6 @@
 function V4 = spm_file_merge_gz(V, fname, varargin)
-% A wrapper around SPM_FILE_MERGE that writes a .nii or a .nii.gz file. 
+% A wrapper around SPM_FILE_MERGE that writes a 4D .nii or a .nii.gz file, and
+% deletes the 3D input files
 %__________________________________________________________________________
 %   SPM_FILE_MERGE
 %
@@ -46,6 +47,11 @@ switch ext
         V4 = spm_vol([V4(1).fname '.gz']);
     case '.nii'
         V4 = spm_file_merge(V, fname, varargin{:});
+        if isstruct(V)
+            delete(V.fname)
+        else
+            delete(V{:})
+        end
     otherwise
         error('Unknown file extension %s in %s', ext, fname)
 end

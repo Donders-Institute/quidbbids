@@ -261,16 +261,6 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         magfiles   = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1});
         phasefiles = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','phase', 'run',run{1});
 
-        % Create 4D mag and phase SEPIA/MCR input data
-        bfile               = bids.File(phasefiles{1});
-        bfile.entities.echo = '';
-        fprintf("Merging echo-1..%i phase images -> %s\n", length(phasefiles), bfile.filename)
-        Vphase              = spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-        bfile               = bids.File(magfiles{1});
-        bfile.entities.echo = '';
-        fprintf("Merging echo-1..%i mag images -> %s\n", length(magfiles), bfile.filename)
-        Vmag                = spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-
         % Create a SEPIA header file
         input.nifti = magfiles{1};                                                                  % A nifti file for extracting B0 direction, voxel size, matrix size (from the first 3 dimensions. Alternatively use Vmag.fname)
         for n = 1:length(magfiles)
@@ -280,6 +270,16 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         fparts              = split(bfile.filename, '.');                                           % Split filename extensions to parse the basename
         output              = fullfile(char(obj.derivdir), 'SEPIA', bfile.bids_path, fparts{1});    % Output directory. N.B: SEPIA will interpret the last part of the path as a file-prefix
         save_sepia_header(input, [], output)
+
+        % Create 4D mag and phase SEPIA/MCR input data
+        bfile               = bids.File(phasefiles{1});
+        bfile.entities.echo = '';
+        fprintf("Merging echo-1..%i phase images -> %s\n", length(phasefiles), bfile.filename)
+        Vphase              = spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+        bfile               = bids.File(magfiles{1});
+        bfile.entities.echo = '';
+        fprintf("Merging echo-1..%i mag images -> %s\n", length(magfiles), bfile.filename)
+        Vmag                = spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
 
         % Run the SEPIA QSM pipeline
         clear input

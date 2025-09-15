@@ -76,7 +76,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         disp("Saving T1like reference " + fullfile(bfile.bids_path, bfile.filename))
         spm_write_vol_gz(Ve1m, T1w, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
         meta{n}.Sources      = {['bids:raw:' bfile.bids_path]};
-        bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), meta{n});
+        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), meta{n});
     end
 
     % Save the M0 volume as well
@@ -84,8 +84,8 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
     bfile.suffix        = 'M0map';
     disp("Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
     spm_write_vol_gz(Ve1m, M0, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-    meta{1}.Sources     = strrep(FAs_e1m, extractBefore(bfile.path, bfile.bids_path), 'bids:raw:');
-    bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), meta{1});
+    meta{1}.Sources     = strrep(FAs_e1m, extractBefore(FAs_e1m{1}, bfile.bids_path), 'bids:raw:');
+    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), meta{1});
 
 end
 
@@ -144,7 +144,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
             disp("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
             spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
             meta{n}.Sources      = {['bids:raw:' bfile.bids_path]};
-            bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), meta{n});
+            bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), meta{n});
         end
 
     end
@@ -177,7 +177,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         bfile.entities.space = 'withinGRE';
         disp("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
         spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-        bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), bfile.metadata);
+        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
     end
 
 end
@@ -222,8 +222,8 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
     % Combine the individual masks to create a minimal brain mask
     bfile.entities.desc = 'minimal';
     Ve1m.dt(1)          = spm_type('uint8');
-    spm_write_vol_gz(Ve1m, all(masks,4), bfile.path);
-    bids.util.jsonencode(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename), bfile.metadata);
+    spm_write_vol_gz(Ve1m, all(masks,4), fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
 
 end
 
@@ -246,7 +246,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
 
     % Get the flip angles and brainmask for this run
     FAs  = bids.query(BIDS_prep, 'descriptions', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'run',run{1}, 'echo',1);
-    mask = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'label','brain', 'suffix','mask', 'run',run{1});
+    mask = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','minimal', 'label','brain', 'suffix','mask', 'run',run{1});
     if length(FAs) < 2
         error("No flip angle images found in: %s", subject.path);
     end

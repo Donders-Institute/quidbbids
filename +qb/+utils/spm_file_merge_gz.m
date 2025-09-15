@@ -18,8 +18,8 @@ function V4 = spm_file_merge_gz(V, fname, varargin)
 %   differences between the input and output images values.
 
 arguments
-    V       {mustBeText, mustBeA(V,'struct')}
-    fname   {mustBeText}
+    V
+    fname {mustBeText}
 end
 arguments (Repeating)
     varargin
@@ -30,9 +30,15 @@ fname            = char(fname);
 [~,~]            = mkdir(pth);
 switch ext
     case '.gz'
-        V4 = spm_file_merge(V, fullfile(pth, name), varargin{:});
+        if isstruct(V)
+            for i = 1:numel(V)
+                V{i} = V(i).fname;
+            end
+        end
+        Vnii = gunzip(V);
+        V4   = spm_file_merge(Vnii, fullfile(pth, name), varargin{:});
         gzip(V4.fname)
-        delete(V4.fname)
+        delete(V4.fname, Vnii{:})
         V4.fname = [V4.fname '.gz'];
     case '.nii'
         V4 = spm_file_merge(V, fname, varargin{:});

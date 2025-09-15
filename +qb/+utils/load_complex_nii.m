@@ -23,4 +23,3 @@ if max(abs(Phase(:))) >= 100*pi
 end
 
 Compleximage = Magnitude .* exp(1i * Phase);
-fname = char(fname);

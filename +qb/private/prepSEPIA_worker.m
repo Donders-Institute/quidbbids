@@ -2,8 +2,8 @@ function prepSEPIA_worker(obj, subjects)
 % Method implementation for performing pre- and SEPIA-processing - Entry point is in qb.QuIDBBIDS.m
 
 arguments
-    obj qb.QuIDBBIDS
-    subjects struct
+    obj         qb.QuIDBBIDS
+    subjects    (1,:) struct        % 1×N struct array allowed
 end
 
 % Process all subjects
@@ -27,8 +27,8 @@ function obj = create_common_T1like_M0(obj, subject)
 % with the input images that have been realigned to the target in the common space
 
 arguments
-    obj qb.QuIDBBIDS
-    subject struct
+    obj     qb.QuIDBBIDS
+    subject (1,:) struct        % 1×N struct array allowed
 end
 
 import qb.utils.spm_write_vol_gz
@@ -95,8 +95,8 @@ function obj = coreg_FAs_B1_2common(obj, subject)
 % coregister the B1 images as well to the M0 (which is also in the common GRE space)
 
 arguments
-    obj qb.QuIDBBIDS
-    subject struct
+    obj     qb.QuIDBBIDS
+    subject (1,:) struct        % 1×N struct array allowedstruct
 end
 
 import qb.utils.spm_write_vol_gz
@@ -188,8 +188,8 @@ function obj = create_brainmask(obj, subject)
 % to produce a minimal output mask (for Sepia)
 
 arguments
-    obj qb.QuIDBBIDS
-    subject struct
+    obj     qb.QuIDBBIDS
+    subject (1,:) struct        % 1×N struct array allowedstruct
 end
 
 import qb.utils.spm_write_vol_gz qb.utils.run_command
@@ -232,8 +232,8 @@ function obj = create_QSM_R2star_maps(obj, subject)
 % Run the Sepia QSM and R2-star pipelines
 
 arguments
-    obj qb.QuIDBBIDS
-    subject struct
+    obj     qb.QuIDBBIDS
+    subject (1,:) struct        % 1×N struct array allowed
 end
 
 import qb.utils.spm_file_merge_gz
@@ -245,7 +245,7 @@ BIDS_prep = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivative
 for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE')
 
     % Get the flip angles and brainmask for this run
-    FAs  = bids.query(BIDS_prep, 'descriptions', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'run',run{1}, 'echo',1);
+    FAs  = bids.query(BIDS_prep, 'descriptions', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'echo',1, 'run',run{1});
     mask = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','minimal', 'label','brain', 'suffix','mask', 'run',run{1});
     if length(FAs) < 2
         error("No flip angle images found in: %s", subject.path);

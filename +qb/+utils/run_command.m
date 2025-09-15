@@ -18,7 +18,7 @@ function [status, output] = run_command(command, silent)
 
 arguments
     command {mustBeText}
-    silent  {logical} = false
+    silent  (1,1) logical = false
 end
 
 if ~silent

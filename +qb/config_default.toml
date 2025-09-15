@@ -1,5 +1,6 @@
 # --------------------- Subject directory master ---------------------
 version             = "0.0.2"           # QuIDBBIDS version that should match the version in resources/mpackage.json
+useHPC              = false             # Use HPC cluster (true/false)
 
 [bids.select]
 modality            = ["anat", "fmap"]

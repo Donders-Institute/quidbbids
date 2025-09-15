@@ -55,6 +55,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
     TR   = meta{1}.RepetitionTime;
 
     % Compute T1 and M0 maps
+    disp("Running despot1 to compute T1 and M0 maps from: " + FAs_e1m{1});
     e1mag = zeros([Ve1m.dim length(flips)]);
     for n = 1:length(flips)
         e1mag(:,:,:,n) = spm_vol(FAs_e1m{n}).dat();
@@ -72,8 +73,8 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         bfile.entities.part  = '';
         bfile.entities.desc  = sprintf('FA%02dsynthetic', flips(n));
         bfile.suffix         = 'T1w';
-        disp("Saving T1like reference " + bfile.bids_path)
-        qb.spm_write_vol_gz(Ve1m, T1w, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+        disp("Saving T1like reference " + fullfile(bfile.bids_path, bfile.filename))
+        spm_write_vol_gz(Ve1m, T1w, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
         meta{n}.Sources      = {['bids:raw:' bfile.bids_path]};
         bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), meta{n});
     end
@@ -81,7 +82,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
     % Save the M0 volume as well
     bfile.entities.desc = 'despot1';
     bfile.suffix        = 'M0map';
-    disp("Saving M0 map " + bfile.bids_path)
+    disp("Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
     spm_write_vol_gz(Ve1m, M0, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
     meta{1}.Sources     = strrep(FAs_e1m, extractBefore(bfile.path, bfile.bids_path), 'bids:raw:');
     bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), meta{1});
@@ -127,7 +128,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
         % Save all resliced echo images for this flip angle
-        for echo = bids.query(obj.BIDS, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'run',run{1})
+        for echo = bids.query(obj.BIDS, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'run',run{1})'
             bfile = bids.File(echo{1});
             if bfile.metadata.FlipAngle ~= flips(n)
                 continue
@@ -140,6 +141,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
             end
             bfile.entities.space = 'withinGRE';
             bfile.entities.desc  = sprintf('FA%02d', flips(n));
+            disp("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
             spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
             meta{n}.Sources      = {['bids:raw:' bfile.bids_path]};
             bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), meta{n});
@@ -173,6 +175,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         end
         bfile                = bids.File(B1vol{1});
         bfile.entities.space = 'withinGRE';
+        disp("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
         spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
         bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), bfile.metadata);
     end
@@ -241,7 +244,7 @@ BIDS_prep = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivative
 for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE')
 
     % Get the flip angles and brainmask for this run
-    FAs  = bids.query(BIDS_prep, 'desc', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'run',run{1}, 'echo',1);
+    FAs  = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'run',run{1}, 'echo',1);
     mask = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'label','brain', 'suffix','mask', 'run',run{1});
     if length(FAs) < 2
         error("No flip angle images found in: %s", subject.path);
@@ -251,7 +254,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
     end
 
     % Run the Sepia pipelines for each flip angle
-    for FA = FAs
+    for FA = FAs'
 
         % Get the mag/phase echo images for this flip angle & run
         magfiles   = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1});

@@ -264,11 +264,11 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         % Create 4D mag and phase SEPIA/MCR input data
         bfile               = bids.File(phasefiles{1});
         bfile.entities.echo = '';
-        disp("Merging 4D mag/phase input data -> " + bfile.filename)
+        fprintf("Merging echo-1..%i phase images -> %s\n", length(phasefiles), bfile.filename)
         Vphase              = spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
         bfile               = bids.File(magfiles{1});
         bfile.entities.echo = '';
-        disp("Merging 4D mag/phase input data -> " + bfile.filename)
+        fprintf("Merging echo-1..%i mag images -> %s\n", length(magfiles), bfile.filename)
         Vmag                = spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
         delete(magfiles{:}, phasefiles{:})                                                      % Delete the redundant 3D source files to save space
 
@@ -284,8 +284,8 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
 
         % Run the SEPIA QSM pipeline
         clear input
-        input(1).name = Vphase.fname;
-        input(2).name = Vmag.fname;
+        input(1).name = Vphase(1).fname;
+        input(2).name = Vmag(1).fname;
         input(3).name = '';
         input(4).name = [output '_header.mat'];
         sepiaIO(input, output, mask{1}, obj.config.prepSEPIA.QSMParam)

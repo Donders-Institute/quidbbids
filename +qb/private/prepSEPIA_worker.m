@@ -266,6 +266,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         for n = 1:length(magfiles)
             input.TEFileList{n} = spm_file(spm_file(magfiles{n}, 'ext', ''), 'ext','.json');        % Cell array of json sidecar files for extracting TE
         end
+        bfile               = bids.File(magfiles{1});
         bfile.entities.part = '';
         fparts              = split(bfile.filename, '.');                                           % Split filename extensions to parse the basename
         output              = fullfile(char(obj.derivdir), 'SEPIA', bfile.bids_path, fparts{1});    % Output directory. N.B: SEPIA will interpret the last part of the path as a file-prefix

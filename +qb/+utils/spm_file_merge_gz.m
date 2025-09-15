@@ -18,7 +18,7 @@ function V4 = spm_file_merge_gz(V, fname, varargin)
 %   differences between the input and output images values.
 
 arguments
-    V (1,:) struct          % 1×N struct array allowed
+    V       {mustBeText, mustBeA(V,'struct')}
     fname   {mustBeText}
 end
 arguments (Repeating)

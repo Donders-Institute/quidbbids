@@ -213,7 +213,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         bfile.entities.part  = '';
         bfile.entities.echo  = '';
         bfile.suffix         = 'mask';
-        bfile.path           = fullfile(obj.workdir, bfile.bids_path, bfile.filename);
+        bfile.path           = fullfile(char(obj.workdir), bfile.bids_path, bfile.filename);
         run_command(sprintf("mri_synthstrip -i %s -m %s --no-csf", FAs_e1m{n}, bfile.path));
         masks(:,:,:,n)       = spm_vol(bfile.path).dat();
         % delete(bfile.path);    % Delete the individual mask to save space

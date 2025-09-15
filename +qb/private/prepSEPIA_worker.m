@@ -213,6 +213,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         bfile.entities.part  = '';
         bfile.entities.echo  = '';
         bfile.suffix         = 'mask';
+        bfile.path           = fullfile(obj.workdir, bfile.bids_path, bfile.filename);
         run_command(sprintf("mri_synthstrip -i %s -m %s --no-csf", FAs_e1m{n}, bfile.path));
         masks(:,:,:,n)       = spm_vol(bfile.path).dat();
         % delete(bfile.path);    % Delete the individual mask to save space
@@ -263,10 +264,9 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         % Create 4D mag and phase SEPIA/MCR input data
         bfile               = bids.File(phasefiles{1});
         bfile.entities.echo = '';
-        Vphase              = spm_file_merge_gz(phasefiles, bfile.path);
+        Vphase              = spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
         bfile               = bids.File(magfiles{1});
-        bfile.entities.echo = '';
-        Vmag                = spm_file_merge_gz(magfiles, bfile.path);
+        Vmag                = spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
         delete(magfiles{:}, phasefiles{:})                                                      % Delete the redundant 3D source files to save space
 
         % Create a SEPIA header file

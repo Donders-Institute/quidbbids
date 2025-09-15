@@ -31,10 +31,12 @@ arguments
     subject struct
 end
 
+import qb.utils.spm_write_vol_gz
+
 GRESignal = @(FlipAngle, TR, T1) sind(FlipAngle) .* (1-exp(-TR./T1)) ./ (1-(exp(-TR./T1)) .* cosd(FlipAngle));
 
 % TODO: Index the workdir if force=false
-% BIDS_prep = bids.layout(obj.workdir, 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+% BIDS_prep = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
 % Process all runs independently
 for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session, 'modality','anat')    % Note that the suffix (e.g. 'MEGRE') is already selected in the BIDS layout
@@ -70,19 +72,19 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         bfile.entities.part  = '';
         bfile.entities.desc  = sprintf('FA%02dsynthetic', flips(n));
         bfile.suffix         = 'T1w';
-        fprintf("Saving T1like reference " + bfile.bids_path);
-        spm_write_vol_gz(Ve1m, T1w, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+        disp("Saving T1like reference " + bfile.bids_path)
+        qb.spm_write_vol_gz(Ve1m, T1w, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
         meta{n}.Sources      = {['bids:raw:' bfile.bids_path]};
-        bids.util.jsonencode(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename), meta{n});
+        bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), meta{n});
     end
 
     % Save the M0 volume as well
     bfile.entities.desc = 'despot1';
     bfile.suffix        = 'M0map';
-    fprintf("Saving M0 map " + bfile.bids_path);
+    disp("Saving M0 map " + bfile.bids_path)
     spm_write_vol_gz(Ve1m, M0, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
     meta{1}.Sources     = strrep(FAs_e1m, extractBefore(bfile.path, bfile.bids_path), 'bids:raw:');
-    bids.util.jsonencode(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename), meta{1});
+    bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), meta{1});
 
 end
 
@@ -96,8 +98,10 @@ arguments
     subject struct
 end
 
+import qb.utils.spm_write_vol_gz
+
 % (Re)index the workdir layout
-BIDS_prep = bids.layout(obj.workdir, 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+BIDS_prep = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
 % Process all runs independently
 for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session, 'modality','anat')
@@ -138,7 +142,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
             bfile.entities.desc  = sprintf('FA%02d', flips(n));
             spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
             meta{n}.Sources      = {['bids:raw:' bfile.bids_path]};
-            bids.util.jsonencode(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename), meta{n});
+            bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), meta{n});
         end
 
     end
@@ -170,7 +174,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         bfile                = bids.File(B1vol{1});
         bfile.entities.space = 'withinGRE';
         spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-        bids.util.jsonencode(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename), bfile.metadata);
+        bids.util.jsonencode(char(fullfile(obj.workdir, bfile.bids_path, bfile.json_filename)), bfile.metadata);
     end
 
 end
@@ -185,8 +189,10 @@ arguments
     subject struct
 end
 
+import qb.utils.spm_write_vol_gz qb.utils.run_command
+
 % (Re)index the workdir layout
-BIDS_prep = bids.layout(obj.workdir, 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+BIDS_prep = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
 % Process all runs independently
 for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE')
@@ -226,8 +232,10 @@ arguments
     subject struct
 end
 
+import qb.utils.spm_file_merge_gz
+
 % (Re)index the workdir layout
-BIDS_prep = bids.layout(obj.workdir, 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+BIDS_prep = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
 % Process all runs independently
 for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE')

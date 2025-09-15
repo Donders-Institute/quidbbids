@@ -16,8 +16,9 @@ function [status, output] = run_command(command, silent)
 %       STATUS  - Exit code returned by the SYSTEM command.
 %       OUTPUT  - Command-line output returned by the SYSTEM command.
 
-if nargin < 2
-    silent = false;
+arguments
+    command {mustBeText}
+    silent  {logical} = false
 end
 
 if ~silent

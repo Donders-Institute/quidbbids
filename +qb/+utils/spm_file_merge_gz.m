@@ -17,7 +17,15 @@ function V4 = spm_file_merge_gz(V, fname, varargin)
 %   the range of admissible values. This may lead to quantization error
 %   differences between the input and output images values.
 
+arguments
+    V       {struct}
+    fname   {mustBeText}
+end
+arguments (Repeating)
+    varargin
+end
 
+fname            = char(fname);
 [pth, name, ext] = fileparts(fname);
 [~,~]            = mkdir(pth);
 switch ext

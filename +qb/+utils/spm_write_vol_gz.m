@@ -23,7 +23,7 @@ if isnumeric(V) && isvector(V)
 end
 
 if nargin > 2 && ~isempty(fname)
-    V.fname = fname;
+    V.fname = char(fname);
 end
 
 if isfield(V, 'pinfo')

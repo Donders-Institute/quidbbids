@@ -8,8 +8,8 @@ arguments
     filephase     {mustBeText}
 end
 
-Magnitude = spm_vol(filemagnitude).dat();
-Phase     = spm_vol(filephase).dat();
+Magnitude = spm_vol(char(filemagnitude)).dat();
+Phase     = spm_vol(char(filephase)).dat();
 
 phmax = max(Phase(:));
 phmin = min(Phase(:));
@@ -23,3 +23,4 @@ if max(abs(Phase(:))) >= 100*pi
 end
 
 Compleximage = Magnitude .* exp(1i * Phase);
+fname = char(fname);

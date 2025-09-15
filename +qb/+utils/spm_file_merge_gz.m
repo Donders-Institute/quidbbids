@@ -35,10 +35,16 @@ switch ext
                 V{i} = V(i).fname;
             end
         end
-        Vnii = gunzip(V);
-        V4   = spm_file_merge(Vnii, fullfile(pth, name), varargin{:});
+        for i = 1:numel(V)
+            if endsWith(V{i}, '.gz')
+                Vgz  = V{i};
+                V(i) = gunzip(V(i));
+                delete(Vgz);
+            end
+        end
+        V4 = spm_file_merge(V, fullfile(pth, name), varargin{:});
         gzip(V4.fname)
-        delete(V4.fname, Vnii{:})
+        delete(V4.fname, V{:})
         V4.fname = [V4.fname '.gz'];
     case '.nii'
         V4 = spm_file_merge(V, fname, varargin{:});

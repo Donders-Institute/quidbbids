@@ -66,26 +66,26 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
 
     % Save T1w-like images in the prepdir work directory
     for n = 1:length(flips)
-        T1w                  = M0 .* GRESignal(flips(n), TR, T1);
-        T1w(~isfinite(T1w))  = 0;
-        bfile                = bids.File(FAs_e1m{n});
-        bfile.entities.space = 'withinGRE';
-        bfile.entities.part  = '';
-        bfile.entities.desc  = sprintf('FA%02dsynthetic', flips(n));
-        bfile.suffix         = 'T1w';
+        T1w                    = M0 .* GRESignal(flips(n), TR, T1);
+        T1w(~isfinite(T1w))    = 0;
+        bfile                  = bids.File(FAs_e1m{n});
+        bfile.entities.space   = 'withinGRE';
+        bfile.entities.part    = '';
+        bfile.entities.desc    = sprintf('FA%02dsynthetic', flips(n));
+        bfile.suffix           = 'T1w';
+        bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};
         disp("Saving T1like reference " + fullfile(bfile.bids_path, bfile.filename))
         spm_write_vol_gz(Ve1m, T1w, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-        meta{n}.Sources      = {['bids:raw:' bfile.bids_path]};
-        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), meta{n});
+        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
     end
 
     % Save the M0 volume as well
-    bfile.entities.desc = 'despot1';
-    bfile.suffix        = 'M0map';
+    bfile.entities.desc    = 'despot1';
+    bfile.suffix           = 'M0map';
+    bfile.metadata.Sources = strrep(FAs_e1m, extractBefore(FAs_e1m{1}, bfile.bids_path), 'bids:raw:');
     disp("Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
     spm_write_vol_gz(Ve1m, M0, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-    meta{1}.Sources     = strrep(FAs_e1m, extractBefore(FAs_e1m{1}, bfile.bids_path), 'bids:raw:');
-    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), meta{1});
+    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
 
 end
 
@@ -139,12 +139,12 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
             for z = 1:Vref.dim(3)
                 volume(:,:,z) = spm_slice_vol(Vin, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
             end
-            bfile.entities.space = 'withinGRE';
-            bfile.entities.desc  = sprintf('FA%02d', flips(n));
+            bfile.entities.space   = 'withinGRE';
+            bfile.entities.desc    = sprintf('FA%02d', flips(n));
+            bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};
             disp("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
             spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-            meta{n}.Sources      = {['bids:raw:' bfile.bids_path]};
-            bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), meta{n});
+            bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
         end
 
     end
@@ -261,11 +261,14 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         magfiles   = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1});
         phasefiles = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','phase', 'run',run{1});
 
-        % Reorder the data because SEPIA requires the TE to be in increasing order
+        % Reorder the data because SEPIA (possibly?) expects the TE to be in increasing order
         meta       = bids.query(BIDS_prep, 'metadata', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1});
-        [~, idx]   = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
+        [TEs, idx] = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
         magfiles   = magfiles(idx);
         phasefiles = phasefiles(idx);
+        if length(TEs) ~= length(unique(TEs))           % Check if the TEs are unique
+            error("Non-unique TEs (%s) found in: %s", sprintf('%s ', TEs), subject.path);
+        end
 
         % Create a SEPIA header file
         input.nifti = magfiles{1};                                                                  % A nifti file for extracting B0 direction, voxel size, matrix size (from the first 3 dimensions. Alternatively use Vmag.fname)

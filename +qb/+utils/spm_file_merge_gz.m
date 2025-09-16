@@ -1,6 +1,7 @@
 function V4 = spm_file_merge_gz(V, fname, varargin)
-% A wrapper around SPM_FILE_MERGE that writes a 4D .nii or a .nii.gz file, and
-% deletes the 3D input files
+% A wrapper around SPM_FILE_MERGE that writes a 4D .nii or a .nii.gz file as
+% well as a json based on the first 3D file (if available). All original 3D
+% input nii/json files are deleted.
 %__________________________________________________________________________
 %   SPM_FILE_MERGE
 %
@@ -38,20 +39,37 @@ switch ext
             if endsWith(V{i}, '.gz')
                 Vgz  = V{i};
                 V(i) = gunzip(V(i));
-                delete(Vgz);
+                delete(Vgz)
             end
         end
         V4 = spm_file_merge(V, fullfile(pth, name), varargin{:});
         gzip(V4(1).fname)
-        delete(V4(1).fname, V{:})
+        delete(V4(1).fname)
         V4 = spm_vol([V4(1).fname '.gz']);
     case '.nii'
         V4 = spm_file_merge(V, fname, varargin{:});
-        if isstruct(V)
-            delete(V.fname)
-        else
-            delete(V{:})
-        end
     otherwise
         error('Unknown file extension %s in %s', ext, fname)
+end
+
+% Add a json sidecar output file if the first input file has one
+if isstruct(V)
+    fname1 = V(1).fname;
+else
+    fname1 = V{1};
+end
+json1 = spm_file(spm_file(fname1, 'ext',''), 'ext','.json');
+if isfile(json1)
+    copyfile(json1, spm_file(spm_file(fname, 'ext',''), 'ext','.json'));
+end
+
+% Delete files in V as well as their json sidecar files (if available)
+for k = 1:numel(V)
+    if isstruct(V)
+        inputfile = V(k).fname;
+    else
+        inputfile = V{k};
+    end
+    delete(inputfile)
+    spm_unlink(spm_file(spm_file(inputfile, 'ext',''), 'ext','.json'))
 end

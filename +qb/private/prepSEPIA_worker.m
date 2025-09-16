@@ -214,7 +214,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         bfile.entities.echo  = '';
         bfile.suffix         = 'mask';
         bfile.path           = fullfile(char(obj.workdir), bfile.bids_path, bfile.filename);
-        run_command(sprintf("mri_synthstrip -i %s -m %s --no-csf", FAs_e1m{n}, bfile.path));
+        run_command(sprintf("mri_synthstrip -i %s -m %s", FAs_e1m{n}, bfile.path));
         masks(:,:,:,n)       = spm_vol(bfile.path).dat();
         % delete(bfile.path);    % Delete the individual mask to save space
     end
@@ -268,6 +268,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         end
         bfile               = bids.File(magfiles{1});
         bfile.entities.part = '';
+        bfile.entities.echo = '';
         fparts              = split(bfile.filename, '.');                                           % Split filename extensions to parse the basename
         output              = fullfile(char(obj.derivdir), 'SEPIA', bfile.bids_path, fparts{1});    % Output directory. N.B: SEPIA will interpret the last part of the path as a file-prefix
         save_sepia_header(input, [], output)

@@ -185,7 +185,7 @@ end
 
 function obj = create_brainmask(obj, subject)
 % Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
-% to produce a minimal output mask (for Sepia)
+% to produce a minimal output mask (for SEPIA)
 
 arguments
     obj     qb.QuIDBBIDS
@@ -229,7 +229,7 @@ end
 
 
 function obj = create_QSM_R2star_maps(obj, subject)
-% Run the Sepia QSM and R2-star pipelines
+% Run the SEPIA QSM and R2-star pipelines
 
 arguments
     obj     qb.QuIDBBIDS
@@ -254,14 +254,14 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         error("No brain mask found in: %s", subject.path);
     end
 
-    % Run the Sepia pipelines for each flip angle
+    % Run the SEPIA pipelines for each flip angle
     for FA = FAs
 
         % Get the mag/phase echo images for this flip angle & run
         magfiles   = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1});
         phasefiles = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','phase', 'run',run{1});
 
-        % Reorder the data because Sepia requires the TE to be in increasing order
+        % Reorder the data because SEPIA requires the TE to be in increasing order
         meta       = bids.query(BIDS_prep, 'metadata', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1});
         [~, idx]   = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
         magfiles   = magfiles(idx);
@@ -276,7 +276,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         bfile.entities.part = '';
         bfile.entities.echo = '';
         fparts              = split(bfile.filename, '.');                                           % Split filename extensions to parse the basename
-        output              = fullfile(char(obj.derivdir), 'SEPIA', bfile.bids_path, fparts{1});    % Output directory. N.B: SEPIA will interpret the last part of the path as a file-prefix
+        output              = fullfile(char(fileparts(obj.derivdir)), 'SEPIA', bfile.bids_path, fparts{1});    % Output directory. N.B: SEPIA will interpret the last part of the path as a file-prefix
         save_sepia_header(input, [], output)
 
         % Create 4D mag and phase SEPIA/MCR input data

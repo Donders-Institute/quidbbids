@@ -1,10 +1,10 @@
 function V = spm_write_vol_gz(V, Y, fname)
 % FUNCTION V = SPM_WRITE_VOL_GZ(V, Y, fname)
 %
-% A wrapper around SPM_WRITE_VOL that removes the pinfo field, writes a
-% .nii or a .nii.gz file. If fname is provided, it will override the file
-% name in V.fname. The V.mat field is required or V must be an array
-% with voxelsizes in the x-, y- and z- dimension.
+% A wrapper around SPM_WRITE_VOL that removes the pinfo field for float datatypes,
+% writes a .nii or a .nii.gz file. If fname is provided, it will override the file
+% name in V.fname. The V.mat field is required or V must be an array with
+% voxelsizes in the x-, y- and z- dimension.
 %__________________________________________________________________________
 %   SPM_WRITE_VOL
 %
@@ -18,22 +18,30 @@ function V = spm_write_vol_gz(V, Y, fname)
 %   max and min values from the data and use these to automatically determine
 %   scalefactors.  If 'pinfo' exists, then the scalefactor in this is used.
 
+% Create a minimal header struction if only voxel sizes are provided
 if isnumeric(V) && isvector(V)
     V = struct('mat', [diag(V(:)); 1]);
 end
 
-if nargin > 2 && ~isempty(fname)
-    V.fname = char(fname);
-end
-
-if isfield(V, 'pinfo')
-    V = rmfield(V, 'pinfo');
-end
-
+% Ensure dim field is correct (e.g. if only voxel sizes are provided)
 if ~isfield(V, 'dim')
     V.dim = [size(Y, 1) size(Y, 2) size(Y, 3)];
 end
 
+% Ensure pinfo field is correct for data type
+if isfield(V, 'pinfo') && contains(spm_type(V.dt), 'float')
+    V = rmfield(V, 'pinfo');
+end
+if ~isfield(V, 'pinfo') && contains(spm_type(V.dt), 'int')
+    V.pinfo = [1; 0];
+end
+
+% Override filename if provided
+if nargin > 2 && ~isempty(fname)
+    V.fname = char(fname);
+end
+
+% Write the data to the file, either as .nii or .nii.gz
 [fpath, ~, ext] = fileparts(V.fname);
 [~,~]           = mkdir(fpath);
 switch ext

@@ -222,6 +222,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
     % Combine the individual masks to create a minimal brain mask
     bfile.entities.desc = 'minimal';
     Ve1m.dt(1)          = spm_type('uint8');
+    Ve1m.pinfo          = [1; 0];
     spm_write_vol_gz(Ve1m, all(masks,4), fullfile(obj.workdir, bfile.bids_path, bfile.filename));
     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
 
@@ -267,7 +268,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         magfiles   = magfiles(idx);
         phasefiles = phasefiles(idx);
         if length(TEs) ~= length(unique(TEs))           % Check if the TEs are unique
-            error("Non-unique TEs (%s) found in: %s", sprintf('%s ', TEs), subject.path);
+            error("Non-unique TEs (%s) found in: %s", strtrim(sprintf('%g ', TEs)), subject.path);
         end
 
         % Create a SEPIA header file

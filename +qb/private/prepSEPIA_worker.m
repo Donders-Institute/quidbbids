@@ -273,6 +273,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         end
 
         % Create a SEPIA header file
+        clear input
         input.nifti = magfiles{1};                                                                  % A nifti file for extracting B0 direction, voxel size, matrix size (from the first 3 dimensions. Alternatively use Vmag.fname)
         for n = 1:length(magfiles)
             input.TEFileList{n} = spm_file(spm_file(magfiles{n}, 'ext', ''), 'ext','.json');        % Cell array of json sidecar files for extracting TE
@@ -280,6 +281,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         bfile               = bids.File(magfiles{1});
         bfile.entities.part = '';
         bfile.entities.echo = '';
+        bfile.suffix        = '';
         fparts              = split(bfile.filename, '.');                                           % Split filename extensions to parse the basename
         output              = fullfile(char(fileparts(obj.derivdir)), 'SEPIA', bfile.bids_path, fparts{1});    % Output directory. N.B: SEPIA will interpret the last part of the path as a file-prefix
         save_sepia_header(input, [], output)

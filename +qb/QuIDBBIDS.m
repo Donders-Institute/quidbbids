@@ -240,12 +240,7 @@ classdef QuIDBBIDS
             end
         end
 
-    end
-
-
-    methods(Static)
-
-        function config = getconfig(configfile, config)
+        function config = getconfig(obj, configfile, config)
             % Read and optionally write QuIDBBIDS configuration file.
             %
             % CONFIG = GETCONFIG(CONFIGFILE) reads the configuration from the specified CONFIGFILE.
@@ -270,6 +265,7 @@ classdef QuIDBBIDS
             %     obj.getconfig("myconfig.toml", config);
             
             arguments
+                obj
                 configfile {mustBeTextScalar}
                 config (1,1) struct = struct()  % Optional configuration struct
             end
@@ -284,7 +280,7 @@ classdef QuIDBBIDS
             end
 
             % Write or read the study configuration data (create if needed)
-            if nargin > 1
+            if nargin > 2
                 toml.write(configfile, config);
             else
                 if ~isfile(configfile)
@@ -293,7 +289,7 @@ classdef QuIDBBIDS
                     copyfile(config_default, configfile)
                 end
                 config = toml.map_to_struct(toml.read(configfile));
-                config = castInt64ToDouble(config);
+                config = obj.castInt64ToDouble(config);
 
                 if config.version ~= qb.version()
                     warning("The config file version (" + config.version + ") does not match the current QuIDBBIDS version (" + qb.version() + "). Please update your config file if needed.")
@@ -305,7 +301,29 @@ classdef QuIDBBIDS
     end
 
 
-    methods(Static, Access = private)
+    methods(Access = private)
+
+        function config = castInt64ToDouble(obj, config)
+            % Recursively casts all int64 values in CONFIG into doubles.
+            %
+            % CONFIG = CASTINT64TODOUBLE(CONFIG) traverses CONFIG and converts all int64 scalars and
+            % arrays into doubles. Useful for reading TOML files where integers are parsed as int64.
+            
+            if isstruct(config)
+                f = fieldnames(config);
+                for k = 1:numel(f)
+                    config.(f{k}) = obj.castInt64ToDouble(config.(f{k}));
+                end
+            elseif iscell(config)
+                config = cellfun(@obj.castInt64ToDouble, config, 'UniformOutput', false);
+            elseif isa(config, 'int64')
+                config = double(config);
+            end
+        end
+        
+    end
+
+    methods(Access = private, Static)
 
         function addtoolbox(toolpath, recursive)
             % Add an external toolbox to the MATLAB path.
@@ -345,25 +363,6 @@ classdef QuIDBBIDS
             end
         end
         
-        function config = castInt64ToDouble(config)
-            % CASTINT64TODOUBLE Recursively cast int64 values to double.
-            %
-            %   CONFIG = CASTINT64TODOUBLE(CONFIG) traverses CONFIG and converts
-            %   all int64 scalars and arrays into MATLAB double precision values.
-            %   Useful for reading TOML files where integers are parsed as int64.
-            
-            if isstruct(config)
-                f = fieldnames(config);
-                for k = 1:numel(f)
-                    config.(f{k}) = castInt64ToDouble(config.(f{k}));
-                end
-            elseif iscell(config)
-                config = cellfun(@castInt64ToDouble, config, 'UniformOutput', false);
-            elseif isa(config, 'int64')
-                config = double(config);
-            end
-        end
-
     end
 
 end

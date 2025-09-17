@@ -22,7 +22,7 @@ arguments
 end
 
 if ~silent
-    fprintf('$ %s\n', command);
+    fprintf('$ %s\n', command)
 end
 
 [status, output] = system(command);
@@ -31,5 +31,5 @@ end
 if status ~= 0
     error('Command failed with status %d\nOutput:\n%s', status, output);
 elseif ~silent && ~isempty(output)
-    fprintf('%s\n', output);
+    fprintf('%s\n', output)
 end

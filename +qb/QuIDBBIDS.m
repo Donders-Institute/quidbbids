@@ -293,6 +293,8 @@ classdef QuIDBBIDS
                     copyfile(config_default, configfile)
                 end
                 config = toml.map_to_struct(toml.read(configfile));
+                config = castInt64ToDouble(config);
+
                 if config.version ~= qb.version()
                     warning("The config file version (" + config.version + ") does not match the current QuIDBBIDS version (" + qb.version() + "). Please update your config file if needed.")
                 end
@@ -340,6 +342,25 @@ classdef QuIDBBIDS
                 addpath(toolpath)
             else
                 error("Cannot find '" + toolname + "' on the MATLAB-path, please make sure it is installed")
+            end
+        end
+        
+        function config = castInt64ToDouble(config)
+            % CASTINT64TODOUBLE Recursively cast int64 values to double.
+            %
+            %   CONFIG = CASTINT64TODOUBLE(CONFIG) traverses CONFIG and converts
+            %   all int64 scalars and arrays into MATLAB double precision values.
+            %   Useful for reading TOML files where integers are parsed as int64.
+            
+            if isstruct(config)
+                f = fieldnames(config);
+                for k = 1:numel(f)
+                    config.(f{k}) = castInt64ToDouble(config.(f{k}));
+                end
+            elseif iscell(config)
+                config = cellfun(@castInt64ToDouble, config, 'UniformOutput', false);
+            elseif isa(config, 'int64')
+                config = double(config);
             end
         end
 

@@ -12,7 +12,7 @@ for subject = subjects
     if isempty(subject.anat) || isempty(subject.fmap)
         continue
     end
-    fprintf("\n==> Processing: %s\n", subject.path);
+    fprintf("\n==> Processing: %s\n", subject.path)
     obj = create_common_T1like_M0(obj, subject);    % Processing step 1
     obj = coreg_FAs_B1_2common(obj, subject);       % Processing step 2
     obj = create_brainmask(obj, subject);           % Processing step 3
@@ -76,7 +76,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};
         disp("Saving T1like reference " + fullfile(bfile.bids_path, bfile.filename))
         spm_write_vol_gz(Ve1m, T1w, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
+        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
     end
 
     % Save the M0 volume as well
@@ -85,7 +85,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
     bfile.metadata.Sources = strrep(FAs_e1m, extractBefore(FAs_e1m{1}, bfile.bids_path), 'bids:raw:');
     disp("Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
     spm_write_vol_gz(Ve1m, M0, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
+    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
 
 end
 
@@ -123,6 +123,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         end
 
         % Coregister the FAs_e1m image to the synthetic target image using Normalized Cross-Correlation (NCC)
+        fprintf("\n--> Coregistering echo images for FA: %d\n", flips(n))
         Vref = spm_vol(FAref{1});
         Vin  = spm_vol(FAs_e1m{n});
         x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
@@ -142,9 +143,8 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
             bfile.entities.space   = 'withinGRE';
             bfile.entities.desc    = sprintf('FA%02d', flips(n));
             bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};
-            disp("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
             spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-            bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
+            bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
         end
 
     end
@@ -177,7 +177,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
         bfile.entities.space = 'withinGRE';
         disp("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
         spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
+        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
     end
 
 end
@@ -214,9 +214,10 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         bfile.entities.echo  = '';
         bfile.suffix         = 'mask';
         bfile.path           = fullfile(char(obj.workdir), bfile.bids_path, bfile.filename);
+        fprintf("\n--> Creating brain mask for FA: %d -> %s\n", bfile.metadata.FlipAngle, bfile.filename)
         run_command(sprintf("mri_synthstrip -i %s -m %s", FAs_e1m{n}, bfile.path));
         masks(:,:,:,n)       = spm_vol(bfile.path).dat();
-        % delete(bfile.path);    % Delete the individual mask to save space
+        delete(bfile.path)      % Delete the individual mask files to save space
     end
 
     % Combine the individual masks to create a minimal brain mask
@@ -224,7 +225,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
     Ve1m.dt(1)          = spm_type('uint8');
     Ve1m.pinfo          = [1; 0];
     spm_write_vol_gz(Ve1m, all(masks,4), fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata);
+    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
 
 end
 
@@ -259,11 +260,11 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
     for FA = FAs
 
         % Get the mag/phase echo images for this flip angle & run
-        magfiles   = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1});
-        phasefiles = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','phase', 'run',run{1});
+        magfiles   = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'echo',1:999, 'run',run{1});
+        phasefiles = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','phase', 'echo',1:999, 'run',run{1});
 
         % Reorder the data because SEPIA (possibly?) expects the TE to be in increasing order
-        meta       = bids.query(BIDS_prep, 'metadata', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'run',run{1});
+        meta       = bids.query(BIDS_prep, 'metadata', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'echo',1:999, 'run',run{1});
         [TEs, idx] = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
         magfiles   = magfiles(idx);
         phasefiles = phasefiles(idx);
@@ -299,9 +300,11 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         input(2).name = Vmag(1).fname;
         input(3).name = '';
         input(4).name = [output '_header.mat'];
+        fprintf("\n--> Running SEPIA QSM pipeline for %s with:\n%s\n", FA{1}, sprintf("%s\n", input.name, mask{1}))
         sepiaIO(input, output, mask{1}, obj.config.prepSEPIA.QSMParam)
 
         % Run the SEPIA R2-star pipeline
+        fprintf("\n--> Running SEPIA R2-star pipeline for %s with:\n%s\n", FA{1}, sprintf("%s\n", input.name, mask{1}))
         sepiaIO(input, output, mask{1}, obj.config.prepSEPIA.R2starParam)
 
     end

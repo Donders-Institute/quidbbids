@@ -43,7 +43,7 @@ isFitFreqIW         = true
 isFitR2sEW          = true
 
 # QSM pipeline parameters
-[prepSEPIA.QSMParam]
+[SEPIA.QSMParam]
 general.isBET               = 0
 general.isRefineBrainMask   = 0
 general.isInvert            = 0
@@ -69,7 +69,7 @@ qsm.lambda                  = 0.05
 qsm.tolerance               = 0.03
 
 # R2star pipeline parameters
-[prepSEPIA.R2starParam]
+[SEPIA.R2starParam]
 general.isBET               = 0
 general.isInvert            = 0
 general.isRefineBrainMask   = 0

@@ -1,27 +1,40 @@
-function V4 = spm_file_merge_gz(V, fname, varargin)
-% A wrapper around SPM_FILE_MERGE that writes a 4D .nii or a .nii.gz file as
-% well as a json based on the first 3D file (if available). All original 3D
-% input nii/json files are deleted.
-%__________________________________________________________________________
-%   SPM_FILE_MERGE
+function V4 = spm_file_merge_gz(V, fname, metafields, varargin)
+% SPM_FILE_MERGE_GZ  Concatenate 3D volumes into a single 4D volume.
 %
-%   Concatenate 3D volumes into a single 4D volume
-%   FORMAT V4 = spm_file_merge(V,fname,dt,RT)
-%   V      - images to concatenate (char array or spm_vol struct)
-%   fname  - filename for output 4D volume [default: '4D.nii']
-%            Unless explicit, output folder is the one containing first image
-%   dt     - datatype (see spm_type) [default: 0]
-%            0 means same datatype than first input volume
-%   RT     - Interscan interval {seconds} [default: NaN]
-%   V4     - spm_vol struct of the 4D volume
-%  
-%   For integer datatypes, the file scale factor is chosen as to maximise
-%   the range of admissible values. This may lead to quantization error
-%   differences between the input and output images values.
+% V4 = SPM_FILE_MERGE_GZ(V, fname, metafields, dt, RT) is a wrapper around
+% SPM_FILE_MERGE that writes out a 4D NIfTI volume (.nii or .nii.gz) and
+% generates a JSON sidecar based on the first input JSON file (if available).
+% All original 3D input NIfTI and JSON files are deleted after merging.
+%
+% INPUTS:
+%   V          - Images to concatenate. Can be a char array, cellstr of 
+%                filenames, or an spm_vol struct array.
+%   fname      - Output filename for the 4D volume (string or char). 
+%                Default: '4D.nii'. If no path is specified, the output
+%                is written to the folder of the first input image.
+%   metafields - Cell array of JSON sidecar field names. For each field, the
+%                values are read from the input JSON files (if available) and
+%                saved as a concatenated array in the output JSON sidecar file.
+%                Default: {}
+%   dt         - Data type (see spm_type). Default: 0 (same as first input volume).
+%   RT         - Interscan interval in seconds. Default: NaN.
+%
+% OUTPUT:
+%   V4         - spm_vol struct describing the merged 4D volume.
+%
+% NOTE:
+% For integer datatypes, the scale factor is chosen to maximize the range of
+% representable values. This may introduce small quantization differences between
+% the input and output data.
+%
+% EXAMPLE:
+%   V  = spm_vol(char({'sub-01_echo-1.nii.gz', 'sub-01_echo-2.nii.gz'}));
+%   V4 = spm_file_merge_gz(V, 'sub-01_4D.nii.gz', {'EchoNumber', 'EchoTime'});
 
 arguments
     V
-    fname {mustBeText}
+    fname       {mustBeText} = '4D.nii'
+    metafields  (1,:) cellstr = {}
 end
 arguments (Repeating)
     varargin
@@ -52,24 +65,40 @@ switch ext
         error('Unknown file extension %s in %s', ext, fname)
 end
 
-% Add a json sidecar output file if the first input file has one
-if isstruct(V)
-    fname1 = V(1).fname;
-else
-    fname1 = V{1};
-end
-json1 = spm_file(spm_file(fname1, 'ext',''), 'ext','.json');
-if isfile(json1)
-    copyfile(json1, spm_file(spm_file(fname, 'ext',''), 'ext','.json'));
+
+% Delete files in V as well as read metafields and delete their json sidecar files (if available)
+for n = 1:numel(V)
+
+    % Get the sidecar information
+    if isstruct(V)
+        niifile = V(n).fname;
+    else
+        niifile = V{n};
+    end
+    bfile    = bids.File(niifile);
+    jsonfile = spm_file(spm_file(niifile, 'ext',''), 'ext','.json');
+    
+    % Read the metadata from the first sidecar (if available)
+    if n == 1
+        metadata   = bfile.metadata;
+        metavalues = cell(length(metafields), numel(V));
+    end
+
+    % Store the metavalues from the current sidecar (if available)
+    for m = 1:length(metafields)
+        if isfield(bfile.metadata, metafields{m})
+            metavalues{m, n} = bfile.metadata.(metafields{m});
+        end
+        metadata.(metafields{m}) = metavalues(m,:);
+    end
+
+    % Delete the original nifti and json files
+    delete(niifile)
+    spm_unlink(jsonfile)
+
 end
 
-% Delete files in V as well as their json sidecar files (if available)
-for k = 1:numel(V)
-    if isstruct(V)
-        inputfile = V(k).fname;
-    else
-        inputfile = V{k};
-    end
-    delete(inputfile)
-    spm_unlink(spm_file(spm_file(inputfile, 'ext',''), 'ext','.json'))
+% Write the output JSON sidecar (if there was at least one input sidecar)
+if ~isempty(metadata)
+    bids.util.jsonencode(spm_file(spm_file(fname, 'ext',''), 'ext','.json'), metadata);
 end

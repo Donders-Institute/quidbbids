@@ -1,5 +1,5 @@
-function prepSEPIA_worker(obj, subjects)
-% Method implementation for performing pre- and SEPIA-processing - Entry point is in qb.QuIDBBIDS.m
+function preproc_worker(obj, subjects)
+% Method implementation for performing preprocessing - Entry point is in qb.QuIDBBIDS.m
 
 arguments
     obj         qb.QuIDBBIDS
@@ -16,7 +16,7 @@ for subject = subjects
     obj = create_common_T1like_M0(obj, subject);    % Processing step 1
     obj = coreg_FAs_B1_2common(obj, subject);       % Processing step 2
     obj = create_brainmask(obj, subject);           % Processing step 3
-    obj = create_QSM_R2star_maps(obj, subject);     % Processing step 4
+    obj = merge_echofiles(obj, subject);            % Processing step 4
 
 end
 
@@ -150,9 +150,9 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
     end
 
     % Get the B1 images and the common M0 target image
-    B1famp = bids.query(obj.BIDS,  'data', 'sub',subject.name, 'ses',subject.session, 'modality','fmap', 'acq','famp', 'echo',[], 'run',run{1});
-    B1anat = bids.query(obj.BIDS,  'data', 'sub',subject.name, 'ses',subject.session, 'modality','fmap', 'acq','anat', 'echo',[], 'run',run{1});
-    M0ref  = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'suffix','M0map', 'run',run{1});
+    B1famp = bids.query(obj.BIDS,  'data', 'sub',subject.name, 'ses',subject.session, 'modality','fmap', 'run',run{1}, 'acq','famp', 'echo',[]);
+    B1anat = bids.query(obj.BIDS,  'data', 'sub',subject.name, 'ses',subject.session, 'modality','fmap', 'run',run{1}, 'acq','anat', 'echo',[]);
+    M0ref  = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'run',run{1}, 'space','withinGRE', 'suffix','M0map');
     if length(B1famp) ~= 1 || length(B1anat) ~= 1
         error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}));
     end
@@ -213,7 +213,7 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
         bfile.entities.part  = '';
         bfile.entities.echo  = '';
         bfile.suffix         = 'mask';
-        bfile.path           = fullfile(char(obj.workdir), bfile.bids_path, bfile.filename);
+        bfile.path           = fullfile(char(obj.workdir), bfile.bids_path, bfile.filename);    % NB: The path is not updated automatically
         fprintf("\n--> Creating brain mask for FA: %d -> %s\n", bfile.metadata.FlipAngle, bfile.filename)
         run_command(sprintf("mri_synthstrip -i %s -m %s", FAs_e1m{n}, bfile.path));
         masks(:,:,:,n)       = spm_vol(bfile.path).dat();
@@ -230,8 +230,8 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
 end
 
 
-function obj = create_QSM_R2star_maps(obj, subject)
-% Run the SEPIA QSM and R2-star pipelines
+function obj = merge_echofiles(obj, subject)
+% Merge the 3D echos files for each flip angle into 4D files
 
 arguments
     obj     qb.QuIDBBIDS
@@ -246,25 +246,21 @@ BIDS_prep = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivative
 % Process all runs independently
 for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE')
 
-    % Get the flip angles and brainmask for this run
-    FAs  = bids.query(BIDS_prep, 'descriptions', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'echo',1, 'run',run{1});
-    mask = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','minimal', 'label','brain', 'suffix','mask', 'run',run{1});
+    % Get the flip angles for this run
+    FAs = bids.query(BIDS_prep, 'descriptions', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc','^FA\d*$', 'part','mag', 'echo',1, 'run',run{1});
     if length(FAs) < 2
         error("No flip angle images found in: %s", subject.path);
     end
-    if length(mask) ~= 1
-        error("No brain mask found in: %s", subject.path);
-    end
 
-    % Run the SEPIA pipelines for each flip angle
+    % Merge the 3D echos files for each flip angle into 4D files
     for FA = FAs
 
         % Get the mag/phase echo images for this flip angle & run
-        magfiles   = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'echo',1:999, 'run',run{1});
-        phasefiles = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','phase', 'echo',1:999, 'run',run{1});
+        magfiles   = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'echo',1:999, 'run',run{1}, 'space','withinGRE', 'desc',FA{1}, 'part','mag');
+        phasefiles = bids.query(BIDS_prep, 'data', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'echo',1:999, 'run',run{1}, 'space','withinGRE', 'desc',FA{1}, 'part','phase');
 
         % Reorder the data because SEPIA (possibly?) expects the TE to be in increasing order
-        meta       = bids.query(BIDS_prep, 'metadata', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'space','withinGRE', 'desc',FA{1}, 'part','mag', 'echo',1:999, 'run',run{1});
+        meta       = bids.query(BIDS_prep, 'metadata', 'sub',subject.name, 'ses',subject.session, 'modality','anat', 'echo',1:999, 'run',run{1}, 'space','withinGRE', 'desc',FA{1}, 'part','mag');
         [TEs, idx] = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
         magfiles   = magfiles(idx);
         phasefiles = phasefiles(idx);
@@ -272,42 +268,16 @@ for run = bids.query(BIDS_prep, 'runs', 'sub',subject.name, 'ses',subject.sessio
             error("Non-unique TEs (%s) found in: %s", strtrim(sprintf('%g ', TEs)), subject.path);
         end
 
-        % Create a SEPIA header file
-        clear input
-        input.nifti = magfiles{1};                                                                  % A nifti file for extracting B0 direction, voxel size, matrix size (from the first 3 dimensions. Alternatively use Vmag.fname)
-        for n = 1:length(magfiles)
-            input.TEFileList{n} = spm_file(spm_file(magfiles{n}, 'ext', ''), 'ext','.json');        % Cell array of json sidecar files for extracting TE
-        end
-        bfile               = bids.File(magfiles{1});
-        bfile.entities.part = '';
-        bfile.entities.echo = '';
-        bfile.suffix        = '';
-        fparts              = split(bfile.filename, '.');                                           % Split filename extensions to parse the basename
-        output              = fullfile(char(fileparts(obj.derivdir)), 'SEPIA', bfile.bids_path, fparts{1});    % Output directory. N.B: SEPIA will interpret the last part of the path as a file-prefix
-        save_sepia_header(input, [], output)
-
-        % Create 4D mag and phase SEPIA/MCR input data
+        % Create the 4D mag and phase SEPIA/MCR input data
         bfile               = bids.File(phasefiles{1});
         bfile.entities.echo = '';
         fprintf("Merging echo-1..%i phase images -> %s\n", length(phasefiles), bfile.filename)
-        Vphase              = spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+        spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename), {'EchoNumber', 'EchoTime'});
+
         bfile               = bids.File(magfiles{1});
         bfile.entities.echo = '';
         fprintf("Merging echo-1..%i mag images -> %s\n", length(magfiles), bfile.filename)
-        Vmag                = spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-
-        % Run the SEPIA QSM pipeline
-        clear input
-        input(1).name = Vphase(1).fname;
-        input(2).name = Vmag(1).fname;
-        input(3).name = '';
-        input(4).name = [output '_header.mat'];
-        fprintf("\n--> Running SEPIA QSM pipeline for %s with:\n%s\n", FA{1}, sprintf("%s\n", input.name, mask{1}))
-        sepiaIO(input, output, mask{1}, obj.config.prepSEPIA.QSMParam)
-
-        % Run the SEPIA R2-star pipeline
-        fprintf("\n--> Running SEPIA R2-star pipeline for %s with:\n%s\n", FA{1}, sprintf("%s\n", input.name, mask{1}))
-        sepiaIO(input, output, mask{1}, obj.config.prepSEPIA.R2starParam)
+        spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename), {'EchoNumber', 'EchoTime'});
 
     end
 

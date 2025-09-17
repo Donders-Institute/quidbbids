@@ -137,7 +137,7 @@ classdef QuIDBBIDS
             obj = configeditor(obj);       % Implementation is in private/configeditor.m
         end
 
-        function prepSEPIA(obj, subjects)
+        function preproc(obj, subjects)
             % Loops over subjects to perform preprocessing and run SEPIA QSM and R2-star pipelines
             %
             % Processing steps:
@@ -149,30 +149,54 @@ classdef QuIDBBIDS
             %    coregister the B1 images as well to the M0 (which is also in the common GRE space)
             % 3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
             %    to produce a minimal output mask (for Sepia)
-            % 4. Run the SEPIA QSM and R2-star pipelines
+            % 4. Merge all echoes for each flip angle into 4D files (for running the SEPIA and SCR/MCR pipelines)
             %
             % Inputs:
             %   SUBJECTS - (Optional) A matlab-bids struct array of subjects to process. Default: all
             %              subjects in the BIDS dataset.
             %
             % Usage:
-            %   obj.prepSEPIA()             % Process all subjects
-            %   obj.prepSEPIA(subjects)     % Specify a subset of subjects to process
+            %   obj.preproc()               % Process all subjects
+            %   obj.preproc(subjects)       % Specify a subset of subjects to process
             %
             % See also: qb.QuIDBBIDS (for overview)
 
-            % Process the subjects (the implementation is in private/prepSEPIA_worker.m)
+            % Process the subjects (the implementation is in private/preproc_worker.m)
             if nargin < 2 || isempty(subjects)
                 subjects = obj.BIDS.subjects();
             end
             if obj.config.useHPC
-                qsubcellfun(@prepSEPIA_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+                qsubcellfun(@preproc_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',6*1024^3, 'timreq',60*60)
             else
-                prepSEPIA_worker(obj, subjects)
+                preproc_worker(obj, subjects)
             end
         end
 
-        function fitSCR(obj, subjects)
+        function SEPIA(obj, subjects)
+            % Loops over subjects to run SEPIA QSM and R2-star pipelines
+            %
+            % Inputs:
+            %   SUBJECTS - (Optional) A matlab-bids struct array of subjects to process. Default: all
+            %              subjects in the BIDS dataset.
+            %
+            % Usage:
+            %   obj.SEPIA()             % Process all subjects
+            %   obj.SEPIA(subjects)     % Specify a subset of subjects to process
+            %
+            % See also: qb.QuIDBBIDS (for overview)
+
+            % Process the subjects (the implementation is in private/SEPIA_worker.m)
+            if nargin < 2 || isempty(subjects)
+                subjects = obj.BIDS.subjects();
+            end
+            if obj.config.useHPC
+                qsubcellfun(@EPIA_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+            else
+                SEPIA_worker(obj, subjects)
+            end
+        end
+
+        function SCR(obj, subjects)
             % Loops over subjects to fit the SCR model
             %
             % Inputs:
@@ -180,23 +204,23 @@ classdef QuIDBBIDS
             %              subjects in the BIDS dataset.
             %
             % Usage:
-            %   obj.fitSCR()            % Process all subjects
-            %   obj.fitSCR(subjects)    % Specify a subset of subjects to process
+            %   obj.SCR()           % Process all subjects
+            %   obj.SCR(subjects)   % Specify a subset of subjects to process
             %
             % See also: qb.QuIDBBIDS (for overview)
 
-            % Process the subjects (the implementation is in private/fitSCR_worker.m)
+            % Process the subjects (the implementation is in private/SCR_worker.m)
             if nargin < 2 || isempty(subjects)
                 subjects = obj.BIDS.subjects();
             end
             if obj.config.useHPC
-                qsubcellfun(@fitSCR_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+                qsubcellfun(@SCR_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
             else
-                fitSCR_worker(obj, subjects)
+                SCR_worker(obj, subjects)
             end
         end
 
-        function fitMCR(obj, subjects)
+        function MCR(obj, subjects)
             % Loops over subjects to fit the MCR model
             %
             % Inputs:
@@ -204,39 +228,39 @@ classdef QuIDBBIDS
             %              subjects in the BIDS dataset.
             %
             % Usage:
-            %   obj.fitMCR()            % Process all subjects
-            %   obj.fitMCR(subjects)    % Specify a subset of subjects to process
+            %   obj.MCR()            % Process all subjects
+            %   obj.MCR(subjects)    % Specify a subset of subjects to process
             %
             % See also: qb.QuIDBBIDS (for overview)
 
-            % Process the subjects (the implementation is in private/fitMCR_worker.m)
+            % Process the subjects (the implementation is in private/MCR_worker.m)
             if nargin < 2 || isempty(subjects)
                 subjects = obj.BIDS.subjects();
             end
             if obj.config.useHPC
-                qsubcellfun(@fitMCR_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+                qsubcellfun(@MCR_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
             else
-                fitMCR_worker(obj, subjects)
+                MCR_worker(obj, subjects)
             end
         end
 
-        function fitMCRGPU(obj, subjects)
+        function MCRGPU(obj, subjects)
             % Loops over subjects to fit the MCR model using GPU acceleration
             %
             % Usage:
-            %   obj.fitMCRGPU()             % Process all subjects
-            %   obj.fitMCRGPU(subjects)     % Specify a subset of subjects to process
+            %   obj.MCRGPU()             % Process all subjects
+            %   obj.MCRGPU(subjects)     % Specify a subset of subjects to process
             %
             % See also: qb.QuIDBBIDS (for overview)
 
-            % Process the subjects (the implementation is in private/fitMCRGPU_worker.m)
+            % Process the subjects (the implementation is in private/MCRGPU_worker.m)
             if nargin < 2 || isempty(subjects)
                 subjects = obj.BIDS.subjects();
             end
             if obj.config.useHPC
-                qsubcellfun(@fitMCRGPU_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
+                qsubcellfun(@MCRGPU_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
             else
-                fitMCRGPU_worker(obj, subjects)
+                MCRGPU_worker(obj, subjects)
             end
         end
 
@@ -267,7 +291,7 @@ classdef QuIDBBIDS
             arguments
                 obj
                 configfile {mustBeTextScalar}
-                config (1,1) struct = struct()  % Optional configuration struct
+                config     (1,1) struct = struct()  % Optional configuration struct
             end
             
             % Create a default configfile if it does not exist
@@ -340,7 +364,7 @@ classdef QuIDBBIDS
             %               folder recursively with all subfolders. Default: false
 
             arguments
-                toolpath {mustBeFolder}
+                toolpath  {mustBeFolder}
                 recursive (1,1) logical = false
             end
 

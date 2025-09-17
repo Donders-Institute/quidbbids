@@ -53,11 +53,11 @@ for subject = subjects
             input(2).name = magfiles{n};
             input(3).name = '';
             input(4).name = [output '_header.mat'];
-            fprintf("\n--> Running SEPIA QSM pipeline for %s\%s (run-%s)\n", subject.name, subject.session, run{1})
+            fprintf("\n--> Running SEPIA QSM pipeline for %s/%s (run-%s)\n", subject.name, subject.session, run{1})
             sepiaIO(input, output, mask{1}, obj.config.SEPIA.QSMParam)
 
             % Run the SEPIA R2-star pipeline
-            fprintf("\n--> Running SEPIA R2-star pipeline for %s\%s (run-%s)\n", subject.name, subject.session, run{1})
+            fprintf("\n--> Running SEPIA R2-star pipeline for %s/%s (run-%s)\n", subject.name, subject.session, run{1})
             sepiaIO(input, output, mask{1}, obj.config.SEPIA.R2starParam)
 
         end

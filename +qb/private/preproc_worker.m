@@ -55,7 +55,7 @@ for run = bids.query(obj.BIDS, 'runs', 'sub',subject.name, 'ses',subject.session
     TR   = meta{1}.RepetitionTime;
 
     % Compute T1 and M0 maps
-    disp("Running despot1 to compute T1 and M0 maps from: " + FAs_e1m{1});
+    fprintf("\n--> Running despot1 to compute T1 and M0 maps from: %s\n", FAs_e1m{1});
     e1mag = zeros([Ve1m.dim length(flips)]);
     for n = 1:length(flips)
         e1mag(:,:,:,n) = spm_vol(FAs_e1m{n}).dat();

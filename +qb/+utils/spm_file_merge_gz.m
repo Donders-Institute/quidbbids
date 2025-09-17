@@ -33,8 +33,8 @@ function V4 = spm_file_merge_gz(V, fname, metafields, varargin)
 
 arguments
     V
-    fname       {mustBeText} = '4D.nii'
-    metafields  (1,:) cellstr = {}
+    fname      {mustBeText} = '4D.nii'
+    metafields {mustBeText} = {}
 end
 arguments (Repeating)
     varargin

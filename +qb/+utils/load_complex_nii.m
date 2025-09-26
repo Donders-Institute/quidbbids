@@ -3,9 +3,13 @@ function Compleximage = load_complex_nii(filemagnitude, filephase)
 %
 % Load complex nifti image from separate magnitude and phase nifti files. Accounts for Siemens phase scaling.
 
-arguments
-    filemagnitude {mustBeText}
-    filephase     {mustBeText}
+arguments (Input)
+    filemagnitude {mustBeTextScalar, mustBeNonempty}
+    filephase     {mustBeTextScalar, mustBeNonempty}
+end
+
+arguments (Output)
+    Compleximage double
 end
 
 Magnitude = spm_vol(char(filemagnitude)).dat();

@@ -31,13 +31,18 @@ function V4 = spm_file_merge_gz(V, fname, metafields, varargin)
 %   V  = spm_vol(char({'sub-01_echo-1.nii.gz', 'sub-01_echo-2.nii.gz'}));
 %   V4 = spm_file_merge_gz(V, 'sub-01_4D.nii.gz', {'EchoNumber', 'EchoTime'});
 
-arguments
+arguments (Input)
     V
-    fname      {mustBeText} = '4D.nii'
-    metafields {mustBeText} = {}
+    fname      {mustBeTextScalar, mustBeNonempty} = '4D.nii'
+    metafields cell                               = {}
 end
-arguments (Repeating)
+
+arguments (Input, Repeating)
     varargin
+end
+
+arguments (Output)
+    V4 struct
 end
 
 fname            = char(fname);

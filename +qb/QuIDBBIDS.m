@@ -1,4 +1,4 @@
-classdef QuIDBBIDS
+classdef QuIDBBIDS < handle
     %   ___       ___ ___  ___ ___ ___ ___  ___ 
     %  / _ \ _  _|_ _|   \| _ ) _ )_ _|   \/ __|
     % | (_) | || || || |) | _ \ _ \| || |) \__ \
@@ -14,9 +14,9 @@ classdef QuIDBBIDS
     %
     % Quick start - Create a QuIDBBIDS object for your BIDS dataset:
     %
-    %   obj = qb.QuIDBBIDS();               % Select BIDS root directory via GUI
-    %   obj = qb.QuIDBBIDS(bids_dir);       % Specify BIDS root directory
-    %   obj = qb.QuIDBBIDS(bids_dir, ..);   % See constructor help for more details
+    %   quidb = qb.QuIDBBIDS();               % Select BIDS root directory via GUI
+    %   quidb = qb.QuIDBBIDS(bids_dir);       % Specify BIDS root directory
+    %   quidb = qb.QuIDBBIDS(bids_dir, ..);   % See constructor help for more details
     %
     % For comprehensive documentation with tutorials, examples, and API reference:
     %
@@ -24,62 +24,44 @@ classdef QuIDBBIDS
     % 
     % For more concise help on using a QuIDBBIDS object and its methods:
 
+
     properties
         config      % Configuration struct loaded from the config TOML file
         configfile  % Path to the active TOML configuration file
         bidsdir     % Root BIDS directory
-        derivdir    % QuIDBBIDS derivatives directory where the output is stored
+        outputdir   % QuIDBBIDS derivatives directory where the output is stored
         workdir     % Working directory for intermediate results
-        BIDS        % BIDS layout object from bids-matlab
+        BIDS        % BIDS layout object from bids-matlab (raw input data only)
     end
 
 
     methods
 
-        function obj = QuIDBBIDS(bidsdir, derivdir, workdir, configfile)
+        function obj = QuIDBBIDS(bidsdir, outputdir, workdir, configfile)
             % Initializes the QuIDBBIDS object for a given BIDS dataset
             %
             % OBJ = QuIDBBIDS(BIDSDIR, DERIVDIR, CONFIGFILE)
             %
             % Inputs:
-            %   BIDSDIR    - (Optional) Path to the root BIDS dataset directory.
-            %   DERIVDIR   - (Optional) Path to the QuIDBBIDS derivatives directory where output will be written.
+            %   BIDSDIR    - Path to the root BIDS dataset directory. Default = user dialogue
+            %   DERIVDIR   - Path to the QuIDBBIDS derivatives directory where output will be written.
             %                Default: [BIDSDIR]/derivatives/QuIDBBIDS
-            %   WORKDIR    - (Optional) Working directory for intermediate results. Default: derivdir/QuIDBBIDS_work.
-            %   CONFIGFILE - (Optional) Path to a TOML configuration file with pipeline settings.
+            %   WORKDIR    - Working directory for intermediate results. Default: outputdir/QuIDBBIDS_work.
+            %   CONFIGFILE - Path to a TOML configuration file with pipeline settings.
             %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.toml
             %
             % Usage:
-            %   obj = qb.QuIDBBIDS();               % Select BIDS root directory via GUI
-            %   obj = qb.QuIDBBIDS(bids_dir);       % Specify BIDS root directory
+            %   quidb = qb.QuIDBBIDS();             % Select BIDS root directory via GUI
+            %   quidb = qb.QuIDBBIDS(bids_dir);     % Specify BIDS root directory
             %   etc.
             %
             % See also: qb.QuIDBBIDS (for overview)
             
-            % Parse the inputs
             arguments
                 bidsdir    {mustBeTextScalar} = ""
-                derivdir   {mustBeTextScalar} = ""
+                outputdir  {mustBeTextScalar} = ""
                 workdir    {mustBeTextScalar} = ""
                 configfile {mustBeTextScalar} = ""
-            end
-
-            if strlength(bidsdir) == 0
-                bidsdir = uigetdir(pwd, "Select the root BIDS directory");
-                if ~bidsdir
-                    return
-                end
-            end
-            if strlength(derivdir) == 0
-                derivdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS");
-            end
-            if strlength(workdir) == 0
-                workdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS_work");
-            end
-            if strlength(configfile) == 0
-                configfile = fullfile(derivdir, "code", "config.toml");
-            elseif isfolder(configfile)
-                error("The configfile must be a file, not a folder: " + configfile)
             end
 
             % Set the Matlab-path for the dependencies
@@ -95,9 +77,28 @@ classdef QuIDBBIDS
                 end
             end
 
-            % Initialize the QuIDBBIDS derivatives and workdir datasets. NB: matlab-bids does not handle strings but expects classic character vectors
-            if ~isfolder(derivdir)
-                bids.init(char(derivdir), ...
+            % Parse the inputs
+            if strlength(bidsdir) == 0
+                bidsdir = uigetdir(pwd, "Select the root BIDS directory");
+            end
+            if ~bidsdir || ~isfolder(bidsdir)
+                return
+            end
+            if strlength(outputdir) == 0
+                outputdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS");
+            end
+            if strlength(workdir) == 0
+                workdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS_work");
+            end
+            if strlength(configfile) == 0
+                configfile = fullfile(outputdir, "code", "config.toml");
+            elseif isfolder(configfile)
+                error("The configfile must be a file, not a folder: " + configfile)
+            end
+
+            % Initialize the QuIDBBIDS derivatives and workdir datasets.
+            if ~isfolder(outputdir)
+                bids.init(char(outputdir), ...          NB: matlab-bids does not handle strings
                           'is_derivative', true,...
                           'is_datalad_ds', false, ...
                           'tolerant', true, ...
@@ -109,90 +110,56 @@ classdef QuIDBBIDS
                           'is_datalad_ds', false, ...
                           'tolerant', true, ...
                           'verbose', false)
-            end
 
-            % Index the raw dataset
+            % Set the properties
             obj.bidsdir    = string(bidsdir);
-            obj.derivdir   = derivdir;
+            obj.outputdir  = outputdir;
             obj.workdir    = workdir;
             obj.configfile = configfile;
             obj.config     = obj.getconfig(configfile);
             obj.BIDS       = bids.layout(bidsdir, ...
                                          'use_schema', true, ...
-                                         'index_derivatives', true, ...
+                                         'index_derivatives', false, ...
                                          'index_dependencies', false, ...
                                          'filter', obj.config.bids.select, ...
                                          'tolerant', true, ...
                                          'verbose', true);
-            
+            end
         end
 
-        function obj = configeditor(obj)
+        function configeditor(obj)
             % Opens a GUI to edit the processing options in the dataset configuration file
             %
             % Usage:
             %   obj = obj.configeditor();
             %
             % See also: qb.QuIDBBIDS (for overview)
-            obj = configeditor(obj);       % Implementation is in private/configeditor.m
         end
 
-        function preproc(obj, subjects)
-            % Loops over subjects to perform preprocessing and run SEPIA QSM and R2-star pipelines
-            %
-            % Processing steps:
-            % 
-            % 1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.
-            %    The results are blurry but within the common GRE space, hence, iterate the computation
-            %    with the input images that have been realigned to the target in the common space
-            % 2. Coregister all FA-MEGRE images to each T1w-like target image (using echo-1_mag), coregister
-            %    coregister the B1 images as well to the M0 (which is also in the common GRE space)
-            % 3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
-            %    to produce a minimal output mask (for Sepia)
-            % 4. Merge all echoes for each flip angle into 4D files (for running the SEPIA and SCR/MCR pipelines)
+        function manager(obj)
+        end
+
+        function QSM(obj, subjects)
+            % Loops over subjects to run QSM and R2-star pipelines
             %
             % Inputs:
-            %   SUBJECTS - (Optional) A matlab-bids struct array of subjects to process. Default: all
+            %   SUBJECTS - A matlab-bids struct array of subjects to process. Default: all
             %              subjects in the BIDS dataset.
             %
             % Usage:
-            %   obj.preproc()               % Process all subjects
-            %   obj.preproc(subjects)       % Specify a subset of subjects to process
+            %   obj.QSM()             % Process all subjects
+            %   obj.QSM(subjects)     % Specify a subset of subjects to process
             %
             % See also: qb.QuIDBBIDS (for overview)
 
-            % Process the subjects (the implementation is in private/preproc_worker.m)
+            % Process the subjects (the implementation is in private/QSM_worker.m)
             if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.subjects();
+                subjects = obj.BIDS.subjects;
             end
             if obj.config.useHPC
-                qsubcellfun(@preproc_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',6*1024^3, 'timreq',60*60)
+                qsubcellfun(@QSM_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
             else
-                preproc_worker(obj, subjects)
-            end
-        end
-
-        function SEPIA(obj, subjects)
-            % Loops over subjects to run SEPIA QSM and R2-star pipelines
-            %
-            % Inputs:
-            %   SUBJECTS - (Optional) A matlab-bids struct array of subjects to process. Default: all
-            %              subjects in the BIDS dataset.
-            %
-            % Usage:
-            %   obj.SEPIA()             % Process all subjects
-            %   obj.SEPIA(subjects)     % Specify a subset of subjects to process
-            %
-            % See also: qb.QuIDBBIDS (for overview)
-
-            % Process the subjects (the implementation is in private/SEPIA_worker.m)
-            if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.subjects();
-            end
-            if obj.config.useHPC
-                qsubcellfun(@EPIA_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
-            else
-                SEPIA_worker(obj, subjects)
+                QSM_worker(obj, subjects)
             end
         end
 
@@ -200,7 +167,7 @@ classdef QuIDBBIDS
             % Loops over subjects to fit the SCR model
             %
             % Inputs:
-            %   SUBJECTS - (Optional) A matlab-bids struct array of subjects to process. Default: all
+            %   SUBJECTS - A matlab-bids struct array of subjects to process. Default: all
             %              subjects in the BIDS dataset.
             %
             % Usage:
@@ -211,7 +178,7 @@ classdef QuIDBBIDS
 
             % Process the subjects (the implementation is in private/SCR_worker.m)
             if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.subjects();
+                subjects = obj.BIDS.subjects;
             end
             if obj.config.useHPC
                 qsubcellfun(@SCR_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
@@ -224,7 +191,7 @@ classdef QuIDBBIDS
             % Loops over subjects to fit the MCR model
             %
             % Inputs:
-            %   SUBJECTS - (Optional) A matlab-bids struct array of subjects to process. Default: all
+            %   SUBJECTS - A matlab-bids struct array of subjects to process. Default: all
             %              subjects in the BIDS dataset.
             %
             % Usage:
@@ -235,7 +202,7 @@ classdef QuIDBBIDS
 
             % Process the subjects (the implementation is in private/MCR_worker.m)
             if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.subjects();
+                subjects = obj.BIDS.subjects;
             end
             if obj.config.useHPC
                 qsubcellfun(@MCR_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
@@ -255,7 +222,7 @@ classdef QuIDBBIDS
 
             % Process the subjects (the implementation is in private/MCRGPU_worker.m)
             if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.subjects();
+                subjects = obj.BIDS.subjects;
             end
             if obj.config.useHPC
                 qsubcellfun(@MCRGPU_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
@@ -274,24 +241,28 @@ classdef QuIDBBIDS
             % in TOML format. This updates or creates the configuration file.
             %
             % Inputs:
-            %     CONFIGFILE        - Path to the TOML configuration file.
-            %     CONFIG (optional) - A struct with configuration parameters. If provided, GETCONFIG
-            %                         writes this struct to CONFIGFILE in TOML format.
+            %   CONFIGFILE  - Path to the TOML configuration file.
+            %   CONFIG      - A struct with configuration parameters. If provided, GETCONFIG writes
+            %                 this data to the CONFIGFILE, else it reads it from CONFIGFILE.
             %
             % Output:
-            %     CONFIG - A struct with the loaded configuration settings.
+            %   CONFIG      - A struct with the loaded configuration settings.
             %
             % The function ensures that a default config exists in:
-            %     <HOME>/.quidbbids/<version>/config_default.toml
+            %   <HOME>/.quidbbids/<version>/config_default.toml
             %
             % Usage:
-            %     config = obj.getconfig("myconfig.toml");
-            %     obj.getconfig("myconfig.toml", config);
+            %   config = obj.getconfig("myconfig.toml");
+            %   obj.getconfig("myconfig.toml", config);
             
-            arguments
+            arguments (Input)
                 obj
-                configfile {mustBeTextScalar}
-                config     (1,1) struct = struct()  % Optional configuration struct
+                configfile {mustBeTextScalar, mustBeNonempty}
+                config     (1,1) struct = struct()
+            end
+
+            arguments (Output)
+                config struct
             end
             
             % Create a default configfile if it does not exist
@@ -315,6 +286,7 @@ classdef QuIDBBIDS
                 config = toml.map_to_struct(toml.read(configfile));
                 config = obj.castInt64ToDouble(config);
 
+                % Check for version conflicts
                 if config.version ~= qb.version()
                     warning("The config file version (" + config.version + ") does not match the current QuIDBBIDS version (" + qb.version() + "). Please update your config file if needed.")
                 end
@@ -347,6 +319,7 @@ classdef QuIDBBIDS
         
     end
 
+
     methods(Access = private, Static)
 
         function addtoolbox(toolpath, recursive)
@@ -360,8 +333,8 @@ classdef QuIDBBIDS
             %
             % Inputs:
             %   TOOLPATH  - Full path to the toolbox folder.
-            %   RECURSIVE - (Optional, logical) If true, use genpath to add the toolbox
-            %               folder recursively with all subfolders. Default: false
+            %   RECURSIVE - If true, use genpath to add the toolbox folder recursively
+            %               with all subfolders. Default: false
 
             arguments
                 toolpath  {mustBeFolder}

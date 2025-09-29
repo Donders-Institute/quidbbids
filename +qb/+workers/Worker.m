@@ -2,18 +2,11 @@ classdef (Abstract) Worker < handle
     %WORKER Abstract base class for BIDS data processing workers
     %
     % This class defines the common interface and base functionality for worker
-    % classes that operate on BIDS data stored in a QuIDBBIDS object. Subclasses
+    % classes that operate on data stored in a BIDS repository. Subclasses
     % only need to set some properties and implement the abstract method for
     % producing the work items -- the general workflow is handled by the Manager class.
     %
-    % Usage:
-    %   quidb   = qb.QuIDBBIDS(bids_dir);                   % Initialize the QuIDBBIDS framework
-    %   subject = quidb.BIDS.subjects(1);                   % Select a subject of interest to work on
-    %   worker  = qb.workers.PreprocWorker(quidb, subject)  % Inititalize the PreprocWorker to work on the subject
-    %   item    = worker.workitems(1)                       % Select a workitem of interest (e.g. "brainmask" or so)
-    %   work    = worker.fetch(item)                        % Get the data from the workdir or else produce it
-    %
-    % See also: qb.QuIDBBIDS (for overview)
+    % See also: qb.workers.Manager
 
     properties (Abstract, GetAccess = public, SetAccess = protected)
         name        % Personal name of the worker
@@ -22,18 +15,22 @@ classdef (Abstract) Worker < handle
         makes       % List of workitems the worker makes, i.e. returned by fetch(workitem)
     end
 
-
     properties (Abstract)
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `bids.query('data', setfield(bidsfilter.(workitem), 'run',1))`
     end
 
+    properties (GetAccess = public, SetAccess = protected)
+        usesGPU     % Logical flag indicating if the worker can use GPU resources. Default = false
+    end
 
     properties
-        subject     % The subject that will be worked on
-        usesGPU     % Logical flag indicating if the worker can use GPU resources. Default = false
-        team        % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
+        BIDS        % BIDS layout from bids-matlab (raw input data only)
+        subject     % The subject that will be worked on 
+        config      % Configuration settings that are used to produce the work
+        workdir
+        outputdir
+        team        % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker resume
         logger      % A logger object for keeping logs
-        quidb       % Instance of qb.QuIDBBIDS
     end
 
 
@@ -56,23 +53,27 @@ classdef (Abstract) Worker < handle
 
     methods
 
-        function obj = Worker(subject, quidb, team, workitems)
+        function obj = Worker(BIDS, subject, config, workdir, outputdir, team, workitems)
             %WORKER Constructor for abstract Worker class
-            %
-            % Ensures that all subclasses have usesGPU, quidb, subject and logger properties
 
             arguments
-                subject   (1,1) struct          % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-                quidb     qb.QuIDBBIDS          % For convenience only (-> quidb.config, Logging). TODO: Remove the argument so that +workers could be pushed to bids-matlab???
-                team      struct = struct()     % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
-                workitems {mustBeText} = ''     % The workitems that need to be made (useful if the workitem is the end product). Default = ''
+                BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
+                subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
+                config    (1,1) struct = struct()   % Configuration struct loaded from the config TOML file
+                workdir   {mustBeTextScalar} = ''
+                outputdir {mustBeTextScalar} = ''
+                team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
+                workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
             end
 
-            obj.subject = subject;
-            obj.quidb   = quidb;
-            obj.team    = team;
-            obj.usesGPU = false;
-            obj.logger  = qb.workers.Logging(obj);
+            obj.BIDS      = BIDS;
+            obj.subject   = subject;
+            obj.config    = config;
+            obj.workdir   = workdir;
+            obj.outputdir = outputdir;
+            obj.team      = team;
+            obj.usesGPU   = false;
+            obj.logger    = qb.workers.Logging(obj);
 
         end
 
@@ -96,7 +97,9 @@ classdef (Abstract) Worker < handle
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            work = bids.query('data', [{'sub',obj.subject.name, 'ses',obj.subject.session}, bidsfilter.(workitem)]);
+            % (Re)index the workdir layout
+            WorkBIDS = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+            work = bids.query(workBIDS, 'data', [{'sub',obj.subject.name, 'ses',obj.subject.session}, bidsfilter.(workitem)]);
             if isempty(work)
                 obj.logger.info(sprintf("==> %s has started working on: %s", obj.name, obj.subject.path))
                 if obj.is_locked(true)
@@ -118,16 +121,16 @@ classdef (Abstract) Worker < handle
 
         end
 
-        function get_colleagues(obj, workitems)
-            %GET_COLLEAGUES Selects workers from the pool that can make the WORKITEMS. The results are
-            % stored in the COLLEAGUES property.
-
-            % TODO: move the implementation to the management layer as: function team = find_colleagues(worker, workitems), i.e. here just call that function
+        function work = ask_colleague(obj, workitem)
+            %ASK_COLLEAGUE Asks a team member to fetch a WORKITEM needed to get work done
 
             arguments
                 obj
-                workitems {mustBeText, mustBeNonempty}
+                workitem {mustBeTextScalar, mustBeNonempty}
             end
+
+            colleague = obj.team(workitem).handle(obj.subject, obj.BIDS, obj.team);
+            work      = colleague.fetch(workitem);
 
         end
 
@@ -194,7 +197,7 @@ classdef (Abstract) Worker < handle
         end
 
         function done(obj)
-            % Write a done-file to indicate the work has finished succesfully
+            % Write a done-file to indicate the work has finished successfully
             done_file = fullfile(obj.subject.path, [class(obj) '_worker.done']);
             fid = fopen(done_file, 'a');
             if fid ~= -1

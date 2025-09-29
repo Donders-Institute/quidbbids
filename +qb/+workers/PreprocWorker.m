@@ -10,7 +10,7 @@ classdef PreprocWorker < qb.workers.Worker
     %    coregister the B1 images as well to the M0 (which is also in the common GRE space)
     % 3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
     %    to produce a minimal output mask (for SEPIA)
-    % 4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR pipelines)
+    % 4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows)
     %
     % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
@@ -30,18 +30,21 @@ classdef PreprocWorker < qb.workers.Worker
     
     methods
 
-        function obj = PreprocWorker(subject, quidb, team, workitems)
+        function obj = PreprocWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
             %PREPROCWORKER Constructor for this concrete Worker class
 
             arguments
-                subject   (1,1) struct          % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-                quidb     qb.QuIDBBIDS          % For convenience only (-> quidb.config, Logging). TODO: Remove the argument so that +workers could be pushed to bids-matlab???
-                team      struct = struct()     % No team needed
-                workitems {mustBeText} = ''     % The workitems that need to be made (useful if the workitem is the end product). Default = ''
+                BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
+                subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
+                config    (1,1) struct = struct()   % Configuration struct loaded from the config TOML file
+                workdir   {mustBeTextScalar} = ''
+                outputdir {mustBeTextScalar} = ''
+                team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
+                workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
             end
 
             % Call the abstract parent constructor
-            obj@qb.workers.Worker(subject, quidb, team);
+            obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
 
             % Make the abstract properties concrete
             obj.name        = "Marcel";
@@ -54,7 +57,7 @@ classdef PreprocWorker < qb.workers.Worker
                                "   coregister the B1 images as well to the M0 (which is also in the common GRE space)";
                                "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
                                "   to produce a minimal output mask (for SEPIA)";
-                               "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR pipelines"];
+                               "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows"];
             obj.bidsfilter.syntheticT1  = struct('sub', obj.subject.name, ...
                                                  'ses', obj.subject.session, ...
                                                  'modality', 'anat', ...
@@ -77,7 +80,7 @@ classdef PreprocWorker < qb.workers.Worker
                                                  'desc', 'minimal', ...
                                                  'label', 'brain', ...
                                                  'suffix', 'mask');
-            obj.makes = fieldnames(obj.bidsfilter);
+            obj.makes = fieldnames(obj.bidsfilter)';
             obj.needs = [];         % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
 
             % Make the workitems (if requested)
@@ -109,7 +112,7 @@ classdef PreprocWorker < qb.workers.Worker
             end
 
             % Check the input
-            if ~ismember(workitem, obj.workitems)
+            if ~ismember(workitem, obj.makes)
                 obj.logger.exception(sprintf("Tell the manager that %s does not now what a %s workitem is", obj.name, workitem))
                 return
             end
@@ -124,7 +127,7 @@ classdef PreprocWorker < qb.workers.Worker
             create_brainmask()          % Processing step 3
             merge_echofiles()           % Processing step 4
             
-            % Collect the output data
+            % Collect the requested workitem
             work = bids.query('data', obj.bidsfilter.(workitem));
         end
 

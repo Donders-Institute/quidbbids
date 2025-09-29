@@ -9,8 +9,8 @@ classdef Logging < handle
 
 
     properties
+        worker      % The worker that is logging its messages
         outputdir   % The QuIDBBIDS output directory where the logs will be stored
-        worker      % The name of the worker that is logging its messages
     end
     
 
@@ -20,12 +20,14 @@ classdef Logging < handle
             %LOGGER Initializes the logging object
 
             arguments
-                worker qb.workers.Worker
+                worker    qb.workers.Worker
             end
             
-            obj.outputdir = fullfile(worker.quidb.outputdir, 'logs', class(obj));
             obj.worker    = worker;
-            [~,~]         = mkdir(obj.outputdir);
+            obj.outputdir = fullfile(worker.outputdir, 'logs', class(worker));
+            if ~isempty(worker.outputdir)
+                [~,~]     = mkdir(obj.outputdir);
+            end
 
         end
 
@@ -60,7 +62,7 @@ classdef Logging < handle
             end
 
             % TODO: Also log in the terminal if user sets the terminal logging level to VERBOSE
-            % if strcmpi(quidb.config.loglevel, "VERBOSE")
+            % if strcmpi(obj.config.loglevel, "VERBOSE")
             %     fprintf('%s\t| %s\n', level_, message)  % TODO: colorize it with cprintf from the File Exchange???
             % end
         end
@@ -120,8 +122,8 @@ classdef Logging < handle
     methods (Access = private)
 
         function subses = sub_ses(obj)
-            % Parses the sub-#_ses-# prefix from a BIDS.subjects item
-            subses = replace(erase(obj.worker.subject.path, [obj.worker.quidb.BIDS.pth filesep]), filesep,'_');
+            % Parses the sub-#_ses-# prefix from a BIDS.subjects item.
+            subses = replace(erase(obj.worker.subject.path, [obj.worker.BIDS.pth filesep]), filesep,'_');
         end
 
         function loghandler(obj, message, suffix)

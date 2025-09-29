@@ -1,30 +1,31 @@
 classdef Dashboard < handle
-    % Provides a status overview of the work that is being or has been done
+    %DASHBOARD Provides a status overview of the work that is being or has been done
+    %
+    % See also: qb.workers.Manager
 
 
     properties
-        BIDS        % The BIDS layout that the workers are working on
-        logdir      % The directory where the logfiles reside
+        coord       % The BIDS layout that the workers are working on
+        workitem    % The workitem of interest
+        jobs        % The status of the jobs
     end
 
 
     methods
 
-        function obj = Dashboard(BIDS, logdir)
+        function obj = Dashboard(coord)
 
             arguments
-                BIDS    struct
-                logdir  {mustBeFolder}
+                coord  qb.workers.Coordinator
             end
 
-            obj.BIDS   = BIDS;
-            obj.logdir = logdir;
+            obj.coord = coord;
         end
 
         function busy = working_on(obj)
             %WORKING_ON Returns the list of subjects currently being processed
             busy = [];
-            for subject = obj.BIDS.subjects
+            for subject = obj.coord.BIDS.subjects
                 lock_file = fullfile(subject.path, [class(obj) '_worker.lock']);
                 if isfile(lock_file)
                     busy(end+1) = subject;
@@ -35,7 +36,7 @@ classdef Dashboard < handle
         function done = work_done(obj)
             %WORK_DONE Returns the list of subjects that have completed processing
             done = [];
-            for subject = obj.BIDS.subjects
+            for subject = obj.coord.BIDS.subjects
                 done_file = fullfile(subject.path, [class(obj) '_worker.done']);
                 if isfile(done_file)
                     done(end+1) = subject;
@@ -52,8 +53,8 @@ classdef Dashboard < handle
             end
 
             subjects = [];
-            for subject = obj.BIDS.subjects
-                warning_file = fullfile(obj.logdir, [obj.sub_ses(subject) '_warnings.log']);
+            for subject = obj.coord.BIDS.subjects
+                warning_file = fullfile(obj.coord.logdir, [obj.sub_ses(subject) '_warnings.log']);
                 if isfile(warning_file)
                     subjects(end+1) = subject;
                     if verbose
@@ -74,8 +75,8 @@ classdef Dashboard < handle
             end
             
             subjects = [];
-            for subject = obj.BIDS.subjects
-                error_file = fullfile(obj.logdir, [obj.sub_ses(subject) '_errors.log']);
+            for subject = obj.coord.BIDS.subjects
+                error_file = fullfile(obj.coord.logdir, [obj.sub_ses(subject) '_errors.log']);
                 if isfile(error_file)
                     subjects(end+1) = subject;
                     if verbose
@@ -94,7 +95,7 @@ classdef Dashboard < handle
 
         function subses = sub_ses(obj, subject)
             % Parses the sub-#_ses-# prefix from a BIDS.subjects item
-            subses = replace(erase(subject.path, [obj.BIDS.pth filesep]), filesep,'_');
+            subses = replace(erase(subject.path, [obj.coord.BIDS.pth filesep]), filesep,'_');
         end
 
     end

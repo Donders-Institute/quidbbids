@@ -1,5 +1,5 @@
 function SCR_worker(obj, subjects)
-% Method implementation for running SCR pipelines - Entry point is in qb.QuIDBBIDS.m
+% Method implementation for running SCR workflows - Entry point is in qb.QuIDBBIDS.m
 
 arguments
     obj      qb.QuIDBBIDS
@@ -46,7 +46,7 @@ for subject = subjects
             mask         = spm_vol(mask_file{1}).dat() & mask;
         end
 
-        % Compute weighted means of the R2-star & Chi maps. TODO: Move this over to the QSM pipeline
+        % Compute weighted means of the R2-star & Chi maps. TODO: Move this over to the QSM workflow
         R2smean  = sum(S0.^2 .* R2s, 4) ./ sum(S0.^2, 4);
         Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
         spm_write_vol_gz(V, R2smean.*mask, fullfile(R1R2star_dir, [ '_R2starmap.nii.gz']));

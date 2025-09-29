@@ -1,12 +1,12 @@
 classdef Manager < handle
-    %MANAGER Manages the entire QuIDBBIDS workflow to make the end products that the user wants
+    %MANAGER Manages the entire workflow to make the end products that the user wants
     % 
     % This class defines the common interface and base functionality for interacting with the user,
-    % composing pipelines, setting config parameters, creating a team of workers from the pool, and
+    % composing workflows, setting config parameters, creating a team of workers from the pool, and
     % putting the team to work.
     %
     % Interactive workflow:
-    %   0. User initializes QuIDBBIDS and calls Manager
+    %   0. User initializes the workflow and calls Manager
     %   1. Manager loads an existing workflow from the output directory (if present) and asks user
     %      what products to make
     %   2. Manager assembles a team that can make the products (and asks the user for help if needed)
@@ -15,8 +15,9 @@ classdef Manager < handle
     %       a. For each end product, the manager asks the responsible team worker to produce it
     %       b. If this worker needs a workitem to get the work done, he/she will ask another
     %          team worker to produce it. In turn, that worker can ask other team workers to
-    %          produce their workitems -- all the way up untill only raw BIDS data items are needed
-    %   5. Manager monitors the progress of the workers and informs the user untill all work is done
+    %          produce their workitems -- all the way up until only raw BIDS data items are needed
+    %   5. Manager monitors the progress of the workers and informs the user until all work is done
+    %   6. Manager fetches the end products and copies them to the output directory
     %
     % Batch workflow:
     %
@@ -33,49 +34,47 @@ classdef Manager < handle
 
     properties
         products    % The end productcs (workitems) requested by the user
-        team        % The team that will produce the products: team.(workitem) -> worker properties
-        quidb
+        team        % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+        coord       % The coordinator that help the manager with administrative tasks
     end
 
 
     methods
 
-        function obj = Manager(quidb, products)
+        function obj = Manager(coord, products)
             %MANAGER Constructor for the Manager class
 
             arguments
-                quidb     qb.QuIDBBIDS
-                products  {mustBeText}      % The end productcs (workitems) requested by the user
+                coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
+                products  {mustBeText} = ""         % The end productcs (workitems) requested by the user
             end
 
-            obj.quidb = quidb;
-            obj.team  = struct();
-
-            if isempty(products)
-                obj.products = obj.ask4products();
-            else
-                obj.products = products;
-            end
-
+            obj.coord    = coord;                   % The coordinator that help the manager with administrative tasks
+            obj.team     = struct();                % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+            obj.products = products;                % The end productcs (workitems) requested by the user
+            obj.create_team()
         end
 
-        function create_team(obj, workitems)
+        function set.products(obj, val)
+            % Force anything assigned to be stored as string
+            obj.products = string(val);
+        end
+
+        function create_team(obj)
             %CREATE_TEAM Selects workers from the pool that together are capable of making the WORKITEMS (end products)
             %
             % Asks the user for help if needed. The assembled team is stored in the TEAM property
 
             arguments
                 obj
-                workitems {mustBeText}
             end
 
             % Find and select one capable worker per workitem
-            workers = obj.workers_pool();
-            for workitem = workitems
-                for worker = workers
+            for workitem = obj.products
+                for worker = obj.coord.resumes
                     if ismember(workitem, worker.makes)     % Add to the team if the worker is capable
                         if isfield(obj.team, workitem)
-                            if ~ismember(worker.handle, [obj.team.(workitem).handle])
+                            if ~ismember(func2str(worker.handle), cellfun(@func2str, {obj.team.(workitem).handle}, 'UniformOutput', false))
                                 obj.team.(workitem)(end+1) = worker;
                             end
                         else
@@ -88,11 +87,17 @@ classdef Manager < handle
                         selectworker(workitem);             % Keep the preferred worker only
                     end
                     % Recursively add upstream workers to the team
-                    obj.create_team(obj.team.(workitem).needs)
-                else
+                    if ~isempty(obj.team.(workitem).needs)
+                        obj.create_team(obj.team.(workitem).needs)
+                    end
+                elseif strlength(workitem)
                     error("Could not find a worker that can make: " + workitem)
                 end
             end
+        end
+
+        function choose_products(obj)
+            obj.products = qb.ChooseProducts(obj.coord.resumes);
         end
 
         function load_workflow(obj)
@@ -107,67 +112,53 @@ classdef Manager < handle
 
             arguments
                 obj
-                subjects struct = obj.quidb.BIDS.subjects;
+                subjects struct = obj.coord.BIDS.subjects;
             end
 
-            % Block the GUI (if any) and initialize the workers
+            % Block the start button in the GUI (if any) and initialize the workers
             for product = obj.products      % TODO: sort such that PreprocWorker products (if any) are fetched first
                 worker = obj.team.(product).handle;
                 for subject = subjects
-                    if obj.quidb.config.useHPC
-                        qsubfeval(worker, obj, subject, product, obj.quidb.config.qsubfeval.(product){:})
+                    args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
+                    if obj.coord.config.useHPC
+                        qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:})
                     else
-                        worker(obj, subject).fetch(product)
+                        worker(args{:}).fetch(product)
                     end
                 end
-                if obj.quidb.config.useHPC
+
+                if obj.coord.config.useHPC
                     obj.monitor_progress(product)
                 end
             end
+            % Unblock the start button in the GUI (if any)
         end
 
         function monitor_progress(obj, workitem)
-            %MONITOR_PROGRESS Watches over the progress of the workers untill all work is done
+            %MONITOR_PROGRESS Watches over the progress of the workers until all work is done
 
-            % Lauch a dashboard (if needed)
-        end
+            % Launch a dashboard
+            logdir    = fullfile(obj.coord.outputdir, 'logs', class(obj));   % TODO: FIXME
+            dashboard = qb.workers.Dashboard(obj.coord.BIDS, logdir, workitem);
 
-    end
-
-
-    methods (Static)
-
-        function workers = workers_pool()
-            %WORKERS_POOL Queries the whole pool of workers that live in qb.workers
-            %
-            % Output:
-            %   WORKERS.HANDLE      - Their function handles
-            %          .NAME        - Their personal names
-            %          .DESCRIPTION - The descriptions of what they do
-            %          .MAKES       - The workitems they can make
-            %          .NEEDS       - The workitems they need for work
-            %          .PREFERRED   - True if the worker was selected by the user
-            %
-            % NB: Assumes the qb.workers adhere to a "PrefixWorker.m" naming scheme
-
-            workers = [];
-            for mfile = dir(fullfile(fileparts(mfilename("fullpath")), "*Worker.m"))'
-                if ~strcmp(mfile.name, 'Worker.m')   % Exclude the abstract Worker class
-                    worker = qb.workers.(erase(mfile.name, '.m'))(struct('name','','session',''), qb.QuIDBBIDS('|'), struct());
-                    workers(1+end).name        = worker.name;
-                    workers(  end).handle      = str2func(class(worker));
-                    workers(  end).description = worker.description;
-                    workers(  end).makes       = worker.makes;
-                    workers(  end).needs       = worker.needs;
-                    workers(  end).preferred   = false;
-                end
+            % Wait until all work is done
+            while ~all([dashboard.jobs.finished])
+                pause(5)
+                dashboard.update()
             end
+
+            % Report any errors or warnings
+            dashboard.has_warnings(verbose)
+            dashboard.has_errors(verbose)
+
+            % Close the dashboard
+            dashboard.close()
         end
 
     end
 
 
-    methods (Private)
+    methods (Access = private)
 
         function selectworker(obj, workitem)
             % Select a worker for this workitem and make him/her the "preferred worker"

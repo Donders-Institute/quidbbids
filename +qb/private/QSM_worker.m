@@ -1,5 +1,5 @@
 function QSM_worker(obj, subjects)
-% Method implementation for running QSM and R2-star pipelines - Entry point is in qb.QuIDBBIDS.m
+% Method implementation for running QSM and R2-star workflows - Entry point is in qb.QuIDBBIDS.m
 
 arguments
     obj      qb.QuIDBBIDS
@@ -34,7 +34,7 @@ for subject = subjects
             error("No single pre-processed brain mask found in: %s", subject.path);
         end
 
-        % Run SEPIA QSM pipelines for each flip angle
+        % Run SEPIA QSM workflows for each flip angle
         for n = 1:length(magfiles)
 
             % Create a SEPIA header file
@@ -48,17 +48,17 @@ for subject = subjects
             output              = fullfile(char(obj.workdir), bfile.bids_path, fparts{1});      % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
             save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output)
 
-            % Run the SEPIA QSM pipeline
+            % Run the SEPIA QSM workflow
             clear input
             input(1).name = phasefiles{n};
             input(2).name = magfiles{n};
             input(3).name = '';
             input(4).name = [output '_header.mat'];
-            fprintf("\n--> Running SEPIA QSM pipeline for %s/%s (run-%s)\n", subject.name, subject.session, run{1})
+            fprintf("\n--> Running SEPIA QSM workflow for %s/%s (run-%s)\n", subject.name, subject.session, run{1})
             sepiaIO(input, output, mask{1}, obj.config.QSM.QSMParam)
 
-            % Run the SEPIA R2-star pipeline. TODO: Split of in a separate worker
-            fprintf("\n--> Running SEPIA R2-star pipeline for %s/%s (run-%s)\n", subject.name, subject.session, run{1})
+            % Run the SEPIA R2-star workflow. TODO: Split of in a separate worker
+            fprintf("\n--> Running SEPIA R2-star workflow for %s/%s (run-%s)\n", subject.name, subject.session, run{1})
             sepiaIO(input, output, mask{1}, obj.config.QSM.R2starParam)
 
             % TODO: Rename/copy all files of interest to become BIDS valid, create sidecar files for them and move them over to obj.outputdir

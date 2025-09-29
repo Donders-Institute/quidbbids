@@ -1,4 +1,4 @@
-classdef QuIDBBIDS < handle
+classdef QuIDBBIDS < qb.workers.Coordinator
     %   ___       ___ ___  ___ ___ ___ ___  ___ 
     %  / _ \ _  _|_ _|   \| _ ) _ )_ _|   \/ __|
     % | (_) | || || || |) | _ \ _ \| || |) \__ \
@@ -25,16 +25,6 @@ classdef QuIDBBIDS < handle
     % For more concise help on using a QuIDBBIDS object and its methods:
 
 
-    properties
-        config      % Configuration struct loaded from the config TOML file
-        configfile  % Path to the active TOML configuration file
-        bidsdir     % Root BIDS directory
-        outputdir   % QuIDBBIDS derivatives directory where the output is stored
-        workdir     % Working directory for intermediate results
-        BIDS        % BIDS layout object from bids-matlab (raw input data only)
-    end
-
-
     methods
 
         function obj = QuIDBBIDS(bidsdir, outputdir, workdir, configfile)
@@ -47,7 +37,7 @@ classdef QuIDBBIDS < handle
             %   DERIVDIR   - Path to the QuIDBBIDS derivatives directory where output will be written.
             %                Default: [BIDSDIR]/derivatives/QuIDBBIDS
             %   WORKDIR    - Working directory for intermediate results. Default: outputdir/QuIDBBIDS_work.
-            %   CONFIGFILE - Path to a TOML configuration file with pipeline settings.
+            %   CONFIGFILE - Path to a TOML configuration file with workflow settings.
             %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.toml
             %
             % Usage:
@@ -64,6 +54,24 @@ classdef QuIDBBIDS < handle
                 configfile {mustBeTextScalar} = ""
             end
 
+            if strlength(bidsdir) == 0
+                bidsdir = uigetdir(pwd, "Select the root BIDS directory");
+            end
+            if strlength(configfile) == 0
+                configfile = fullfile(outputdir, "code", "config.toml");
+            elseif isfolder(configfile)
+                error("The configfile must be a file, not a folder: " + configfile)
+            end
+
+            config = qb.get_config_toml(configfile);    % Cannot call obj.get_config directly because obj is not yet fully constructed
+            BIDS   = bids.layout(bidsdir, 'use_schema', true, ...
+                                          'index_derivatives', false, ...
+                                          'index_dependencies', false, ...
+                                          'filter', config.bids.select, ...
+                                          'tolerant', true, ...
+                                          'verbose', true);
+            obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
+
             % Set the Matlab-path for the dependencies
             rootdir = fileparts(fileparts(mfilename("fullpath")));
             for toolbox = dir(fullfile(rootdir, "dependencies"))'
@@ -77,54 +85,9 @@ classdef QuIDBBIDS < handle
                 end
             end
 
-            % Parse the inputs
-            if strlength(bidsdir) == 0
-                bidsdir = uigetdir(pwd, "Select the root BIDS directory");
-            end
-            if ~bidsdir || ~isfolder(bidsdir)
-                return
-            end
-            if strlength(outputdir) == 0
-                outputdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS");
-            end
-            if strlength(workdir) == 0
-                workdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS_work");
-            end
-            if strlength(configfile) == 0
-                configfile = fullfile(outputdir, "code", "config.toml");
-            elseif isfolder(configfile)
-                error("The configfile must be a file, not a folder: " + configfile)
-            end
+        end
 
-            % Initialize the QuIDBBIDS derivatives and workdir datasets.
-            if ~isfolder(outputdir)
-                bids.init(char(outputdir), ...          NB: matlab-bids does not handle strings
-                          'is_derivative', true,...
-                          'is_datalad_ds', false, ...
-                          'tolerant', true, ...
-                          'verbose', true)
-            end
-            if ~isfolder(workdir)
-                bids.init(char(workdir), ...
-                          'is_derivative', true,...
-                          'is_datalad_ds', false, ...
-                          'tolerant', true, ...
-                          'verbose', false)
-
-            % Set the properties
-            obj.bidsdir    = string(bidsdir);
-            obj.outputdir  = outputdir;
-            obj.workdir    = workdir;
-            obj.configfile = configfile;
-            obj.config     = obj.getconfig(configfile);
-            obj.BIDS       = bids.layout(bidsdir, ...
-                                         'use_schema', true, ...
-                                         'index_derivatives', false, ...
-                                         'index_dependencies', false, ...
-                                         'filter', obj.config.bids.select, ...
-                                         'tolerant', true, ...
-                                         'verbose', true);
-            end
+        function startGUI(obj)
         end
 
         function configeditor(obj)
@@ -136,187 +99,43 @@ classdef QuIDBBIDS < handle
             % See also: qb.QuIDBBIDS (for overview)
         end
 
-        function manager(obj)
+        function manager = manager(obj, products)
+            %GET_MANAGER Gets a workflow manager to get work
+            %
+            % Seel also: qb.workers.Manager
+
+            arguments
+                obj
+                products {mustBeText} = ""
+            end
+
+            manager = qb.workers.Manager(obj, products);
         end
 
-        function QSM(obj, subjects)
-            % Loops over subjects to run QSM and R2-star pipelines
-            %
-            % Inputs:
-            %   SUBJECTS - A matlab-bids struct array of subjects to process. Default: all
-            %              subjects in the BIDS dataset.
-            %
-            % Usage:
-            %   obj.QSM()             % Process all subjects
-            %   obj.QSM(subjects)     % Specify a subset of subjects to process
-            %
-            % See also: qb.QuIDBBIDS (for overview)
-
-            % Process the subjects (the implementation is in private/QSM_worker.m)
-            if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.subjects;
-            end
-            if obj.config.useHPC
-                qsubcellfun(@QSM_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
-            else
-                QSM_worker(obj, subjects)
-            end
-        end
-
-        function SCR(obj, subjects)
-            % Loops over subjects to fit the SCR model
-            %
-            % Inputs:
-            %   SUBJECTS - A matlab-bids struct array of subjects to process. Default: all
-            %              subjects in the BIDS dataset.
-            %
-            % Usage:
-            %   obj.SCR()           % Process all subjects
-            %   obj.SCR(subjects)   % Specify a subset of subjects to process
-            %
-            % See also: qb.QuIDBBIDS (for overview)
-
-            % Process the subjects (the implementation is in private/SCR_worker.m)
-            if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.subjects;
-            end
-            if obj.config.useHPC
-                qsubcellfun(@SCR_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
-            else
-                SCR_worker(obj, subjects)
-            end
-        end
-
-        function MCR(obj, subjects)
-            % Loops over subjects to fit the MCR model
-            %
-            % Inputs:
-            %   SUBJECTS - A matlab-bids struct array of subjects to process. Default: all
-            %              subjects in the BIDS dataset.
-            %
-            % Usage:
-            %   obj.MCR()            % Process all subjects
-            %   obj.MCR(subjects)    % Specify a subset of subjects to process
-            %
-            % See also: qb.QuIDBBIDS (for overview)
-
-            % Process the subjects (the implementation is in private/MCR_worker.m)
-            if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.subjects;
-            end
-            if obj.config.useHPC
-                qsubcellfun(@MCR_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
-            else
-                MCR_worker(obj, subjects)
-            end
-        end
-
-        function MCRGPU(obj, subjects)
-            % Loops over subjects to fit the MCR model using GPU acceleration
-            %
-            % Usage:
-            %   obj.MCRGPU()             % Process all subjects
-            %   obj.MCRGPU(subjects)     % Specify a subset of subjects to process
-            %
-            % See also: qb.QuIDBBIDS (for overview)
-
-            % Process the subjects (the implementation is in private/MCRGPU_worker.m)
-            if nargin < 2 || isempty(subjects)
-                subjects = obj.BIDS.subjects;
-            end
-            if obj.config.useHPC
-                qsubcellfun(@MCRGPU_worker, repmat({obj}, size(subjects)), num2cell(subjects), 'memreq',3*1024^3, 'timreq',60*60)
-            else
-                MCRGPU_worker(obj, subjects)
-            end
-        end
-
-        function config = getconfig(obj, configfile, config)
+        function config = get_config(obj, config)
             % Read and optionally write QuIDBBIDS configuration file.
             %
-            % CONFIG = GETCONFIG(CONFIGFILE) reads the configuration from the specified CONFIGFILE.
-            % If it does not exist, a default configuration is copied from the user's HOME directory.
+            % CONFIG = GET_CONFIG() reads the configuration from CONFIGFILE. If it does not
+            % exist, a default configuration is copied from the user's HOME directory.
             %
-            % CONFIG = GETCONFIG(CONFIGFILE, CONFIG) writes the provided CONFIG struct to CONFIGFILE
-            % in TOML format. This updates or creates the configuration file.
-            %
-            % Inputs:
-            %   CONFIGFILE  - Path to the TOML configuration file.
-            %   CONFIG      - A struct with configuration parameters. If provided, GETCONFIG writes
-            %                 this data to the CONFIGFILE, else it reads it from CONFIGFILE.
-            %
-            % Output:
-            %   CONFIG      - A struct with the loaded configuration settings.
+            % CONFIG = GET_CONFIG(CONFIG) writes the provided CONFIG struct to CONFIGFILE
+            % (in TOML format). This updates or creates the configuration file.
             %
             % The function ensures that a default config exists in:
             %   <HOME>/.quidbbids/<version>/config_default.toml
-            %
-            % Usage:
-            %   config = obj.getconfig("myconfig.toml");
-            %   obj.getconfig("myconfig.toml", config);
             
             arguments (Input)
                 obj
-                configfile {mustBeTextScalar, mustBeNonempty}
-                config     (1,1) struct = struct()
+                config struct = struct()
             end
 
             arguments (Output)
                 config struct
             end
             
-            % Create a default configfile if it does not exist
-            config_default = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), "config_default.toml");
-            if ~isfile(config_default)
-                disp("Creating default configuration file: " + config_default)
-                [pth, name, ext] = fileparts(config_default);
-                [~,~] = mkdir(pth);
-                copyfile(fullfile(fileparts(mfilename("fullpath")), name + ext), config_default)
-            end
-
-            % Write or read the study configuration data (create if needed)
-            if nargin > 2
-                toml.write(configfile, config);
-            else
-                if ~isfile(configfile)
-                    disp("Writing study configurations to: " + configfile)
-                    [~,~] = mkdir(fileparts(configfile));
-                    copyfile(config_default, configfile)
-                end
-                config = toml.map_to_struct(toml.read(configfile));
-                config = obj.castInt64ToDouble(config);
-
-                % Check for version conflicts
-                if config.version ~= qb.version()
-                    warning("The config file version (" + config.version + ") does not match the current QuIDBBIDS version (" + qb.version() + "). Please update your config file if needed.")
-                end
-            end
-
+            config = qb.get_config_toml(obj.configfile, config);    % Implementation is in get_config_toml to avoid circularity issues
         end
 
-    end
-
-
-    methods(Access = private)
-
-        function config = castInt64ToDouble(obj, config)
-            % Recursively casts all int64 values in CONFIG into doubles.
-            %
-            % CONFIG = CASTINT64TODOUBLE(CONFIG) traverses CONFIG and converts all int64 scalars and
-            % arrays into doubles. Useful for reading TOML files where integers are parsed as int64.
-            
-            if isstruct(config)
-                f = fieldnames(config);
-                for k = 1:numel(f)
-                    config.(f{k}) = obj.castInt64ToDouble(config.(f{k}));
-                end
-            elseif iscell(config)
-                config = cellfun(@obj.castInt64ToDouble, config, 'UniformOutput', false);
-            elseif isa(config, 'int64')
-                config = double(config);
-            end
-        end
-        
     end
 
 

@@ -24,7 +24,7 @@ classdef Logging < handle
             end
             
             obj.worker    = worker;
-            obj.outputdir = fullfile(worker.outputdir, 'logs', class(worker));
+            obj.outputdir = fullfile(worker.outputdir, 'logs', regexp(class(worker), '[^.]+$', 'match', 'once'));   % Only take the class basename, i.e. the last part after the dot
             if ~isempty(worker.outputdir)
                 [~,~]     = mkdir(obj.outputdir);
             end

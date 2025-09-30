@@ -77,7 +77,7 @@ classdef (Abstract) Worker < handle
 
         end
 
-        function work = fetch(obj, workitem)
+        function work = fetch(obj, workitem, force)
             %FETCH Gets the workitem.
             %
             % FETCH first tries to collect the workitem but if it doesn't exist then locks the work
@@ -95,16 +95,21 @@ classdef (Abstract) Worker < handle
             arguments
                 obj
                 workitem {mustBeTextScalar, mustBeNonempty}
+                force    logical = false
             end
 
             % (Re)index the workdir layout
-            WorkBIDS = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
-            work = bids.query(workBIDS, 'data', [{'sub',obj.subject.name, 'ses',obj.subject.session}, bidsfilter.(workitem)]);
+            BIDS = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);     %#ok<PROPLC>
+            work = bids.query(BIDS, 'data', [{'sub',obj.subject.name, 'ses',obj.subject.session}, obj.bidsfilter.(workitem)]);                                      %#ok<PROPLC>
             if isempty(work)
                 obj.logger.info(sprintf("==> %s has started working on: %s", obj.name, obj.subject.path))
                 if obj.is_locked(true)
-                    obj.logger.error(sprintf("%s wants to do work on %s but it was locked", obj.name, obj.subject.path))
-                    return
+                    if force
+                        obj.logger.warning(sprintf("%s will do work on %s but it was locked", obj.name, obj.subject.path))
+                    else
+                        obj.logger.error(sprintf("%s wants to do work on %s but it was locked", obj.name, obj.subject.path))
+                        return
+                    end
                 end
                 % TODO: update the dashboard (non-HPC usage)
                 obj.lock()
@@ -115,7 +120,7 @@ classdef (Abstract) Worker < handle
                     obj.done()
                     obj.logger.info(obj.name + " has finished working on: " + obj.subject.path)
                 else
-                    obj.logger.error(sprintf("%s did not produce the requested %s item", obj.name, workitem))
+                    obj.logger.error(sprintf("%s could not produce the requested %s item", obj.name, workitem))
                 end
             end
 
@@ -138,11 +143,11 @@ classdef (Abstract) Worker < handle
             % Returns the content of the lockfile (if it exists)
 
             arguments
-                obj     qb.QuIDBBIDS
+                obj     qb.workers.Worker
                 verbose (1,1) logical = false
             end
 
-            lock_file = fullfile(obj.subject.path, [class(obj) '_worker.lock']);
+            lock_file = [obj.workerpath() '_worker.lock'];
             if isfile(lock_file)
                 locker = fileread(lock_file);
                 if verbose
@@ -159,19 +164,22 @@ classdef (Abstract) Worker < handle
             % In this way we avoid concurrency issues and we can use qsubfeval instead
             % of qsubcellfun (which has job-status issues)
 
-            lock_file = fullfile(obj.subject.path, [class(obj) '_worker.lock']);
+            lock_file = [obj.workerpath() '_worker.lock'];
+            obj.logger.verbose("Locking: " + lock_file)
+            [~,~]     = mkdir(fileparts(lock_file));
             fid = fopen(lock_file, 'w');
             if fid ~= -1
                 fprintf(fid, "Locked for %s by %s on %s\n", class(obj), getenv('USERNAME'), datetime('now'));
                 fclose(fid);
             else
-                obj.logger.exception(sprint("%s failed to lock %s", obj.name, obj.subject.path))
+                obj.logger.exception(sprintf("%s could not lock %s", obj.name, lock_file))
             end
         end
 
         function unlock(obj)
             % Remove the lock file to indicate the work has stopped
-            lock_file = fullfile(obj.subject.path, [class(obj) '_worker.lock']);
+            lock_file = [obj.workerpath() '_worker.lock'];
+            obj.logger.verbose("Unlocking: " + lock_file)
             if isfile(lock_file)
                 delete(lock_file);
             end
@@ -181,11 +189,11 @@ classdef (Abstract) Worker < handle
             % Returns the content of the done-file (if it exists)
 
             arguments
-                obj     qb.QuIDBBIDS
+                obj     qb.workers.Worker
                 verbose (1,1) logical = false
             end
 
-            done_file = fullfile(obj.subject.path, [class(obj) '_worker.done']);
+            done_file = [obj.workerpath() '_worker.done'];
             if isfile(done_file)
                 done = fileread(done_file);
                 if verbose
@@ -198,13 +206,13 @@ classdef (Abstract) Worker < handle
 
         function done(obj)
             % Write a done-file to indicate the work has finished successfully
-            done_file = fullfile(obj.subject.path, [class(obj) '_worker.done']);
+            done_file = [obj.workerpath() '_worker.done'];
             fid = fopen(done_file, 'a');
             if fid ~= -1
                 fprintf(fid, "%s work was done by %s on %s\n", class(obj), getenv('USERNAME'), datetime('now'));
                 fclose(fid);
             else
-                obj.logger.error(sprintf("%s failed to write done file in %s", obj.name, obj.subject.path))
+                obj.logger.error(sprintf("%s could not write a done-file in %s", obj.name, done_file))
             end
         end
 
@@ -256,24 +264,33 @@ classdef (Abstract) Worker < handle
             %UPDATE_BFILE Updates the BFILE (-> bids.File()) paths, entities and suffix with the values from SPECS
 
             arguments
-                bfile (1,1) struct
+                bfile (1,1) bids.File
                 specs (1,1) struct = struct()
             end
 
             % Go over the specs fields and update the bfile
             oldfname = bfile.filename;          % Store for later use
             oldjname = bfile.json_filename;     % Store for later use
-            for field = fieldnames(specs)
-                if strcmp(field, 'suffix')
+            for field = fieldnames(specs)'
+                if strcmp(field{1}, 'suffix')
                     bfile.suffix = specs.suffix;
                 else
-                    bfile.entities.(field) = specs.(field);
+                    bfile.entities.(field{1}) = specs.(field{1});
                 end
             end
             
             % Paths are not updated automatically, so do that manually
             bfile.path           = replace(bfile.path,           oldfname, bfile.filename);
             bfile.metadata_files = replace(bfile.metadata_files, oldjname, bfile.json_filename);
+        end
+
+    end
+
+    methods (Access = private)
+
+        function pth = workerpath(obj)
+            %WORKERPATH Replaces the subject.path with the workdir path and appends a subdirectory named after the worker
+            pth = fullfile(replace(obj.subject.path, obj.BIDS.pth, obj.workdir), regexp(class(obj), '[^.]+$', 'match', 'once'));  % Only take the class basename, i.e. the last part after the dot
         end
 
     end

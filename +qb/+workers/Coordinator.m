@@ -28,11 +28,12 @@ classdef (Abstract) Coordinator < handle
             %   CONFIGFILE - Path to a configuration file with workflow settings
 
             % Parse the inputs
+            bidsapp = regexp(class(obj), '[^.]+$', 'match', 'once');  % Only take the class basename, i.e. the last part after the dot
             if strlength(outputdir) == 0
-                outputdir = fullfile(BIDS.pth, "derivatives", class(obj));
+                outputdir = fullfile(BIDS.pth, "derivatives", bidsapp);
             end
             if strlength(workdir) == 0
-                workdir = fullfile(BIDS.pth, "derivatives", class(obj) + "_work");
+                workdir = fullfile(BIDS.pth, "derivatives", bidsapp + "_work");
             end
 
             % Initialize the QuIDBBIDS derivatives and workdir datasets.

@@ -122,10 +122,10 @@ classdef PreprocWorker < qb.workers.Worker
             end
 
             % Get the work done
-            create_common_T1like_M0()   % Processing step 1
-            coreg_FAs_B1_2common()      % Processing step 2
-            create_brainmask()          % Processing step 3
-            merge_echofiles()           % Processing step 4
+            obj.create_common_T1like_M0()   % Processing step 1
+            obj.coreg_FAs_B1_2common()      % Processing step 2
+            obj.create_brainmask()          % Processing step 3
+            obj.merge_echofiles()           % Processing step 4
             
             % Collect the requested workitem
             work = bids.query('data', obj.bidsfilter.(workitem));
@@ -143,7 +143,7 @@ classdef PreprocWorker < qb.workers.Worker
             GRESignal = @(FlipAngle, TR, T1) sind(FlipAngle) .* (1-exp(-TR./T1)) ./ (1-(exp(-TR./T1)) .* cosd(FlipAngle));
 
             % TODO: Index the workdir if force=false
-            % Workdir = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+            % WorkB = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
             % Process all runs independently
             anat_mag = {'sub',obj.subject.name, 'ses',obj.subject.session, 'modality','anat', 'part','mag'};
@@ -202,11 +202,11 @@ classdef PreprocWorker < qb.workers.Worker
             import qb.utils.spm_write_vol_gz
 
             % (Re)index the workdir layout
-            Workdir = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+            WorkB = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
             % Process all runs independently
             anat = {'sub',obj.subject.name, 'ses',obj.subject.session, 'modality','anat'};
-            fmap = {'sub',obj.subject.name, 'ses',ojb.subject.session, 'modality','fmap'};
+            fmap = {'sub',obj.subject.name, 'ses',obj.subject.session, 'modality','fmap'};
             for run = bids.query(obj.BIDS, 'runs', anat{:}, 'part','mag', 'echo',1:999)
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this run
@@ -218,7 +218,7 @@ classdef PreprocWorker < qb.workers.Worker
                 for n = 1:length(flips)
 
                     % Get the common synthetic FA target image
-                    FAref = bids.query(Workdir, 'data', setfield(obj.bidsfilter.syntheticT1, 'run',run{1}));
+                    FAref = bids.query(WorkB, 'data', setfield(obj.bidsfilter.syntheticT1, 'run',run{1}));
                     if length(FAref) ~= 1
                         obj.logger.exception("Unexpected synthetic reference images found: " + sprintf("\n%s",FAref{:}));
                     end
@@ -253,7 +253,7 @@ classdef PreprocWorker < qb.workers.Worker
                 % Get the B1 images and the common M0 target image
                 B1famp = bids.query(obj.BIDS,  'data', fmap{:}, 'run',run{1}, 'acq','famp', 'echo',[]);
                 B1anat = bids.query(obj.BIDS,  'data', fmap{:}, 'run',run{1}, 'acq','anat', 'echo',[]);
-                M0ref  = bids.query(Workdir, 'data', anat{:}, 'run',run{1}, 'space','withinGRE', 'suffix','M0map');
+                M0ref  = bids.query(WorkB, 'data', anat{:}, 'run',run{1}, 'space','withinGRE', 'suffix','M0map');
                 if length(B1famp) ~= 1 || length(B1anat) ~= 1
                     error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}));
                 end
@@ -291,14 +291,14 @@ classdef PreprocWorker < qb.workers.Worker
             % to produce a minimal output mask (for QSM and MCR processing)
 
             % (Re)index the workdir layout
-            Workdir = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+            WorkB = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
             % Process all runs independently
             anat_mag = {'sub',obj.subject.name, 'ses',obj.subject.session, 'modality','anat', 'space','withinGRE', 'part','mag'};
-            for run = bids.query(Workdir, 'runs', anat_mag{:}, 'echo',1:999)
+            for run = bids.query(WorkB, 'runs', anat_mag{:}, 'echo',1:999)
 
                 % Get the echo-1 magnitude file for all flip angles of this run
-                FAs_e1m = bids.query(Workdir, 'data', anat_mag{:}, 'echo',1, 'run',run{1});
+                FAs_e1m = bids.query(WorkB, 'data', anat_mag{:}, 'echo',1, 'run',run{1});
 
                 % Create individual brain masks using mri_synthstrip
                 Ve1m  = spm_vol(FAs_e1m{1});
@@ -331,14 +331,14 @@ classdef PreprocWorker < qb.workers.Worker
             import qb.utils.spm_file_merge_gz
 
             % (Re)index the workdir layout
-            Workdir = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+            WorkB = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
             % Process all runs independently
             anat = {'sub',obj.subject.name, 'ses',obj.subject.session, 'modality','anat', 'space','withinGRE'};
-            for run = bids.query(Workdir, 'runs', anat{:}, 'part','mag', 'echo',1:999, 'desc','FA\d*')
+            for run = bids.query(WorkB, 'runs', anat{:}, 'part','mag', 'echo',1:999, 'desc','FA\d*')
 
                 % Get the flip angles for this run
-                FAs = bids.query(Workdir, 'descriptions', anat{:}, 'desc','FA\d*', 'part','mag', 'echo',1, 'run',run{1});
+                FAs = bids.query(WorkB, 'descriptions', anat{:}, 'desc','FA\d*', 'part','mag', 'echo',1, 'run',run{1});
                 if length(FAs) < 2
                     obj.logger.error("No flip angle images found in: " + obj.subject.path);
                 end
@@ -347,11 +347,11 @@ classdef PreprocWorker < qb.workers.Worker
                 for FA = FAs
 
                     % Get the mag/phase echo images for this flip angle & run
-                    magfiles   = bids.query(Workdir, 'data', anat{:}, 'echo',1:999, 'run',run{1}, 'desc',FA{1}, 'part','mag');
-                    phasefiles = bids.query(Workdir, 'data', anat{:}, 'echo',1:999, 'run',run{1}, 'desc',FA{1}, 'part','phase');
+                    magfiles   = bids.query(WorkB, 'data', anat{:}, 'echo',1:999, 'run',run{1}, 'desc',FA{1}, 'part','mag');
+                    phasefiles = bids.query(WorkB, 'data', anat{:}, 'echo',1:999, 'run',run{1}, 'desc',FA{1}, 'part','phase');
 
                     % Reorder the data because SEPIA (possibly?) expects the TE to be in increasing order
-                    meta       = bids.query(Workdir, 'metadata', anat{:}, 'echo',1:999, 'run',run{1}, 'desc',FA{1}, 'part','mag');
+                    meta       = bids.query(WorkB, 'metadata', anat{:}, 'echo',1:999, 'run',run{1}, 'desc',FA{1}, 'part','mag');
                     [TEs, idx] = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
                     magfiles   = magfiles(idx);
                     phasefiles = phasefiles(idx);

@@ -121,9 +121,9 @@ classdef Manager < handle
                 for subject = subjects
                     args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
                     if obj.coord.config.useHPC
-                        qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:})
+                        qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:});
                     else
-                        worker(args{:}).fetch(product)
+                        worker(args{:}).fetch(product);     % TODO: Catch the work done (at some point)
                     end
                 end
 

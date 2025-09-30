@@ -80,6 +80,14 @@ classdef PreprocWorker < qb.workers.Worker
                                                  'desc', 'minimal', ...
                                                  'label', 'brain', ...
                                                  'suffix', 'mask');
+            obj.bidsfilter.echos4Dmag   = struct('sub', obj.sub(), ...
+                                                 'ses', obj.ses(), ...
+                                                 'modality', 'anat', ...
+                                                 'echo', [], ...
+                                                 'part', 'mag', ...
+                                                 'desc','FA\d*', ...
+                                                 'space','withinGRE');
+            obj.bidsfilter.echos4Dphase = setfield(obj.bidsfilter.echos4Dmag, 'part', 'phase');
             obj.makes = fieldnames(obj.bidsfilter)';
             obj.needs = [];         % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
 
@@ -93,7 +101,7 @@ classdef PreprocWorker < qb.workers.Worker
         end
 
         function work = get_work_done(obj, workitem)
-            %GET_WORK_DONE does the work to produce the workitem and recruits other workers as needed
+            %GET_WORK_DONE Does the work to produce the workitem and recruits other workers as needed
             %
             % Inputs:
             %   WORKITEM - Name of the work item that needs to be fetched
@@ -122,7 +130,7 @@ classdef PreprocWorker < qb.workers.Worker
             end
 
             % Get the work done
-            obj.create_common_T1like_M0()   % Processing step 1
+            obj.create_common_syntheticT1_M0()   % Processing step 1
             obj.coreg_FAs_B1_2common()      % Processing step 2
             obj.create_brainmask()          % Processing step 3
             obj.merge_echofiles()           % Processing step 4
@@ -132,8 +140,8 @@ classdef PreprocWorker < qb.workers.Worker
             work  = bids.query(BIDSW, 'data', obj.bidsfilter.(workitem));
         end
 
-        function create_common_T1like_M0(obj)
-            %CREATE_COMMON_T1LIKE_M0 is a helper function that implements processing step 1
+        function create_common_syntheticT1_M0(obj)
+            %CREATE_COMMON_SYNTHETICT1_M0 Implements processing step 1
             %
             % Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.
             % The results are blurry but within the common GRE space, hence, iterate the computation
@@ -195,7 +203,7 @@ classdef PreprocWorker < qb.workers.Worker
         end
 
         function coreg_FAs_B1_2common(obj)
-            %COREG_FAS_B1_2COMMON is a helper function that implements processing step 2
+            %COREG_FAS_B1_2COMMON Implements processing step 2
             %
             % Coregister all MEGRE FA-images to each T1w-like target image (using echo-1_mag),
             % coregister the B1 images as well to the M0 (which is also in the common GRE space)
@@ -286,7 +294,7 @@ classdef PreprocWorker < qb.workers.Worker
         end
 
         function create_brainmask(obj)
-            %CREATE_BRAINMASK is a helper function that implements processing step 3
+            %CREATE_BRAINMASK Implements processing step 3
             %
             % Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
             % to produce a minimal output mask (for QSM and MCR processing)
@@ -324,8 +332,8 @@ classdef PreprocWorker < qb.workers.Worker
             
         end
 
-        function [magfiles, phasefiles] = merge_echofiles(obj)
-            %MERGE_ECHOFILES is a helper function that implements processing step 4
+        function merge_echofiles(obj)
+            %MERGE_ECHOFILES Implements processing step 4
             %
             % Merge the 3D echos files for each flip angle into 4D files
 
@@ -357,17 +365,15 @@ classdef PreprocWorker < qb.workers.Worker
                     magfiles   = magfiles(idx);
                     phasefiles = phasefiles(idx);
                     if length(TEs) ~= length(unique(TEs))           % Check if the TEs are unique
-                        obj.logger.exception(sprintf("Non-unique TEs (%s) found in: %s", strtrim(sprintf('%g ', TEs)), subject.path));
+                        obj.logger.exception(sprintf("Non-unique TEs (%s) found in: %s", strtrim(sprintf('%g ', TEs)), subject.path))
                     end
 
                     % Create the 4D mag and phase QSM/MCR input data
-                    bfile               = bids.File(phasefiles{1});
-                    bfile.entities.echo = '';
+                    bfile = obj.update_bfile(bids.File(phasefiles{1}), rmfield(obj.bidsfilter.echos4Dphase), 'desc');
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
                     spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename), {'EchoNumber', 'EchoTime'});
 
-                    bfile               = bids.File(magfiles{1});
-                    bfile.entities.echo = '';
+                    bfile = obj.update_bfile(bids.File(magfiles{1}), rmfield(obj.bidsfilter.echos4Dmag), 'desc');
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
                     spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename), {'EchoNumber', 'EchoTime'});
 

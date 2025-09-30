@@ -105,5 +105,5 @@ end
 
 % Write the output JSON sidecar (if there was at least one input sidecar)
 if ~isempty(metadata)
-    bids.util.jsonencode(spm_file(spm_file(fname, 'ext',''), 'ext','.json'), metadata);
+    bids.util.jsonencode(spm_file(spm_file(fname, 'ext',''), 'ext','.json'), metadata)
 end

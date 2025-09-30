@@ -36,6 +36,7 @@ classdef Manager < handle
         products    % The end productcs (workitems) requested by the user
         team        % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
         coord       % The coordinator that help the manager with administrative tasks
+        force       % Force workers to start working, even if the subject is locked or existing results exist
     end
 
 
@@ -52,6 +53,7 @@ classdef Manager < handle
             obj.coord    = coord;                   % The coordinator that help the manager with administrative tasks
             obj.team     = struct();                % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
             obj.products = products;                % The end productcs (workitems) requested by the user
+            obj.force    = false;
             obj.create_team()
         end
 
@@ -61,7 +63,7 @@ classdef Manager < handle
         end
 
         function create_team(obj)
-            %CREATE_TEAM Selects workers from the pool that together are capable of making the WORKITEMS (end products)
+            %CREATE_TEAM Selects workers from the pool that together are capable of making the PRODUCTS (workitems)
             %
             % Asks the user for help if needed. The assembled team is stored in the TEAM property
 
@@ -123,7 +125,7 @@ classdef Manager < handle
                     if obj.coord.config.useHPC
                         qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:});
                     else
-                        worker(args{:}).fetch(product);     % TODO: Catch the work done (at some point)
+                        worker(args{:}).fetch(product, obj.force);     % TODO: Catch the work done (at some point)
                     end
                 end
 

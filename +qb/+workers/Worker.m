@@ -87,6 +87,7 @@ classdef (Abstract) Worker < handle
             %
             % Inputs:
             %   WORKITEM - Name of the work item that needs to be fetched
+            %   FORCE    - Force to start working, even if the subject is locked or existing results exist
             %
             % Output:
             %   WORK     - A cell array of paths to the produced data files. The produced work
@@ -100,20 +101,21 @@ classdef (Abstract) Worker < handle
 
             % (Re)index the workdir layout
             BIDS = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);     %#ok<PROPLC>
-            work = bids.query(BIDS, 'data', [{'sub',obj.subject.name, 'ses',obj.subject.session}, obj.bidsfilter.(workitem)]);                                      %#ok<PROPLC>
-            if isempty(work)
+            work = bids.query(BIDS, 'data', obj.bidsfilter.(workitem));                                      %#ok<PROPLC>
+            if isempty(work) || force
                 obj.logger.info(sprintf("==> %s has started working on: %s", obj.name, obj.subject.path))
-                if obj.is_locked(true)
+                locked = obj.is_locked();
+                if locked
                     if force
-                        obj.logger.warning(sprintf("%s will do work on %s but it was locked", obj.name, obj.subject.path))
+                        obj.logger.warning(sprintf("Work will be done on %s but it was: %s", obj.subject.path, locked))
                     else
-                        obj.logger.error(sprintf("%s wants to do work on %s but it was locked", obj.name, obj.subject.path))
+                        obj.logger.error(sprintf("%s was: %s", obj.subject.path, locked))
                         return
                     end
                 end
                 % TODO: update the dashboard (non-HPC usage)
                 obj.lock()
-                work = obj.get_work_done(workitem);     % Get the worker to work
+                work = obj.get_work_done(workitem);     % This is where all the concrete work is done
                 obj.unlock()
                 % TODO: update the dashboard (non-HPC usage)
                 if ~isempty(work)
@@ -127,7 +129,7 @@ classdef (Abstract) Worker < handle
         end
 
         function work = ask_colleague(obj, workitem)
-            %ASK_COLLEAGUE Asks a team member to fetch a WORKITEM needed to get work done
+            %ASK_COLLEAGUE Asks a team member to fetch a WORKITEM needed to get the work done
 
             arguments
                 obj
@@ -147,7 +149,7 @@ classdef (Abstract) Worker < handle
                 verbose (1,1) logical = false
             end
 
-            lock_file = [obj.workerpath() '_worker.lock'];
+            lock_file = obj.statusfile('.lock');
             if isfile(lock_file)
                 locker = fileread(lock_file);
                 if verbose
@@ -164,12 +166,12 @@ classdef (Abstract) Worker < handle
             % In this way we avoid concurrency issues and we can use qsubfeval instead
             % of qsubcellfun (which has job-status issues)
 
-            lock_file = [obj.workerpath() '_worker.lock'];
+            lock_file = obj.statusfile('.lock');
             obj.logger.verbose("Locking: " + lock_file)
             [~,~]     = mkdir(fileparts(lock_file));
             fid = fopen(lock_file, 'w');
             if fid ~= -1
-                fprintf(fid, "Locked for %s by %s on %s\n", class(obj), getenv('USERNAME'), datetime('now'));
+                fprintf(fid, "Locked for %s by %s on %s", class(obj), getenv('USERNAME'), datetime('now'));
                 fclose(fid);
             else
                 obj.logger.exception(sprintf("%s could not lock %s", obj.name, lock_file))
@@ -178,7 +180,7 @@ classdef (Abstract) Worker < handle
 
         function unlock(obj)
             % Remove the lock file to indicate the work has stopped
-            lock_file = [obj.workerpath() '_worker.lock'];
+            lock_file = obj.statusfile('.lock');
             obj.logger.verbose("Unlocking: " + lock_file)
             if isfile(lock_file)
                 delete(lock_file);
@@ -193,7 +195,7 @@ classdef (Abstract) Worker < handle
                 verbose (1,1) logical = false
             end
 
-            done_file = [obj.workerpath() '_worker.done'];
+            done_file = obj.statusfile('.done');
             if isfile(done_file)
                 done = fileread(done_file);
                 if verbose
@@ -206,7 +208,7 @@ classdef (Abstract) Worker < handle
 
         function done(obj)
             % Write a done-file to indicate the work has finished successfully
-            done_file = [obj.workerpath() '_worker.done'];
+            done_file = obj.statusfile('.done');
             fid = fopen(done_file, 'a');
             if fid ~= -1
                 fprintf(fid, "%s work was done by %s on %s\n", class(obj), getenv('USERNAME'), datetime('now'));
@@ -214,6 +216,18 @@ classdef (Abstract) Worker < handle
             else
                 obj.logger.error(sprintf("%s could not write a done-file in %s", obj.name, done_file))
             end
+        end
+
+        function label = sub(obj)
+            %SUB Gets the sub-label from the subject
+            label = strsplit(obj.subject.name, '-');
+            label = label{end};
+        end
+
+        function label = ses(obj)
+            %SES Gets the ses-label from the subject
+            label = strsplit(obj.subject.session, '-');
+            label = label{end};
         end
 
         function [status, output] = run_command(obj, command, silent)
@@ -272,10 +286,10 @@ classdef (Abstract) Worker < handle
             oldfname = bfile.filename;          % Store for later use
             oldjname = bfile.json_filename;     % Store for later use
             for field = fieldnames(specs)'
-                if strcmp(field{1}, 'suffix')
-                    bfile.suffix = specs.suffix;
+                if ismember(char(field), ["suffix", "modality"])
+                    bfile.(char(field)) = specs.(char(field));
                 else
-                    bfile.entities.(field{1}) = specs.(field{1});
+                    bfile.entities.(char(field)) = char(specs.(char(field)));
                 end
             end
             
@@ -288,9 +302,9 @@ classdef (Abstract) Worker < handle
 
     methods (Access = private)
 
-        function pth = workerpath(obj)
-            %WORKERPATH Replaces the subject.path with the workdir path and appends a subdirectory named after the worker
-            pth = fullfile(replace(obj.subject.path, obj.BIDS.pth, obj.workdir), regexp(class(obj), '[^.]+$', 'match', 'once'));  % Only take the class basename, i.e. the last part after the dot
+        function pth = statusfile(obj, ext)
+            %WORKERPATH Returns a workdir statusfile named after the worker
+            pth = fullfile(replace(obj.subject.path, obj.BIDS.pth, obj.workdir), [regexp(class(obj), '[^.]+$', 'match', 'once') ext]);  % Only take the class basename, i.e. the last part after the dot
         end
 
     end

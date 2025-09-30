@@ -24,9 +24,9 @@ for subject = subjects
     for run = bids.query(Output, 'runs', anat{:}, 'desc','^FA\d*$', 'echo',[], 'part','mag')
 
         % Get the 4D mag/phase images and brainmask for this run (NB: keep queries in sync with preproc_worker.m)
-        magfiles   = bids.query(Output, 'data', anat{:}, 'run',run{1}, 'desc','^FA\d*$', 'echo',[], 'part','mag');
-        phasefiles = bids.query(Output, 'data', anat{:}, 'run',run{1}, 'desc','^FA\d*$', 'echo',[], 'part','phase');
-        mask       = bids.query(Output, 'data', anat{:}, 'run',run{1}, 'desc','minimal', 'label','brain', 'suffix','mask');
+        magfiles   = bids.query(Output, 'data', anat{:}, 'run',char(run), 'desc','^FA\d*$', 'echo',[], 'part','mag');
+        phasefiles = bids.query(Output, 'data', anat{:}, 'run',char(run), 'desc','^FA\d*$', 'echo',[], 'part','phase');
+        mask       = bids.query(Output, 'data', anat{:}, 'run',char(run), 'desc','minimal', 'label','brain', 'suffix','mask');
         if isempty(magfiles) || (length(magfiles) ~= length(phasefiles))
             error("No unique pre-processed 4D mag/phase images found in: %s", subject.path);
         end
@@ -44,7 +44,7 @@ for subject = subjects
             bfile               = bids.File(input.nifti);
             bfile.entities.part = '';
             bfile.suffix        = '';
-            fparts              = split(bfile.filename, '.');                                   % Split filename extensions to parse the basename
+            fparts              = strsplit(bfile.filename, '.');                                % Split filename extensions to parse the basename
             output              = fullfile(char(obj.workdir), bfile.bids_path, fparts{1});      % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
             save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output)
 
@@ -54,11 +54,11 @@ for subject = subjects
             input(2).name = magfiles{n};
             input(3).name = '';
             input(4).name = [output '_header.mat'];
-            fprintf("\n--> Running SEPIA QSM workflow for %s/%s (run-%s)\n", subject.name, subject.session, run{1})
+            fprintf("\n--> Running SEPIA QSM workflow for %s/%s (run-%s)\n", subject.name, subject.session, char(run))
             sepiaIO(input, output, mask{1}, obj.config.QSM.QSMParam)
 
             % Run the SEPIA R2-star workflow. TODO: Split of in a separate worker
-            fprintf("\n--> Running SEPIA R2-star workflow for %s/%s (run-%s)\n", subject.name, subject.session, run{1})
+            fprintf("\n--> Running SEPIA R2-star workflow for %s/%s (run-%s)\n", subject.name, subject.session, char(run))
             sepiaIO(input, output, mask{1}, obj.config.QSM.R2starParam)
 
             % TODO: Rename/copy all files of interest to become BIDS valid, create sidecar files for them and move them over to obj.outputdir

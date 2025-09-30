@@ -58,21 +58,21 @@ classdef PreprocWorker < qb.workers.Worker
                                "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
                                "   to produce a minimal output mask (for SEPIA)";
                                "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows"];
-            obj.bidsfilter.syntheticT1  = struct('sub', obj.subject.name, ...
-                                                 'ses', obj.subject.session, ...
+            obj.bidsfilter.syntheticT1  = struct('sub', obj.sub(), ...
+                                                 'ses', obj.ses(), ...
                                                  'modality', 'anat', ...
                                                  'part', '', ...
                                                  'space', 'withinGRE', ...
                                                  'desc', 'FA\d*synthetic', ...
                                                  'suffix', 'T1w');
-            obj.bidsfilter.M0map        = struct('sub', obj.subject.name, ...
-                                                 'ses', obj.subject.session, ...
+            obj.bidsfilter.M0map        = struct('sub', obj.sub(), ...
+                                                 'ses', obj.ses(), ...
                                                  'modality', 'anat', ...
                                                  'space', 'withinGRE', ...
                                                  'desc', 'despot1', ...
                                                  'suffix', 'M0map');
-            obj.bidsfilter.brainmask    = struct('sub', obj.subject.name, ...
-                                                 'ses', obj.subject.session, ...
+            obj.bidsfilter.brainmask    = struct('sub', obj.sub(), ...
+                                                 'ses', obj.ses(), ...
                                                  'modality', 'anat', ...
                                                  'echo', [], ...
                                                  'part', '', ...
@@ -146,12 +146,12 @@ classdef PreprocWorker < qb.workers.Worker
             % WorkB = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
             % Process all runs independently
-            anat_mag = {'sub',obj.subject.name, 'ses',obj.subject.session, 'modality','anat', 'part','mag'};
+            anat_mag = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat', 'part','mag'};
             for run = bids.query(obj.BIDS, 'runs', anat_mag{:}, 'echo',1:999)    % Note that the suffix (e.g. 'MEGRE') is already selected in the BIDS layout
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this run
-                FAs_e1m = bids.query(obj.BIDS,     'data', anat_mag{:}, 'echo',1, 'run',run{1});
-                meta    = bids.query(obj.BIDS, 'metadata', anat_mag{:}, 'echo',1, 'run',run{1});
+                FAs_e1m = bids.query(obj.BIDS,     'data', anat_mag{:}, 'echo',1, 'run',char(run));
+                meta    = bids.query(obj.BIDS, 'metadata', anat_mag{:}, 'echo',1, 'run',char(run));
                 flips   = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
                 if length(flips) <= 1
                     obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + sprintf(" %s", flips{:}));
@@ -193,7 +193,7 @@ classdef PreprocWorker < qb.workers.Worker
             end
         end
 
-        function obj = coreg_FAs_B1_2common(obj)
+        function coreg_FAs_B1_2common(obj)
             %COREG_FAS_B1_2COMMON is a helper function that implements processing step 2
             %
             % Coregister all MEGRE FA-images to each T1w-like target image (using echo-1_mag),
@@ -205,37 +205,37 @@ classdef PreprocWorker < qb.workers.Worker
             WorkB = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
             % Process all runs independently
-            anat = {'sub',obj.subject.name, 'ses',obj.subject.session, 'modality','anat'};
-            fmap = {'sub',obj.subject.name, 'ses',obj.subject.session, 'modality','fmap'};
+            anat = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat'};
+            fmap = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','fmap'};
             for run = bids.query(obj.BIDS, 'runs', anat{:}, 'part','mag', 'echo',1:999)
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this run
-                FAs_e1m = bids.query(obj.BIDS,     'data', anat{:}, 'echo',1, 'part','mag', 'run',run{1});
-                meta    = bids.query(obj.BIDS, 'metadata', anat{:}, 'echo',1, 'part','mag', 'run',run{1});
+                FAs_e1m = bids.query(obj.BIDS,     'data', anat{:}, 'echo',1, 'part','mag', 'run',char(run));
+                meta    = bids.query(obj.BIDS, 'metadata', anat{:}, 'echo',1, 'part','mag', 'run',char(run));
                 flips   = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
 
                 % Realign all FA images to their synthetic targets
                 for n = 1:length(flips)
 
                     % Get the common synthetic FA target image
-                    FAref = bids.query(WorkB, 'data', setfield(obj.bidsfilter.syntheticT1, 'run',run{1}));
+                    FAref = bids.query(WorkB, 'data', setfield(setfield(obj.bidsfilter.syntheticT1, 'run',char(run)), 'desc',sprintf('FA%02dsynthetic', flips(n))));    % Keep in sync with obj.bidsfilter.syntheticT1
                     if length(FAref) ~= 1
-                        obj.logger.exception("Unexpected synthetic reference images found: " + sprintf("\n%s",FAref{:}));
+                        obj.logger.exception("I expected one synthetic reference images, but found: " + sprintf("\n%s",FAref{:}));
                     end
 
                     % Coregister the FAs_e1m image to the synthetic target image using Normalized Cross-Correlation (NCC)
                     obj.logger.info("--> Coregistering echo images for FA: " + flips(n))
-                    Vref = spm_vol(FAref{1});
+                    Vref = spm_vol(char(FAref));
                     Vin  = spm_vol(FAs_e1m{n});
                     x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
                     % Save all resliced echo images for this flip angle
-                    for echo = bids.query(obj.BIDS, 'data', anat{:}, 'run',run{1})'
-                        bfile = bids.File(echo{1});
+                    for echo = bids.query(obj.BIDS, 'data', anat{:}, 'run',char(run))'
+                        bfile = bids.File(char(echo));
                         if bfile.metadata.FlipAngle ~= flips(n)
                             continue
                         end
-                        Vin    = spm_vol(echo{1});
+                        Vin    = spm_vol(char(echo));
                         volume = zeros(Vref.dim);
                         T      = Vin.mat \ spm_matrix(x) * Vref.mat;    % Transformation from voxels in Vref to voxels in Vin
                         for z = 1:Vref.dim(3)
@@ -251,9 +251,9 @@ classdef PreprocWorker < qb.workers.Worker
                 end
 
                 % Get the B1 images and the common M0 target image
-                B1famp = bids.query(obj.BIDS,  'data', fmap{:}, 'run',run{1}, 'acq','famp', 'echo',[]);
-                B1anat = bids.query(obj.BIDS,  'data', fmap{:}, 'run',run{1}, 'acq','anat', 'echo',[]);
-                M0ref  = bids.query(WorkB, 'data', anat{:}, 'run',run{1}, 'space','withinGRE', 'suffix','M0map');
+                B1famp = bids.query(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','famp', 'echo',[]);
+                B1anat = bids.query(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','anat', 'echo',[]);
+                M0ref  = bids.query(WorkB, 'data', anat{:}, 'run',char(run), 'space','withinGRE', 'suffix','M0map');
                 if length(B1famp) ~= 1 || length(B1anat) ~= 1
                     error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}));
                 end
@@ -262,19 +262,19 @@ classdef PreprocWorker < qb.workers.Worker
                 end
 
                 % Coregister the B1-anat fmap to the M0 target image using Normalized Mutual Information (NMI)
-                Vref = spm_vol(M0ref{1});
-                Vin  = spm_vol(B1anat{1});
+                Vref = spm_vol(char(M0ref));
+                Vin  = spm_vol(char(B1anat));
                 x    = spm_coreg(Vref, Vin, struct('cost_fun', 'nmi'));
 
                 % Save the resliced B1 images
                 for B1vol = [B1anat, B1famp]
-                    Vin    = spm_vol(B1vol{1});
+                    Vin    = spm_vol(char(B1vol));
                     volume = zeros(Vref.dim);
                     T      = Vin.mat \ spm_matrix(x) * Vref.mat;    % Transformation from voxels in Vref to voxels in Vin
                     for z = 1:Vref.dim(3)
                         volume(:,:,z) = spm_slice_vol(Vin, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                     end
-                    bfile                = bids.File(B1vol{1});
+                    bfile                = bids.File(char(B1vol));
                     bfile.entities.space = 'withinGRE';
                     disp("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
                     spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
@@ -294,11 +294,11 @@ classdef PreprocWorker < qb.workers.Worker
             WorkB = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
             % Process all runs independently
-            anat_mag = {'sub',obj.subject.name, 'ses',obj.subject.session, 'modality','anat', 'space','withinGRE', 'part','mag'};
+            anat_mag = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat', 'space','withinGRE', 'part','mag'};
             for run = bids.query(WorkB, 'runs', anat_mag{:}, 'echo',1:999)
 
                 % Get the echo-1 magnitude file for all flip angles of this run
-                FAs_e1m = bids.query(WorkB, 'data', anat_mag{:}, 'echo',1, 'run',run{1});
+                FAs_e1m = bids.query(WorkB, 'data', anat_mag{:}, 'echo',1, 'run',char(run));
 
                 % Create individual brain masks using mri_synthstrip
                 Ve1m  = spm_vol(FAs_e1m{1});
@@ -334,11 +334,11 @@ classdef PreprocWorker < qb.workers.Worker
             WorkB = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
             % Process all runs independently
-            anat = {'sub',obj.subject.name, 'ses',obj.subject.session, 'modality','anat', 'space','withinGRE'};
+            anat = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat', 'space','withinGRE'};
             for run = bids.query(WorkB, 'runs', anat{:}, 'part','mag', 'echo',1:999, 'desc','FA\d*')
 
                 % Get the flip angles for this run
-                FAs = bids.query(WorkB, 'descriptions', anat{:}, 'desc','FA\d*', 'part','mag', 'echo',1, 'run',run{1});
+                FAs = bids.query(WorkB, 'descriptions', anat{:}, 'desc','FA\d*', 'part','mag', 'echo',1, 'run',char(run));
                 if length(FAs) < 2
                     obj.logger.error("No flip angle images found in: " + obj.subject.path);
                 end
@@ -347,11 +347,11 @@ classdef PreprocWorker < qb.workers.Worker
                 for FA = FAs
 
                     % Get the mag/phase echo images for this flip angle & run
-                    magfiles   = bids.query(WorkB, 'data', anat{:}, 'echo',1:999, 'run',run{1}, 'desc',FA{1}, 'part','mag');
-                    phasefiles = bids.query(WorkB, 'data', anat{:}, 'echo',1:999, 'run',run{1}, 'desc',FA{1}, 'part','phase');
+                    magfiles   = bids.query(WorkB, 'data', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','mag');
+                    phasefiles = bids.query(WorkB, 'data', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','phase');
 
                     % Reorder the data because SEPIA (possibly?) expects the TE to be in increasing order
-                    meta       = bids.query(WorkB, 'metadata', anat{:}, 'echo',1:999, 'run',run{1}, 'desc',FA{1}, 'part','mag');
+                    meta       = bids.query(WorkB, 'metadata', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','mag');
                     [TEs, idx] = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
                     magfiles   = magfiles(idx);
                     phasefiles = phasefiles(idx);
@@ -360,12 +360,12 @@ classdef PreprocWorker < qb.workers.Worker
                     end
 
                     % Create the 4D mag and phase QSM/MCR input data
-                    bfile               = bids.File(phasefiles{1});
+                    bfile               = bids.File(char(phasefiles));
                     bfile.entities.echo = '';
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
                     spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename), {'EchoNumber', 'EchoTime'});
 
-                    bfile               = bids.File(magfiles{1});
+                    bfile               = bids.File(char(magfiles));
                     bfile.entities.echo = '';
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
                     spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename), {'EchoNumber', 'EchoTime'});

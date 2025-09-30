@@ -22,8 +22,8 @@ for subject = subjects
     for run = bids.query(Output, 'runs', anat{:}, 'desc','^FA\d*$', 'suffix','S0map')
 
         % Get generic metadata (from any QSM output image). NB: Keep queries in sync with QSM_worker.m
-        FAs   = bids.query(Output, 'descriptions', anat{:}, 'run',run{1}, 'desc','^FA\d*$', 'suffix','S0map');
-        files = bids.query(Output,         'data', anat{:}, 'run',run{1}, 'desc','^FA\d*$', 'suffix','S0map');
+        FAs   = bids.query(Output, 'descriptions', anat{:}, 'run',char(run), 'desc','^FA\d*$', 'suffix','S0map');
+        files = bids.query(Output,         'data', anat{:}, 'run',char(run), 'desc','^FA\d*$', 'suffix','S0map');
         bfile = bids.File(files{1});
         V     = spm_vol(bfile.filename);
 
@@ -33,10 +33,10 @@ for subject = subjects
         Chi  = NaN([V.dim(1:3) length(FAs)]);
         mask = true;
         for n = 1:length(FAs)
-            S0_file   = bids.query(Output, 'data', anat{:}, 'run',run{1}, 'desc',FAs{n}, 'suffix','S0map');
-            R2s_file  = bids.query(Output, 'data', anat{:}, 'run',run{1}, 'desc',FAs{n}, 'suffix','R2starmap');
-            Chi_file  = bids.query(Output, 'data', anat{:}, 'run',run{1}, 'desc',FAs{n}, 'suffix','Chimap');
-            mask_file = bids.query(Output, 'data', anat{:}, 'run',run{1}, 'desc',[FAs{n} '\+localfield'], 'suffix','mask');
+            S0_file   = bids.query(Output, 'data', anat{:}, 'run',char(run), 'desc',FAs{n}, 'suffix','S0map');
+            R2s_file  = bids.query(Output, 'data', anat{:}, 'run',char(run), 'desc',FAs{n}, 'suffix','R2starmap');
+            Chi_file  = bids.query(Output, 'data', anat{:}, 'run',char(run), 'desc',FAs{n}, 'suffix','Chimap');
+            mask_file = bids.query(Output, 'data', anat{:}, 'run',char(run), 'desc',[FAs{n} '\+localfield'], 'suffix','mask');
             if (length(S0_file) ~= 1) || (length(R2s_file) ~= 1) || (length(Chi_file) ~= 1) || (length(mask_file) ~= 1)
                 error("No unique QSM output files found in: %s", subject.path);
             end

@@ -12,7 +12,6 @@ classdef (Abstract) Worker < handle
         name        % Personal name of the worker
         description % Description of the work that is done (e.g. for GUIs)
         needs       % List of workitems the worker needs
-        makes       % List of workitems the worker makes, i.e. returned by fetch(workitem)
     end
 
     properties (Abstract)
@@ -77,6 +76,10 @@ classdef (Abstract) Worker < handle
 
         end
 
+        function workitems = makes(obj)
+            workitems = fieldnames(obj.bidsfilter)';
+        end
+
         function work = fetch(obj, workitem, force)
             %FETCH Gets the workitem.
             %
@@ -97,6 +100,13 @@ classdef (Abstract) Worker < handle
                 obj
                 workitem {mustBeTextScalar, mustBeNonempty}
                 force    logical = false
+            end
+
+            % Check the input
+            if ~ismember(workitem, obj.makes())
+                obj.logger.error(sprintf("Tell the manager that %s does not know what a %s workitem is", obj.name, workitem))
+                work = {};
+                return
             end
 
             % (Re)index the workdir layout
@@ -124,20 +134,36 @@ classdef (Abstract) Worker < handle
                 else
                     obj.logger.error(sprintf("%s could not produce the requested %s item", obj.name, workitem))
                 end
+            else
+                obj.logger.info(sprintf("%s fetched %d requested %s items", obj.name, length(work), workitem))
             end
 
+            % Make sure that the work exists
+            for item = work(:)'
+                if ~isfile(item)
+                    obj.logger.exception(sprintf('%s said he made %s but it does not exist', obj.name, item))
+                end
+            end
         end
 
-        function work = ask_colleague(obj, workitem)
-            %ASK_COLLEAGUE Asks a team member to fetch a WORKITEM needed to get the work done
+        function [work, bidsfilter] = ask_team(obj, workitem)
+            %ASK_TEAM Asks a team member to fetch a WORKITEM needed to get the work done
 
             arguments
                 obj
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            colleague = obj.team(workitem).handle(obj.subject, obj.BIDS, obj.team);
-            work      = colleague.fetch(workitem);
+            % Check the input
+            if ~isfield(obj.team, workitem)
+                obj.logger.error(sprintf("%s asked for a %s workitem but nobody in the team knows what that is", obj.name, workitem))
+                work = {};
+                return
+            end
+
+            coworker   = obj.team.(workitem).handle(obj.BIDS, obj.subject, obj.config, obj.workdir, obj.outputdir, obj.team);
+            work       = coworker.fetch(workitem);
+            bidsfilter = coworker.bidsfilter.(workitem);
 
         end
 

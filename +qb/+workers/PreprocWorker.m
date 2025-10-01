@@ -19,7 +19,6 @@ classdef PreprocWorker < qb.workers.Worker
         name        % Name of the worker
         description % Description of the work that is done (e.g. for GUIs)
         needs       % List of workitems the worker needs
-        makes       % List of workitems the worker makes, i.e. returned by fetch(workitem)
     end
 
 
@@ -58,6 +57,7 @@ classdef PreprocWorker < qb.workers.Worker
                                "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
                                "   to produce a minimal output mask (for SEPIA)";
                                "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows"];
+            obj.needs       = [];         % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
             obj.bidsfilter.syntheticT1  = struct('sub', obj.sub(), ...
                                                  'ses', obj.ses(), ...
                                                  'modality', 'anat', ...
@@ -88,11 +88,9 @@ classdef PreprocWorker < qb.workers.Worker
                                                  'desc','FA\d*', ...
                                                  'space','withinGRE');
             obj.bidsfilter.echos4Dphase = setfield(obj.bidsfilter.echos4Dmag, 'part', 'phase');
-            obj.makes = fieldnames(obj.bidsfilter)';
-            obj.needs = [];         % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
 
-            % Make the workitems (if requested)
-            if workitems
+            % Fetch the workitems (if requested)
+            if strlength(workitems)                             % isempty(string('')) -> false
                 for workitem = string(workitems)
                     obj.fetch(workitem);
                 end
@@ -120,20 +118,16 @@ classdef PreprocWorker < qb.workers.Worker
             end
 
             % Check the input
-            if ~ismember(workitem, obj.makes)
-                obj.logger.exception(sprintf("Tell the manager that %s does not now what a %s workitem is", obj.name, workitem))
-                return
-            end
             if isempty(obj.subject.anat) || isempty(obj.subject.fmap)
                 work = {};
                 return
             end
 
             % Get the work done
-            obj.create_common_syntheticT1_M0()   % Processing step 1
-            obj.coreg_FAs_B1_2common()      % Processing step 2
-            obj.create_brainmask()          % Processing step 3
-            obj.merge_echofiles()           % Processing step 4
+            obj.create_common_syntheticT1_M0()  % Processing step 1
+            obj.coreg_FAs_B1_2common()          % Processing step 2
+            obj.create_brainmask()              % Processing step 3
+            obj.merge_echofiles()               % Processing step 4
             
             % Collect the requested workitem
             BIDSW = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
@@ -285,7 +279,7 @@ classdef PreprocWorker < qb.workers.Worker
                     end
                     bfile                = bids.File(char(B1vol));
                     bfile.entities.space = 'withinGRE';
-                    disp("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
+                    obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
                     spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
                     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                 end
@@ -315,7 +309,7 @@ classdef PreprocWorker < qb.workers.Worker
                 for n = 1:length(FAs_e1m)
                     bfile               = obj.update_bfile(bids.File(FAs_e1m{n}), obj.bidsfilter.brainmask);
                     bfile.entities.desc = sprintf('FA%02d', bfile.metadata.FlipAngle);
-                    fprintf("\n--> Creating brain mask for FA: %d -> %s\n", bfile.metadata.FlipAngle, bfile.filename)
+                    obj.logger.info(sprintf("--> Creating brain mask for FA: %d -> %s", bfile.metadata.FlipAngle, bfile.filename))
                     obj.run_command(sprintf("mri_synthstrip -i %s -m %s", FAs_e1m{n}, bfile.path));
                     masks(:,:,:,n)      = spm_vol(bfile.path).dat();
                     delete(bfile.path)      % Delete the individual mask files to save space
@@ -369,11 +363,11 @@ classdef PreprocWorker < qb.workers.Worker
                     end
 
                     % Create the 4D mag and phase QSM/MCR input data
-                    bfile = obj.update_bfile(bids.File(phasefiles{1}), rmfield(obj.bidsfilter.echos4Dphase), 'desc');
+                    bfile = obj.update_bfile(bids.File(phasefiles{1}), rmfield(obj.bidsfilter.echos4Dphase, 'desc'));
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
                     spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename), {'EchoNumber', 'EchoTime'});
 
-                    bfile = obj.update_bfile(bids.File(magfiles{1}), rmfield(obj.bidsfilter.echos4Dmag), 'desc');
+                    bfile = obj.update_bfile(bids.File(magfiles{1}), rmfield(obj.bidsfilter.echos4Dmag, 'desc'));
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
                     spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename), {'EchoNumber', 'EchoTime'});
 

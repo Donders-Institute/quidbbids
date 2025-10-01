@@ -58,7 +58,7 @@ classdef QuIDBBIDS < qb.workers.Coordinator
                 bidsdir = uigetdir(pwd, "Select the root BIDS directory");
             end
             if strlength(configfile) == 0
-                configfile = fullfile(outputdir, "code", "config.toml");
+                configfile = fullfile(bidsdir, "derivatives", "QuIDBBIDS", "code", "config.toml");  % A bit of a hack because obj is not yet fully constructed
             elseif isfolder(configfile)
                 error("The configfile must be a file, not a folder: " + configfile)
             end

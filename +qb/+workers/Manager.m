@@ -62,17 +62,18 @@ classdef Manager < handle
             obj.products = string(val);
         end
 
-        function create_team(obj)
+        function create_team(obj, workitems)
             %CREATE_TEAM Selects workers from the pool that together are capable of making the PRODUCTS (workitems)
             %
             % Asks the user for help if needed. The assembled team is stored in the TEAM property
 
             arguments
                 obj
+                workitems {mustBeText} = obj.products
             end
 
             % Find and select one capable worker per workitem
-            for workitem = obj.products
+            for workitem = workitems
                 for worker = obj.coord.resumes
                     if ismember(workitem, worker.makes)     % Add to the team if the worker is capable
                         if isfield(obj.team, workitem)

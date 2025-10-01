@@ -84,7 +84,7 @@ classdef (Abstract) Coordinator < handle
                     resumes(1+end).handle      = str2func(class(worker));
                     resumes(  end).name        = worker.name;
                     resumes(  end).description = worker.description;
-                    resumes(  end).makes       = worker.makes(:)';
+                    resumes(  end).makes       = worker.makes();
                     resumes(  end).needs       = worker.needs(:)';
                     resumes(  end).usesGPU     = worker.usesGPU;
                     resumes(  end).preferred   = false;

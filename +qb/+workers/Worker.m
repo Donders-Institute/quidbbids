@@ -330,10 +330,14 @@ classdef (Abstract) Worker < handle
             oldfname = bfile.filename;          % Store for later use
             oldjname = bfile.json_filename;     % Store for later use
             for field = fieldnames(specs)'
-                if ismember(char(field), ["suffix", "modality"])
-                    bfile.(char(field)) = specs.(char(field));
+                value = specs.(field);
+                if isinteger(value)
+                    value = num2str(value);
+                end
+                if ismember(field, ["suffix", "modality"])
+                    bfile.(field) = char(value);
                 else
-                    bfile.entities.(char(field)) = char(specs.(char(field)));
+                    bfile.entities.(field) = char(value);
                 end
             end
             

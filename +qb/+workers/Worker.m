@@ -118,19 +118,20 @@ classdef (Abstract) Worker < handle
                 % TODO: update the dashboard (non-HPC usage)
                 
                 % Get the work done
+                cleanup = onCleanup(@() obj.unlock());
                 obj.lock()
                 obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
-                obj.unlock()
+
                 % TODO: update the dashboard (non-HPC usage)
+                
+                % Collect the requested workitem
+                work = bids.query(obj.layout_workdir(), 'data', setfield(setfield(obj.bidsfilter.(workitem), 'sub',obj.sub()), 'ses',obj.ses()));
                 if ~isempty(work)
                     obj.done()
                     obj.logger.info(obj.name + " has finished working on: " + obj.subject.path)
                 else
                     obj.logger.error(sprintf("%s could not produce the requested %s item", obj.name, workitem))
                 end
-                
-                % Collect the requested workitem
-                work = bids.query(obj.layout_workdir(), 'data', setfield(setfield(obj.bidsfilter.(workitem), 'sub',obj.sub()), 'ses',obj.ses()));
                 
             else
                 obj.logger.info(sprintf("%s fetched %d requested %s items", obj.name, length(work), workitem))

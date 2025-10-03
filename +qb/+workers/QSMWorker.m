@@ -127,12 +127,12 @@ classdef QSMWorker < qb.workers.Worker
                 sepiaIO(input, output, char(mask), param)
 
                 % Bluntly rename mask files to make them BIDS valid (bids-matlab fails on the original files)
-                for mask = dir([output '*_mask_*'])'
-                    bname  = extractBefore(mask.name,'.');
-                    ext    = extractAfter(mask.name, '.');
-                    source = fullfile(mask.folder, mask.name);
-                    target = fullfile(mask.folder, [replace(bname, '_mask_', '_label-') '_mask.' ext]);
-                    obj.logger.verbose(sprinf('Renaming %s -> %s', source, target))
+                for srcmask = dir([output '*_mask_*'])'
+                    bname  = extractBefore(srcmask.name,'.');
+                    ext    = extractAfter(srcmask.name, '.');
+                    source = fullfile(srcmask.folder, srcmask.name);
+                    target = fullfile(srcmask.folder, [replace(bname, '_mask_', '_label-') '_mask.' ext]);
+                    obj.logger.verbose(sprintf('Renaming %s -> %s', source, target))
                     movefile(source, target)
                 end
 

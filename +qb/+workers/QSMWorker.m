@@ -7,7 +7,6 @@ classdef QSMWorker < qb.workers.Worker
         needs       % List of workitems the worker needs
     end
 
-
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `bids.query('data', setfield(bidsfilter.(workitem), 'run',1))`
     end
@@ -41,17 +40,16 @@ classdef QSMWorker < qb.workers.Worker
             obj.name        = "Kwok";
             obj.description = ["I am your SEPIA expert that can make shiny QSM and R2-star images for you"];
             obj.needs       = ["echos4Dmag", "echos4Dphase", "brainmask"];
-            obj.bidsfilter.R2star = struct('sub', obj.sub(), ...
-                                           'ses', obj.ses(), ...
-                                            'modality', 'anat', ...
-                                            'echo', [], ...
-                                            'part', '', ...
-                                            'desc','FA\d*', ...
-                                            'space','withinGRE', ...
-                                            'suffix', 'R2starmap');
-            obj.bidsfilter.T2star = setfield(obj.bidsfilter.R2star, 'suffix', 'T2starmap');
-            obj.bidsfilter.S0     = setfield(obj.bidsfilter.R2star, 'suffix', 'S0map');
-            obj.bidsfilter.Chi    = setfield(obj.bidsfilter.R2star, 'suffix', 'Chimap');
+            obj.bidsfilter.R2starmap  = struct('modality', 'anat', ...
+                                               'echo', [], ...
+                                               'part', '', ...
+                                               'desc', 'FA\d*', ...
+                                               'space', 'withinGRE', ...
+                                               'suffix', 'R2starmap');
+            obj.bidsfilter.T2starmap  = setfield(obj.bidsfilter.R2starmap, 'suffix','T2starmap');
+            obj.bidsfilter.S0map      = setfield(obj.bidsfilter.R2starmap, 'suffix','S0map');
+            obj.bidsfilter.Chimap     = setfield(obj.bidsfilter.R2starmap, 'suffix','Chimap');
+            obj.bidsfilter.localfmask = setfield(setfield(obj.bidsfilter.R2starmap, 'label','localfield'), 'suffix','mask');
 
             % Fetch the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
@@ -59,33 +57,18 @@ classdef QSMWorker < qb.workers.Worker
                     obj.fetch(workitem);
                 end
             end
-
         end
 
-        function work = get_work_done(obj, workitem)
-            %GET_WORK_DONE Does the work to produce the workitem and recruits other workers as needed
-            %
-            % Inputs:
-            %   WORKITEM - Name of the work item that needs to be fetched
-            %
-            % Output:
-            %   WORK     - A cell array of paths to the produced data files. The produced work
-            %              can be queried using BIDSFILTERS
+        function get_work_done(obj, workitem)
+            %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
 
             arguments (Input)
                 obj
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            arguments (Output)
-                work
-            end
-            
-            import qb.utils.spm_file_merge_gz
-
             % Check the input
             if isempty(obj.subject.anat) || isempty(obj.subject.fmap)
-                work = {};
                 return
             end
 
@@ -95,54 +78,65 @@ classdef QSMWorker < qb.workers.Worker
             phasefiles  = obj.ask_team('echos4Dphase');
             mask        = obj.ask_team('brainmask');
             obj.workdir = replace(obj.workdir, "QuIDBBIDS", "SEPIA");
+
+            % Check the received workitems
+            if length(magfiles) ~= length(phasefiles)
+                obj.logger.exception(sprintf('%s got %d magnitude vs %d phase files', obj.name, length(magfiles), length(phasefiles)))
+            end
             if length(mask) ~= 1    % TODO: FIXME
                 obj.logger.exception('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', mask{:}))
             end
 
-            % Process all runs and flip angles independently
+            % Process all acquisition protocols, runs and flip angles independently
             for n = 1:length(magfiles)
 
-                % Get the bids.File info
-                bfile  = bids.File(magfiles{n});                            % Also used for constructing the mag-output
-                bfile_ = bids.File(phasefiles{n});                          % Just for checking if we have a matching phase image
-                if ~strcmp(bfile.filename, replace(bfile_.filename, '_part-phase_','_part-mag_'))
-                    obj.logger.exception(sprintf("Magnitude and phase images do not match:\n%s\n%s", bfile.filename, bfile_.filename))
+                % Make sure the magnitude and phase images belong together
+                if ~strcmp(magfiles{n}, replace(phasefiles{n}, '_part-phase_','_part-mag_'))
+                    obj.logger.exception(sprintf("Magnitude and phase images do not match:\n%s\n%s", magfiles{n}, phasefiles{n}))
                 end
 
                 % Create a SEPIA header file
                 clear input
                 input.nifti         = magfiles{n};                          % For extracting B0 direction, voxel size, matrix size (only the first 3 dimensions)
-                input.TEFileList    = {spm_file(spm_file(bfile.path, 'ext',''), 'ext','.json')};  % Could just be left empty??
-                bfile.entities.part = '';                                   % Start constructing the output basename
+                input.TEFileList    = {spm_file(spm_file(magfiles{n}, 'ext',''), 'ext','.json')};  % Could just be left empty??
+                bfile               = bids.File(magfiles{n});               % Start constructing the output basename
+                bfile.entities.part = '';
                 bfile.suffix        = '';                                   % SEPIA adds suffixes of its own
                 output              = char(fullfile(obj.workdir, bfile.bids_path, extractBefore(bfile.filename,'.')));  % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
                 save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output)     % Override SEPIA's TE values with what the bfile says (-> added by spm_file_merge_gz)
 
                 % Get the SEPIA parameters
                 switch workitem
-                    case {"R2star", "T2star", "S0"}
-                        param = "R2star";
-                    case {"Chi"}
-                        param = "QSM";
+                    case fieldnames(obj.config.QSMWorker)
+                        param = obj.config.QSMWorker.(workitem);
+                    case {"T2starmap", "S0map"}
+                        param = obj.config.QSMWorker.("R2starmap");
+                    case {"Chimap"}
+                        param = obj.config.QSMWorker.("QSM");
                     otherwise
-                        obj.logger.exception(sprintf("%s cannot find the parameters for: %s ", obj.name, workitem))
+                        obj.logger.exception(sprintf("%s cannot find the SEPIA parameters for: %s ", obj.name, workitem))
                 end
 
-                % Run the SEPIA QSM workflow
+                % Run the SEPIA workflow
                 clear input
                 input(1).name = phasefiles{n};  % For input().name see SEPIA GUI
                 input(2).name = magfiles{n};
                 input(3).name = '';
                 input(4).name = [output '_header.mat'];
                 obj.logger.info(sprintf("--> Running SEPIA %s workflow for %s/%s", workitem, obj.subject.name, obj.subject.session))
-                sepiaIO(input, output, char(mask), obj.config.QSMWorker.(param))
+                sepiaIO(input, output, char(mask), param)
 
-                % TODO: Rename/copy all files of interest to become BIDS valid, create sidecar files for them and move them over to obj.outputdir
+                % Bluntly rename mask files to make them BIDS valid (bids-matlab fails on the original files)
+                for mask = dir([output '*_mask_*'])'
+                    bname  = extractBefore(mask.name,'.');
+                    ext    = extractAfter(mask.name, '.');
+                    source = fullfile(mask.folder, mask.name);
+                    target = fullfile(mask.folder, [replace(bname, '_mask_', '_label-') '_mask.' ext]);
+                    obj.logger.verbose(sprinf('Renaming %s -> %s', source, target))
+                    movefile(source, target)
+                end
+
             end
-
-            % Collect the requested workitem
-            BIDSW = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
-            work  = bids.query(BIDSW, 'data', obj.bidsfilter.(workitem));
         end
 
     end

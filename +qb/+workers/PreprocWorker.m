@@ -21,7 +21,6 @@ classdef PreprocWorker < qb.workers.Worker
         needs       % List of workitems the worker needs
     end
 
-
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `bids.query('data', setfield(bidsfilter.(workitem), 'run',1))`
     end
@@ -58,68 +57,51 @@ classdef PreprocWorker < qb.workers.Worker
                                "   to produce a minimal output mask (for SEPIA)";
                                "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows"];
             obj.needs       = [];         % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
-            obj.bidsfilter.syntheticT1  = struct('sub', obj.sub(), ...
-                                                 'ses', obj.ses(), ...
-                                                 'modality', 'anat', ...
+            obj.bidsfilter.syntheticT1  = struct('modality', 'anat', ...
                                                  'part', '', ...
                                                  'space', 'withinGRE', ...
                                                  'desc', 'FA\d*synthetic', ...
                                                  'suffix', 'T1w');
-            obj.bidsfilter.M0map        = struct('sub', obj.sub(), ...
-                                                 'ses', obj.ses(), ...
-                                                 'modality', 'anat', ...
+            obj.bidsfilter.M0map_echo1  = struct('modality', 'anat', ...
                                                  'space', 'withinGRE', ...
-                                                 'desc', 'despot1', ...
+                                                 'desc', 'despot1echo1', ...
                                                  'suffix', 'M0map');
-            obj.bidsfilter.brainmask    = struct('sub', obj.sub(), ...
-                                                 'ses', obj.ses(), ...
-                                                 'modality', 'anat', ...
+            obj.bidsfilter.brainmask    = struct('modality', 'anat', ...
                                                  'echo', [], ...
                                                  'part', '', ...
                                                  'space', 'withinGRE', ...
                                                  'desc', 'minimal', ...
                                                  'label', 'brain', ...
                                                  'suffix', 'mask');
-            obj.bidsfilter.echos4Dmag   = struct('sub', obj.sub(), ...
-                                                 'ses', obj.ses(), ...
-                                                 'modality', 'anat', ...
+            obj.bidsfilter.echos4Dmag   = struct('modality', 'anat', ...
                                                  'echo', [], ...
                                                  'part', 'mag', ...
-                                                 'desc','FA\d*', ...
-                                                 'space','withinGRE');
+                                                 'desc', 'FA\d*', ...
+                                                 'space', 'withinGRE');
             obj.bidsfilter.echos4Dphase = setfield(obj.bidsfilter.echos4Dmag, 'part', 'phase');
-
+            obj.bidsfilter.FAmap_angle  = struct('modality', 'fmap', ...
+                                                 'space', 'withinGRE', ...
+                                                 'acq', 'famp');
+            obj.bidsfilter.FAmap_anat   = setfield(obj.bidsfilter.FAmap_angle, 'acq', 'anat');
+            
             % Fetch the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
                 for workitem = string(workitems)
                     obj.fetch(workitem);
                 end
             end
-
         end
 
-        function work = get_work_done(obj, workitem)
-            %GET_WORK_DONE Does the work to produce the workitem and recruits other workers as needed
-            %
-            % Inputs:
-            %   WORKITEM - Name of the work item that needs to be fetched
-            %
-            % Output:
-            %   WORK     - A cell array of paths to the produced data files. The produced work
-            %              can be queried using BIDSFILTERS
+        function get_work_done(obj, workitem)
+            %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
 
             arguments (Input)
                 obj
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            arguments (Output)
-                work
-            end
-
             % Check the input
             if isempty(obj.subject.anat) || isempty(obj.subject.fmap)
-                work = {};
                 return
             end
 
@@ -128,10 +110,6 @@ classdef PreprocWorker < qb.workers.Worker
             obj.coreg_FAs_B1_2common()          % Processing step 2
             obj.create_brainmask()              % Processing step 3
             obj.merge_echofiles()               % Processing step 4
-            
-            % Collect the requested workitem
-            BIDSW = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
-            work  = bids.query(BIDSW, 'data', obj.bidsfilter.(workitem));
         end
 
         function create_common_syntheticT1_M0(obj)
@@ -178,21 +156,20 @@ classdef PreprocWorker < qb.workers.Worker
                 for n = 1:length(flips)
                     T1w                    = M0 .* GRESignal(flips(n), TR, T1);
                     T1w(~isfinite(T1w))    = 0;
-                    bfile                  = obj.update_bfile(bids.File(FAs_e1m{n}), obj.bidsfilter.syntheticT1);
-                    bfile.entities.desc    = sprintf('FA%02dsynthetic', flips(n));                          % Keep in sync with obj.bidsfilter.syntheticT1.desc
+                    specs                  = setfield(obj.bidsfilter.syntheticT1, 'desc', sprintf('FA%02dsynthetic', flips(n)));  % Keep in sync with obj.bidsfilter.syntheticT1.desc
+                    bfile                  = obj.update_bfile(bids.File(FAs_e1m{n}), specs);
                     bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};                               % TODO: FIXME
                     obj.logger.info("Saving T1like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
-                    spm_write_vol_gz(Ve1m, T1w, fullfile(obj.workdir, bfile.bids_path, bfile.filename));    % NB: bfile.path is not updated automatically
+                    spm_write_vol_gz(Ve1m, T1w, bfile.path);
                     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                 end
 
                 % Save the M0 volume as well
-                bfile                  = obj.update_bfile(bfile, obj.bidsfilter.M0map);
+                bfile                  = obj.update_bfile(bids.File(FAs_e1m{n}), obj.bidsfilter.M0map_echo1);
                 bfile.metadata.Sources = strrep(FAs_e1m, extractBefore(FAs_e1m{1}, bfile.bids_path), 'bids:raw:');
                 obj.logger.info("Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
-                spm_write_vol_gz(Ve1m, M0, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+                spm_write_vol_gz(Ve1m, M0, bfile.path);
                 bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
-
             end
         end
 
@@ -204,8 +181,8 @@ classdef PreprocWorker < qb.workers.Worker
 
             import qb.utils.spm_write_vol_gz
 
-            % (Re)index the workdir layout
-            BIDSW = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+            % Index the workdir layout (only for obj.subject)
+            BIDSW = obj.layout_workdir();
 
             % Process all runs independently
             anat = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat'};
@@ -232,7 +209,7 @@ classdef PreprocWorker < qb.workers.Worker
                     Vin  = spm_vol(FAs_e1m{n});
                     x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
-                    % Save all resliced echo images for this flip angle
+                    % Save all resliced echo images for this flip angle (they will be merged to a 4D-file later)
                     for echo = bids.query(obj.BIDS, 'data', anat{:}, 'run',char(run))'
                         bfile = bids.File(char(echo));
                         if bfile.metadata.FlipAngle ~= flips(n)
@@ -244,7 +221,7 @@ classdef PreprocWorker < qb.workers.Worker
                         for z = 1:Vref.dim(3)
                             volume(:,:,z) = spm_slice_vol(Vin, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                         end
-                        bfile.entities.space   = 'withinGRE';
+                        bfile.entities.space   = obj.bidsfilter.echos4Dmag.space;
                         bfile.entities.desc    = sprintf('FA%02d', flips(n));
                         bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
                         spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
@@ -254,9 +231,9 @@ classdef PreprocWorker < qb.workers.Worker
                 end
 
                 % Get the B1 images and the common M0 target image
-                B1famp = bids.query(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','famp', 'echo',[]);
+                B1famp = bids.query(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','famp', 'echo',[]);  % TODO: Use a GetdataWorker
                 B1anat = bids.query(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','anat', 'echo',[]);
-                M0ref  = bids.query(BIDSW, 'data', anat{:}, 'run',char(run), 'space','withinGRE', 'suffix','M0map');
+                M0ref  = bids.query(BIDSW,     'data', setfield(obj.bidsfilter.M0map_echo1, 'run',char(run)));
                 if length(B1famp) ~= 1 || length(B1anat) ~= 1
                     error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}));
                 end
@@ -278,12 +255,11 @@ classdef PreprocWorker < qb.workers.Worker
                         volume(:,:,z) = spm_slice_vol(Vin, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                     end
                     bfile                = bids.File(char(B1vol));
-                    bfile.entities.space = 'withinGRE';
+                    bfile.entities.space = obj.bidsfilter.FAmap_angle.space;
                     obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
                     spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
                     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                 end
-
             end
         end
 
@@ -293,11 +269,11 @@ classdef PreprocWorker < qb.workers.Worker
             % Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
             % to produce a minimal output mask (for QSM and MCR processing)
 
-            % (Re)index the workdir layout
-            BIDSW = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+            % Index the workdir layout (only for obj.subject)
+            BIDSW = obj.layout_workdir();
 
             % Process all runs independently
-            anat_mag = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat', 'space','withinGRE', 'part','mag'};
+            anat_mag = {'modality','anat', 'space',obj.bidsfilter.brainmask.space, 'part','mag'};  % Keep in sync
             for run = bids.query(BIDSW, 'runs', anat_mag{:}, 'echo',1:999)
 
                 % Get the echo-1 magnitude file for all flip angles of this run
@@ -307,23 +283,23 @@ classdef PreprocWorker < qb.workers.Worker
                 Ve1m  = spm_vol(FAs_e1m{1});
                 masks = zeros([Ve1m.dim length(FAs_e1m)]);
                 for n = 1:length(FAs_e1m)
-                    bfile               = obj.update_bfile(bids.File(FAs_e1m{n}), obj.bidsfilter.brainmask);
-                    bfile.entities.desc = sprintf('FA%02d', bfile.metadata.FlipAngle);
+                    bfile          = bids.File(FAs_e1m{n});
+                    specs          = setfield(obj.bidsfilter.brainmask, 'desc', sprintf('FA%02d', bfile.metadata.FlipAngle));
+                    bfile          = obj.update_bfile(bfile, specs);
                     obj.logger.info(sprintf("--> Creating brain mask for FA: %d -> %s", bfile.metadata.FlipAngle, bfile.filename))
                     obj.run_command(sprintf("mri_synthstrip -i %s -m %s", FAs_e1m{n}, bfile.path));
-                    masks(:,:,:,n)      = spm_vol(bfile.path).dat();
+                    masks(:,:,:,n) = spm_vol(bfile.path).dat();
                     delete(bfile.path)      % Delete the individual mask files to save space
                 end
 
                 % Combine the individual masks to create a minimal brain mask
-                bfile.entities.desc = obj.bidsfilter.brainmask.desc;
-                Ve1m.dt(1)          = spm_type('uint8');
-                Ve1m.pinfo          = [1; 0];
+                bfile      = obj.update_bfile(bfile, obj.bidsfilter.brainmask);
+                Ve1m.dt(1) = spm_type('uint8');
+                Ve1m.pinfo = [1; 0];
                 qb.utils.spm_write_vol_gz(Ve1m, all(masks,4), bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
 
             end
-            
         end
 
         function merge_echofiles(obj)
@@ -333,11 +309,11 @@ classdef PreprocWorker < qb.workers.Worker
 
             import qb.utils.spm_file_merge_gz
 
-            % (Re)index the workdir layout
-            BIDSW = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+            % Index the workdir layout (only for obj.subject)
+            BIDSW = obj.layout_workdir();
 
             % Process all runs independently
-            anat = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat', 'space','withinGRE'};
+            anat = {'modality','anat', 'space',obj.bidsfilter.echos4Dmag.space};
             for run = bids.query(BIDSW, 'runs', anat{:}, 'part','mag', 'echo',1:999, 'desc','FA\d*')
 
                 % Get the flip angles for this run
@@ -365,15 +341,14 @@ classdef PreprocWorker < qb.workers.Worker
                     % Create the 4D mag and phase QSM/MCR input data
                     bfile = obj.update_bfile(bids.File(phasefiles{1}), rmfield(obj.bidsfilter.echos4Dphase, 'desc'));
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
-                    spm_file_merge_gz(phasefiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename), {'EchoNumber', 'EchoTime'});
+                    spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
                     bfile = obj.update_bfile(bids.File(magfiles{1}), rmfield(obj.bidsfilter.echos4Dmag, 'desc'));
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
-                    spm_file_merge_gz(magfiles, fullfile(obj.workdir, bfile.bids_path, bfile.filename), {'EchoNumber', 'EchoTime'});
+                    spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
                 end
             end
-
         end
 
     end

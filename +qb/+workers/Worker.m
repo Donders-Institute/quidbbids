@@ -15,7 +15,7 @@ classdef (Abstract) Worker < handle
     end
 
     properties (Abstract)
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `bids.query('data', setfield(bidsfilter.(workitem), 'run',1))`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `bids.query(layout_workdir, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
 
     properties (GetAccess = public, SetAccess = protected)
@@ -35,17 +35,8 @@ classdef (Abstract) Worker < handle
 
     methods (Abstract)
 
-        work = get_work_done(obj, workitem)
-        %GET_WORK_DONE Does the work done for the workitem and recruits other workers as needed
-        %
-        % arguments (Input)
-        %     obj
-        %     workitem {mustBeTextScalar}   % Name of the work item that needs to be fetched
-        % end
-        %
-        % arguments (Output)
-        %     work                          % A cell array of paths to the produced data files
-        % end
+        get_work_done(obj, workitem)
+        %GET_WORK_DONE Does the work done for the WORKITEM and recruits other workers as needed
 
     end
 
@@ -109,10 +100,10 @@ classdef (Abstract) Worker < handle
                 return
             end
 
-            % (Re)index the workdir layout
-            BIDS = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);     %#ok<PROPLC>
-            work = bids.query(BIDS, 'data', obj.bidsfilter.(workitem));                                      %#ok<PROPLC>
+            % See if we can collect the requested workitem
+            work = bids.query(obj.layout_workdir(), 'data', setfield(setfield(obj.bidsfilter.(workitem), 'sub',obj.sub()), 'ses',obj.ses()));
             if isempty(work) || force
+
                 obj.logger.info(sprintf("==> %s has started working on: %s", obj.name, obj.subject.path))
                 locked = obj.is_locked();
                 if locked
@@ -123,9 +114,12 @@ classdef (Abstract) Worker < handle
                         return
                     end
                 end
+                
                 % TODO: update the dashboard (non-HPC usage)
+                
+                % Get the work done
                 obj.lock()
-                work = obj.get_work_done(workitem);     % This is where all the concrete work is done
+                obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
                 obj.unlock()
                 % TODO: update the dashboard (non-HPC usage)
                 if ~isempty(work)
@@ -134,12 +128,16 @@ classdef (Abstract) Worker < handle
                 else
                     obj.logger.error(sprintf("%s could not produce the requested %s item", obj.name, workitem))
                 end
+                
+                % Collect the requested workitem
+                work = bids.query(obj.layout_workdir(), 'data', setfield(setfield(obj.bidsfilter.(workitem), 'sub',obj.sub()), 'ses',obj.ses()));
+                
             else
                 obj.logger.info(sprintf("%s fetched %d requested %s items", obj.name, length(work), workitem))
             end
 
             % Make sure that the work exists
-            for item = work(:)'
+            for item = work'
                 if ~isfile(item)
                     obj.logger.exception(sprintf('%s said he made %s but it does not exist', obj.name, item))
                 end
@@ -245,17 +243,22 @@ classdef (Abstract) Worker < handle
         end
 
         function label = sub(obj)
-            %SUB Gets the sub-label from the subject
+            %SUB Gets the sub-label from the subject data-structure
             label = strsplit(obj.subject.name, '-');
             label = label{end};
         end
 
         function label = ses(obj)
-            %SES Gets the ses-label from the subject
+            %SES Gets the ses-label from the subject data-structure
             label = strsplit(obj.subject.session, '-');
             label = label{end};
         end
 
+        function BIDSW = layout_workdir(obj)
+            %LAYOUT_WORKDIR Gets a tolerant bids.layout() for the current sub/ses workdir
+            BIDSW = bids.layout(char(obj.workdir), 'filter', struct('sub',obj.sub(), 'ses',obj.ses()), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+        end
+        
         function [status, output] = run_command(obj, command, silent)
             %RUN_COMMAND Executes a shell command and display its output.
             %
@@ -295,17 +298,25 @@ classdef (Abstract) Worker < handle
             end
         end
 
-    end
-
-
-    methods (Static)
-
-        function bfile = update_bfile(bfile, specs)
+        function bfile = update_bfile(obj, bfile, specs, rootdir)
             %UPDATE_BFILE Updates the BFILE (-> bids.File()) paths, entities and suffix with the values from SPECS
+            % Also, if ROOTDIR is non-empty, replaces the rootdir with the WORKDIR property (default) or else, if
+            % provided, with ROOTDIR
+            %
+            % Example update of bfile.path and 'acq':
+            %   specs = struct('acq','demo')
+            %   'P:\rawdir\sub-004\anat\sub-004_acq-fl3d_MEGRE.nii.gz' ->
+            %   'P:\rootdir\sub-004\anat\sub-004_acq-demo_MEGRE.nii.gz'
 
             arguments
-                bfile (1,1) bids.File
-                specs (1,1) struct = struct()
+                obj
+                bfile   (1,1) bids.File
+                specs   (1,1) struct = struct()
+                rootdir {mustBeTextScalar} = ''
+            end
+
+            if ~strlength(rootdir)
+                rootdir = obj.workdir;
             end
 
             % Go over the specs fields and update the bfile
@@ -319,9 +330,16 @@ classdef (Abstract) Worker < handle
                 end
             end
             
-            % Paths are not updated automatically, so do that manually
+            % Paths are not updated automatically with the new filename, so do that manually
             bfile.path           = replace(bfile.path,           oldfname, bfile.filename);
             bfile.metadata_files = replace(bfile.metadata_files, oldjname, bfile.json_filename);
+
+            % Replace the rootdir (e.g. rawdir -> rootdir)
+            if strlength(rootdir)
+                oldroot              = extractBefore(bfile.path, bfile.bids_path);  % Ends with filesep
+                bfile.path           = replace(bfile.path,           oldroot, fullfile(rootdir, filesep));
+                bfile.metadata_files = replace(bfile.metadata_files, oldroot, fullfile(rootdir, filesep));
+            end
         end
 
     end

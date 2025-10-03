@@ -58,8 +58,8 @@ classdef Manager < handle
         end
 
         function set.products(obj, val)
-            % Force anything assigned to be stored as string
-            obj.products = string(val);
+            % Force anything assigned to be stored as a string row
+            obj.products = string(val(:)');
         end
 
         function create_team(obj, workitems)
@@ -73,7 +73,7 @@ classdef Manager < handle
             end
 
             % Find and select one capable worker per workitem
-            for workitem = workitems
+            for workitem = string(workitems(:)')
                 for worker = obj.coord.resumes
                     if ismember(workitem, worker.makes)     % Add to the team if the worker is capable
                         if isfield(obj.team, workitem)
@@ -124,7 +124,7 @@ classdef Manager < handle
                 for subject = subjects
                     args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
                     if obj.coord.config.useHPC
-                        qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:});
+                        qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:});   % NB: products are passed directly
                     else
                         worker(args{:}).fetch(product, obj.force);     % TODO: Catch the work done (at some point)
                     end

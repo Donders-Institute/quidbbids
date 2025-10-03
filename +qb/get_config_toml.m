@@ -44,7 +44,7 @@ if nargin > 2
     toml.write(configfile, config);
 else
     if ~isfile(configfile)
-        disp("Writing study configurations to: " + configfile)
+        disp("Writing study configuration to: " + configfile)
         [~,~] = mkdir(fileparts(configfile));
         copyfile(config_default, configfile)
     end

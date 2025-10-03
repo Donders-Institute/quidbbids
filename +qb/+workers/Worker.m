@@ -104,7 +104,7 @@ classdef (Abstract) Worker < handle
             work = bids.query(obj.layout_workdir(), 'data', setfield(setfield(obj.bidsfilter.(workitem), 'sub',obj.sub()), 'ses',obj.ses()));
             if isempty(work) || force
 
-                obj.logger.info(sprintf("==> %s has started working on: %s", obj.name, obj.subject.path))
+                obj.logger.info(sprintf("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path))
                 locked = obj.is_locked();
                 if locked
                     if force
@@ -134,7 +134,7 @@ classdef (Abstract) Worker < handle
                 end
                 
             else
-                obj.logger.info(sprintf("%s fetched %d requested %s items", obj.name, length(work), workitem))
+                obj.logger.info(sprintf("%s fetched %d requested %s items (%s) %s", obj.name, length(work), workitem, obj.subject.name))
             end
 
             % Make sure that the work exists
@@ -160,6 +160,7 @@ classdef (Abstract) Worker < handle
                 return
             end
 
+            obj.logger.info(sprintf("%s asks for %s workitem(s)", obj.name, workitem))
             coworker   = obj.team.(workitem).handle(obj.BIDS, obj.subject, obj.config, obj.workdir, obj.outputdir, obj.team);
             work       = coworker.fetch(workitem);
             bidsfilter = coworker.bidsfilter.(workitem);
@@ -257,7 +258,8 @@ classdef (Abstract) Worker < handle
 
         function BIDSW = layout_workdir(obj)
             %LAYOUT_WORKDIR Gets a tolerant bids.layout() for the current sub/ses workdir
-            BIDSW = bids.layout(char(obj.workdir), 'filter', struct('sub',obj.sub(), 'ses',obj.ses()), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+            BIDSW = bids.layout(char(obj.workdir), 'filter', struct('sub',obj.sub(), 'ses',obj.ses()), ...
+                                'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
         end
         
         function [status, output] = run_command(obj, command, silent)

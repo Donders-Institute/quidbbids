@@ -43,7 +43,7 @@ classdef SCRWorker < qb.workers.Worker
                                "Methods:"
                                "- Compute weighted means of the R2-star & Chi-maps over the different flip-angles";
                                "- Compute R1- & M0-maps based on despot1 with S0 estimates"];
-            obj.needs       = ["S0map", "R2starmap", "Chimap", "localfmask"];
+            obj.needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "FAmap_angle"];
             obj.bidsfilter.R1map_S0      = struct('modality', 'anat', ...
                                                   'echo', [], ...
                                                   'part', '', ...
@@ -89,7 +89,7 @@ classdef SCRWorker < qb.workers.Worker
             % Get FAmap from a colleague
             FAmap             = obj.ask_team('FAmap_angle');
             if length(FAmap) ~= 1       % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-                obj.logger.exception('%s expected only one FAmap file but got: %s', obj.name, sprintf('%s ', FAmap{:}))
+                obj.logger.exception(sprintf('%s expected only one FAmap file but got: %s', obj.name, sprintf('%s ', FAmap{:})))
             end
             FA = spm_vol(char(FAmap)).dat();
 

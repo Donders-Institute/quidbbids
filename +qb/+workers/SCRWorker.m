@@ -27,12 +27,6 @@ classdef SCRWorker < qb.workers.Worker
                 workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
             end
 
-            % SEPIA should have a directory of its own (we cannot control it's output very well)
-            workdir = replace(workdir, "QuIDBBIDS", "SEPIA");
-            if ~isempty(workdir) && ~isfolder(workdir)
-                bids.init(char(workdir), 'is_derivative', true)
-            end
-
             % Call the abstract parent constructor
             obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
 

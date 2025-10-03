@@ -87,17 +87,17 @@ classdef SCRWorker < qb.workers.Worker
             end
             FA = spm_vol(char(FAmap)).dat();
 
-            % Index the workdir layout (only for obj.subject)
-            BIDSW = obj.layout_workdir();
+            % Index the (special) SEPIA workdir layout (only for obj.subject)
+            BIDSWS = obj.layout_workdir(replace(obj.workdir, "SEPIA", "QuIDBBIDS"));
 
             % Process all runs independently
-            for run = bids.query(BIDSW, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs
+            for run = bids.query(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs
 
-                S0data     = bids.query(BIDSW, 'data',     setfield(S0filter,     'run', char(run)));
-                R2stardata = bids.query(BIDSW, 'data',     setfield(R2starfilter, 'run', char(run)));
-                Chidata    = bids.query(BIDSW, 'data',     setfield(Chifilter,    'run', char(run)));
-                maskdata   = bids.query(BIDSW, 'data',     setfield(maskfilter,   'run', char(run)));
-                meta       = bids.query(BIDSW, 'metadata', setfield(S0filter,     'run', char(run)));
+                S0data     = bids.query(BIDSWS, 'data',     setfield(S0filter,     'run', char(run)));
+                R2stardata = bids.query(BIDSWS, 'data',     setfield(R2starfilter, 'run', char(run)));
+                Chidata    = bids.query(BIDSWS, 'data',     setfield(Chifilter,    'run', char(run)));
+                maskdata   = bids.query(BIDSWS, 'data',     setfield(maskfilter,   'run', char(run)));
+                meta       = bids.query(BIDSWS, 'metadata', setfield(S0filter,     'run', char(run)));
                 flips      = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
 
                 % Check the queries workitems
@@ -128,8 +128,8 @@ classdef SCRWorker < qb.workers.Worker
                 % Compute weighted means of the R2-star & Chi maps. TODO: Change the `desc` value from `FA\d*` -> `mean`. Also, only compute for ME-VFA data
                 R2smean  = sum(S0.^2 .* R2s, 4) ./ sum(S0.^2, 4);
                 Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
-                bfileR2s = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.meanR2starmap);
-                bfileChi = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.meanChimap);
+                bfileR2s = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.meanR2starmap, obj.workdir);
+                bfileChi = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.meanChimap, obj.workdir);
                 spm_write_vol_gz(V, R2smean.*mask, bfileR2s.path);    % TODO: Add JSON sidecar files
                 spm_write_vol_gz(V, Chimean.*mask, bfileChi.path);    % TODO: Add JSON sidecar files
 
@@ -140,8 +140,8 @@ classdef SCRWorker < qb.workers.Worker
                 R1(~isfinite(R1)) = 0;          % set NaN and Inf to 0
                 
                 % Save the SCR output maps
-                bfileR1 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.R1map_S0);
-                bfileM0 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.M0map_S0);
+                bfileR1 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.R1map_S0, obj.workdir);
+                bfileM0 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.M0map_S0, obj.workdir);
                 spm_write_vol_gz(V, R1,       bfileR1.path);    % TODO: Add JSON sidecar files
                 spm_write_vol_gz(V, M0.*mask, bfileM0.path);    % TODO: Add JSON sidecar files
 

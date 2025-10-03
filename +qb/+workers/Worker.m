@@ -256,9 +256,13 @@ classdef (Abstract) Worker < handle
             label = label{end};
         end
 
-        function BIDSW = layout_workdir(obj)
-            %LAYOUT_WORKDIR Gets a tolerant bids.layout() for the current sub/ses workdir
-            BIDSW = bids.layout(char(obj.workdir), 'filter', struct('sub',obj.sub(), 'ses',obj.ses()), ...
+        function BIDSW = layout_workdir(obj, workdir)
+            %LAYOUT_WORKDIR Gets a tolerant bids.layout() for the sub/ses WORKDIR (default: obj.workdir)
+
+            if nargin < 2 || isempty(workdir)
+                workdir = obj.workdir;
+            end
+            BIDSW = bids.layout(char(workdir), 'filter', struct('sub',obj.sub(), 'ses',obj.ses()), ...
                                 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
         end
         

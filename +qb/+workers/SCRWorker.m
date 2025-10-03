@@ -88,7 +88,7 @@ classdef SCRWorker < qb.workers.Worker
             FA = spm_vol(char(FAmap)).dat();
 
             % Index the (special) SEPIA workdir layout (only for obj.subject)
-            BIDSWS = obj.layout_workdir(replace(obj.workdir, "SEPIA", "QuIDBBIDS"));
+            BIDSWS = obj.layout_workdir(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
 
             % Process all runs independently
             for run = bids.query(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs
@@ -106,7 +106,7 @@ classdef SCRWorker < qb.workers.Worker
                                          sprintf('\n%s', S0data{:}, R2stardata{:}, Chidata{:}, maskdata{:})))
                 end
                 if length(S0data) < 2
-                    obj.logger.exception(sprintf('%s received data for only %d flip angles', obj.name, length(FAs)))
+                    obj.logger.exception(sprintf('%s received data for only %d flip angles', obj.name, length(S0data)))
                 end
                 if length(flips) <= 1
                     obj.logger.exception("Need at least two different flip angles to compute T1 and S0 maps, found:" + sprintf(" %s", flips{:}));

@@ -136,6 +136,9 @@ classdef QSMWorker < qb.workers.Worker
                     movefile(source, target)
                 end
 
+                % Add a JSON sidecar file for the S0map
+                bids.util.jsonencode([output '_S0map.json'], bfile.metadata)
+
             end
         end
 

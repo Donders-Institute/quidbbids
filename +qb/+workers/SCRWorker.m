@@ -69,6 +69,8 @@ classdef SCRWorker < qb.workers.Worker
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
             
+            import qb.utils.spm_write_vol_gz
+
             % Check the input
             if isempty(obj.subject.anat) || isempty(obj.subject.fmap)
                 return
@@ -130,20 +132,21 @@ classdef SCRWorker < qb.workers.Worker
                 Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
                 bfileR2s = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.meanR2starmap, obj.workdir);
                 bfileChi = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.meanChimap, obj.workdir);
-                spm_write_vol_gz(V, R2smean.*mask, bfileR2s.path);    % TODO: Add JSON sidecar files
-                spm_write_vol_gz(V, Chimean.*mask, bfileChi.path);    % TODO: Add JSON sidecar files
+                spm_write_vol_gz(V, R2smean.*mask, bfileR2s.path);          % TODO: Add JSON sidecar files
+                spm_write_vol_gz(V, Chimean.*mask, bfileChi.path);          % TODO: Add JSON sidecar files
 
-                % Compute the R1 and M0 maps using DESPOT1 (based on S0).                 TODO: Adapt for using echo data as an alternative to S0
-                B1       = FA / 10 / bfile.metadata.FlipAngle;                          % TODO: FIXME: bfile.metadata.FlipAngle = constant???????????????? Which one?
-                [T1, M0] = despot1_mapping(S0, flips, bfile.metadata.TR, mask, B1);     % TODO: Check if we should only use the first two FA (as in MWI_tmp)
+                % Compute the R1 and M0 maps using DESPOT1 (based on S0).     TODO: Adapt for using echo data as an alternative to S0
+                bfile    = bids.File(S0data{1});                            % TODO: FIXME: Random
+                B1       = FA / 10 / bfile.metadata.FlipAngle;              % TODO: FIXME: bfile.metadata.FlipAngle = constant???????????????? Which one?
+                [T1, M0] = despot1_mapping(S0, flips, bfile.metadata.RepetitionTime, mask, B1);     % TODO: Check if we should only use the first two FA (as in MWI_tmp)
                 R1       = (mask ./ T1) * 1000;
                 R1(~isfinite(R1)) = 0;          % set NaN and Inf to 0
                 
                 % Save the SCR output maps
                 bfileR1 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.R1map_S0, obj.workdir);
                 bfileM0 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.M0map_S0, obj.workdir);
-                spm_write_vol_gz(V, R1,       bfileR1.path);    % TODO: Add JSON sidecar files
-                spm_write_vol_gz(V, M0.*mask, bfileM0.path);    % TODO: Add JSON sidecar files
+                spm_write_vol_gz(V, R1,       bfileR1.path);                % TODO: Add JSON sidecar files
+                spm_write_vol_gz(V, M0.*mask, bfileM0.path);                % TODO: Add JSON sidecar files
 
             end
         end

@@ -17,8 +17,9 @@ classdef PreprocWorker < qb.workers.Worker
 
     properties (GetAccess = public, SetAccess = protected)
         name        % Name of the worker
-        description % Description of the work that is done (e.g. for GUIs)
-        needs       % List of workitems the worker needs
+        description % Description of the work that is done
+        version     % The version of PreprocWorker
+        needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
     properties
@@ -56,6 +57,7 @@ classdef PreprocWorker < qb.workers.Worker
                                "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
                                "   to produce a minimal output mask (for SEPIA)";
                                "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows"];
+            obj.version     = "0.1.0";
             obj.needs       = [];         % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
             obj.bidsfilter.syntheticT1  = struct('modality', 'anat', ...
                                                  'part', '', ...
@@ -85,7 +87,7 @@ classdef PreprocWorker < qb.workers.Worker
                                                  'acq', 'famp');
             obj.bidsfilter.FAmap_anat   = setfield(obj.bidsfilter.FAmap_angle, 'acq', 'anat');
             
-            % Fetch the workitems (if requested)
+            % Make the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
                 for workitem = string(workitems)
                     obj.fetch(workitem);

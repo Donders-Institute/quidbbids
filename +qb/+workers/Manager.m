@@ -73,25 +73,29 @@ classdef Manager < handle
             end
 
             % Find and select one capable worker per workitem
-            for workitem = string(workitems(:)')
+            for workitem = string(workitems(:)')        % The workitem with optional regexp pattern
                 for worker = obj.coord.resumes
-                    if ismember(workitem, worker.makes)     % Add to the team if the worker is capable
-                        if isfield(obj.team, workitem)
-                            if ~ismember(func2str(worker.handle), cellfun(@func2str, {obj.team.(workitem).handle}, 'UniformOutput', false))
-                                obj.team.(workitem)(end+1) = worker;
+                    makes = worker.makes();
+                    match = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
+                    if any(match)                       % Add to the team if the worker is capable
+                        if sum(match) ~= 1
+                            error('Could not uniquely identify a "$s" workitem from what %s makes:%s', workitem, worker.name, sprintf(' %s', makes{:}))
+                        end
+                        workitem_ = makes{match};       % The workitem without optional regexp pattern
+                        if isfield(obj.team, workitem_)
+                            if ~ismember(func2str(worker.handle), cellfun(@func2str, {obj.team.(workitem_).handle}, 'UniformOutput', false))    % Check if we haven't already added this worker
+                                obj.team.(workitem_)(end+1) = setfield(worker, 'preferred',false);
                             end
                         else
-                            obj.team.(workitem) = worker;
+                            obj.team.(workitem_) = setfield(worker, 'preferred',false);
                         end
                     end
                 end
-                if isfield(obj.team, workitem)
-                    if length(obj.team.(workitem)) > 1      % We found multiple capable workers for one workitem
-                        selectworker(workitem);             % Keep the preferred worker only
-                    end
-                    % Recursively add upstream workers to the team
-                    if ~isempty(obj.team.(workitem).needs)
-                        obj.create_team(obj.team.(workitem).needs)
+                match = ~cellfun(@isempty, regexp(fieldnames(obj.team), "^" + workitem + "$"));
+                if any(match)
+                    workitem_ = obj.selectworker(workitem);     % Keep the preferred worker only (if multiple). NB: workitem_ is without regexp pattern
+                    if ~isempty(obj.team.(workitem_).needs)     % Recursively add upstream workers to the team
+                        obj.create_team(obj.team.(workitem_).needs)
                     end
                 elseif strlength(workitem)
                     error("Could not find a worker that can make: " + workitem)
@@ -163,19 +167,43 @@ classdef Manager < handle
 
     methods (Access = private)
 
-        function selectworker(obj, workitem)
+        function workitem = selectworker(obj, workitem)
             % Select a worker for this workitem and make him/her the "preferred worker"
 
-            % Check if any of the workers is preferred
-            preferred = [obj.team.(workitem).preferred];
-            if ~any(preferred)
-                % TODO: implement GUI to select the worker
-                preferred = askuser();
+            workitems = fieldnames(obj.team)';
+            matches   = ~cellfun(@isempty, regexp(workitems, "^" + workitem + "$"));
+
+            % Collect all matching workitems
+            workers = [];
+            for workitem_ = workitems(matches)
+                workers = [workers, obj.team.(workitem_)];              %#ok<AGROW>
+            end
+            if isscalar(workers)
+                workitem = workitems{matches};          % Resolve the regexp pattern
+                return
+            end
+
+            % Check if any of the workers is preferred. If not ask the user
+            if ~any([workers.preferred])
+                chosen = askuser(workers);              % TODO: implement GUI to select the worker
+                workers(chosen).preferred = true;
             end
 
             % Keep the preferred worker only
-            obj.team.(workitem)           = obj.team.(workitem)(preferred);
-            obj.team.(workitem).preferred = True;
+            for workitem_ = workitems(matches)
+                item      = char(workitem_);
+                preferred = [obj.team.(item).preferred];
+                if any(preferred)
+                    obj.team.(item) = obj.team.(item)(preferred);
+                    workitem        = item;             % Resolve the regexp pattern
+                else
+                    obj.team = rmfield(obj.team, item);
+                end
+            end
+            if length(obj.team.(workitem)) ~= 1
+                error("Expected only a single workitem, but got %d", length(obj.team.(workitem)))
+            end
+
         end
 
     end

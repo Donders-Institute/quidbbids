@@ -3,8 +3,9 @@ classdef QSMWorker < qb.workers.Worker
 
     properties (GetAccess = public, SetAccess = protected)
         name        % Name of the worker
-        description % Description of the work that is done (e.g. for GUIs)
-        needs       % List of workitems the worker needs
+        description % Description of the work that is done
+        version     % The version of QSMWorker
+        needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
     properties
@@ -39,6 +40,7 @@ classdef QSMWorker < qb.workers.Worker
             % Make the abstract properties concrete
             obj.name        = "Kwok";
             obj.description = ["I am your SEPIA expert that can make shiny QSM and R2-star images for you"];
+            obj.version     = "0.1.0";
             obj.needs       = ["echos4Dmag", "echos4Dphase", "brainmask"];
             obj.bidsfilter.R2starmap  = struct('modality', 'anat', ...
                                                'echo', [], ...
@@ -51,7 +53,7 @@ classdef QSMWorker < qb.workers.Worker
             obj.bidsfilter.Chimap     = setfield(obj.bidsfilter.R2starmap, 'suffix','Chimap');
             obj.bidsfilter.localfmask = setfield(setfield(obj.bidsfilter.R2starmap, 'label','localfield'), 'suffix','mask');
 
-            % Fetch the workitems (if requested)
+            % Make the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
                 for workitem = string(workitems)
                     obj.fetch(workitem);

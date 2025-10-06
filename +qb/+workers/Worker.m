@@ -6,12 +6,15 @@ classdef (Abstract) Worker < handle
     % only need to set some properties and implement the abstract method for
     % producing the work items -- the general workflow is handled by the Manager class.
     %
+    % Note that all Workers are handle classes that copy by reference, not by value
+    %
     % See also: qb.workers.Manager
 
     properties (Abstract, GetAccess = public, SetAccess = protected)
         name        % Personal name of the worker
-        description % Description of the work that is done (e.g. for GUIs)
-        needs       % List of workitems the worker needs
+        description % Description of the work that is done
+        version     % The semantic version of the worker
+        needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
     properties (Abstract)
@@ -146,20 +149,26 @@ classdef (Abstract) Worker < handle
         end
 
         function [work, bidsfilter] = ask_team(obj, workitem)
-            %ASK_TEAM Asks a team member to fetch a WORKITEM needed to get the work done
+            %ASK_TEAM Asks a team member to fetch a (regexp) WORKITEM needed to get the work done
 
             arguments
                 obj
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            % Check the input
-            if ~isfield(obj.team, workitem)
-                obj.logger.error(sprintf("%s asked for a %s workitem but nobody in the team knows what that is", obj.name, workitem))
-                work = {};
-                return
+            % See if someone in the team can make a matching workitem
+            workitems = fieldnames(obj.team)';
+            match     = ~cellfun(@isempty, regexp(workitems, "^" + workitem + "$"));
+            if ~any(match)
+                obj.logger.exception(sprintf("%s asked for a %s workitem but nobody in the team knows what that is", obj.name, workitem))
+            elseif sum(match) ~= 1
+                obj.logger.exception('%s asked for a %s workitem but got multiple answers:%s', sprintf(' %s', workitems{match}))
             end
 
+            % resolve the regexp workitem
+            workitem   = workitems{match};
+
+            % Put the coworker to work
             obj.logger.info(sprintf("%s asks for %s workitem(s)", obj.name, workitem))
             coworker   = obj.team.(workitem).handle(obj.BIDS, obj.subject, obj.config, obj.workdir, obj.outputdir, obj.team);
             work       = coworker.fetch(workitem);

@@ -33,27 +33,25 @@ classdef SCRWorker < qb.workers.Worker
 
             % Make the abstract properties concrete
             obj.name        = "Samuel";
-            obj.description = ["I am your relaxed number cruncher that fits SCR models for breakfast";
+            obj.description = ["Your relaxed number cruncher that fits SCR models for breakfast";
                                "";
                                "Methods:"
                                "- Compute weighted means of the R2-star & Chi-maps over the different flip-angles";
                                "- Compute R1- & M0-maps based on despot1 with S0 estimates"];
-            obj.needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "FAmap_angle"];
             obj.version     = "0.0.1";
-            obj.bidsfilter.R1map_S0      = struct('modality', 'anat', ...
-                                              'echo', [], ...
-                                              'part', '', ...
-                                              'desc', 'despot1S0', ...
-                                              'space', 'withinGRE', ...
-                                              'suffix', 'R1map');
-            obj.bidsfilter.M0map_S0      = setfield(obj.bidsfilter.R1map_S0, 'suffix', 'M0map');
-            obj.bidsfilter.meanR2starmap = struct('modality', 'anat', ...
-                                              'echo', [], ...
-                                              'part', '', ...
-                                              'desc', 'mean', ...
-                                              'space', 'withinGRE', ...
-                                              'suffix', 'R2starmap');
-            obj.bidsfilter.meanChimap    = setfield(obj.bidsfilter.meanR2starmap, 'suffix', 'Chimap');
+            obj.needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "FAmap_angle"];
+            obj.bidsfilter.R1map      = struct('modality', 'anat', ...
+                                               'echo', [], ...
+                                               'part', '', ...
+                                               'desc', 'despot1S0', ...
+                                               'suffix', 'R1map');
+            obj.bidsfilter.M0map      = setfield(obj.bidsfilter.R1map, 'suffix', 'M0map');
+            obj.bidsfilter.R2starmap  = struct('modality', 'anat', ...
+                                               'echo', [], ...
+                                               'part', '', ...
+                                               'desc', 'mean', ...
+                                               'suffix', 'R2starmap');
+            obj.bidsfilter.meanChimap = setfield(obj.bidsfilter.R2starmap, 'suffix', 'Chimap');
 
             % Make the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
@@ -78,7 +76,7 @@ classdef SCRWorker < qb.workers.Worker
                 return
             end
 
-            % Get the QSM workitems we need from a colleague
+            % Get the QSM workitems we need from a colleague (instead of just getting the files, use the filters to get the right runs ourselves)
             [~, S0filter]     = obj.ask_team('S0map');
             [~, maskfilter]   = obj.ask_team('localfmask');
             [~, R2starfilter] = obj.ask_team('R2starmap');  % TODO: Make optional (-> ME-VFA data)
@@ -129,24 +127,24 @@ classdef SCRWorker < qb.workers.Worker
                     mask         = spm_vol(maskdata{n}).dat() & mask;
                 end
 
-                % Compute weighted means of the R2-star & Chi maps. TODO: Change the `desc` value from `FA\d*` -> `mean`. Also, only compute for ME-VFA data
+                % Compute and save weighted means of the R2-star & Chi maps. TODO: Change the `desc` value from `VFA\d*` -> `mean`. Also, only compute for ME-VFA data
                 R2smean  = sum(S0.^2 .* R2s, 4) ./ sum(S0.^2, 4);
                 Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
-                bfileR2s = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.meanR2starmap, obj.workdir);
+                bfileR2s = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.R2starmap, obj.workdir);
                 bfileChi = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.meanChimap, obj.workdir);
                 spm_write_vol_gz(V, R2smean.*mask, bfileR2s.path);          % TODO: Add JSON sidecar files
                 spm_write_vol_gz(V, Chimean.*mask, bfileChi.path);          % TODO: Add JSON sidecar files
 
                 % Compute the R1 and M0 maps using DESPOT1 (based on S0).     TODO: Adapt for using echo data as an alternative to S0
                 bfile    = bids.File(S0data{1});                            % TODO: FIXME: Random
-                B1       = FA / 10 / bfile.metadata.FlipAngle;              % TODO: FIXME: bfile.metadata.FlipAngle = constant???????????????? Which one?
+                B1       = FA / obj.config.RelB1mapWorker.B1ScaleFactor;                   % TODO: FIXME: Replace this with a worker that computes a relative fieldmap
                 [T1, M0] = despot1_mapping(S0, flips, bfile.metadata.RepetitionTime, mask, B1);     % TODO: Check if we should only use the first two FA (as in MWI_tmp)
-                R1       = (mask ./ T1) * 1000;
+                R1       = (mask ./ T1);
                 R1(~isfinite(R1)) = 0;          % set NaN and Inf to 0
                 
                 % Save the SCR output maps
-                bfileR1 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.R1map_S0, obj.workdir);
-                bfileM0 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.M0map_S0, obj.workdir);
+                bfileR1 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.R1map, obj.workdir);
+                bfileM0 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.M0map, obj.workdir);
                 spm_write_vol_gz(V, R1,       bfileR1.path);                % TODO: Add JSON sidecar files
                 spm_write_vol_gz(V, M0.*mask, bfileM0.path);                % TODO: Add JSON sidecar files
 

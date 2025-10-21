@@ -173,20 +173,23 @@ classdef Manager < handle
             workitems = fieldnames(obj.team)';
             matches   = ~cellfun(@isempty, regexp(workitems, "^" + workitem + "$"));
 
-            % Collect all matching workitems
-            workers = [];
+            % Make records of matching workers, their indices and their workitems (for when the user has to chose)
+            workers = []; indices = []; items = [];
             for workitem_ = workitems(matches)
-                workers = [workers, obj.team.(workitem_)];              %#ok<AGROW>
+                workrs  = obj.team.(char(workitem_));   % NB: obj.team.(workitem_) is copied by value
+                workers = [workers, workrs];            %#ok<AGROW>
+                indices = [indices, 1:length(workrs)];
+                items   = [items, repmat(workitem_, size(workrs))];
             end
             if isscalar(workers)
                 workitem = workitems{matches};          % Resolve the regexp pattern
                 return
             end
 
-            % Check if any of the workers is preferred. If not ask the user
+            % Check if any of the workers is preferred. If not ask the user and make the worker preferred
             if ~any([workers.preferred])
-                chosen = askuser(workers);              % TODO: implement GUI to select the worker
-                workers(chosen).preferred = true;
+                chosen = 1; % askuser(workers, workitem);    % TODO: implement askuser GUI to select the worker
+                obj.team.(items{chosen})(indices(chosen)).preferred = true;
             end
 
             % Keep the preferred worker only

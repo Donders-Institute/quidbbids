@@ -25,3 +25,6 @@
 [submodule "dependencies/matlab-toml"]
 	path = dependencies/matlab-toml
 	url = https://github.com/g-s-k/matlab-toml.git
+[submodule "dependencies/gacelle"]
+	path = dependencies/gacelle
+	url = https://github.com/kschan0214/gacelle.git

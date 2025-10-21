@@ -48,9 +48,9 @@ classdef (Abstract) Coordinator < handle
             obj.BIDS       = BIDS;
             obj.outputdir  = outputdir;
             obj.workdir    = workdir;
-            obj.resumes    = obj.get_resumes();
             obj.configfile = configfile;
             obj.config     = obj.get_config();
+            obj.resumes    = obj.get_resumes();
         end
 
         function items = workitems(obj)
@@ -58,12 +58,7 @@ classdef (Abstract) Coordinator < handle
             items = string(unique(horzcat(obj.resumes.makes)));
         end
 
-    end
-
-
-    methods (Static)
-
-        function resumes = get_resumes()
+        function resumes = get_resumes(obj)
             %GET_RESUMES Gets the resumes of the pool of workers that live in qb.workers and in the configfile folder
             %
             % Output:

@@ -340,10 +340,13 @@ classdef (Abstract) Worker < handle
             oldjname = bfile.json_filename;     % Store for later use
             for field = fieldnames(specs)'
                 value = specs.(char(field));
+                if ~isempty(value)              % Convert to numerical values to string, but not []
+                    value = string(value);
+                end
                 if ismember(field, ["suffix", "modality"])
                     bfile.(char(field)) = char(value);
                 else
-                    bfile.entities.(char(field)) = char(string(value));
+                    bfile.entities.(char(field)) = char(value);
                 end
             end
             

@@ -13,7 +13,16 @@
         "url": "https://www.ru.nl/en/donders-institute"
     },
     "folders": [],
-    "dependencies": ["bids-matlab", "despot1", "EPG-X", "MP-PCA-Denoising",  "mwi", "qsub", "sepia", "spm"],
+    "dependencies": [
+        { "name": "bids-matlab",      "id": "" },
+        { "name": "despot1",          "id": "" },
+        { "name": "EPG-X",            "id": "" },
+        { "name": "MP-PCA-Denoising", "id": "" },
+        { "name": "mwi",              "id": "" },
+        { "name": "qsub",             "id": "" },
+        { "name": "sepia",            "id": "" },
+        { "name": "spm",              "id": "" }
+    ],
     "releaseCompatibility": "",
-    "schemaVersion": "1.0.0"
+    "schemaVersion": "1.1.0"
 }

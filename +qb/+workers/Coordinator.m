@@ -62,18 +62,18 @@ classdef (Abstract) Coordinator < handle
             %GET_RESUMES Gets the resumes of the pool of workers that live in qb.workers and in the configfile folder
             %
             % Output:
-            %   WORKERS.HANDLE      - The function handle
-            %          .NAME        - Their personal name
-            %          .DESCRIPTION - The description of what they do
-            %          .VERSION     - Their semantic version number
-            %          .MAKES       - The workitems they can make
-            %          .NEEDS       - The workitems they need for work
-            %          .USESGPU     - True if the worker can make use of the GPU
-            %          .PREFERRED   - True if the worker was selected by the user
+            %   RESUME.NAME.HANDLE      - The function handle
+            %              .NAME        - Their personal name
+            %              .DESCRIPTION - The description of what they do
+            %              .VERSION     - Their semantic version number
+            %              .MAKES       - The workitems they can make
+            %              .NEEDS       - The workitems they need for work
+            %              .USESGPU     - True if the worker can make use of the GPU
+            %              .PREFERRED   - True if the worker was selected by the user
             %
             % NB: Assumes the qb.workers have a "Worker" substring in their m-filename
 
-            resumes = [];
+            resumes = {};
             wfiles  = dir(fullfile(fileparts(which("qb.workers.Worker")), "*Worker*.m"))';             
             if ~isdeployed
                 wfiles = [wfiles, dir(fullfile(fileparts(obj.configfile), "*Worker*.m"))'];
@@ -81,14 +81,14 @@ classdef (Abstract) Coordinator < handle
             for wfile = wfiles
                 if ~strcmp(wfile.name, 'Worker.m')   % Exclude the abstract Worker class
                     worker = qb.workers.(erase(wfile.name, '.m'))(struct(),struct('name','','session',''));
-                    resumes(1+end).handle      = str2func(class(worker));
-                    resumes(  end).name        = worker.name;
-                    resumes(  end).description = worker.description;
-                    resumes(  end).version     = worker.version;
-                    resumes(  end).makes       = worker.makes();
-                    resumes(  end).needs       = worker.needs(:)';
-                    resumes(  end).usesGPU     = worker.usesGPU;
-                    resumes(  end).preferred   = false;
+                    resumes.(worker.name).handle      = str2func(class(worker));
+                    resumes.(worker.name).name        = worker.name;
+                    resumes.(worker.name).description = worker.description;
+                    resumes.(worker.name).version     = worker.version;
+                    resumes.(worker.name).makes       = worker.makes();
+                    resumes.(worker.name).needs       = worker.needs(:)';
+                    resumes.(worker.name).usesGPU     = worker.usesGPU;
+                    resumes.(worker.name).preferred   = false;
                 end
             end
 

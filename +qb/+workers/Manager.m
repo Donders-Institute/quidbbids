@@ -73,21 +73,22 @@ classdef Manager < handle
             end
 
             % Find and select one capable worker per workitem
-            for workitem = string(workitems(:)')        % The workitem with optional regexp pattern
-                for worker = obj.coord.resumes
+            for workitem = string(workitems(:)')                % The workitem with optional regexp pattern
+                for name = fieldnames(obj.coord.resumes)'       % Iterate over all available workers
+                    worker = obj.coord.resumes.(char(name));
                     makes = worker.makes();
                     match = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
-                    if any(match)                       % Add to the team if the worker is capable
+                    if any(match)                               % Add to the team if the worker is capable
                         if sum(match) ~= 1
                             error('Could not uniquely identify a "$s" workitem from what %s makes:%s', workitem, worker.name, sprintf(' %s', makes{:}))
                         end
-                        workitem_ = makes{match};       % The workitem without optional regexp pattern
+                        workitem_ = makes{match};               % The workitem without optional regexp pattern
                         if isfield(obj.team, workitem_)
                             if ~ismember(func2str(worker.handle), cellfun(@func2str, {obj.team.(workitem_).handle}, 'UniformOutput', false))    % Check if we haven't already added this worker
-                                obj.team.(workitem_)(end+1) = setfield(worker, 'preferred',false);
+                                obj.team.(workitem_)(end+1) = worker;
                             end
                         else
-                            obj.team.(workitem_) = setfield(worker, 'preferred',false);
+                            obj.team.(workitem_) = worker;
                         end
                     end
                 end
@@ -181,14 +182,14 @@ classdef Manager < handle
                 indices = [indices, 1:length(workrs)];
                 items   = [items, repmat(workitem_, size(workrs))];
             end
-            if isscalar(workers)
-                workitem = workitems{matches};          % Resolve the regexp pattern
+            if isscalar(workers)                        % Only a single worker found
+                workitem = workitems{matches};          % This resolves the regexp pattern
                 return
             end
 
             % Check if any of the workers is preferred. If not ask the user and make the worker preferred
             if ~any([workers.preferred])
-                chosen = 1; % askuser(workers, workitem);    % TODO: implement askuser GUI to select the worker
+                chosen = askuser(workers, workitem);    % TODO: implement askuser GUI to select the worker
                 obj.team.(items{chosen})(indices(chosen)).preferred = true;
             end
 

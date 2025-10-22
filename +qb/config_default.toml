@@ -1,108 +1,113 @@
 # --------------------- General settings ---------------------
-version             = "0.0.2"           # QuIDBBIDS version that should match the version in resources/mpackage.json
-useHPC              = false             # Use HPC cluster (true/false)
+version                 = "0.0.2"           # QuIDBBIDS version that should match the version in resources/mpackage.json
+useHPC                  = false             # Use HPC cluster (true/false)
 
 # --------------------- RelB1mapWorker parameters ---------------------
 [RelB1mapWorker]
-B1ScaleFactor       = 800               # B1ScaleFactor = 10 * bfile.metadata.FlipAngle; 800 is what SIEMENS seems to use
+B1ScaleFactor           = 800               # B1ScaleFactor = 10 * bfile.metadata.FlipAngle; 800 is what SIEMENS seems to use
 
 # --------------------- BIDS input filters ---------------------
 [bids.select]
-modality            = ["anat", "fmap"]
-suffix              = ["MEGRE", "TB1TFL"]
+modality                = ["anat", "fmap"]
+suffix                  = ["MEGRE", "TB1TFL"]
 
 # --------------------- R1R2sWorker parameters ---------------------
 [R1R2sWorker.fitting]
-iteration           = 4000
-convergenceWindow   = 25                # At least 100 iterations and more robust convergance estimate
-convergenceValue    = 1e-8
-initialLearnRate    = 0.001
-decayRate           = 0
-tol                 = 1e-3
-isWeighted          = false             # Residual option
+iteration               = 4000
+convergenceWindow       = 25                # At least 100 iterations and more robust convergance estimate
+convergenceValue        = 1e-8
+initialLearnRate        = 0.001
+decayRate               = 0
+tol                     = 1e-3
+isWeighted              = false             # Residual option
 
 # --------------------- MCRGPUWorker parameters ---------------------
 [MCRGPUWorker]
-kappa_mw            = 0.36              # Jung, NI., myelin water density
-kappa_iew           = 0.86              # Jung, NI., intra-/extra-axonal water density
+kappa_mw                = 0.36              # Jung, NI., myelin water density
+kappa_iew               = 0.86              # Jung, NI., intra-/extra-axonal water density
 
 # Fixed parameters for gacelle MCRMWI
 [MCRGPUWorker.fixed_params]
-x_i                 = -0.1              # ppm
-x_a                 = -0.1              # ppm
-E                   = 0.02              # ppm
-rho_mw              = 0.4186            # Computed as kappa_mw/kappa_iew, i.e. 0.36/0.86
-t1_mw               = 0.234             # s
-B0                  = 3.0               # Field strength, in tesla. TODO: Replace with sidecar data
-B0dir               = [0.0, 0.0, 1.0]   # Main magnetic field direction with respect to FOV -- Replace with actual sepia_header{end}.B0_dir
-thres_R2star        = 150               # 1/s, upper bound
-thres_T1            = 3.1               # s, upper bound
+x_i                     = -0.1              # ppm
+x_a                     = -0.1              # ppm
+E                       = 0.02              # ppm
+rho_mw                  = 0.4186            # Computed as kappa_mw/kappa_iew, i.e. 0.36/0.86
+t1_mw                   = 0.234             # s
+B0                      = 3.0               # Field strength, in tesla. TODO: Replace with sidecar data
+B0dir                   = [0.0, 0.0, 1.0]   # Main magnetic field direction with respect to FOV -- Replace with actual sepia_header{end}.B0_dir
+thres_R2star            = 150               # 1/s, upper bound
+thres_T1                = 3.1               # s, upper bound
 
 # Fitting parameters
 [MCRGPUWorker.fitting]
-Nepoch              = 4000
-initialLearnRate    = 0.001
-decayRate           = 0
-convergenceValue    = -inf
-tol                 = 1e-8
-display             = false
-lossFunction        = "l1"
-start               = "prior"
-patience            = 20
-isFitExchange       = true
-isEPG               = false
+Nepoch                  = 4000
+initialLearnRate        = 0.001
+decayRate               = 0
+convergenceValue        = -inf
+tol                     = 1e-8
+display                 = false
+lossFunction            = "l1"
+start                   = "prior"
+patience                = 20
+isFitExchange           = true
+isEPG                   = false
 
 # --------------------- QSMWorker parameters ---------------------
-[QSMWorker.QSM]
-general.isBET               = 0
-general.isRefineBrainMask   = 0
-general.isInvert            = 0
+[QSMWorker.QSM.general]
+isBET                   = 0
+isRefineBrainMask       = 0
+isInvert                = 0
 
 # Total field recovery algorithm parameters
-unwrap.echoCombMethod       = "Optimum weights"
-unwrap.unwrapMethod         = "SEGUE"
-unwrap.isEddyCorrect        = 0
-unwrap.isSaveUnwrappedEcho  = 1
-unwrap.excludeMaskThreshold = 0.4
-unwrap.excludeMethod        = "Weighting map"
+[QSMWorker.QSM.unwrap]
+echoCombMethod          = "Optimum weights"
+unwrapMethod            = "SEGUE"
+isEddyCorrect           = 0
+isSaveUnwrappedEcho     = 1
+excludeMaskThreshold    = 0.4
+excludeMethod           = "Weighting map"
 
 # Background field removal algorithm parameters
-bfr.refine_method           = "None"
-bfr.refine_order            = 4
-bfr.erode_radius            = 0
-bfr.erode_before_radius     = 0
-bfr.method                  = "VSHARP"
-bfr.radius                  = [12,11,10,9,8,7,6,5,4,3,2,1]
+[QSMWorker.QSM.bfr]
+refine_method           = "None"
+refine_order            = 4
+erode_radius            = 0
+erode_before_radius     = 0
+method                  = "VSHARP"
+radius                  = [12,11,10,9,8,7,6,5,4,3,2,1]
 
 # QSM algorithm parameters
-qsm.reference_tissue        = "CSF"
-qsm.method                  = "MRI Suscep. Calc."
-qsm.solver                  = "Iterative Tikhonov"
-qsm.lambda                  = 0.05
-qsm.tolerance               = 0.03
+[QSMWorker.QSM.qsm]
+reference_tissue        = "CSF"
+method                  = "MRI Suscep. Calc."
+solver                  = "Iterative Tikhonov"
+lambda                  = 0.05
+tolerance               = 0.03
 
 # R2star pipeline parameters
-[QSMWorker.R2starmap]
-general.isBET               = 0
-general.isInvert            = 0
-general.isRefineBrainMask   = 0
-r2s.method                  = "Trapezoidal"
-r2s.s0mode                  = "1st echo"
+[QSMWorker.R2starmap.general]
+isBET                   = 0
+isInvert                = 0
+isRefineBrainMask       = 0
+
+[QSMWorker.R2starmap.r2s]
+method                  = "Trapezoidal"
+s0mode                  = "1st echo"
 
 # Fitting options
-maxIter             = 200
-fcnTol              = 1e-4
-stepTol             = 1e-4
+maxIter                 = 200
+fcnTol                  = 1e-4
+stepTol                 = 1e-4
 
 # Residual options
-numMagn             = true              # false: complex fitting
-isWeighted          = true
-weightMethod        = "quadratic_1stEcho"  # Options: "1stEcho" or "quadratic_1stEcho"
+numMagn                 = true              # false: complex fitting
+isWeighted              = true
+weightMethod            = "quadratic_1stEcho"  # Options: "1stEcho" or "quadratic_1stEcho"
 
-# T1 model
-isExchange          = true              # BM model
-isEPG               = true              # Using EPG-X
-npulse              = 50                # Number of pulses
-rfphase             = 150               # RF phase for EPG, degree. Phase increment for Philips = 150
-isT1mw              = false             # Fitting myelin water T1
-T1mw                = 0.234             # Fixed myelin water T1 in seconds (234e-3)
+# T1 model  
+isExchange              = true              # BM model
+isEPG                   = true              # Using EPG-X
+npulse                  = 50                # Number of pulses
+rfphase                 = 150               # RF phase for EPG, degree. Phase increment for Philips = 150
+isT1mw                  = false             # Fitting myelin water T1
+T1mw                    = 0.234             # Fixed myelin water T1 in seconds (234e-3)

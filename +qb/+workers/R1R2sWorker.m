@@ -4,7 +4,7 @@ classdef R1R2sWorker < qb.workers.Worker
     properties (GetAccess = public, SetAccess = protected)
         name        % Name of the worker
         description % Description of the work that is done
-        version     % The version of MCRWorker
+        version     % The version of R1R2SWORKER
         needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
@@ -103,8 +103,8 @@ classdef R1R2sWorker < qb.workers.Worker
             % Estimate the MCR model
             extraData     = [];
             extraData.b1  = single(B1);
-            objGPU        = gpuR1R2s(TE, TR, FA, obj.config.MCRWorker.fixed_params);
-            askadam_R1R2s = objGPU.estimate(img, mask, extraData, obj.config.R1R2sWorker.fitting);  % TODO: Is single() needed/desired?
+            objGPU        = gpuR1R2s(TE, TR, FA, obj.config.R1R2sWorker.fixed_params);
+            askadam_R1R2s = objGPU.estimate(img, mask, extraData, obj.config.R1R2sWorker.fitting.GPU);  % TODO: Is single() needed/desired?
 
             % Save the output data
             V.dim = dims(1:3);

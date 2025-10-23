@@ -140,11 +140,11 @@ classdef MCRWorker < qb.workers.Worker
 
             % Estimate the MCR model
             extraData         = [];
-            extraData.freqBKG = single(totalField / (gyro * obj.config.MCRWorker.fixed_params.B0)); % in ppm, gyro = 42.57747892
+            extraData.freqBKG = single(totalField / (obj.config.gyro * obj.config.MCRWorker.fixed_params.B0));  % in ppm
             extraData.pini    = single(pini);
             extraData.b1      = single(B1);
             objGPU            = gpuMCRMWI(TE, TR, FA, obj.config.MCRWorker.fixed_params);
-            askadam_mcr       = objGPU.estimate(img, mask, extraData, obj.config.MCRWorker.fitting);  % TODO: Is single() really needed/desired?
+            askadam_mcr       = objGPU.estimate(img, mask, extraData, obj.config.MCRWorker.fitting.GPU);  % TODO: Is single() really needed/desired?
 
             % Extract and save the output data
             V.dim    = dims(1:3);

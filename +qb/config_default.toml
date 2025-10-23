@@ -1,6 +1,9 @@
 # --------------------- General settings ---------------------
 version                 = "0.0.2"           # QuIDBBIDS version that should match the version in resources/mpackage.json
 useHPC                  = false             # Use HPC cluster (true/false)
+gyro                    = 42.57747892       # in ppm
+kappa_mw                = 0.36              # Jung, NI., myelin water density
+kappa_iew               = 0.86              # Jung, NI., intra-/extra-axonal water density
 
 # --------------------- RelB1mapWorker parameters ---------------------
 [RelB1mapWorker]
@@ -12,7 +15,18 @@ modality                = ["anat", "fmap"]
 suffix                  = ["MEGRE", "TB1TFL"]
 
 # --------------------- R1R2sWorker parameters ---------------------
-[R1R2sWorker.fitting]
+[R1R2sWorker.fixed_params]
+x_i                     = -0.1              # ppm
+x_a                     = -0.1              # ppm
+E                       = 0.02              # ppm
+rho_mw                  = 0.4186            # Computed as kappa_mw/kappa_iew, i.e. 0.36/0.86
+t1_mw                   = 0.234             # s
+B0                      = 3.0               # Field strength, in tesla. TODO: Replace with sidecar data
+B0dir                   = [0.0, 0.0, 1.0]   # Main magnetic field direction with respect to FOV -- Replace with actual sepia_header{end}.B0_dir
+thres_R2star            = 150               # 1/s, upper bound
+thres_T1                = 3.1               # s, upper bound
+
+[R1R2sWorker.fitting.GPU]
 iteration               = 4000
 convergenceWindow       = 25                # At least 100 iterations and more robust convergence estimate
 convergenceValue        = 1e-8
@@ -21,13 +35,8 @@ decayRate               = 0
 tol                     = 1e-3
 isWeighted              = false             # Residual option
 
-# --------------------- MCRGPUWorker parameters ---------------------
-[MCRGPUWorker]
-kappa_mw                = 0.36              # Jung, NI., myelin water density
-kappa_iew               = 0.86              # Jung, NI., intra-/extra-axonal water density
-
-# Fixed parameters for gacelle MCRMWI
-[MCRGPUWorker.fixed_params]
+# --------------------- MCRWorker parameters ---------------------
+[MCRWorker.fixed_params]                    # Fixed parameters for gacelle??? MCRMWI
 x_i                     = -0.1              # ppm
 x_a                     = -0.1              # ppm
 E                       = 0.02              # ppm
@@ -39,7 +48,7 @@ thres_R2star            = 150               # 1/s, upper bound
 thres_T1                = 3.1               # s, upper bound
 
 # Fitting parameters
-[MCRGPUWorker.fitting]
+[MCRWorker.fitting.GPU]
 Nepoch                  = 4000
 initialLearnRate        = 0.001
 decayRate               = 0

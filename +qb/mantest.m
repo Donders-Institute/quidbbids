@@ -26,7 +26,7 @@ else
     bids_dir = 'P:\3015999.02\marzwi_sandbox\bids_MCR-MWI';
 end
 quidb = qb.QuIDBBIDS(bids_dir)
-% quidb.resumes.Kwok.preferred = true;
+quidb.resumes.R2D2.preferred = true;
 mgr   = quidb.manager(["R1map", "R2starmap", "MWFmap"])
 mgr.start_workflow()
 

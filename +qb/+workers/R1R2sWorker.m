@@ -92,7 +92,7 @@ classdef R1R2sWorker < qb.workers.Worker
             img  = NaN(dims);
             for n = 1:dims(5)
                 img(:,:,:,:,n) = spm_read_vols(spm_vol(echos4Dmag{n}));
-                bfile          = bids.File(echos4Dmag{1});          % For reading metadata, parsing entities, etc
+                bfile          = bids.File(echos4Dmag{n});          % For reading metadata, parsing entities, etc
                 FA(n)          = bfile.metadata.FlipAngle;
             end
             mask = spm_vol(char(brainmask)).dat() & all(~isnan(img), [4 5]);

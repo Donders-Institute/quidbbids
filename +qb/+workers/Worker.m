@@ -314,8 +314,25 @@ classdef (Abstract) Worker < handle
             end
         end
 
-        function result = query_ses(obj, layout, query, filter)
+        function result = query_ses(obj, layout, query, varargin)
             %QUERY_SES Queries the BIDS LAYOUT using an addiotional filter for the current subject and session
+            %
+            % RESULT = QUERY_SES(LAYOUT, QUERY, [FILTER])
+            %        = QUERY_SES(LAYOUT, QUERY, struct('name1', value1, 'name2', value2, ...))
+            %        = QUERY_SES(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
+            %
+            % See also: bids.query
+
+            % Parse the filter input
+            if ~isscalar(varargin)
+                filter = struct(varargin{:});
+            elseif isstruct(varargin{1})
+                filter = varargin{1};
+            else
+                obj.logger.exception('QUERY_SES expects the FILTER to be a struct or name-value pairs');
+            end
+
+            % Do the query with the subject/session filter added
             result = bids.query(layout, query, setfield(setfield(filter, 'sub',obj.sub()), 'ses',obj.ses()));
         end
 

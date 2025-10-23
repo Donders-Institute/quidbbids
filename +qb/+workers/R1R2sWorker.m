@@ -48,7 +48,7 @@ classdef R1R2sWorker < qb.workers.Worker
             obj.bidsfilter.R1map     = setfield(obj.bidsfilter.R2starmap, 'suffix','R1map');
             
             % Make the workitems (if requested)
-            if strlength(workitems)                             % isempty(string('')) -> false
+            if strlength(workitems)                 % isempty(string('')) -> false
                 for workitem = string(workitems)
                     obj.fetch(workitem);
                 end
@@ -82,7 +82,7 @@ classdef R1R2sWorker < qb.workers.Worker
             if length(FAmap_angle) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
                 obj.logger.exception(sprintf('%s expected only one FAmap file but got: %s', obj.name, sprintf('%s ', FAmap_angle{:})))
             end
-            if length(brainmask) ~= 1          % TODO: FIXME
+            if length(brainmask) ~= 1           % TODO: FIXME
                 obj.logger.exception('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', brainmask{:}))
             end
             
@@ -90,17 +90,15 @@ classdef R1R2sWorker < qb.workers.Worker
             V    = spm_vol(echos4Dmag{1});                          % For reading the 3D image dimensions
             dims = [V(1).dim length(V) length(echos4Dmag)];
             img  = NaN(dims);
-            mask = true;
             for n = 1:dims(5)
-                bfile          = bids.File(echos4Dmag{1});          % For reading metadata, parsing entities, etc
                 img(:,:,:,:,n) = spm_read_vols(spm_vol(fullfile(echos4Dmag{n})));
-                mask           = spm_read_vols(spm_vol(fullfile(brainmask{n}))) & mask;
-                FA(n)          = bfile.meta.FlipAngle;
+                bfile          = bids.File(echos4Dmag{1});          % For reading metadata, parsing entities, etc
+                FA(n)          = bfile.metadata.FlipAngle;
             end
+            mask = spm_vol(fullfile(brainmask{n})).dat() & all(~isnan(img), [4 5]);
             B1   = spm_vol(FAmap_angle).dat() / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
-            TR   = bfile.meta.FlipAngle.RepetitionTime;
+            TR   = bfile.metadata.FlipAngle.RepetitionTime;
             TE   = bfile.metadata.EchoTime;
-            mask = mask & all(~isnan(img), [4 5]);
 
             % Estimate the MCR model
             extraData     = [];

@@ -126,10 +126,10 @@ classdef MCRWorker < qb.workers.Worker
                 unwrappedPhase(:,:,:,:,n) = spm_read_vols(spm_vol(fullfile(unwrapped{n})));
                 totalField(:,:,:,n)       = spm_read_vols(spm_vol(fullfile(fieldmap{n})));
                 mask                      = spm_read_vols(spm_vol(fullfile(localfmask{n}))) & mask;
-                FA(n)                     = bfile.meta.FlipAngle;
+                FA(n)                     = bfile.metadata.FlipAngle;
             end
             B1 = spm_vol(FAmap_angle).dat() / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
-            TR = bfile.meta.FlipAngle.RepetitionTime;
+            TR = bfile.metadata.FlipAngle.RepetitionTime;
             TE = bfile.metadata.EchoTime;
 
             % Obtain the initial estimation of the initial B1 phase

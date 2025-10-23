@@ -114,7 +114,7 @@ classdef QSMWorker < qb.workers.Worker
                         param = obj.config.QSMWorker.(workitem);
                     case {"T2starmap", "S0map"}
                         param = obj.config.QSMWorker.("R2starmap");
-                    case {"Chimap"}
+                    case {"Chimap", "unwrapped", "localfmask"}
                         param = obj.config.QSMWorker.("QSM");
                     otherwise
                         obj.logger.exception(sprintf("%s cannot find the SEPIA parameters for: %s ", obj.name, workitem))

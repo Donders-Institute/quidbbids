@@ -133,11 +133,11 @@ classdef (Abstract) Worker < handle
                     obj.done()
                     obj.logger.info(obj.name + " has finished working on: " + obj.subject.path)
                 else
-                    obj.logger.error(sprintf("%s could not produce the requested %s item", obj.name, workitem))
+                    obj.logger.error(sprintf("%s could not produce the requested %s item (%s/%s)", obj.name, workitem, obj.subject.name, obj.subject.session))
                 end
                 
             else
-                obj.logger.info(sprintf("%s fetched %d requested %s items (%s) %s", obj.name, length(work), workitem, obj.subject.name))
+                obj.logger.info(sprintf("%s fetched %d requested %s items (%s/%s)", obj.name, length(work), workitem, obj.subject.name, obj.subject.session))
             end
 
             % Make sure that the work exists
@@ -257,6 +257,9 @@ classdef (Abstract) Worker < handle
             %SUB Gets the sub-label from the subject data-structure
             label = strsplit(obj.subject.name, '-');
             label = label{end};
+            if isempty(label)
+                obj.logger.warning(sprintf('Subject label could not be determined from subject.name: %s', obj.subject.name))
+            end
         end
 
         function label = ses(obj)
@@ -315,7 +318,7 @@ classdef (Abstract) Worker < handle
         end
 
         function result = query_ses(obj, layout, query, varargin)
-            %QUERY_SES Queries the BIDS LAYOUT using an addiotional filter for the current subject and session
+            %QUERY_SES Queries the BIDS LAYOUT using an additional filter for the current subject and session
             %
             % RESULT = QUERY_SES(LAYOUT, QUERY, [FILTER])
             %        = QUERY_SES(LAYOUT, QUERY, struct('name1', value1, 'name2', value2, ...))
@@ -324,16 +327,16 @@ classdef (Abstract) Worker < handle
             % See also: bids.query
 
             % Parse the filter input
-            if ~isscalar(varargin)
-                filter = struct(varargin{:});
+            if isempty(varargin) || ~isscalar(varargin)
+                bfilter = struct(varargin{:});
             elseif isstruct(varargin{1})
-                filter = varargin{1};
+                bfilter = varargin{1};
             else
                 obj.logger.exception('QUERY_SES expects the FILTER to be a struct or name-value pairs');
             end
 
             % Do the query with the subject/session filter added
-            result = bids.query(layout, query, setfield(setfield(filter, 'sub',obj.sub()), 'ses',obj.ses()));
+            result = bids.query(layout, query, setfield(setfield(bfilter, 'sub',obj.sub()), 'ses',obj.ses()));
         end
 
         function bfile = update_bfile(obj, bfile, specs, rootdir)

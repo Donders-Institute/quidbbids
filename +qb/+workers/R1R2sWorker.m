@@ -66,7 +66,7 @@ classdef R1R2sWorker < qb.workers.Worker
             import qb.utils.spm_write_vol_gz
 
             % Check the input
-            if isempty(obj.subject.anat) || isempty(obj.subject.fmap)
+            if isempty(obj.subject.anat)
                 return
             end
 

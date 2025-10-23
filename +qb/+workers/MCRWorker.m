@@ -109,8 +109,8 @@ classdef MCRWorker < qb.workers.Worker
             if length(FAmap_angle) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
                 obj.logger.exception(sprintf('%s expected only one FAmap file but got: %s', obj.name, sprintf('%s ', FAmap_angle{:})))
             end
-            if length(localfmask) ~= 1          % TODO: FIXME
-                obj.logger.exception('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', localfmask{:}))
+            if length(localfmask) ~= length(echos4Dmag)
+                obj.logger.exception('%s expected %d brainmasks but got:%s', obj.name, length(echos4Dmag), sprintf(' %s', localfmask{:}))
             end
             
             % Load the data + metadata
@@ -118,18 +118,18 @@ classdef MCRWorker < qb.workers.Worker
             dims           = [V(1).dim length(V) length(echos4Dmag)];
             img            = NaN(dims);
             unwrappedPhase = NaN(dims);
-            totalField     = NaN(dims(1:4));
+            totalField     = NaN(dims([1:3 5]));
             mask           = true;
             for n = 1:dims(5)
                 bfile                     = bids.File(echos4Dmag{1});   % For reading metadata, parsing entities, etc
-                img(:,:,:,:,n)            = spm_read_vols(spm_vol(fullfile(echos4Dmag{n})));
-                unwrappedPhase(:,:,:,:,n) = spm_read_vols(spm_vol(fullfile(unwrapped{n})));
-                totalField(:,:,:,n)       = spm_read_vols(spm_vol(fullfile(fieldmap{n})));
-                mask                      = spm_read_vols(spm_vol(fullfile(localfmask{n}))) & mask;
+                img(:,:,:,:,n)            = spm_read_vols(spm_vol(echos4Dmag{n}));
+                unwrappedPhase(:,:,:,:,n) = spm_read_vols(spm_vol(unwrapped{n}));
+                totalField(:,:,:,n)       = spm_read_vols(spm_vol(fieldmap{n}));
+                mask                      = spm_read_vols(spm_vol(localfmask{n})) & mask;
                 FA(n)                     = bfile.metadata.FlipAngle;
             end
-            B1 = spm_vol(FAmap_angle).dat() / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
-            TR = bfile.metadata.FlipAngle.RepetitionTime;
+            B1 = spm_vol(char(FAmap_angle)).dat() / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
+            TR = bfile.metadata.RepetitionTime;
             TE = bfile.metadata.EchoTime;
 
             % Obtain the initial estimation of the initial B1 phase

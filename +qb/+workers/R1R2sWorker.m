@@ -91,13 +91,13 @@ classdef R1R2sWorker < qb.workers.Worker
             dims = [V(1).dim length(V) length(echos4Dmag)];
             img  = NaN(dims);
             for n = 1:dims(5)
-                img(:,:,:,:,n) = spm_read_vols(spm_vol(fullfile(echos4Dmag{n})));
+                img(:,:,:,:,n) = spm_read_vols(spm_vol(echos4Dmag{n}));
                 bfile          = bids.File(echos4Dmag{1});          % For reading metadata, parsing entities, etc
                 FA(n)          = bfile.metadata.FlipAngle;
             end
-            mask = spm_vol(fullfile(brainmask{n})).dat() & all(~isnan(img), [4 5]);
-            B1   = spm_vol(FAmap_angle).dat() / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
-            TR   = bfile.metadata.FlipAngle.RepetitionTime;
+            mask = spm_vol(char(brainmask)).dat() & all(~isnan(img), [4 5]);
+            B1   = spm_vol(char(FAmap_angle)).dat() / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
+            TR   = bfile.metadata.RepetitionTime;
             TE   = bfile.metadata.EchoTime;
 
             % Estimate the MCR model

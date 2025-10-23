@@ -107,10 +107,10 @@ classdef R1R2sWorker < qb.workers.Worker
             askadam_R1R2s = objGPU.estimate(img, mask, extraData, obj.config.R1R2sWorker.fitting.GPU);  % TODO: Is single() needed/desired?
 
             % Save the output data
-            V.dim = dims(1:3);
-            spm_write_vol_gz(V, askadam_R1R2s.final.R1,     obj.update_bfile(bfile, obj.bidsfilter.R1map,     obj.workdir).path);
-            spm_write_vol_gz(V, askadam_R1R2s.final.M0,     obj.update_bfile(bfile, obj.bidsfilter.M0map,     obj.workdir).path);
-            spm_write_vol_gz(V, askadam_R1R2s.final.R2star, obj.update_bfile(bfile, obj.bidsfilter.R2starmap, obj.workdir).path);
+            V(1).dim = dims(1:3);
+            spm_write_vol_gz(V(1), askadam_R1R2s.final.R1,     obj.update_bfile(bfile, obj.bidsfilter.R1map,     obj.workdir).path);
+            spm_write_vol_gz(V(1), askadam_R1R2s.final.M0,     obj.update_bfile(bfile, obj.bidsfilter.M0map,     obj.workdir).path);
+            spm_write_vol_gz(V(1), askadam_R1R2s.final.R2star, obj.update_bfile(bfile, obj.bidsfilter.R2starmap, obj.workdir).path);
         end
 
     end

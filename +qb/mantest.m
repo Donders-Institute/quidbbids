@@ -26,8 +26,8 @@ else
     bids_dir = 'P:\3015999.02\marzwi_sandbox\bids_MCR-MWI';
 end
 quidb = qb.QuIDBBIDS(bids_dir)
-quidb.resumes.Kwok.preferred = true;
-mgr   = quidb.manager(["FW_R1map", "meanR2starmap", "MWFmap"])
+% quidb.resumes.Kwok.preferred = true;
+mgr   = quidb.manager(["R1map", "R2starmap", "MWFmap"])
 mgr.start_workflow()
 
 %% ABRIM
@@ -38,6 +38,6 @@ else
     bids_dir = 'P:\3015999.02\marzwi_sandbox\bids_ABRIM';
 end
 quidb = qb.QuIDBBIDS(bids_dir)
-% quidb.resumes.R2D2.preferred = true;
+quidb.resumes.Kwok.preferred = true;
 mgr   = quidb.manager(["Chimap", "R2starmap"])
 mgr.start_workflow()

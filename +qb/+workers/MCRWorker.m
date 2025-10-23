@@ -121,7 +121,7 @@ classdef MCRWorker < qb.workers.Worker
             totalField     = NaN(dims([1:3 5]));
             mask           = true;
             for n = 1:dims(5)
-                bfile                     = bids.File(echos4Dmag{1});   % For reading metadata, parsing entities, etc
+                bfile                     = bids.File(echos4Dmag{n});   % For reading metadata, parsing entities, etc
                 img(:,:,:,:,n)            = spm_read_vols(spm_vol(echos4Dmag{n}));
                 unwrappedPhase(:,:,:,:,n) = spm_read_vols(spm_vol(unwrapped{n}));
                 totalField(:,:,:,n)       = spm_read_vols(spm_vol(fieldmap{n}));
@@ -147,17 +147,17 @@ classdef MCRWorker < qb.workers.Worker
             askadam_mcr       = objGPU.estimate(img, mask, extraData, obj.config.MCRWorker.fitting.GPU);  % TODO: Is single() really needed/desired?
 
             % Extract and save the output data
-            V.dim    = dims(1:3);
-            spm_write_vol_gz(V, askadam_mcr.final.MWF * 100,	                   obj.update_bfile(bfile, obj.bidsfilter.MWFmap,       obj.workdir).path);
-            spm_write_vol_gz(V, askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.update_bfile(bfile, obj.bidsfilter.MW_M0map,     obj.workdir).path);
-            spm_write_vol_gz(V, (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.update_bfile(bfile, obj.bidsfilter.FW_M0map,     obj.workdir).path);
-            spm_write_vol_gz(V, askadam_mcr.final.R2sMW,                           obj.update_bfile(bfile, obj.bidsfilter.MW_R2starmap, obj.workdir).path);
-            spm_write_vol_gz(V, askadam_mcr.final.R2sIW,                           obj.update_bfile(bfile, obj.bidsfilter.FW_R2starmap, obj.workdir).path);
-            spm_write_vol_gz(V, 1 ./ askadam_mcr.final.R1IEW,                      obj.update_bfile(bfile, obj.bidsfilter.FW_T1map,     obj.workdir).path);
-            spm_write_vol_gz(V, askadam_mcr.final.R1IEW,                           obj.update_bfile(bfile, obj.bidsfilter.FW_R1map,     obj.workdir).path);
-            spm_write_vol_gz(V, askadam_mcr.final.kIEWM,                           obj.update_bfile(bfile, obj.bidsfilter.FMW_exrate,   obj.workdir).path);
-            spm_write_vol_gz(V, mask,                                              obj.update_bfile(bfile, obj.bidsfilter.FitMask,      obj.workdir).path); % Check if this is correct
-            % spm_write_vol_gz(V, extraData.pini + askadam_mcr.final.dpini,          obj.update_bfile(bfile, obj.bidsfilter.MW_M0map,     obj.workdir).path); '_Initialphase.nii.gz'])); TODO: Ask Jose if needed
+            V(1).dim = dims(1:3);
+            spm_write_vol_gz(V(1), askadam_mcr.final.MWF * 100,	                   obj.update_bfile(bfile, obj.bidsfilter.MWFmap,       obj.workdir).path);
+            spm_write_vol_gz(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.update_bfile(bfile, obj.bidsfilter.MW_M0map,     obj.workdir).path);
+            spm_write_vol_gz(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.update_bfile(bfile, obj.bidsfilter.FW_M0map,     obj.workdir).path);
+            spm_write_vol_gz(V(1), askadam_mcr.final.R2sMW,                           obj.update_bfile(bfile, obj.bidsfilter.MW_R2starmap, obj.workdir).path);
+            spm_write_vol_gz(V(1), askadam_mcr.final.R2sIW,                           obj.update_bfile(bfile, obj.bidsfilter.FW_R2starmap, obj.workdir).path);
+            spm_write_vol_gz(V(1), 1 ./ askadam_mcr.final.R1IEW,                      obj.update_bfile(bfile, obj.bidsfilter.FW_T1map,     obj.workdir).path);
+            spm_write_vol_gz(V(1), askadam_mcr.final.R1IEW,                           obj.update_bfile(bfile, obj.bidsfilter.FW_R1map,     obj.workdir).path);
+            spm_write_vol_gz(V(1), askadam_mcr.final.kIEWM,                           obj.update_bfile(bfile, obj.bidsfilter.FMW_exrate,   obj.workdir).path);
+            spm_write_vol_gz(V(1), mask,                                              obj.update_bfile(bfile, obj.bidsfilter.FitMask,      obj.workdir).path); % Check if this is correct
+            % spm_write_vol_gz(V(1), extraData.pini + askadam_mcr.final.dpini,          obj.update_bfile(bfile, obj.bidsfilter.MW_M0map,     obj.workdir).path); '_Initialphase.nii.gz'])); TODO: Ask Jose if needed
         end
 
     end

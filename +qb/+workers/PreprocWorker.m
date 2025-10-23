@@ -23,7 +23,7 @@ classdef PreprocWorker < qb.workers.Worker
     end
 
     properties
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `bids.query('data', setfield(bidsfilter.(workitem), 'run',1))`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses('data', setfield(bidsfilter.(workitem), 'run',1))`
     end
     
     
@@ -131,11 +131,11 @@ classdef PreprocWorker < qb.workers.Worker
 
             % Process all runs independently
             anat_mag = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat', 'part','mag'};
-            for run = bids.query(obj.BIDS, 'runs', anat_mag{:}, 'echo',1:999)    % Note that the suffix (e.g. 'MEGRE') is already selected in the BIDS layout
+            for run = obj.query_ses(obj.BIDS, 'runs', anat_mag{:}, 'echo',1:999)    % Note that the suffix (e.g. 'MEGRE') is already selected in the BIDS layout
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this run
-                VFA_e1m = bids.query(obj.BIDS,     'data', anat_mag{:}, 'echo',1, 'run',char(run));
-                meta    = bids.query(obj.BIDS, 'metadata', anat_mag{:}, 'echo',1, 'run',char(run));
+                VFA_e1m = obj.query_ses(obj.BIDS,     'data', anat_mag{:}, 'echo',1, 'run',char(run));
+                meta    = obj.query_ses(obj.BIDS, 'metadata', anat_mag{:}, 'echo',1, 'run',char(run));
                 flips   = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
                 if length(flips) <= 1
                     obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + sprintf(" %s", flips{:}));
@@ -190,18 +190,18 @@ classdef PreprocWorker < qb.workers.Worker
             % Process all runs independently
             anat = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat'};
             fmap = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','fmap'};
-            for run = bids.query(obj.BIDS, 'runs', anat{:}, 'part','mag', 'echo',1:999)
+            for run = obj.query_ses(obj.BIDS, 'runs', anat{:}, 'part','mag', 'echo',1:999)
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this run
-                VFA_e1m = bids.query(obj.BIDS,     'data', anat{:}, 'echo',1, 'part','mag', 'run',char(run));
-                meta    = bids.query(obj.BIDS, 'metadata', anat{:}, 'echo',1, 'part','mag', 'run',char(run));
+                VFA_e1m = obj.query_ses(obj.BIDS,     'data', anat{:}, 'echo',1, 'part','mag', 'run',char(run));
+                meta    = obj.query_ses(obj.BIDS, 'metadata', anat{:}, 'echo',1, 'part','mag', 'run',char(run));
                 flips   = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
 
                 % Realign all FA images to their synthetic targets
                 for n = 1:length(flips)
 
                     % Get the common synthetic FA target image
-                    VFAref = bids.query(BIDSW, 'data', setfield(setfield(obj.bidsfilter.syntheticT1, 'run',char(run)), 'desc',sprintf('VFA%02dsynthetic', flips(n))));    % Keep in sync with obj.bidsfilter.syntheticT1
+                    VFAref = obj.query_ses(BIDSW, 'data', setfield(setfield(obj.bidsfilter.syntheticT1, 'run',char(run)), 'desc',sprintf('VFA%02dsynthetic', flips(n))));    % Keep in sync with obj.bidsfilter.syntheticT1
                     if length(VFAref) ~= 1
                         obj.logger.exception("I expected one synthetic reference images, but found: " + sprintf("\n%s",VFAref{:}));
                     end
@@ -213,7 +213,7 @@ classdef PreprocWorker < qb.workers.Worker
                     x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
                     % Save all resliced echo images for this flip angle (they will be merged to a 4D-file later)
-                    for echo = bids.query(obj.BIDS, 'data', anat{:}, 'run',char(run))'
+                    for echo = obj.query_ses(obj.BIDS, 'data', anat{:}, 'run',char(run))'
                         bfile = bids.File(char(echo));
                         if bfile.metadata.FlipAngle ~= flips(n)
                             continue
@@ -234,9 +234,9 @@ classdef PreprocWorker < qb.workers.Worker
                 end
 
                 % Get the B1 images and the common M0 target image
-                B1famp = bids.query(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','famp', 'echo',[]);
-                B1anat = bids.query(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','anat', 'echo',[]);
-                M0ref  = bids.query(BIDSW,     'data', setfield(obj.bidsfilter.M0map_echo1, 'run',char(run)));
+                B1famp = obj.query_ses(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','famp', 'echo',[]);
+                B1anat = obj.query_ses(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','anat', 'echo',[]);
+                M0ref  = obj.query_ses(BIDSW,     'data', setfield(obj.bidsfilter.M0map_echo1, 'run',char(run)));
                 if length(B1famp) ~= 1 || length(B1anat) ~= 1
                     error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}));
                 end
@@ -277,10 +277,10 @@ classdef PreprocWorker < qb.workers.Worker
 
             % Process all runs independently
             anat_mag = {'modality','anat', 'space',obj.bidsfilter.brainmask.space, 'part','mag'};  % Keep in sync
-            for run = bids.query(BIDSW, 'runs', anat_mag{:}, 'echo',1:999)
+            for run = obj.query_ses(BIDSW, 'runs', anat_mag{:}, 'echo',1:999)
 
                 % Get the echo-1 magnitude file for all flip angles of this run
-                VFA_e1m = bids.query(BIDSW, 'data', anat_mag{:}, 'echo',1, 'run',char(run));
+                VFA_e1m = obj.query_ses(BIDSW, 'data', anat_mag{:}, 'echo',1, 'run',char(run));
 
                 % Create individual brain masks using mri_synthstrip
                 Ve1m  = spm_vol(VFA_e1m{1});
@@ -317,10 +317,10 @@ classdef PreprocWorker < qb.workers.Worker
 
             % Process all runs independently
             anat = {'modality','anat', 'space',obj.bidsfilter.echos4Dmag.space};
-            for run = bids.query(BIDSW, 'runs', anat{:}, 'part','mag', 'echo',1:999, 'desc','VFA\d*')
+            for run = obj.query_ses(BIDSW, 'runs', anat{:}, 'part','mag', 'echo',1:999, 'desc','VFA\d*')
 
                 % Get the flip angles for this run
-                VFA = bids.query(BIDSW, 'descriptions', anat{:}, 'desc','VFA\d*', 'part','mag', 'echo',1, 'run',char(run));
+                VFA = obj.query_ses(BIDSW, 'descriptions', anat{:}, 'desc','VFA\d*', 'part','mag', 'echo',1, 'run',char(run));
                 if length(VFA) < 2
                     obj.logger.error("No flip angle images found in: " + obj.subject.path);
                 end
@@ -329,11 +329,11 @@ classdef PreprocWorker < qb.workers.Worker
                 for FA = VFA
 
                     % Get the mag/phase echo images for this flip angle & run
-                    magfiles   = bids.query(BIDSW, 'data', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','mag');
-                    phasefiles = bids.query(BIDSW, 'data', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','phase');
+                    magfiles   = obj.query_ses(BIDSW, 'data', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','mag');
+                    phasefiles = obj.query_ses(BIDSW, 'data', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','phase');
 
                     % Reorder the data because SEPIA (possibly?) expects the TE to be in increasing order
-                    meta       = bids.query(BIDSW, 'metadata', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','mag');
+                    meta       = obj.query_ses(BIDSW, 'metadata', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','mag');
                     [TEs, idx] = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
                     magfiles   = magfiles(idx);
                     phasefiles = phasefiles(idx);

@@ -18,7 +18,7 @@ classdef (Abstract) Worker < handle
     end
 
     properties (Abstract)
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `bids.query(layout_workdir, 'data', setfield(bidsfilter.(workitem), 'run',1))`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout_workdir, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
 
     properties (GetAccess = public, SetAccess = protected)
@@ -104,7 +104,7 @@ classdef (Abstract) Worker < handle
             end
 
             % See if we can collect the requested workitem
-            work = bids.query(obj.layout_workdir(), 'data', setfield(setfield(obj.bidsfilter.(workitem), 'sub',obj.sub()), 'ses',obj.ses()));
+            work = obj.query_ses(obj.layout_workdir(), 'data', obj.bidsfilter.(workitem));
             if isempty(work) || force
 
                 obj.logger.info(sprintf("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path))
@@ -128,7 +128,7 @@ classdef (Abstract) Worker < handle
                 % TODO: update the dashboard (non-HPC usage)
                 
                 % Collect the requested workitem
-                work = bids.query(obj.layout_workdir(), 'data', setfield(setfield(obj.bidsfilter.(workitem), 'sub',obj.sub()), 'ses',obj.ses()));
+                work = obj.query_ses(obj.layout_workdir(), 'data', obj.bidsfilter.(workitem));
                 if ~isempty(work)
                     obj.done()
                     obj.logger.info(obj.name + " has finished working on: " + obj.subject.path)
@@ -312,6 +312,11 @@ classdef (Abstract) Worker < handle
             elseif ~silent && ~isempty(output)
                 obj.logger.info(output)
             end
+        end
+
+        function result = query_ses(obj, layout, query, filter)
+            %QUERY_SES Queries the BIDS LAYOUT using an addiotional filter for the current subject and session
+            result = bids.query(layout, query, setfield(setfield(filter, 'sub',obj.sub()), 'ses',obj.ses()));
         end
 
         function bfile = update_bfile(obj, bfile, specs, rootdir)

@@ -15,17 +15,6 @@ modality                = ["anat", "fmap"]
 suffix                  = ["MEGRE", "TB1TFL"]
 
 # --------------------- R1R2sWorker parameters ---------------------
-[R1R2sWorker.fixed_params]
-x_i                     = -0.1              # ppm
-x_a                     = -0.1              # ppm
-E                       = 0.02              # ppm
-rho_mw                  = 0.4186            # Computed as kappa_mw/kappa_iew, i.e. 0.36/0.86
-t1_mw                   = 0.234             # s
-B0                      = 3.0               # Field strength, in tesla. TODO: Replace with sidecar data
-B0dir                   = [0.0, 0.0, 1.0]   # Main magnetic field direction with respect to FOV -- Replace with actual sepia_header{end}.B0_dir
-thres_R2star            = 150               # 1/s, upper bound
-thres_T1                = 3.1               # s, upper bound
-
 [R1R2sWorker.fitting.GPU]
 iteration               = 4000
 convergenceWindow       = 25                # At least 100 iterations and more robust convergence estimate

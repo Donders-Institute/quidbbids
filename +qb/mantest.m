@@ -4,6 +4,9 @@ addpath(fullfile('dependencies','sepia'))
 addpath(fullfile('dependencies','spm'))
 addpath(fullfile('dependencies','matlab-toml'))
 addpath(fullfile('dependencies','bids-matlab'))
+addpath(genpath(fullfile('dependencies','gacelle','MCRMWI')))
+addpath(genpath(fullfile('dependencies','gacelle','R1R2s')))
+addpath(genpath(fullfile('dependencies','gacelle','utils')))
 sepia_addpath
 clear classes
 

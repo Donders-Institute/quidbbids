@@ -103,7 +103,7 @@ classdef R1R2sWorker < qb.workers.Worker
             % Estimate the MCR model
             extraData     = [];
             extraData.b1  = single(B1);
-            objGPU        = gpuR1R2s(TE, TR, FA, obj.config.R1R2sWorker.fixed_params);
+            objGPU        = gpuJointR1R2starMapping(TE, TR, FA);
             askadam_R1R2s = objGPU.estimate(img, mask, extraData, obj.config.R1R2sWorker.fitting.GPU);  % TODO: Is single() needed/desired?
 
             % Save the output data

@@ -81,7 +81,7 @@ classdef PreprocWorker < qb.workers.Worker
             obj.bidsfilter.echos4Dmag   = struct('modality', 'anat', ...
                                                  'echo', [], ...
                                                  'part', 'mag', ...
-                                                 'desc', 'VFA\d*', ...
+                                                 'desc', 'ME4D', ...
                                                  'space', 'withinGRE');
             obj.bidsfilter.echos4Dphase = setfield(obj.bidsfilter.echos4Dmag, 'part', 'phase');
             obj.bidsfilter.FAmap_angle  = struct('modality', 'fmap', ...
@@ -295,10 +295,10 @@ classdef PreprocWorker < qb.workers.Worker
                     bfile = bids.File(char(e1mag));
                     specs = setfield(obj.bidsfilter.brainmask, 'desc', sprintf('VFA%02d', bfile.metadata.FlipAngle));
                     bfile = obj.update_bfile(bfile, specs);
-                    obj.logger.info(sprintf("--> Creating brain mask for FA: %d -> %s", bfile.metadata.FlipAngle, bfile.filename))
+                    [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
                     obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(e1mag), bfile.path));
                     mask  = spm_vol(bfile.path).dat() & mask;
-                    delete(bfile.path)      % Delete the individual mask files to save space
+                    delete(bfile.path)                      % Delete the individual mask files to save space
                 end
 
                 % Combine the individual masks to create a minimal brain mask
@@ -306,6 +306,7 @@ classdef PreprocWorker < qb.workers.Worker
                 Ve1m       = spm_vol(char(e1mag));
                 Ve1m.dt(1) = spm_type('uint8');
                 Ve1m.pinfo = [1; 0];
+                obj.logger.info(sprintf("--> Creating brain mask: %s", bfile.metadata.FlipAngle, bfile.filename))
                 qb.utils.spm_write_vol_gz(Ve1m, mask, bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
 
@@ -349,11 +350,11 @@ classdef PreprocWorker < qb.workers.Worker
                     end
 
                     % Create the 4D mag and phase QSM/MCR input data
-                    bfile = obj.update_bfile(bids.File(magfiles{1}), rmfield(obj.bidsfilter.echos4Dmag, 'desc'));
+                    bfile = obj.update_bfile(bids.File(magfiles{1}), obj.bidsfilter.echos4Dmag);
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
                     spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
-                    bfile = obj.update_bfile(bids.File(phasefiles{1}), rmfield(obj.bidsfilter.echos4Dphase, 'desc'));
+                    bfile = obj.update_bfile(bids.File(phasefiles{1}), obj.bidsfilter.echos4Dphase);
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
                     spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
@@ -387,11 +388,11 @@ classdef PreprocWorker < qb.workers.Worker
                     end
 
                     % Create the 4D mag and phase QSM/MCR input data
-                    bfile = obj.update_bfile(bids.File(magfiles{1}), rmfield(obj.bidsfilter.echos4Dmag, 'desc'));
+                    bfile = obj.update_bfile(bids.File(magfiles{1}), obj.bidsfilter.echos4Dmag);
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
                     spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
-                    bfile = obj.update_bfile(bids.File(phasefiles{1}), rmfield(obj.bidsfilter.echos4Dphase, 'desc'));
+                    bfile = obj.update_bfile(bids.File(phasefiles{1}), obj.bidsfilter.echos4Dphase);
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
                     spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
 

@@ -70,11 +70,6 @@ classdef QSMWorker < qb.workers.Worker
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            % Check the input
-            if ~ismember("anat", fieldnames(obj.subject))
-                return
-            end
-
             % Get preprocessed workitems from a colleague
             obj.workdir = replace(obj.workdir, "SEPIA", "QuIDBBIDS");       % SEPIA has it's own directory, temporarily put it back to what it was
             magfiles    = obj.ask_team('echos4Dmag');

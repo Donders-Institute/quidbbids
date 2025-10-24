@@ -318,11 +318,20 @@ classdef (Abstract) Worker < handle
         end
 
         function result = query_ses(obj, layout, query, varargin)
-            %QUERY_SES Queries the BIDS LAYOUT using an additional filter for the current subject and session
+            %QUERY_SES A thin wrapper around bids.query that adds an additional filter for the current subject and session
             %
-            % RESULT = QUERY_SES(LAYOUT, QUERY, [FILTER])
-            %        = QUERY_SES(LAYOUT, QUERY, struct('name1', value1, 'name2', value2, ...))
-            %        = QUERY_SES(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
+            % Inputs:
+            %   LAYOUT - BIDS directory name or BIDS structure (from bids.layout) to query
+            %   QUERY  - The type of query to perform (e.g., 'data', 'metadata', 'runs', etc.)
+            %   FILTER - (optional) A struct or name-value pairs specifying additional filters for the query
+            %
+            % Output:
+            %   RESULT - The result of the bids.query with the subject/session filter applied
+            %
+            % Usage:
+            %   RESULT = QUERY_SES(LAYOUT, QUERY, [FILTER])
+            %   RESULT = QUERY_SES(LAYOUT, QUERY, struct('name1', value1, 'name2', value2, ...))
+            %   RESULT = QUERY_SES(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
             %
             % See also: bids.query
 
@@ -341,13 +350,14 @@ classdef (Abstract) Worker < handle
 
         function bfile = update_bfile(obj, bfile, specs, rootdir)
             %UPDATE_BFILE Updates the BFILE (-> bids.File()) paths, entities and suffix with the values from SPECS
-            % Also, if ROOTDIR is non-empty, replaces the rootdir with the WORKDIR property (default) or else, if
+            % Also, if ROOTDIR is empty, replaces the rootdir with the WORKDIR property (default) or else, if
             % provided, with ROOTDIR
             %
             % Example update of bfile.path and 'acq':
             %   specs = struct('acq','demo')
+            %   rootdir = 'P:\workdir'
             %   'P:\rawdir\sub-004\anat\sub-004_acq-fl3d_MEGRE.nii.gz' ->
-            %   'P:\rootdir\sub-004\anat\sub-004_acq-demo_MEGRE.nii.gz'
+            %   'P:\workdir\sub-004\anat\sub-004_acq-demo_MEGRE.nii.gz'
 
             arguments
                 obj

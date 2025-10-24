@@ -87,7 +87,7 @@ classdef MCRWorker < qb.workers.Worker
             import qb.utils.spm_write_vol_gz
 
             % Check the input
-            if ~all(ismember(["anat", "fmap"], fieldnames(obj.subject)))
+            if ~ismember("fmap", fieldnames(obj.subject))
                 return
             end
 
@@ -148,16 +148,16 @@ classdef MCRWorker < qb.workers.Worker
 
             % Extract and save the output data
             V(1).dim = dims(1:3);
-            spm_write_vol_gz(V(1), askadam_mcr.final.MWF * 100,	                   obj.update_bfile(bfile, obj.bidsfilter.MWFmap,       obj.workdir).path);
-            spm_write_vol_gz(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.update_bfile(bfile, obj.bidsfilter.MW_M0map,     obj.workdir).path);
-            spm_write_vol_gz(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.update_bfile(bfile, obj.bidsfilter.FW_M0map,     obj.workdir).path);
-            spm_write_vol_gz(V(1), askadam_mcr.final.R2sMW,                           obj.update_bfile(bfile, obj.bidsfilter.MW_R2starmap, obj.workdir).path);
-            spm_write_vol_gz(V(1), askadam_mcr.final.R2sIW,                           obj.update_bfile(bfile, obj.bidsfilter.FW_R2starmap, obj.workdir).path);
-            spm_write_vol_gz(V(1), 1 ./ askadam_mcr.final.R1IEW,                      obj.update_bfile(bfile, obj.bidsfilter.FW_T1map,     obj.workdir).path);
-            spm_write_vol_gz(V(1), askadam_mcr.final.R1IEW,                           obj.update_bfile(bfile, obj.bidsfilter.FW_R1map,     obj.workdir).path);
-            spm_write_vol_gz(V(1), askadam_mcr.final.kIEWM,                           obj.update_bfile(bfile, obj.bidsfilter.FMW_exrate,   obj.workdir).path);
-            spm_write_vol_gz(V(1), mask,                                              obj.update_bfile(bfile, obj.bidsfilter.FitMask,      obj.workdir).path); % Check if this is correct
-            % spm_write_vol_gz(V(1), extraData.pini + askadam_mcr.final.dpini,          obj.update_bfile(bfile, obj.bidsfilter.MW_M0map,     obj.workdir).path); '_Initialphase.nii.gz'])); TODO: Ask Jose if needed
+            spm_write_vol_gz(V(1), askadam_mcr.final.MWF * 100,	                      obj.update_bfile(bfile, obj.bidsfilter.MWFmap      ).path);
+            spm_write_vol_gz(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.update_bfile(bfile, obj.bidsfilter.MW_M0map    ).path);
+            spm_write_vol_gz(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.update_bfile(bfile, obj.bidsfilter.FW_M0map    ).path);
+            spm_write_vol_gz(V(1), askadam_mcr.final.R2sMW,                           obj.update_bfile(bfile, obj.bidsfilter.MW_R2starmap).path);
+            spm_write_vol_gz(V(1), askadam_mcr.final.R2sIW,                           obj.update_bfile(bfile, obj.bidsfilter.FW_R2starmap).path);
+            spm_write_vol_gz(V(1), 1 ./ askadam_mcr.final.R1IEW,                      obj.update_bfile(bfile, obj.bidsfilter.FW_T1map    ).path);
+            spm_write_vol_gz(V(1), askadam_mcr.final.R1IEW,                           obj.update_bfile(bfile, obj.bidsfilter.FW_R1map    ).path);
+            spm_write_vol_gz(V(1), askadam_mcr.final.kIEWM,                           obj.update_bfile(bfile, obj.bidsfilter.FMW_exrate  ).path);
+            spm_write_vol_gz(V(1), mask,                                              obj.update_bfile(bfile, obj.bidsfilter.FitMask     ).path); % Check if this is correct
+            % spm_write_vol_gz(V(1), extraData.pini + askadam_mcr.final.dpini,          obj.update_bfile(bfile, obj.bidsfilter.MW_M0map    ).path); '_Initialphase.nii.gz'])); TODO: Ask Jose if needed
         end
 
     end

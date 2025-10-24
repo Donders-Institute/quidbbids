@@ -56,7 +56,9 @@ classdef PreprocWorker < qb.workers.Worker
                                "   coregister the B1 images as well to the M0 (which is also in the common GRE space)";
                                "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
                                "   to produce a minimal output mask (for SEPIA)";
-                               "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows"];
+                               "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows";
+                               "";
+                               "If no fmap data is available, only step 4 is performed"];
             obj.version     = "0.1.0";
             obj.needs       = [];         % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
             obj.bidsfilter.syntheticT1  = struct('modality', 'anat', ...
@@ -103,16 +105,15 @@ classdef PreprocWorker < qb.workers.Worker
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            % Check the input
-            if ~ismember("anat", fieldnames(obj.subject))
-                return
-            end
-
             % Get the work done
-            obj.create_common_syntheticT1_M0()  % Processing step 1
-            obj.coreg_VFA_B1_2common()          % Processing step 2
-            obj.create_brainmask()              % Processing step 3
-            obj.merge_echofiles()               % Processing step 4
+            if ismember("fmap", fieldnames(obj.subject))
+                obj.create_common_syntheticT1_M0()  % Processing step 1
+                obj.coreg_VFA_B1_2common()          % Processing step 2
+                obj.create_brainmask()              % Processing step 3
+                obj.merge_MEVFAfiles()              % Processing step 4
+            else
+                obj.merge_MEfiles()                 % Processing step 4
+            end
         end
 
         function create_common_syntheticT1_M0(obj)
@@ -130,7 +131,7 @@ classdef PreprocWorker < qb.workers.Worker
             % BIDSW = bids.layout(char(obj.workdir), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
 
             % Process all runs independently
-            anat_mag = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat', 'part','mag'};
+            anat_mag = {'modality','anat', 'part','mag'};
             for run = obj.query_ses(obj.BIDS, 'runs', anat_mag{:}, 'echo',1:999)    % Note that the suffix (e.g. 'MEGRE') is already selected in the BIDS layout
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this run
@@ -138,7 +139,7 @@ classdef PreprocWorker < qb.workers.Worker
                 meta    = obj.query_ses(obj.BIDS, 'metadata', anat_mag{:}, 'echo',1, 'run',char(run));
                 flips   = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
                 if length(flips) <= 1
-                    obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + sprintf(" %s", flips{:}));
+                    obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + char(flips));
                 end
 
                 % Get metadata from the first FA file (assume TR and nii-header identical for all VFAs of the same run)
@@ -188,7 +189,7 @@ classdef PreprocWorker < qb.workers.Worker
             BIDSW = obj.layout_workdir();
 
             % Process all runs independently
-            anat = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat'};
+            anat = {'modality','anat'};
             for run = obj.query_ses(obj.BIDS, 'runs', anat{:}, 'part','mag', 'echo',1:999)
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this run
@@ -233,7 +234,7 @@ classdef PreprocWorker < qb.workers.Worker
                 end
 
                 % Get the B1 images and the common M0 target image
-                fmap   = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','fmap'};
+                fmap   = {'modality','fmap'};
                 B1famp = obj.query_ses(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','famp', 'echo',[]);
                 B1anat = obj.query_ses(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','anat', 'echo',[]);
                 M0ref  = obj.query_ses(BIDSW,     'data', setfield(obj.bidsfilter.M0map_echo1, 'run',char(run)));
@@ -308,8 +309,8 @@ classdef PreprocWorker < qb.workers.Worker
             end
         end
 
-        function merge_echofiles(obj)
-            %MERGE_ECHOFILES Implements processing step 4
+        function merge_MEVFAfiles(obj)
+            %MERGE_MEVFAFILES Implements processing step 4
             %
             % Merge the 3D echos files for each flip angle into 4D files
 
@@ -345,18 +346,55 @@ classdef PreprocWorker < qb.workers.Worker
                     end
 
                     % Create the 4D mag and phase QSM/MCR input data
-                    bfile = obj.update_bfile(bids.File(phasefiles{1}), rmfield(obj.bidsfilter.echos4Dphase, 'desc'));
-                    obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
-                    spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
-
                     bfile = obj.update_bfile(bids.File(magfiles{1}), rmfield(obj.bidsfilter.echos4Dmag, 'desc'));
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
                     spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
+
+                    bfile = obj.update_bfile(bids.File(phasefiles{1}), rmfield(obj.bidsfilter.echos4Dphase, 'desc'));
+                    obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
+                    spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
                 end
             end
         end
 
+        function merge_MEfiles(obj)
+            %MERGE_MEFILES Implements processing step 4 (without fmap data / single flip angle)
+            %
+            % Merge the raw 3D echos files for each acquisition protocol into 4D files
+
+            import qb.utils.spm_file_merge_gz
+
+            % Merge the 3D echos files into 4D files for all MEGRE acq/runs independently
+            bfilter = struct('modality','anat', 'part','mag', 'echo',1:999);
+            for acq = obj.query_ses(obj.BIDS, 'acquisitions', bfilter)
+                for run = obj.query_ses(obj.BIDS, 'runs', setfield(bfilter, 'acq',char(acq)))
+
+                    % Get the mag/phase echo images for this flip angle & run
+                    magfiles   = obj.query_ses(obj.BIDS, 'data',          setfield(setfield(bfilter, 'acq',char(acq)), 'run',char(run)));
+                    phasefiles = obj.query_ses(obj.BIDS, 'data', setfield(setfield(setfield(bfilter, 'acq',char(acq)), 'run',char(run)), 'part','phase'));
+
+                    % Reorder the data because SEPIA (possibly?) expects the TE to be in increasing order
+                    meta       = obj.query_ses(obj.BIDS, 'metadata', setfield(setfield(bfilter, 'acq',char(acq)), 'run',char(run)));
+                    [TEs, idx] = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
+                    magfiles   = magfiles(idx);
+                    phasefiles = phasefiles(idx);
+                    if length(TEs) ~= length(unique(TEs))           % Check if the TEs are unique
+                        obj.logger.exception(sprintf("Non-unique TEs (%s) found in: %s", strtrim(sprintf('%g ', TEs)), subject.path))
+                    end
+
+                    % Create the 4D mag and phase QSM/MCR input data
+                    bfile = obj.update_bfile(bids.File(magfiles{1}), rmfield(obj.bidsfilter.echos4Dmag, 'desc'));
+                    obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
+                    spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
+
+                    bfile = obj.update_bfile(bids.File(phasefiles{1}), rmfield(obj.bidsfilter.echos4Dphase, 'desc'));
+                    obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
+                    spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
+
+                end
+            end
+        end
     end
 
 end

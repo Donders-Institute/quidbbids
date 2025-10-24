@@ -66,7 +66,7 @@ classdef R1R2sWorker < qb.workers.Worker
             import qb.utils.spm_write_vol_gz
 
             % Check the input
-            if ~all(ismember(["anat", "fmap"], fieldnames(obj.subject)))
+            if ~ismember("fmap", fieldnames(obj.subject))
                 return
             end
 
@@ -108,9 +108,9 @@ classdef R1R2sWorker < qb.workers.Worker
 
             % Save the output data
             V(1).dim = dims(1:3);
-            spm_write_vol_gz(V(1), askadam_R1R2s.final.R1,     obj.update_bfile(bfile, obj.bidsfilter.R1map,     obj.workdir).path);
-            spm_write_vol_gz(V(1), askadam_R1R2s.final.M0,     obj.update_bfile(bfile, obj.bidsfilter.M0map,     obj.workdir).path);
-            spm_write_vol_gz(V(1), askadam_R1R2s.final.R2star, obj.update_bfile(bfile, obj.bidsfilter.R2starmap, obj.workdir).path);
+            spm_write_vol_gz(V(1), askadam_R1R2s.final.R1,     obj.update_bfile(bfile, obj.bidsfilter.R1map    ).path);
+            spm_write_vol_gz(V(1), askadam_R1R2s.final.M0,     obj.update_bfile(bfile, obj.bidsfilter.M0map    ).path);
+            spm_write_vol_gz(V(1), askadam_R1R2s.final.R2star, obj.update_bfile(bfile, obj.bidsfilter.R2starmap).path);
         end
 
     end

@@ -127,12 +127,20 @@ classdef Manager < handle
             for product = obj.products      % TODO: sort such that PreprocWorker products (if any) are fetched first
                 worker = obj.team.(product).handle;
                 for subject = subjects
+
+                    % Make sure we have anat data for this subject
+                    if ~ismember("anat", fieldnames(subject)) || isempty(subject.anat)
+                        continue
+                    end
+
+                    % Ask the worker to fetch the product for this subject
                     args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
                     if obj.coord.config.useHPC
                         qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:});   % NB: products are passed directly
                     else
                         worker(args{:}).fetch(product, obj.force);     % TODO: Catch the work done (at some point)
                     end
+                    
                 end
 
                 if obj.coord.config.useHPC

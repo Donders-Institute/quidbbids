@@ -87,7 +87,7 @@ classdef MCRWorker < qb.workers.Worker
             import qb.utils.spm_write_vol_gz
 
             % Check the input
-            if isempty(obj.subject.anat) || isempty(obj.subject.fmap)
+            if ~all(ismember(["anat", "fmap"], fieldnames(obj.subject)))
                 return
             end
 

@@ -104,7 +104,7 @@ classdef PreprocWorker < qb.workers.Worker
             end
 
             % Check the input
-            if isempty(obj.subject.anat) || isempty(obj.subject.fmap)
+            if ~ismember("anat", fieldnames(obj.subject))
                 return
             end
 
@@ -189,7 +189,6 @@ classdef PreprocWorker < qb.workers.Worker
 
             % Process all runs independently
             anat = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','anat'};
-            fmap = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','fmap'};
             for run = obj.query_ses(obj.BIDS, 'runs', anat{:}, 'part','mag', 'echo',1:999)
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this run
@@ -234,34 +233,38 @@ classdef PreprocWorker < qb.workers.Worker
                 end
 
                 % Get the B1 images and the common M0 target image
+                fmap   = {'sub',obj.sub(), 'ses',obj.ses(), 'modality','fmap'};
                 B1famp = obj.query_ses(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','famp', 'echo',[]);
                 B1anat = obj.query_ses(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','anat', 'echo',[]);
                 M0ref  = obj.query_ses(BIDSW,     'data', setfield(obj.bidsfilter.M0map_echo1, 'run',char(run)));
-                if length(B1famp) ~= 1 || length(B1anat) ~= 1
-                    error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}));
-                end
                 if length(M0ref) ~= 1
                     error("Unexpected M0map images found: %s", sprintf("\n%s", M0ref{:}));
                 end
 
                 % Coregister the B1-anat fmap to the M0 target image using Normalized Mutual Information (NMI)
-                Vref = spm_vol(char(M0ref));
-                Vin  = spm_vol(char(B1anat));
-                x    = spm_coreg(Vref, Vin, struct('cost_fun', 'nmi'));
-
-                % Save the resliced B1 images
-                for B1vol = [B1anat, B1famp]
-                    Vin    = spm_vol(char(B1vol));
-                    volume = zeros(Vref.dim);
-                    T      = Vin.mat \ spm_matrix(x) * Vref.mat;    % Transformation from voxels in Vref to voxels in Vin
-                    for z = 1:Vref.dim(3)
-                        volume(:,:,z) = spm_slice_vol(Vin, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
+                if ~isempty(B1famp)
+                    if length(B1famp) ~= 1 || length(B1anat) ~= 1
+                        error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}));
                     end
-                    bfile                = bids.File(char(B1vol));
-                    bfile.entities.space = obj.bidsfilter.FAmap_angle.space;
-                    obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
-                    spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-                    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+
+                    Vref = spm_vol(char(M0ref));
+                    Vin  = spm_vol(char(B1anat));
+                    x    = spm_coreg(Vref, Vin, struct('cost_fun', 'nmi'));
+
+                    % Save the resliced B1 images
+                    for B1vol = [B1anat, B1famp]
+                        Vin    = spm_vol(char(B1vol));
+                        volume = zeros(Vref.dim);
+                        T      = Vin.mat \ spm_matrix(x) * Vref.mat;    % Transformation from voxels in Vref to voxels in Vin
+                        for z = 1:Vref.dim(3)
+                            volume(:,:,z) = spm_slice_vol(Vin, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
+                        end
+                        bfile                = bids.File(char(B1vol));
+                        bfile.entities.space = obj.bidsfilter.FAmap_angle.space;
+                        obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
+                        spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+                        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+                    end
                 end
             end
         end

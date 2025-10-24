@@ -72,7 +72,7 @@ classdef SCRWorker < qb.workers.Worker
             import qb.utils.spm_write_vol_gz
 
             % Check the input
-            if isempty(obj.subject.anat) || isempty(obj.subject.fmap)
+            if ~all(ismember(["anat", "fmap"], fieldnames(obj.subject)))
                 return
             end
 
@@ -96,10 +96,10 @@ classdef SCRWorker < qb.workers.Worker
             for run = obj.query_ses(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs
 
                 S0data     = obj.query_ses(BIDSWS, 'data',     setfield(S0filter,     'run', char(run)));
-                R2stardata = obj.query_ses(BIDSWS, 'data',     setfield(R2starfilter, 'run', char(run)));
-                Chidata    = obj.query_ses(BIDSWS, 'data',     setfield(Chifilter,    'run', char(run)));
-                maskdata   = obj.query_ses(BIDSWS, 'data',     setfield(maskfilter,   'run', char(run)));
-                meta       = obj.query_ses(BIDSWS, 'metadata', setfield(S0filter,     'run', char(run)));
+                R2stardata = bids.query(BIDSWS, 'data',     setfield(R2starfilter, 'run', char(run)));
+                Chidata    = bids.query(BIDSWS, 'data',     setfield(Chifilter,    'run', char(run)));
+                maskdata   = bids.query(BIDSWS, 'data',     setfield(maskfilter,   'run', char(run)));
+                meta       = bids.query(BIDSWS, 'metadata', setfield(S0filter,     'run', char(run)));
                 flips      = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
 
                 % Check the queries workitems

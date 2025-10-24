@@ -71,7 +71,7 @@ classdef QSMWorker < qb.workers.Worker
             end
 
             % Check the input
-            if isempty(obj.subject.anat) || isempty(obj.subject.fmap)
+            if ~ismember("anat", fieldnames(obj.subject))
                 return
             end
 

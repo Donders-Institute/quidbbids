@@ -279,13 +279,14 @@ classdef PreprocWorker < qb.workers.Worker
 
             % Index the workdir layout, or just use obj.BIDS if no fmap is available
             if ismember("fmap", fieldnames(obj.subject))
-                BIDS = obj.layout_workdir();
+                BIDS     = obj.layout_workdir();
+                anat_mag = {'modality','anat', 'space',obj.bidsfilter.brainmask.space, 'part','mag'};  % Keep in sync
             else
-                BIDS = obj.BIDS;
+                BIDS     = obj.BIDS;
+                anat_mag = {'modality','anat', 'part','mag'};
             end
 
             % Process all runs independently
-            anat_mag = {'modality','anat', 'space',obj.bidsfilter.brainmask.space, 'part','mag'};  % Keep in sync
             for run = obj.query_ses(BIDS, 'runs', anat_mag{:}, 'echo',1:999)
 
                 % Create individual brain masks per acquisition / flip angle from echo-1 magnitude images using mri_synthstrip

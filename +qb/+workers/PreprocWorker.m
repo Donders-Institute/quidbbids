@@ -112,6 +112,7 @@ classdef PreprocWorker < qb.workers.Worker
                 obj.create_brainmask()              % Processing step 3
                 obj.merge_MEVFAfiles()              % Processing step 4
             else
+                obj.create_brainmask()              % Processing step 3
                 obj.merge_MEfiles()                 % Processing step 4
             end
         end
@@ -273,37 +274,38 @@ classdef PreprocWorker < qb.workers.Worker
         function create_brainmask(obj)
             %CREATE_BRAINMASK Implements processing step 3
             %
-            % Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
+            % Create a brain mask for each FA using the echo-1_mag image. Combine the individual masks
             % to produce a minimal output mask (for QSM and MCR processing)
 
-            % Index the workdir layout (only for obj.subject)
-            BIDSW = obj.layout_workdir();
+            % Index the workdir layout, or just use obj.BIDS if no fmap is available
+            if ismember("fmap", fieldnames(obj.subject))
+                BIDS = obj.layout_workdir();
+            else
+                BIDS = obj.BIDS;
+            end
 
             % Process all runs independently
             anat_mag = {'modality','anat', 'space',obj.bidsfilter.brainmask.space, 'part','mag'};  % Keep in sync
-            for run = obj.query_ses(BIDSW, 'runs', anat_mag{:}, 'echo',1:999)
+            for run = obj.query_ses(BIDS, 'runs', anat_mag{:}, 'echo',1:999)
 
-                % Get the echo-1 magnitude file for all flip angles of this run
-                VFA_e1m = obj.query_ses(BIDSW, 'data', anat_mag{:}, 'echo',1, 'run',char(run));
-
-                % Create individual brain masks using mri_synthstrip
-                Ve1m  = spm_vol(VFA_e1m{1});
-                masks = zeros([Ve1m.dim length(VFA_e1m)]);
-                for n = 1:length(VFA_e1m)
-                    bfile          = bids.File(VFA_e1m{n});
-                    specs          = setfield(obj.bidsfilter.brainmask, 'desc', sprintf('VFA%02d', bfile.metadata.FlipAngle));
-                    bfile          = obj.update_bfile(bfile, specs);
+                % Create individual brain masks per acquisition / flip angle from echo-1 magnitude images using mri_synthstrip
+                mask = true;
+                for e1mag = obj.query_ses(BIDS, 'data', anat_mag{:}, 'echo',1, 'run',char(run))
+                    bfile = bids.File(char(e1mag));
+                    specs = setfield(obj.bidsfilter.brainmask, 'desc', sprintf('VFA%02d', bfile.metadata.FlipAngle));
+                    bfile = obj.update_bfile(bfile, specs);
                     obj.logger.info(sprintf("--> Creating brain mask for FA: %d -> %s", bfile.metadata.FlipAngle, bfile.filename))
-                    obj.run_command(sprintf("mri_synthstrip -i %s -m %s", VFA_e1m{n}, bfile.path));
-                    masks(:,:,:,n) = spm_vol(bfile.path).dat();
+                    obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(e1mag), bfile.path));
+                    mask  = spm_vol(bfile.path).dat() & mask;
                     delete(bfile.path)      % Delete the individual mask files to save space
                 end
 
                 % Combine the individual masks to create a minimal brain mask
                 bfile      = obj.update_bfile(bfile, obj.bidsfilter.brainmask);
+                Ve1m       = spm_vol(char(e1mag));
                 Ve1m.dt(1) = spm_type('uint8');
                 Ve1m.pinfo = [1; 0];
-                qb.utils.spm_write_vol_gz(Ve1m, all(masks,4), bfile.path);
+                qb.utils.spm_write_vol_gz(Ve1m, mask, bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
 
             end

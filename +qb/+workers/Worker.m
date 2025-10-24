@@ -111,9 +111,9 @@ classdef (Abstract) Worker < handle
                 locked = obj.is_locked();
                 if locked
                     if force
-                        obj.logger.warning(sprintf("Work will be done on %s but it was: %s", obj.subject.path, locked))
+                        obj.logger.warning(sprintf("Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked))
                     else
-                        obj.logger.error(sprintf("%s was: %s", obj.subject.path, locked))
+                        obj.logger.error(sprintf("%s was: %s", fileparts(obj.statusfile('.lock')), locked))
                         return
                     end
                 end
@@ -141,7 +141,7 @@ classdef (Abstract) Worker < handle
             end
 
             % Make sure that the work exists
-            for item = work'
+            for item = work
                 if ~isfile(item)
                     obj.logger.exception(sprintf('%s said he made %s but it does not exist', obj.name, item))
                 end
@@ -326,7 +326,7 @@ classdef (Abstract) Worker < handle
             %   FILTER - (optional) A struct or name-value pairs specifying additional filters for the query
             %
             % Output:
-            %   RESULT - The result of the bids.query with the subject/session filter applied
+            %   RESULT - The result of the bids.query with the subject/session filter applied. NB: always a row cell array
             %
             % Usage:
             %   RESULT = QUERY_SES(LAYOUT, QUERY, [FILTER])
@@ -346,6 +346,7 @@ classdef (Abstract) Worker < handle
 
             % Do the query with the subject/session filter added
             result = bids.query(layout, query, setfield(setfield(bfilter, 'sub',obj.sub()), 'ses',obj.ses()));
+            result = result(:)';    % Always return a row cell array
         end
 
         function bfile = update_bfile(obj, bfile, specs, rootdir)

@@ -23,7 +23,7 @@ classdef PreprocWorker < qb.workers.Worker
     end
 
     properties
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses('data', setfield(bidsfilter.(workitem), 'run',1))`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
     
     
@@ -213,7 +213,7 @@ classdef PreprocWorker < qb.workers.Worker
                     x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
                     % Save all resliced echo images for this flip angle (they will be merged to a 4D-file later)
-                    for echo = obj.query_ses(obj.BIDS, 'data', anat{:}, 'run',char(run))'
+                    for echo = obj.query_ses(obj.BIDS, 'data', anat{:}, 'run',char(run))
                         bfile = bids.File(char(echo));
                         if bfile.metadata.FlipAngle ~= flips(n)
                             continue

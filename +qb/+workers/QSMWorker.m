@@ -9,7 +9,7 @@ classdef QSMWorker < qb.workers.Worker
     end
 
     properties
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses('data', setfield(bidsfilter.(workitem), 'run',1))`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
     
     
@@ -82,7 +82,7 @@ classdef QSMWorker < qb.workers.Worker
                 obj.logger.exception(sprintf('%s got %d magnitude vs %d phase files', obj.name, length(magfiles), length(phasefiles)))
             end
             if length(mask) ~= 1    % TODO: FIXME
-                obj.logger.exception('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', mask{:}))
+                obj.logger.exception(sprintf('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', mask{:})))
             end
 
             % Process all acquisition protocols, runs and flip angles independently

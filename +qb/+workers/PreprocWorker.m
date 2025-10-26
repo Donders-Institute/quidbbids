@@ -68,24 +68,22 @@ classdef PreprocWorker < qb.workers.Worker
                                                  'suffix', 'T1w');
             obj.bidsfilter.M0map_echo1  = struct('modality', 'anat', ...
                                                  'echo', 1, ...
-                                                 'space', 'withinGRE', ...
+                                                 'space', obj.bidsfilter.syntheticT1.space, ...
                                                  'desc', 'despot1', ...
                                                  'suffix', 'M0map');
             obj.bidsfilter.brainmask    = struct('modality', 'anat', ...
                                                  'echo', [], ...
                                                  'part', '', ...
-                                                 'space', 'withinGRE', ...
                                                  'desc', 'minimal', ...
                                                  'label', 'brain', ...
                                                  'suffix', 'mask');
             obj.bidsfilter.echos4Dmag   = struct('modality', 'anat', ...
                                                  'echo', [], ...
                                                  'part', 'mag', ...
-                                                 'desc', 'ME4D', ...
-                                                 'space', 'withinGRE');
+                                                 'desc', 'ME4D');
             obj.bidsfilter.echos4Dphase = setfield(obj.bidsfilter.echos4Dmag, 'part', 'phase');
             obj.bidsfilter.FAmap_angle  = struct('modality', 'fmap', ...
-                                                 'space', 'withinGRE', ...
+                                                 'space', obj.bidsfilter.syntheticT1.space, ...
                                                  'acq', 'famp');
             obj.bidsfilter.FAmap_anat   = setfield(obj.bidsfilter.FAmap_angle, 'acq', 'anat');
             
@@ -225,7 +223,7 @@ classdef PreprocWorker < qb.workers.Worker
                         for z = 1:Vref.dim(3)
                             volume(:,:,z) = spm_slice_vol(Vin, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                         end
-                        bfile.entities.space   = obj.bidsfilter.echos4Dmag.space;
+                        bfile.entities.space   = obj.bidsfilter.syntheticT1.space;
                         bfile.entities.desc    = sprintf('VFA%02d', flips(n));
                         bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
                         spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
@@ -262,7 +260,7 @@ classdef PreprocWorker < qb.workers.Worker
                             volume(:,:,z) = spm_slice_vol(Vin, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                         end
                         bfile                = bids.File(char(B1vol));
-                        bfile.entities.space = obj.bidsfilter.FAmap_angle.space;
+                        bfile.entities.space = obj.bidsfilter.syntheticT1.space;
                         obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
                         spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
                         bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
@@ -280,7 +278,7 @@ classdef PreprocWorker < qb.workers.Worker
             % Index the workdir layout, or just use obj.BIDS if no fmap is available
             if ismember("fmap", fieldnames(obj.subject))
                 BIDS     = obj.layout_workdir();
-                anat_mag = {'modality','anat', 'space',obj.bidsfilter.brainmask.space, 'part','mag'};  % Keep in sync
+                anat_mag = {'modality','anat', 'space',obj.bidsfilter.syntheticT1.space, 'part','mag'};  % Keep in sync
             else
                 BIDS     = obj.BIDS;
                 anat_mag = {'modality','anat', 'part','mag'};
@@ -306,7 +304,7 @@ classdef PreprocWorker < qb.workers.Worker
                 Ve1m       = spm_vol(char(e1mag));
                 Ve1m.dt(1) = spm_type('uint8');
                 Ve1m.pinfo = [1; 0];
-                obj.logger.info(sprintf("--> Creating brain mask: %s", bfile.metadata.FlipAngle, bfile.filename))
+                obj.logger.info(sprintf("--> Creating brain mask: %s", bfile.filename))
                 qb.utils.spm_write_vol_gz(Ve1m, mask, bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
 
@@ -324,7 +322,7 @@ classdef PreprocWorker < qb.workers.Worker
             BIDSW = obj.layout_workdir();
 
             % Process all runs independently
-            anat = {'modality','anat', 'space',obj.bidsfilter.echos4Dmag.space};
+            anat = {'modality','anat', 'space',obj.bidsfilter.syntheticT1.space};
             for run = obj.query_ses(BIDSW, 'runs', anat{:}, 'part','mag', 'echo',1:999, 'desc','VFA\d*')
 
                 % Get the flip angles for this run

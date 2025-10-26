@@ -346,7 +346,11 @@ classdef (Abstract) Worker < handle
 
             % Do the query with the subject/session filter added
             result = bids.query(layout, query, setfield(setfield(bfilter, 'sub',obj.sub()), 'ses',obj.ses()));
-            result = result(:)';    % Always return a row cell array
+
+            % Always return a row cell array
+            if size(result,2)==0 || size(result,1)>1
+                result = result';
+            end
         end
 
         function bfile = update_bfile(obj, bfile, specs, rootdir)

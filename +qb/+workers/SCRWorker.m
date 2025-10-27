@@ -130,8 +130,8 @@ classdef SCRWorker < qb.workers.Worker
                 % Compute and save weighted means of the R2-star & Chi maps. TODO: Change the `desc` value from `VFA\d*` -> `mean`. Also, only compute for ME-VFA data
                 R2smean  = sum(S0.^2 .* R2s, 4) ./ sum(S0.^2, 4);
                 Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
-                bfileR2s = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.meanR2starmap);
-                bfileChi = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.meanChimap);
+                bfileR2s = obj.bfile_set(S0data{1}, obj.bidsfilter.meanR2starmap);
+                bfileChi = obj.bfile_set(S0data{1}, obj.bidsfilter.meanChimap);
                 spm_write_vol_gz(V, R2smean.*mask, bfileR2s.path);          % TODO: Add JSON sidecar files
                 spm_write_vol_gz(V, Chimean.*mask, bfileChi.path);          % TODO: Add JSON sidecar files
 
@@ -143,8 +143,8 @@ classdef SCRWorker < qb.workers.Worker
                 R1(~isfinite(R1)) = 0;          % set NaN and Inf to 0
                 
                 % Save the SCR output maps
-                bfileR1 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.R1map_S0);
-                bfileM0 = obj.update_bfile(bids.File(S0data{1}), obj.bidsfilter.M0map_S0);
+                bfileR1 = obj.bfile_set(S0data{1}, obj.bidsfilter.R1map_S0);
+                bfileM0 = obj.bfile_set(S0data{1}, obj.bidsfilter.M0map_S0);
                 spm_write_vol_gz(V, R1,       bfileR1.path);                % TODO: Add JSON sidecar files
                 spm_write_vol_gz(V, M0.*mask, bfileM0.path);                % TODO: Add JSON sidecar files
 

@@ -108,9 +108,9 @@ classdef R1R2sWorker < qb.workers.Worker
 
             % Save the output data
             V(1).dim = dims(1:3);
-            spm_write_vol_gz(V(1), askadam_R1R2s.final.R1,     obj.update_bfile(bfile, obj.bidsfilter.R1map    ).path);
-            spm_write_vol_gz(V(1), askadam_R1R2s.final.M0,     obj.update_bfile(bfile, obj.bidsfilter.M0map    ).path);
-            spm_write_vol_gz(V(1), askadam_R1R2s.final.R2star, obj.update_bfile(bfile, obj.bidsfilter.R2starmap).path);
+            spm_write_vol_gz(V(1), askadam_R1R2s.final.R1,     obj.bfile_set(bfile, obj.bidsfilter.R1map    ).path);
+            spm_write_vol_gz(V(1), askadam_R1R2s.final.M0,     obj.bfile_set(bfile, obj.bidsfilter.M0map    ).path);
+            spm_write_vol_gz(V(1), askadam_R1R2s.final.R2star, obj.bfile_set(bfile, obj.bidsfilter.R2starmap).path);
         end
 
     end

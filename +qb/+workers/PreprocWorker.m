@@ -67,6 +67,7 @@ classdef PreprocWorker < qb.workers.Worker
                                                  'desc', 'VFA\d*synthetic', ...
                                                  'suffix', 'T1w');
             obj.bidsfilter.M0map_echo1  = struct('modality', 'anat', ...
+                                                 'part', '', ...
                                                  'echo', 1, ...
                                                  'space', obj.bidsfilter.syntheticT1.space, ...
                                                  'desc', 'despot1', ...
@@ -160,7 +161,7 @@ classdef PreprocWorker < qb.workers.Worker
                     T1w                    = M0 .* GRESignal(flips(n), TR, T1);
                     T1w(~isfinite(T1w))    = 0;
                     specs                  = setfield(obj.bidsfilter.syntheticT1, 'desc', sprintf('VFA%02dsynthetic', flips(n)));  % Keep in sync with obj.bidsfilter.syntheticT1.desc
-                    bfile                  = obj.update_bfile(bids.File(VFA_e1m{n}), specs);
+                    bfile                  = obj.bfile_set(VFA_e1m{n}, specs);
                     bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};                               % TODO: FIXME
                     obj.logger.info("Saving T1like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
                     spm_write_vol_gz(Ve1m, T1w, bfile.path);
@@ -168,7 +169,7 @@ classdef PreprocWorker < qb.workers.Worker
                 end
 
                 % Save the M0 volume as well
-                bfile                  = obj.update_bfile(bids.File(VFA_e1m{n}), obj.bidsfilter.M0map_echo1);
+                bfile                  = obj.bfile_set(VFA_e1m{n}, obj.bidsfilter.M0map_echo1);
                 bfile.metadata.Sources = strrep(VFA_e1m, extractBefore(VFA_e1m{1}, bfile.bids_path), 'bids:raw:');
                 obj.logger.info("Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
                 spm_write_vol_gz(Ve1m, M0, bfile.path);
@@ -292,7 +293,7 @@ classdef PreprocWorker < qb.workers.Worker
                 for e1mag = obj.query_ses(BIDS, 'data', anat_mag{:}, 'echo',1, 'run',char(run))
                     bfile = bids.File(char(e1mag));
                     specs = setfield(obj.bidsfilter.brainmask, 'desc', sprintf('VFA%02d', bfile.metadata.FlipAngle));
-                    bfile = obj.update_bfile(bfile, specs);
+                    bfile = obj.bfile_set(bfile, specs);
                     [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
                     obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(e1mag), bfile.path));
                     mask  = spm_vol(bfile.path).dat() & mask;
@@ -300,7 +301,7 @@ classdef PreprocWorker < qb.workers.Worker
                 end
 
                 % Combine the individual masks to create a minimal brain mask
-                bfile      = obj.update_bfile(bfile, obj.bidsfilter.brainmask);
+                bfile      = obj.bfile_set(bfile, obj.bidsfilter.brainmask);
                 Ve1m       = spm_vol(char(e1mag));
                 Ve1m.dt(1) = spm_type('uint8');
                 Ve1m.pinfo = [1; 0];
@@ -348,11 +349,11 @@ classdef PreprocWorker < qb.workers.Worker
                     end
 
                     % Create the 4D mag and phase QSM/MCR input data
-                    bfile = obj.update_bfile(bids.File(magfiles{1}), obj.bidsfilter.echos4Dmag);
+                    bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
                     spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
-                    bfile = obj.update_bfile(bids.File(phasefiles{1}), obj.bidsfilter.echos4Dphase);
+                    bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.echos4Dphase);
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
                     spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
@@ -386,11 +387,11 @@ classdef PreprocWorker < qb.workers.Worker
                     end
 
                     % Create the 4D mag and phase QSM/MCR input data
-                    bfile = obj.update_bfile(bids.File(magfiles{1}), obj.bidsfilter.echos4Dmag);
+                    bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
                     spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
-                    bfile = obj.update_bfile(bids.File(phasefiles{1}), obj.bidsfilter.echos4Dphase);
+                    bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.echos4Dphase);
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
                     spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
 

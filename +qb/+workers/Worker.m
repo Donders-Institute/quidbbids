@@ -353,24 +353,45 @@ classdef (Abstract) Worker < handle
             end
         end
 
-        function bfile = update_bfile(obj, bfile, specs, rootdir)
-            %UPDATE_BFILE Updates the BFILE (-> bids.File()) paths, entities and suffix with the values from SPECS
-            % Also, if ROOTDIR is empty, replaces the rootdir with the WORKDIR property (default) or else, if
-            % provided, with ROOTDIR
+        function bfile = bfile_set(obj, bfile, specs, rootdir)
+            %BFILE_SET Update a BIDS file's path, entities, and suffix.
             %
-            % Example update of bfile.path and 'acq':
-            %   specs = struct('acq','demo')
-            %   rootdir = 'P:\workdir'
-            %   'P:\rawdir\sub-004\anat\sub-004_acq-fl3d_MEGRE.nii.gz' ->
-            %   'P:\workdir\sub-004\anat\sub-004_acq-demo_MEGRE.nii.gz'
-
+            %   BFILE = OBJ.BFILE_SET(BFILE, SPECS, ROOTDIR) updates the entities,
+            %   suffix, and file paths of a BIDS file according to the fields provided
+            %   in the SPECS structure.
+            %
+            %   Inputs:
+            %       BFILE   - Either a bids.File object or a character/string path to a
+            %                 BIDS-formatted file. If a path is provided, it is converted
+            %                 internally to a bids.File object.
+            %       SPECS   - (optional) A structure specifying entity/suffix/modality names
+            %                 and values to update in the BIDS filename. Default = struct()
+            %       ROOTDIR - (optional) New root directory to replace the existing one.
+            %                 If omitted or empty, the root directory is replaced with
+            %                 OBJ.WORKDIR.
+            %
+            %   Example:
+            %       specs = struct('acq','demo', 'run',1, 'suffix','M0map');
+            %       root  = 'P:\workdir';
+            %       bfile = bids.File('P:\rawdir\sub-004\anat\sub-004_acq-fl3d_MEGRE.nii.gz');
+            %       bfile = obj.bfile_set(bfile, specs, root);
+            %
+            %       % Result:
+            %       %   bfile.path = 'P:\workdir\sub-004\anat\sub-004_acq-demo_run-1_M0map.nii.gz'
+            %
+            %   See also: bids.File
+            
             arguments
                 obj
-                bfile   (1,1) bids.File
+                bfile   (1,1) {mustBeA(bfile, {'bids.File','char','string'})}
                 specs   (1,1) struct = struct()
                 rootdir {mustBeTextScalar} = ''
             end
 
+            % Parse the input arguments
+            if ischar(bfile) || isstring(bfile)
+                bfile = bids.File(char(bfile));
+            end
             if ~strlength(rootdir)
                 rootdir = obj.workdir;
             end

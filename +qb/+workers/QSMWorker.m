@@ -45,7 +45,6 @@ classdef QSMWorker < qb.workers.Worker
             obj.bidsfilter.R2starmap  = struct('modality', 'anat', ...
                                                'echo', [], ...
                                                'part', '', ...
-                                               'desc', 'VFA\d*', ...
                                                'suffix', 'R2starmap');
             obj.bidsfilter.T2starmap  = setfield(obj.bidsfilter.R2starmap, 'suffix','T2starmap');
             obj.bidsfilter.S0map      = setfield(obj.bidsfilter.R2starmap, 'suffix','S0map');
@@ -81,8 +80,18 @@ classdef QSMWorker < qb.workers.Worker
             if length(magfiles) ~= length(phasefiles)
                 obj.logger.exception(sprintf('%s got %d magnitude vs %d phase files', obj.name, length(magfiles), length(phasefiles)))
             end
-            if length(mask) ~= 1    % TODO: FIXME
-                obj.logger.exception(sprintf('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', mask{:})))
+            if length(mask) ~= 1
+                obj.logger.warning(sprintf('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', mask{:})))
+                entmag = bids.File(magfiles{1}).entities;
+                for mask_ = mask
+                    entmask = bids.File(char(mask_)).entities;
+                    if ( isfield(entmag, 'space') &&  isfield(entmask, 'space') && entmag.space == entmask.space) || ...
+                       (~isfield(entmag, 'space') && ~isfield(entmask, 'space'))
+                        obj.logger.info("Selecting mask: " + mask_)
+                        mask = mask_;
+                        break
+                    end
+                end
             end
 
             % Process all acquisition protocols, runs and flip angles independently
@@ -95,12 +104,10 @@ classdef QSMWorker < qb.workers.Worker
 
                 % Create a SEPIA header file
                 clear input
-                input.nifti         = magfiles{n};                          % For extracting B0 direction, voxel size, matrix size (only the first 3 dimensions)
-                input.TEFileList    = {spm_file(spm_file(magfiles{n}, 'ext',''), 'ext','.json')};  % Could just be left empty??
-                bfile               = bids.File(magfiles{n});               % Start constructing the output basename
-                bfile.entities.part = '';
-                bfile.suffix        = '';                                   % SEPIA adds suffixes of its own
-                output              = char(fullfile(obj.workdir, bfile.bids_path, extractBefore(bfile.filename,'.')));  % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
+                input.nifti         = magfiles{n};                                          % For extracting B0 direction, voxel size, matrix size (only the first 3 dimensions)
+                input.TEFileList    = {spm_file(spm_file(magfiles{n}, 'ext',''), 'ext','.json')};                   % Could just be left empty??
+                bfile               = obj.bfile_set(magfiles{n}. setfield(obj.bidsfilter.R2starmap), 'suffix','');  % Output basename; SEPIA adds suffixes of its own
+                output              = extractBefore(bfile.path,'.');                        % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
                 save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output)     % Override SEPIA's TE values with what the bfile says (-> added by spm_file_merge_gz)
 
                 % Get the SEPIA parameters

@@ -389,11 +389,11 @@ classdef PreprocWorker < qb.workers.Worker
                     % Create the 4D mag and phase QSM/MCR input data
                     bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
-                    spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
+                    spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'}, false);
 
                     bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.echos4Dphase);
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
-                    spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
+                    spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'}, false);
 
                 end
             end

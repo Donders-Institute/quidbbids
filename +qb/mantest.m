@@ -38,6 +38,7 @@ else
     bids_dir = 'P:\3015999.02\marzwi_sandbox\bids_ABRIM';
 end
 quidb = qb.QuIDBBIDS(bids_dir)
+quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect = 1;
 quidb.resumes.Kwok.preferred = true;
 mgr   = quidb.manager(["Chimap", "R2starmap"])
 mgr.start_workflow()

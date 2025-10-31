@@ -329,9 +329,9 @@ classdef (Abstract) Worker < handle
             %   RESULT - The result of the bids.query with the subject/session filter applied. NB: always a row cell array
             %
             % Usage:
-            %   RESULT = QUERY_SES(LAYOUT, QUERY, [FILTER])
-            %   RESULT = QUERY_SES(LAYOUT, QUERY, struct('name1', value1, 'name2', value2, ...))
-            %   RESULT = QUERY_SES(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
+            %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, [FILTER])
+            %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, struct('name1', value1, 'name2', value2, ...))
+            %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
             %
             % See also: bids.query
 

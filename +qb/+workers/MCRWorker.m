@@ -128,7 +128,7 @@ classdef MCRWorker < qb.workers.Worker
                 mask                      = spm_read_vols(spm_vol(localfmask{n})) & mask;
                 FA(n)                     = bfile.metadata.FlipAngle;
             end
-            B1 = spm_vol(char(FAmap_angle)).dat() / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
+            B1 = spm_read_vols(spm_vol(char(FAmap_angle))) / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
             TR = bfile.metadata.RepetitionTime;
             TE = bfile.metadata.EchoTime;
 

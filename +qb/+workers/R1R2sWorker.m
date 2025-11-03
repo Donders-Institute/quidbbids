@@ -95,8 +95,8 @@ classdef R1R2sWorker < qb.workers.Worker
                 bfile          = bids.File(echos4Dmag{n});          % For reading metadata, parsing entities, etc
                 FA(n)          = bfile.metadata.FlipAngle;
             end
-            mask = spm_vol(char(brainmask)).dat() & all(~isnan(img), [4 5]);
-            B1   = spm_vol(char(FAmap_angle)).dat() / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
+            mask = spm_read_vols(spm_vol(char(brainmask))) & all(~isnan(img), [4 5]);
+            B1   = spm_read_vols(spm_vol(char(FAmap_angle))) / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
             TR   = bfile.metadata.RepetitionTime;
             TE   = bfile.metadata.EchoTime;
 

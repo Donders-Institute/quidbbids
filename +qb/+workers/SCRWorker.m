@@ -87,7 +87,7 @@ classdef SCRWorker < qb.workers.Worker
             if length(FAmap) ~= 1       % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
                 obj.logger.exception(sprintf('%s expected only one FAmap file but got: %s', obj.name, sprintf('%s ', FAmap{:})))
             end
-            FA = spm_vol(char(FAmap)).dat();
+            FA = spm_read_vols(spm_vol(char(FAmap)));
 
             % Index the (special) SEPIA workdir layout (only for obj.subject)
             BIDSWS = obj.layout_workdir(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
@@ -121,10 +121,10 @@ classdef SCRWorker < qb.workers.Worker
                 Chi  = S0;
                 mask = true;
                 for n = 1:length(S0data)
-                    S0(:,:,:,n)  = spm_vol(S0data{n}).dat();
-                    R2s(:,:,:,n) = spm_vol(R2stardata{n}).dat();
-                    Chi(:,:,:,n) = spm_vol(Chidata{n}).dat();
-                    mask         = spm_vol(maskdata{n}).dat() & mask;
+                    S0(:,:,:,n)  = spm_read_vols(spm_vol(S0data{n}));
+                    R2s(:,:,:,n) = spm_read_vols(spm_vol(R2stardata{n}));
+                    Chi(:,:,:,n) = spm_read_vols(spm_vol(Chidata{n}));
+                    mask         = spm_read_vols(spm_vol(maskdata{n})) & mask;
                 end
 
                 % Compute and save weighted means of the R2-star & Chi maps. TODO: Change the `desc` value from `VFA\d*` -> `mean`. Also, only compute for ME-VFA data

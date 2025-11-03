@@ -12,8 +12,8 @@ arguments (Output)
     Compleximage double
 end
 
-Magnitude = spm_vol(char(filemagnitude)).dat();
-Phase     = spm_vol(char(filephase)).dat();
+Magnitude = spm_read_vols(spm_vol(char(filemagnitude)));
+Phase     = spm_read_vols(spm_vol(char(filephase)));
 
 phmax = max(Phase(:));
 phmin = min(Phase(:));

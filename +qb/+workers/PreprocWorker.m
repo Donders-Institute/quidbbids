@@ -150,7 +150,7 @@ classdef PreprocWorker < qb.workers.Worker
                 obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1m{1});
                 e1mag = zeros([Ve1m.dim length(flips)]);
                 for n = 1:length(flips)
-                    e1mag(:,:,:,n) = spm_vol(VFA_e1m{n}).dat();
+                    e1mag(:,:,:,n) = spm_read_vols(spm_vol(VFA_e1m{n}));
                 end
                 [T1, M0] = despot1_mapping(e1mag, flips, TR);
 
@@ -296,7 +296,7 @@ classdef PreprocWorker < qb.workers.Worker
                     bfile = obj.bfile_set(bfile, specs);
                     [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
                     obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(e1mag), bfile.path));
-                    mask  = spm_vol(bfile.path).dat() & mask;
+                    mask  = spm_read_vols(spm_vol(bfile.path)) & mask;
                     delete(bfile.path)                      % Delete the individual mask files to save space
                 end
 

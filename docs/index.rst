@@ -12,8 +12,8 @@
    :hidden:
    :caption: Usage
 
-..
    workflow
+   workers
    options
 
 .. toctree::
@@ -21,4 +21,5 @@
    :hidden:
    :caption: Miscellaneous
 
+   tutorial
    CHANGELOG

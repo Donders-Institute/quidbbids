@@ -8,7 +8,18 @@ Quantitative Imaging Derived Biomarkers in BIDS
 
    <img name="quidbbids-logo" src="https://github.com/Donders-Institute/quidbbids/blob/main/docs/_static/quidbbids_logo.png" height="150px" alt=" ">
 
-QuIDBBIDS is a Matlab package for pre-processing and biomarker extraction from quantitative MR images that are organized according to the BIDS standard.
+QuIDBBIDS is a MATLAB BIDS-app that enables researchers to easily preprocess and compute quantitative MRI biomarkers using standardized BIDS data. By 
+simplifying workflow creation and ensuring reproducibility, QuIDBBIDS lowers barriers for large-scale neuroimaging studies and supports broader clinical 
+translation of quantitative MRI methods.
+
+We focus on relaxometry metrics derivable from (multi-echo) gradient-echo and RF-spoiled sequences, including:
+
+- Longitudinal Relaxation (R1, both based on variable flip angle GRE and MP2RAGE acquisitions in combination with transmit field B1 maps)
+- Effective Transverse Relaxation (R2*)
+- Susceptibility (QSM) and Multi-compartment relaxometry Myelin Water Imaging (MCR-MWI - based on VFA acquisition)
+
+QuIDBBIDS uses a novel declarative framework in which users specify desired (biomarker) outputs, and the software dynamically builds and executes the 
+necessary workflow from a library of modular "workers".
 
 QuIDBBIDS is a work-in-progress (WIP) that is being developed at the `Donders Institute <https://www.ru.nl/donders/>`__ of the `Radboud University <https://www.ru.nl>`__.
 

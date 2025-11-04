@@ -17,7 +17,7 @@ classdef Logging < handle
     methods
 
         function obj = Logging(worker)
-            %LOGGER Initializes the logging object
+            % Constructor for the Logging class
 
             arguments
                 worker    qb.workers.Worker

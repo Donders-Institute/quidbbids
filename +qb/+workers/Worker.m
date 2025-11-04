@@ -47,7 +47,7 @@ classdef (Abstract) Worker < handle
     methods
 
         function obj = Worker(BIDS, subject, config, workdir, outputdir, team, workitems)
-            %WORKER Constructor for abstract Worker class
+            % Constructor for the abstract Worker class
 
             arguments
                 BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)

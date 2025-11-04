@@ -16,7 +16,7 @@ classdef R1R2sWorker < qb.workers.Worker
     methods
 
         function obj = R1R2sWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
-            %R1R2SWORKER Constructor for this concrete Worker class
+            % Constructor for this concrete Worker class
 
             arguments
                 BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)

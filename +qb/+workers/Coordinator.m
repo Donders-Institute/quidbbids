@@ -19,7 +19,7 @@ classdef (Abstract) Coordinator < handle
     methods
 
         function obj = Coordinator(BIDS, outputdir, workdir, configfile)
-            % Initializes the Coordinator for a given BIDS dataset
+            % Constructor for the abstract Coordinator class
             %
             % Inputs:
             %   BIDSDIR    - BIDS layout object from bids-matlab

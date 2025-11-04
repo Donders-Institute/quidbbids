@@ -16,7 +16,7 @@ classdef QSMWorker < qb.workers.Worker
     methods
 
         function obj = QSMWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
-            %QSMWORKER Constructor for this concrete Worker class
+            % Constructor for this concrete Worker class
 
             arguments
                 BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)

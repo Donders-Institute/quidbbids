@@ -30,7 +30,7 @@ classdef PreprocWorker < qb.workers.Worker
     methods
 
         function obj = PreprocWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
-            %PREPROCWORKER Constructor for this concrete Worker class
+            % Constructor for this concrete Worker class
 
             arguments
                 BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)

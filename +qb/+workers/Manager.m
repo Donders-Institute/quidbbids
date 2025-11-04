@@ -43,7 +43,7 @@ classdef Manager < handle
     methods
 
         function obj = Manager(coord, products)
-            %MANAGER Constructor for the Manager class
+            % Constructor for the Manager class
 
             arguments
                 coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks

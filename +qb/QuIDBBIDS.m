@@ -28,7 +28,7 @@ classdef QuIDBBIDS < qb.workers.Coordinator
     methods
 
         function obj = QuIDBBIDS(bidsdir, outputdir, workdir, configfile)
-            % Initializes the QuIDBBIDS object for a given BIDS dataset
+            % Initializes the concrete QuIDBBIDS Coordinator class for a given BIDS dataset
             %
             % OBJ = QuIDBBIDS(BIDSDIR, DERIVDIR, CONFIGFILE)
             %

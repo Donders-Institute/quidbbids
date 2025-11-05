@@ -22,4 +22,5 @@
    :caption: Miscellaneous
 
    tutorial
+   screenshots
    CHANGELOG

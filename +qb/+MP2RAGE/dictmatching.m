@@ -25,7 +25,7 @@ function [T1, PD, R1] = dictmatching(MP2RAGE, INV1, INV2, B1map, varargin)
 % in the future B1vector or R1 vector could be provided as an alternatice
 
 ProbabilityEstimate = 1;
-interpPt = 3;   % numeber of points to use on interpolation
+interpPt = 3;   % number of points to use on interpolation
 
 dims = size(INV1);
 mask = ones(dims);

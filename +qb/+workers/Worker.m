@@ -31,7 +31,7 @@ classdef (Abstract) Worker < handle
 
     properties
         BIDS        % BIDS layout from bids-matlab (raw input data only)
-        subject     % The subject that will be worked on 
+        subject     % The subject that will be worked on
         config      % Configuration settings that are used to produce the work
         workdir
         outputdir
@@ -121,16 +121,16 @@ classdef (Abstract) Worker < handle
                         return
                     end
                 end
-                
+
                 % TODO: update the dashboard (non-HPC usage)
-                
+
                 % Get the work done
                 cleanup = onCleanup(@() obj.unlock());
                 obj.lock()
                 obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
 
                 % TODO: update the dashboard (non-HPC usage)
-                
+
                 % Collect the requested workitem
                 work = obj.query_ses(obj.layout_workdir(), 'data', obj.bidsfilter.(workitem));
                 if ~isempty(work)
@@ -139,7 +139,7 @@ classdef (Abstract) Worker < handle
                 else
                     obj.logger.error(sprintf("%s could not produce the requested %s item (%s/%s)", obj.name, workitem, obj.subject.name, obj.subject.session))
                 end
-                
+
             else
                 obj.logger.info(sprintf("%s fetched %d requested %s items (%s/%s)", obj.name, length(work), workitem, obj.subject.name, obj.subject.session))
             end
@@ -281,7 +281,7 @@ classdef (Abstract) Worker < handle
             BIDSW = bids.layout(char(workdir), 'filter', struct('sub',obj.sub(), 'ses',obj.ses()), ...
                                 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
         end
-        
+
         function [status, output] = run_command(obj, command, silent)
             %RUN_COMMAND Executes a shell command and display its output.
             %
@@ -384,10 +384,10 @@ classdef (Abstract) Worker < handle
             %       %   bfile.path = 'P:\workdir\sub-004\anat\sub-004_acq-demo_run-1_M0map.nii.gz'
             %
             %   See also: bids.File
-            
+
             arguments
                 obj
-                bfile   (1,1) {mustBeA(bfile, {'bids.File','char','string'})}
+                bfile   {mustBeA(bfile, {'bids.File','char','string'})}
                 specs   (1,1) struct = struct()
                 rootdir {mustBeTextScalar} = ''
             end
@@ -414,7 +414,7 @@ classdef (Abstract) Worker < handle
                     bfile.entities.(char(field)) = char(value);
                 end
             end
-            
+
             % Paths are not updated automatically with the new filename, so do that manually
             bfile.path           = replace(bfile.path,           oldfname, bfile.filename);
             bfile.metadata_files = replace(bfile.metadata_files, oldjname, bfile.json_filename);

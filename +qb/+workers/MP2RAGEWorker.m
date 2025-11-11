@@ -165,7 +165,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
             % inv2        - The INV2 image
             % InvEff      - Inversion efficiency of the adiabatic inversion pulse
             % EchoSpacing - The RepetitionTimeExcitation value in secs that typically is not given on the json file. Default: twice the echo time
-            % NZslices    - The number of shots in the inner loop, the json file doesn't usually accomodate this
+            % NZslices    - The number of shots in the inner loop, the json file doesn't usually accommodate this
 
             % Extract the relevant MP2RAGE parameters from the BIDS metadata
             inv1                = bids.File(char(INV1));

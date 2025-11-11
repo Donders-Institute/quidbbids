@@ -5,9 +5,10 @@ gyro                    = 42.57747892       # in ppm
 kappa_mw                = 0.36              # Jung, NI., myelin water density
 kappa_iew               = 0.86              # Jung, NI., intra-/extra-axonal water density
 
-# --------------------- RelB1mapWorker parameters ---------------------
-[RelB1mapWorker]
-B1ScaleFactor           = 800               # B1ScaleFactor = 10 * bfile.metadata.FlipAngle; 800 is what SIEMENS seems to use
+# --------------------- B1prepWorker parameters ---------------------
+[B1prepWorker]
+FAscaling               = 800               # B1ScaleFactor = 10 * bfile.metadata.FlipAngle; 800 is what SIEMENS seems to use
+FWHM                    = 0                 # in mm, smoothing kernel for regularizing the B1 map
 
 # --------------------- BIDS input filters ---------------------
 [bids.select]
@@ -102,7 +103,7 @@ numMagn                 = true              # false: complex fitting
 isWeighted              = true
 weightMethod            = "quadratic_1stEcho"  # Options: "1stEcho" or "quadratic_1stEcho"
 
-# T1 model  
+# T1 model
 isExchange              = true              # BM model
 isEPG                   = true              # Using EPG-X
 npulse                  = 50                # Number of pulses

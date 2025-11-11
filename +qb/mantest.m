@@ -1,5 +1,5 @@
 restoredefaultpath
-root = fileparts(mfilename('fullpath'));
+root = fileparts(fileparts(mfilename('fullpath')));
 addpath(genpath(fullfile(root,'dependencies','despot1')))
 addpath(fullfile(root,'dependencies','sepia'))
 addpath(fullfile(root,'dependencies','spm'))

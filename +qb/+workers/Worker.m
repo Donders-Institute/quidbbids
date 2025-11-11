@@ -10,6 +10,7 @@ classdef (Abstract) Worker < handle
     %
     % See also: qb.workers.Manager
 
+
     properties (Abstract, GetAccess = public, SetAccess = protected)
         name        % Personal name of the worker
         description % Description of the work that is done
@@ -17,13 +18,16 @@ classdef (Abstract) Worker < handle
         needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
+
     properties (Abstract)
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout_workdir, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
 
+
     properties (GetAccess = public, SetAccess = protected)
         usesGPU     % Logical flag indicating if the worker can use GPU resources. Default = false
     end
+
 
     properties
         BIDS        % BIDS layout from bids-matlab (raw input data only)

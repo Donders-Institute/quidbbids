@@ -124,7 +124,7 @@ classdef Manager < handle
             end
 
             % Block the start button in the GUI (if any) and initialize the workers
-            for product = obj.products      % TODO: sort such that PreprocWorker products (if any) are fetched first
+            for product = obj.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
                 worker = obj.team.(product).handle;
                 for subject = subjects
 

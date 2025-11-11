@@ -1,5 +1,5 @@
 # --------------------- General settings ---------------------
-version                 = "0.0.2"           # QuIDBBIDS version that should match the version in resources/mpackage.json
+version                 = "0.0.3"           # QuIDBBIDS version that should match the version in resources/mpackage.json
 useHPC                  = false             # Use HPC cluster (true/false)
 gyro                    = 42.57747892       # in ppm
 kappa_mw                = 0.36              # Jung, NI., myelin water density

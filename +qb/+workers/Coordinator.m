@@ -3,6 +3,7 @@ classdef (Abstract) Coordinator < handle
     %
     % The manager doesn't know how the data is organized and needs assistance of the coordinator
 
+
     properties
         BIDS            % BIDS layout object from bids-matlab
         outputdir       % BIDSApp derivatives subdirectory where the output is stored
@@ -12,10 +13,12 @@ classdef (Abstract) Coordinator < handle
         config          % Configuration struct loaded from the config file
     end
     
+
     methods (Abstract)
         config = get_config(obj, config)   % Reads CONFIG from the configuration file or writes to it if CONFIG is given
     end
 
+    
     methods
 
         function obj = Coordinator(BIDS, outputdir, workdir, configfile)

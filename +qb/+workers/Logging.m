@@ -7,7 +7,7 @@ classdef Logging < handle
     %
     % See also: qb.QuIDBBIDS (for overview)
 
-
+    
     properties
         worker      % The worker that is logging its messages
         outputdir   % The QuIDBBIDS output directory where the logs will be stored

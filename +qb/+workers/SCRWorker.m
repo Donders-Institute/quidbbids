@@ -1,5 +1,8 @@
 classdef SCRWorker < qb.workers.Worker
-%SCRWORKER Runs SCR workflow
+    %SCRWORKER Runs SCR workflow
+    %
+    % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
+
 
     properties (GetAccess = public, SetAccess = protected)
         name        % Name of the worker
@@ -8,6 +11,7 @@ classdef SCRWorker < qb.workers.Worker
         needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
+    
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
@@ -39,7 +43,7 @@ classdef SCRWorker < qb.workers.Worker
                                "- Compute weighted means of the R2-star & Chi-maps over the different flip-angles";
                                "- Compute R1- & M0-maps based on despot1 with S0 estimates"];
             obj.version     = "0.0.1";
-            obj.needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "FAmap_angle"];
+            obj.needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "B1map_VFA"];
             obj.bidsfilter.R1map_S0      = struct('modality', 'anat', ...
                                                   'echo', [], ...
                                                   'part', '', ...
@@ -82,12 +86,12 @@ classdef SCRWorker < qb.workers.Worker
             [~, R2starfilter] = obj.ask_team('R2starmap');  % TODO: Make optional (-> ME-VFA data)
             [~, Chifilter]    = obj.ask_team('Chimap');     % TODO: Make optional (-> ME-VFA data)
 
-            % Get FAmap from a colleague
-            FAmap             = obj.ask_team('FAmap_angle');
-            if length(FAmap) ~= 1       % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-                obj.logger.exception(sprintf('%s expected only one FAmap file but got: %s', obj.name, sprintf('%s ', FAmap{:})))
+            % Get B1map from a colleague
+            B1map             = obj.ask_team('B1map_VFA');
+            if length(B1map) ~= 1       % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
+                obj.logger.exception(sprintf('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', B1map{:})))
             end
-            FA = spm_read_vols(spm_vol(char(FAmap)));
+            B1 = spm_read_vols(spm_vol(char(B1map)));
 
             % Index the (special) SEPIA workdir layout (only for obj.subject)
             BIDSWS = obj.layout_workdir(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
@@ -137,7 +141,6 @@ classdef SCRWorker < qb.workers.Worker
 
                 % Compute the R1 and M0 maps using DESPOT1 (based on S0).     TODO: Adapt for using echo data as an alternative to S0
                 bfile    = bids.File(S0data{1});                            % TODO: FIXME: Random
-                B1       = FA / obj.config.RelB1mapWorker.B1ScaleFactor;                   % TODO: FIXME: Replace this with a worker that computes a relative fieldmap
                 [T1, M0] = despot1_mapping(S0, flips, bfile.metadata.RepetitionTime, mask, B1);     % TODO: Check if we should only use the first two FA (as in MWI_tmp)
                 R1       = (mask ./ T1);
                 R1(~isfinite(R1)) = 0;          % set NaN and Inf to 0

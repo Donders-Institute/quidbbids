@@ -1,5 +1,5 @@
-classdef PreprocWorker < qb.workers.Worker
-    %PREPROCWORKER Performs preprocessing to produce workitems that can be used by other workers
+classdef MEGREprepWorker < qb.workers.Worker
+    %MEGREPREPWORKER Performs preprocessing to produce workitems that can be used by other workers
     %
     % Processing steps:
     %
@@ -18,18 +18,19 @@ classdef PreprocWorker < qb.workers.Worker
     properties (GetAccess = public, SetAccess = protected)
         name        % Name of the worker
         description % Description of the work that is done
-        version     % The version of PreprocWorker
+        version     % The version of MEGREprepWorker
         needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
+
 
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
-    
-    
+
+
     methods
 
-        function obj = PreprocWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
+        function obj = MEGREprepWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
             % Constructor for this concrete Worker class
 
             arguments
@@ -60,7 +61,7 @@ classdef PreprocWorker < qb.workers.Worker
                                "";
                                "If no fmap data is available, only step 4 is performed"];
             obj.version     = "0.1.0";
-            obj.needs       = [];         % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
+            obj.needs       = ["B1map_anat", "B1map_angle"];    % TODO: The B1map is only needed for VFA-MEGRE data, make optional / inherited VFAMEGREWorker?
             obj.bidsfilter.syntheticT1  = struct('modality', 'anat', ...
                                                  'part', '', ...
                                                  'space', 'withinGRE', ...
@@ -83,11 +84,11 @@ classdef PreprocWorker < qb.workers.Worker
                                                  'part', 'mag', ...
                                                  'desc', 'ME4D');
             obj.bidsfilter.echos4Dphase = setfield(obj.bidsfilter.echos4Dmag, 'part', 'phase');
-            obj.bidsfilter.FAmap_angle  = struct('modality', 'fmap', ...
+            obj.bidsfilter.B1map_VFA    = struct('modality', 'fmap', ...
+                                                 'desc', 'degrees', ...
                                                  'space', obj.bidsfilter.syntheticT1.space, ...
                                                  'acq', 'famp');
-            obj.bidsfilter.FAmap_anat   = setfield(obj.bidsfilter.FAmap_angle, 'acq', 'anat');
-            
+
             % Make the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
                 for workitem = string(workitems)
@@ -148,7 +149,7 @@ classdef PreprocWorker < qb.workers.Worker
 
                 % Compute T1 and M0 maps
                 obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1m{1});
-                e1mag = zeros([Ve1m.dim length(flips)]);
+                e1mag = NaN([Ve1m.dim length(flips)]);
                 for n = 1:length(flips)
                     e1mag(:,:,:,n) = spm_read_vols(spm_vol(VFA_e1m{n}));
                 end
@@ -188,11 +189,15 @@ classdef PreprocWorker < qb.workers.Worker
             % Index the workdir layout (only for obj.subject)
             BIDSW = obj.layout_workdir();
 
+            % Get the B1 images from the team
+            B1famp = obj.ask_team('B1map_angle');
+            B1anat = obj.ask_team('B1map_anat');
+
             % Process all runs independently
             anat = {'modality','anat'};
             for run = obj.query_ses(obj.BIDS, 'runs', anat{:}, 'part','mag', 'echo',1:999)
 
-                % Get the echo-1 magnitude files and metadata for all flip angles of this run
+                % Get the raw echo-1 magnitude files and metadata for all flip angles of this run
                 VFA_e1m = obj.query_ses(obj.BIDS,     'data', anat{:}, 'echo',1, 'part','mag', 'run',char(run));
                 meta    = obj.query_ses(obj.BIDS, 'metadata', anat{:}, 'echo',1, 'part','mag', 'run',char(run));
                 flips   = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
@@ -218,26 +223,23 @@ classdef PreprocWorker < qb.workers.Worker
                         if bfile.metadata.FlipAngle ~= flips(n)
                             continue
                         end
-                        Vin    = spm_vol(char(echo));
-                        volume = zeros(Vref.dim);
-                        T      = Vin.mat \ spm_matrix(x) * Vref.mat;    % Transformation from voxels in Vref to voxels in Vin
+                        Ve  = spm_vol(char(echo));
+                        img = NaN(Vref.dim);
+                        T   = Ve.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxels in Vref to voxels in Ve
                         for z = 1:Vref.dim(3)
-                            volume(:,:,z) = spm_slice_vol(Vin, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
+                            img(:,:,z) = spm_slice_vol(Ve, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                         end
                         bfile.entities.space   = obj.bidsfilter.syntheticT1.space;
                         bfile.entities.desc    = sprintf('VFA%02d', flips(n));
                         bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
-                        spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+                        spm_write_vol_gz(Vref, img, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
                         bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                     end
 
                 end
 
                 % Get the B1 images and the common M0 target image
-                fmap   = {'modality','fmap'};
-                B1famp = obj.query_ses(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','famp', 'echo',[]);
-                B1anat = obj.query_ses(obj.BIDS,  'data', fmap{:}, 'run',char(run), 'acq','anat', 'echo',[]);
-                M0ref  = obj.query_ses(BIDSW,     'data', setfield(obj.bidsfilter.M0map_echo1, 'run',char(run)));
+                M0ref = obj.query_ses(BIDSW, 'data', setfield(obj.bidsfilter.M0map_echo1, 'run',char(run)));
                 if length(M0ref) ~= 1
                     error("Unexpected M0map images found: %s", sprintf("\n%s", M0ref{:}));
                 end
@@ -252,20 +254,17 @@ classdef PreprocWorker < qb.workers.Worker
                     Vin  = spm_vol(char(B1anat));
                     x    = spm_coreg(Vref, Vin, struct('cost_fun', 'nmi'));
 
-                    % Save the resliced B1 images
-                    for B1vol = [B1anat, B1famp]
-                        Vin    = spm_vol(char(B1vol));
-                        volume = zeros(Vref.dim);
-                        T      = Vin.mat \ spm_matrix(x) * Vref.mat;    % Transformation from voxels in Vref to voxels in Vin
-                        for z = 1:Vref.dim(3)
-                            volume(:,:,z) = spm_slice_vol(Vin, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
-                        end
-                        bfile                = bids.File(char(B1vol));
-                        bfile.entities.space = obj.bidsfilter.syntheticT1.space;
-                        obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
-                        spm_write_vol_gz(Vref, volume, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
-                        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+                    % Save the resliced FA-map
+                    B1_ = spm_vol(char(B1famp));
+                    B1  = NaN(Vref.dim);
+                    T   = B1_.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxels in Vref to voxels in B1_
+                    for z = 1:Vref.dim(3)
+                        B1(:,:,z) = spm_slice_vol(B1_, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                     end
+                    bfile = obj.bfile_set(B1famp, obj.bidsfilter.B1map_VFA);
+                    obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
+                    spm_write_vol_gz(Vref, B1, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+                    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                 end
             end
         end

@@ -1,5 +1,8 @@
 classdef R1R2sWorker < qb.workers.Worker
-%R1R2SWORKER Runs MCR workflow
+    %R1R2SWORKER Runs MCR workflow
+    %
+    % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
+
 
     properties (GetAccess = public, SetAccess = protected)
         name        % Name of the worker
@@ -8,6 +11,7 @@ classdef R1R2sWorker < qb.workers.Worker
         needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
+    
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
@@ -38,7 +42,7 @@ classdef R1R2sWorker < qb.workers.Worker
                                "Methods:"
                                "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"];
             obj.version     = "0.1.0";
-            obj.needs       = ["echos4Dmag", "FAmap_angle", "brainmask"];  % TODO: Ask Jose which mask to use
+            obj.needs       = ["echos4Dmag", "B1map_VFA", "brainmask"];  % TODO: Ask Jose which mask to use
             obj.bidsfilter.R2starmap = struct('modality', 'anat', ...
                                               'echo', [], ...
                                               'part', '', ...
@@ -71,16 +75,16 @@ classdef R1R2sWorker < qb.workers.Worker
             end
 
             % Get the workitems we need from a colleague
-            echos4Dmag  = obj.ask_team('echos4Dmag');       % Multiple FA-images per run
-            FAmap_angle = obj.ask_team('FAmap_angle');      % Single image per run
-            brainmask   = obj.ask_team('brainmask');        % Multiple FA-images per run
+            echos4Dmag = obj.ask_team('echos4Dmag');    % Multiple FA-images per run
+            B1map_VFA  = obj.ask_team('B1map_VFA');     % Single image per run
+            brainmask  = obj.ask_team('brainmask');     % Multiple FA-images per run
 
             % Check the number of items we got: TODO: FIXME: multi-run acquisitions
             if length(echos4Dmag) < 2
                 obj.logger.exception(sprintf('%s received data for only %d flip angles', obj.name, length(echos4Dmag)))
             end
-            if length(FAmap_angle) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-                obj.logger.exception(sprintf('%s expected only one FAmap file but got: %s', obj.name, sprintf('%s ', FAmap_angle{:})))
+            if length(B1map_VFA) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
+                obj.logger.exception(sprintf('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', B1map_VFA{:})))
             end
             if length(brainmask) ~= 1           % TODO: FIXME
                 obj.logger.exception('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', brainmask{:}))
@@ -96,7 +100,7 @@ classdef R1R2sWorker < qb.workers.Worker
                 FA(n)          = bfile.metadata.FlipAngle;
             end
             mask = spm_read_vols(spm_vol(char(brainmask))) & all(~isnan(img), [4 5]);
-            B1   = spm_read_vols(spm_vol(char(FAmap_angle))) / obj.config.RelB1mapWorker.B1ScaleFactor;     % TODO: Replace with a worker that computes a relative B1-map
+            B1   = spm_read_vols(spm_vol(char(B1map_VFA)));
             TR   = bfile.metadata.RepetitionTime;
             TE   = bfile.metadata.EchoTime;
 

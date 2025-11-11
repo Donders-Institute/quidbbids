@@ -1,5 +1,8 @@
 classdef QSMWorker < qb.workers.Worker
-%QSMWORKER Runs QSM and R2-star workflows
+    %QSMWORKER Runs QSM and R2-star workflows
+    %
+    % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
+
 
     properties (GetAccess = public, SetAccess = protected)
         name        % Name of the worker
@@ -8,6 +11,7 @@ classdef QSMWorker < qb.workers.Worker
         needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
+    
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end

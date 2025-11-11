@@ -5,8 +5,9 @@ QuIDBBIDS architecture
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. figure:: ./_static/workflow_diagram.png
+   :width: 90%
 
-   QuIDBBIDS Workflow Architecture. The user specifies the data and desired workitems (``4*`` and ``6*``) 
+   Overview of the QuIDBBIDS workflow. The user specifies the data and desired workitems (``4*`` and ``6*``) 
    to the coordinator. The coordinator inspects the worker pool, interacts with the user to edit settings 
    (algorithm parameters and additional metadata), and activates the manager. The manager puts workers ``1``, 
    ``2``, and ``4`` into a team and directs them to process the input data (“anat” and “fmap”), collaboratively 
@@ -16,6 +17,7 @@ QuIDBBIDS data
 ~~~~~~~~~~~~~~
 
 .. figure:: ./_static/BIDS_data.png
+   :width: 80%
 
    Example of the raw input (bottom) and the corresponding QuIDBBIDS output data structure (top), showing 
    how file and directory names, data formats, and metadata sidecar files are organized in accordance with the 

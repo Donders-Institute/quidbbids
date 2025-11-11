@@ -42,16 +42,18 @@ minimal example of how to initialize and run a QuIDBBIDS workflow for all subjec
 R1, R2*, and MWF maps as output:
 
 .. code-block:: matlab
+   :width: 90%
 
-    quidb = qb.QuIDBBIDS('/path/to/bids/dataset')               % Initialize QuIDBBIDS coordinator
-    mgr   = quidb.manager(["R1map", "R2starmap", "MWFmap"])     % Create manager for requested output maps
-    mgr.start_workflow()                                        % Start the workflow
+   quidb = qb.QuIDBBIDS('/path/to/bids/dataset')            % Initialize QuIDBBIDS coordinator
+   mgr   = quidb.manager(["R1map", "R2starmap", "MWFmap"])  % Create manager for requested output items
+   mgr.start_workflow()                                     % Start the workflow
 
-For getting more help on the various classes, methods and properties, you can use MATLAB's built-in help browser:
+For getting more help on the various classes, methods and properties, you can use MATLAB's built-in documentation 
+browser:
 
 .. code-block:: matlab
-    
-    doc qb.QuIDBBIDS
+
+   doc qb.QuIDBBIDS
 
 Graphical User Interface
 ------------------------

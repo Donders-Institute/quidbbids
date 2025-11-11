@@ -11,12 +11,12 @@ classdef QSMWorker < qb.workers.Worker
         needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
-    
+
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
-    
-    
+
+
     methods
 
         function obj = QSMWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
@@ -110,8 +110,8 @@ classdef QSMWorker < qb.workers.Worker
                 clear input
                 input.nifti      = magfiles{n};                                         % For extracting B0 direction, voxel size, matrix size (only the first 3 dimensions)
                 input.TEFileList = {spm_file(spm_file(magfiles{n}, 'ext',''), 'ext','.json')};                   % Could just be left empty??
-                bfile            = obj.bfile_set(magfiles{n}. setfield(obj.bidsfilter.R2starmap), 'suffix','');  % Output basename; SEPIA adds suffixes of its own
-                output           = extractBefore(bfile.path,'.');                       % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
+                bfile            = obj.bfile_set(magfiles{n}, setfield(obj.bidsfilter.R2starmap, 'suffix',''));  % Output basename; SEPIA adds suffixes of its own
+                output           = extractBefore(bfile.path, bfile.extension);          % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
                 save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output) % Override SEPIA's TE values with what the bfile says (-> added by spm_file_merge_gz)
 
                 % Get the SEPIA parameters
@@ -137,10 +137,9 @@ classdef QSMWorker < qb.workers.Worker
 
                 % Bluntly rename mask files to make them BIDS valid (bids-matlab fails on the original files)
                 for srcmask = dir([output '*_mask_*'])'
-                    bname  = extractBefore(srcmask.name,'.');
-                    ext    = extractAfter(srcmask.name, '.');
+                    bname  = extractBefore(srcmask.name, bfile.extension);
                     source = fullfile(srcmask.folder, srcmask.name);
-                    target = fullfile(srcmask.folder, [replace(bname, '_mask_', '_label-') '_mask.' ext]);
+                    target = fullfile(srcmask.folder, [replace(bname, '_mask_', '_label-') '_mask' bfile.extension]);
                     obj.logger.verbose(sprintf('Renaming %s -> %s', source, target))
                     movefile(source, target)
                 end

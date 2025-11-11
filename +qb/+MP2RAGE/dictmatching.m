@@ -13,7 +13,7 @@ function [T1, PD, R1] = dictmatching(MP2RAGE, INV1, INV2, B1map, varargin)
 %       values) its intensities should have been corrected using "" function
 % INV2  is the Inv1 image, it should be a real value (positive and negative
 %       values) its intensities should have been corrected using "" function
-% B1map is the normalized B1 map, it should have alredy been coregistered
+% B1map is the normalized B1 map, it should have already been coregistered
 %       to the MP2RAGE spaceimages, it can be left empty
 % varargin{1}(1) represents the step size to of the R1 vector
 % varargin{1}(2) represents the step size to of the B1 vector ()
@@ -25,7 +25,7 @@ function [T1, PD, R1] = dictmatching(MP2RAGE, INV1, INV2, B1map, varargin)
 % in the future B1vector or R1 vector could be provided as an alternatice
 
 ProbabilityEstimate = 1;
-interpPt = 3; % numebr of points to use on interpolation 
+interpPt = 3;   % numeber of points to use on interpolation
 
 dims = size(INV1);
 mask = ones(dims);
@@ -84,7 +84,7 @@ for B1 = B1vector
     else
         fprintf('%f, ', B1)
     end
-    
+
     %% create dictionary for the specific B1 value
     j = 0;
     for R1val = R1vector

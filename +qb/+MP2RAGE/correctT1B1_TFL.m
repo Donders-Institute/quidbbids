@@ -50,17 +50,17 @@ end
 [Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
 
 if isempty(UNIT1)
-    UNIT1 = reshape(interp1(T1vector, Intensity, T1(:)), size(B1));    
+    UNIT1 = reshape(interp1(T1vector, Intensity, T1(:)), size(B1));
     UNIT1(isnan(UNIT1)) = -0.5;
 else
-    UNIT1 = scaleUNI(UNIT1);    % scale UNIT1 to -0.5 to 0.5 range
+    UNIT1 = qb.MP2RAGE.scaleUNI(UNIT1);    % scale UNIT1 to -0.5 to 0.5 range
 end
 
 % creates a lookup table of MP2RAGE intensities as a function of B1 and T1
 B1_vector = 0.005:0.05:1.9;
 T1_vector = 0.5:0.05:5.2;
 k = 0;
-for b1val = B1_vector    
+for b1val = B1_vector
     k = k + 1;
     [Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, b1val*MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
     MP2RAGEmatrix(k,:)    = interp1(T1vector, Intensity, T1_vector);
@@ -72,12 +72,12 @@ k = 0;
 for b1val = B1_vector
     k = k + 1;
     try
-        T1matrix(k,:) = interp1(MP2RAGEmatrix(k,:), T1_vector, MP2RAGE_vector, 'pchip'); 
+        T1matrix(k,:) = interp1(MP2RAGEmatrix(k,:), T1_vector, MP2RAGE_vector, 'pchip');
     catch
-        temp              = MP2RAGEmatrix(k,:); 
+        temp              = MP2RAGEmatrix(k,:);
         temp(isnan(temp)) = linspace(-0.5-eps, -1, sum(isnan(temp(:))));
         temp              = interp1(temp, T1_vector, MP2RAGE_vector);
-        T1matrix(k,:)     = temp;       
+        T1matrix(k,:)     = temp;
     end
 end
 
@@ -95,5 +95,5 @@ if nargout > 1
     [Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
     UNIcorr = reshape(interp1(T1vector, Intensity, T1corr(:)), size(T1corr));
     UNIcorr(isnan(UNIcorr)) = -0.5;
-    UNIcorr = unscaleUNI(UNIcorr);      % unscale UNIT1 back to 0-4095 range
+    UNIcorr = qb.MP2RAGE.unscaleUNI(UNIcorr);      % unscale UNIT1 back to 0-4095 range
 end

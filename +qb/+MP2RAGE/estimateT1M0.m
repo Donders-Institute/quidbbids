@@ -5,7 +5,7 @@ function [T1map, M0map, R1map] = estimateT1M0(UNIT1, INV2, MP2RAGE)
 %   MP2RAGE, a self bias-field corrected sequence for improved segmentation and T 1-mapping at high field
 %   JP Marques, T Kober, G Krueger, W van der Zwaag, PF Van de Moortele, R. Gruetter, Neuroimage 49 (2), 1271-1281, 2010
 %
-%   UNIT1     - The MP2RAGE UNIT1 image
+%   UNIT1   - The MP2RAGE UNIT1 image
 %   INV2    - The MP2RAGE INV2 image with or without Bias Correction
 %   MP2RAGE - A structure containing all the relevant sequence information:
 %
@@ -22,18 +22,16 @@ function [T1map, M0map, R1map] = estimateT1M0(UNIT1, INV2, MP2RAGE)
 [Intensity, T1vector, IntensityUncomb] = qb.MP2RAGE.lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
 
 % in a first instance the T1 map is computed.
-
-UNIT1 = scaleUNI(UNIT1);
-T1  = interp1(Intensity, T1vector, UNIT1(:));
-T1(isnan(T1)) = 0;
+UNIT1 = qb.MP2RAGE.scaleUNI(UNIT1);
+T1    = interp1(Intensity, T1vector, UNIT1(:));
 
 % and puts there the T1 estimation
 T1map = reshape(T1, size(UNIT1));
 R1map = 1./T1map;
+
+T1map(isnan(T1map)) = 0;
 R1map(isnan(R1map)) = 0;
 
 % in second moment the M0 map is computed
-
-% this is my initial implementation...
 IntensityUncomb2 = interp1(T1vector, IntensityUncomb(:,2), T1map(:));
 M0map = reshape(INV2(:) ./ IntensityUncomb2, size(INV2));

@@ -5,15 +5,22 @@ gyro                    = 42.57747892       # in ppm
 kappa_mw                = 0.36              # Jung, NI., myelin water density
 kappa_iew               = 0.86              # Jung, NI., intra-/extra-axonal water density
 
-# --------------------- B1prepWorker parameters ---------------------
-[B1prepWorker]
-FAscaling               = 800               # B1ScaleFactor = 10 * bfile.metadata.FlipAngle; 800 is what SIEMENS seems to use
-FWHM                    = 0                 # in mm, smoothing kernel for regularizing the B1 map
-
 # --------------------- BIDS input filters ---------------------
 [bids.select]
 modality                = ["anat", "fmap"]
 suffix                  = ["MEGRE", "TB1TFL"]
+
+# --------------------- B1prepWorker parameters ---------------------
+[B1prepWorker]
+FAscaling               = 800               # B1ScaleFactor = 10 * bfile.metadata.FlipAngle; 800 is what SIEMENS seems to use
+FWHM                    = 10                # in mm, smoothing kernel for regularizing the B1 map
+
+# --------------------- MP2RAGEWorker parameters ---------------------
+[MP2RAGEWorker]
+InvEff                  = 0.96              # Inversion efficiency, Siemens default value
+EchoSpacing             = ""                # The RepetitionTimeExcitation value in secs that typically is not given on the json file. Default: twice the echo time
+NZslices                = 176               # The number of shots (slices) in the inner loop (inversion segment), the json file doesn't usually accommodate this
+Fingerprint             = true
 
 # --------------------- R1R2sWorker parameters ---------------------
 [R1R2sWorker.fitting.GPU]

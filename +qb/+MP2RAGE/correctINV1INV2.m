@@ -6,7 +6,7 @@ if nargin < 4 || isempty(CorrectBoth)
 end
 
 % scale UNIT1 to -0.5 to 0.5 range
-UNIT1 = scaleUNI(UNIT1);
+UNIT1 = qb.MP2RAGE.scaleUNI(UNIT1);
 
 %% Compute correct INV1 & INV2 datasets by using the phase sensitivity information available on the UNIT1 image
 rootsquares_pos = @(a, b, c)(-b + sqrt(b.^2 - 4*a.*c)) ./ (2*a);

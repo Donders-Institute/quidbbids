@@ -12,7 +12,7 @@ function [B1corr, T1corr, UNIcorr] = correctT1B1(Sa2RAGEimg, B1img, Sa2RAGE, UNI
 %    Sa2RAGE.FlipDegrees = [4 11];
 %    Sa2RAGE.averageT1   = 1.5;
 %
-%    MP2RAGE.TR          = 6;                   % MP2RAGE TR in seconds 
+%    MP2RAGE.TR          = 6;                   % MP2RAGE TR in seconds
 %    MP2RAGE.EchoSpacing = 6.7e-3;              % TR of the GRE readout
 %    MP2RAGE.TIs         = [800e-3 2700e-3];    % Inversion times - time between middle of refocusing pulse and excitatoin of the k-space center encoding
 %    MP2RAGE.NZslices    = [40 80];             % Slices Per Slab * [PartialFourierInSlice-0.5  0.5]
@@ -24,15 +24,15 @@ function [B1corr, T1corr, UNIcorr] = correctT1B1(Sa2RAGEimg, B1img, Sa2RAGE, UNI
 % (can be a binary mask or not). if left empty the calculation is done everywhere
 %
 % Additionally the inversion efficiency of the adiabatic inversion can be
-% set as a last optional variable. Ideally it should be 1. 
-% In the first implementation of the MP2RAGE the inversino efficiency was 
+% set as a last optional variable. Ideally it should be 1.
+% In the first implementation of the MP2RAGE the inversino efficiency was
 % measured to be ~0.96
 %
 % Outputs are:
-%  B1corr  - corrected for T1 bias 
+%  B1corr  - corrected for T1 bias
 %  T1corr  - T1map corrected for B1 bias
-%  UNIcorr - MP2RAGE image corrected for B1 bias 
-% 
+%  UNIcorr - MP2RAGE image corrected for B1 bias
+%
 % Please cite:
 %  Marques, J.P., Gruetter, R., 2013. New Developments and Applications of the MP2RAGE Sequence - Focusing the Contrast and High Spatial Resolution R1 Mapping. PLoS ONE 8. doi:10.1371/journal.pone.0069294
 %  Marques, J.P., Kober, T., Krueger, G., van der Zwaag, W., Van de Moortele, P.-F., Gruetter, R., 2010a. MP2RAGE, a self bias-field corrected sequence for improved segmentation and T1-mapping at high field. NeuroImage 49, 1271?1281. doi:10.1016/j.neuroimage.2009.10.002
@@ -59,14 +59,14 @@ if isempty(UNIT1)
     UNIT1 = reshape(interp1(T1vector, Intensity, T1img(:)), size(B1img));
     UNIT1(isnan(UNIT1)) = -0.5;
 else
-    UNIT1 = scaleUNI(UNIT1);    % scale UNIT1 to -0.5 to 0.5 range
+    UNIT1 = qb.MP2RAGE.scaleUNI(UNIT1);    % scale UNIT1 to -0.5 to 0.5 range
 end
 
 [B1vector, Intensity] = Sa2RAGElookuptable(2, Sa2RAGE.TR, Sa2RAGE.TIs, Sa2RAGE.FlipDegrees, Sa2RAGE.NZslices, Sa2RAGE.TRFLASH, Sa2RAGE.averageT1);
 if isempty(Sa2RAGEimg)
     Sa2RAGEimg = reshape(interp1(B1vector, Intensity, B1img(:)), size(B1img));
 else
-    Sa2RAGEimg = scaleUNI(Sa2RAGEimg) - 0.5;    % scale Sa2RAGE to -1 to 0 range
+    Sa2RAGEimg = qb.MP2RAGE.scaleUNI(Sa2RAGEimg) - 0.5;    % scale Sa2RAGE to -1 to 0 range
 end
 
 %% create lookup tables of MP2RAGE & Sa2RAGE intensities as a function of B1 and T1
@@ -124,7 +124,7 @@ B1corr(brain==0)              = 0;
 Sa2RAGEimg(isnan(Sa2RAGEimg)) = -0.5;
 for k = 1:3
     B1corr(brain~=0)      = interp2(Sa2RAGE_vector, T1_vector, B1matrix, Sa2RAGEimg(brain~=0), T1corr(brain~=0));
-    B1corr(isnan(B1corr)) = 2;        
+    B1corr(isnan(B1corr)) = 2;
     T1corr(brain~=0)      = interp2(MP2RAGE_vector, B1_vector, T1matrix, UNIT1(brain~=0), B1corr(brain~=0));
     T1corr(isnan(T1corr)) = 4;
 end

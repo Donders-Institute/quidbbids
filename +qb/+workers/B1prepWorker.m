@@ -3,7 +3,7 @@ classdef B1prepWorker < qb.workers.Worker
     %
     % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
-    
+
     properties (GetAccess = public, SetAccess = protected)
         name        % Name of the worker
         description % Description of the work that is done
@@ -14,8 +14,8 @@ classdef B1prepWorker < qb.workers.Worker
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
-    
-    
+
+
     methods
 
         function obj = B1prepWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
@@ -41,7 +41,7 @@ classdef B1prepWorker < qb.workers.Worker
             obj.needs       = [];         % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
             obj.bidsfilter.B1map_angle = struct('modality', 'fmap', 'acq', 'famp', 'desc', 'degrees', 'space', '');
             obj.bidsfilter.B1map_anat  = setfield(obj.bidsfilter.B1map_angle, 'acq', 'anat');
-            
+
             % Make the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
                 for workitem = string(workitems)
@@ -90,7 +90,7 @@ classdef B1prepWorker < qb.workers.Worker
 
                 % Copy the anat image & json file
                 bfile = obj.bfile_set(B1anat{n}, obj.bidsfilter.B1map_anat);
-                copyfile(B1anat{n}, obj.bfile.path);
+                copyfile(B1anat{n}, bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
 
             end

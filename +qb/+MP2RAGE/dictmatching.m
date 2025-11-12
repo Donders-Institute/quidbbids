@@ -22,7 +22,7 @@ function [T1, PD, R1] = dictmatching(MP2RAGE, INV1, INV2, B1map, varargin)
 % three highest correlation points of the dictionary matching;
 % varargin{3} is a mask to be used (only at massk==1 will the match be performed)
 
-% in the future B1vector or R1 vector could be provided as an alternatice
+% in the future B1vector or R1 vector could be provided as an alternative
 
 ProbabilityEstimate = 1;
 interpPt = 3;   % number of points to use on interpolation
@@ -74,28 +74,24 @@ R1  = zeros(prod(dims),1);
 PD  = zeros(prod(dims),1);
 
 %% make the matching per B1 value
-count = 0;
-fprintf('\nFinger printing B1-values: %f -> %f\n', B1vector([1 end]))
+Signal = zeros(length(R1vector), 2);
+last_update = tic;
+fprintf('\nFinger printing %d B1-values: %f -> %f            ', length(B1vector), B1vector([1 end]))
 for B1 = B1vector
 
-    count = count + 1;
-    if rem(count, 10) == 0
-        fprintf('%f\n', B1)
-    else
-        fprintf('%f, ', B1)
+    if toc(last_update) > 0.1  % Update every 100ms
+        fprintf('\b\b\b\b\b\b\b\b\b\b\b[%9.2f]', B1)
+        last_update = tic;
     end
 
     %% create dictionary for the specific B1 value
-    j = 0;
-    for R1val = R1vector
-        j = j + 1;
-        Signal(j,1:2) = qb.MP2RAGE.estimateMPRAGE(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, B1*MP2RAGE.FlipDegrees, 'normal', 1./R1val, MP2RAGE.InvEff);
+    for j = 1:length(R1vector)
+        Signal(j,1:2) = qb.MP2RAGE.estimateMPRAGE(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, B1*MP2RAGE.FlipDegrees, 'normal', 1/R1vector(j), MP2RAGE.InvEff);
     end
     dictionary = Signal(:,:) ./ vecnorm(Signal(:,:),2,2);
 
-    %% dictionary Matching
-    ind_B1 = find((B1map >= B1) && (B1map < B1 + deltaB1) && (mask==1));
-    % https://bitbucket.org/asslaender/nyu_mrf_recon/src/master/example/MRF_recon_example.m
+    %% dictionary Matching (https://bitbucket.org/asslaender/nyu_mrf_recon/src/master/example/MRF_recon_example.m)
+    ind_B1 = find((B1map >= B1) & (B1map < B1 + deltaB1) & (mask==1));
 
     if ProbabilityEstimate == 0
 
@@ -123,7 +119,7 @@ for B1 = B1vector
             end
             % perform weighted average
             weightNorm(1:interpPt) = ((weight(1:interpPt)-weight(n)) ./ (weight(1)-weight(n))).^2;
-            R1(q) = sum(weightNorm.*R1vector(idxall(1:interpPt))) ./ sum(weightNorm);
+            R1(q) = sum(weightNorm .* R1vector(idxall(1:interpPt))) ./ sum(weightNorm);
 
         end % loop on pixels
         PD(ind_B1) = c(ind_B1) ./ vecnorm(Signal(idx(ind_B1),:),2,2);
@@ -131,6 +127,7 @@ for B1 = B1vector
     end
 
 end
+fprintf('\n')
 
 PD = reshape(PD, dims);
 R1 = reshape(R1, dims);

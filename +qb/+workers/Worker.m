@@ -351,9 +351,15 @@ classdef (Abstract) Worker < handle
             % Do the query with the subject/session filter added
             result = bids.query(layout, query, setfield(setfield(bfilter, 'sub',obj.sub()), 'ses',obj.ses()));
 
-            % Always return a row cell array
+            % Postprocess the query result (i.e. fix the quirky bids.query behavior)
+            switch query
+                case {'metadata', 'dependencies'}
+                    if isscalar(result) && ~iscell(result)
+                        result = {result};  % Always return a cell array
+                    end
+            end
             if size(result,2)==0 || size(result,1)>1
-                result = result';
+                result = result';           % Always return a row array
             end
         end
 

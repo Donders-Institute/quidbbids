@@ -29,10 +29,11 @@ if ~isfield(V, 'dim')
 end
 
 % Ensure pinfo field is correct for data type
-if isfield(V, 'pinfo') && contains(spm_type(V.dt), 'float')
-    V = rmfield(V, 'pinfo');
-end
-if ~isfield(V, 'pinfo') && contains(spm_type(V.dt), 'int')
+if isfield(V, 'pinfo')
+    if contains(spm_type(V.dt), 'float') || (contains(spm_type(V.dt), 'int') && V.pinfo(1) ~= 1)
+        V = rmfield(V, 'pinfo');
+    end
+elseif contains(spm_type(V.dt), 'int')
     V.pinfo = [1; 0];
 end
 

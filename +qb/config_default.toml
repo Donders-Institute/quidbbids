@@ -12,8 +12,10 @@ suffix                  = ["MEGRE", "TB1TFL"]
 
 # --------------------- B1prepWorker parameters ---------------------
 [B1prepWorker]
-FAscaling               = 800               # B1ScaleFactor = 10 * bfile.metadata.FlipAngle; 800 is what SIEMENS seems to use
 FWHM                    = 10                # in mm, smoothing kernel for regularizing the B1 map
+
+[B1prepWorker.FAscaling]
+Siemens                 = 800               # B1ScaleFactor = 10 * bfile.metadata.FlipAngle; 800 is what SIEMENS seems to use on TFL B1-mapping
 
 # --------------------- MP2RAGEWorker parameters ---------------------
 [MP2RAGEWorker]

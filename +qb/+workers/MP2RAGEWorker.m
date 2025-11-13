@@ -69,7 +69,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
             % Get the B1 images from the team
             B1famp = obj.ask_team('B1map_angle');
             B1anat = obj.ask_team('B1map_anat');
-            if length(B1famp) ~= 1 || length(B1anat) ~= 1
+            if length(B1famp) > 1 || length(B1anat) > 1
                 error("Expected one B1map_angle and one B1map_anat file, but got %d and %d files", length(B1famp), length(B1anat))
             end
 
@@ -138,6 +138,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
                 bfile.metadata.InversionEfficiency = MP2RAGE.InvEff;
                 bfile.metadata.NZslices            = MP2RAGE.NZslices;
                 bfile.metadata.EchoSpacing         = MP2RAGE.EchoSpacing;
+                UNIhdr.dt(1)                       = spm_type('float32');
                 spm_write_vol_gz(UNIhdr, R1map, bfile.path);
 
                 % Save the M0-map

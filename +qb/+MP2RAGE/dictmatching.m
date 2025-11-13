@@ -20,7 +20,7 @@ function [T1, PD, R1] = dictmatching(MP2RAGE, INV1, INV2, B1map, varargin)
 % varargin{2} is the input that defines if the T1 maps will be discretized (0) or
 % interpolated (1) the interpolation requires is done by default using the
 % three highest correlation points of the dictionary matching;
-% varargin{3} is a mask to be used (only at massk==1 will the match be performed)
+% varargin{3} is a mask to be used (only at mask==1 will the match be performed)
 
 % in the future B1vector or R1 vector could be provided as an alternative
 
@@ -28,7 +28,7 @@ ProbabilityEstimate = 1;
 interpPt = 3;   % number of points to use on interpolation
 
 dims = size(INV1);
-mask = ones(dims);
+mask = true(dims);
 
 if isempty(B1map)
     B1map = ones(dims);
@@ -54,13 +54,13 @@ else
             ProbabilityEstimate = varargin{2};
         end
         if nargin >= 7
-            mask = varargin{3};
+            mask = logical(varargin{3});
         end
     end
 end
 
 R1vector = 0.2:deltaR1:5;
-B1vector = min(B1map(mask==1)):deltaB1:max(B1map(mask==1));
+B1vector = min(B1map(mask)):deltaB1:max(B1map(mask));
 
 % make the MP2RAGE data into a table
 x = zeros(prod(dims),2);
@@ -91,7 +91,7 @@ for B1 = B1vector
     dictionary = Signal(:,:) ./ vecnorm(Signal(:,:),2,2);
 
     %% dictionary Matching (https://bitbucket.org/asslaender/nyu_mrf_recon/src/master/example/MRF_recon_example.m)
-    ind_B1 = find((B1map >= B1) & (B1map < B1 + deltaB1) & (mask==1));
+    ind_B1 = find((B1map >= B1) & (B1map < B1 + deltaB1) & mask);
 
     if ProbabilityEstimate == 0
 
@@ -132,4 +132,4 @@ fprintf('\n')
 PD = reshape(PD, dims);
 R1 = reshape(R1, dims);
 T1 = 1 ./ R1;
-T1(mask==0) = 0;
+T1(~mask) = 0;

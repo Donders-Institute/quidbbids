@@ -33,20 +33,16 @@ elseif length(nZslices) == 1
     nZslices2 = nZslices;
 end
 
-j = 0;
-for T1 = T1vector
-    j = j + 1;
+for n = 1:length(T1vector)
     for MPRAGEtr = MPRAGE_tr
         for inversiontimesa = invtimesa
             for inversiontimesb = invtimesb
-                m = 0;
-                for B1 = B1vector
-                    m = m + 1;
+                for m = 1:length(B1vector)
                     inversiontimes2 = [inversiontimesa inversiontimesb];
                     if (diff(inversiontimes2) >= nZslices*FLASH_tr) && (inversiontimesa >= nZ_bef*FLASH_tr) && (inversiontimesb <= MPRAGEtr-nZ_aft*FLASH_tr)
-                        Signal(j,m,1:2) = estimateMPRAGE(nimages, MPRAGEtr, inversiontimes2, nZslices2, FLASH_tr, B1*[flipanglea flipangleb], sequence, T1, InvEff);
+                        Signal(n,m,1:2) = estimateMPRAGE(nimages, MPRAGEtr, inversiontimes2, nZslices2, FLASH_tr, B1vector(m)*[flipanglea flipangleb], sequence, T1vector(n), InvEff);
                     else
-                        Signal(j,m,1:2) = 0;
+                        Signal(n,m,1:2) = 0;
                     end
                 end
             end

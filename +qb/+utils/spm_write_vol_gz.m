@@ -20,12 +20,23 @@ function V = spm_write_vol_gz(V, Y, fname)
 
 % Create a minimal header struction if only voxel sizes are provided
 if isnumeric(V) && isvector(V)
-    V = struct('mat', [diag(V(:)); 1]);
+    V = struct('mat', diag([V(:); 1]));
 end
 
 % Ensure dim field is correct (e.g. if only voxel sizes are provided)
-if ~isfield(V, 'dim')
+if ~isfield(V, 'dim') || isempty(V.dim)
     V.dim = [size(Y, 1) size(Y, 2) size(Y, 3)];
+end
+
+% Choose appropriate data type if not specified
+if ~isfield(V, 'dt') || isempty(V.dt)
+    if islogical(Y)
+        V.dt = [spm_type('uint8') spm_platform('bigend')];
+    elseif isinteger(Y) || (all(abs(Y(:) - round(Y(:))) < 1e-6) && any(abs(Y(:)) > 0.5))
+        V.dt = [spm_type('int32') spm_platform('bigend')];
+    else
+        V.dt = [spm_type('float32') spm_platform('bigend')];
+    end
 end
 
 % Ensure pinfo field is correct for data type

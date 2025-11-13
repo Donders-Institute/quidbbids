@@ -45,11 +45,8 @@ classdef MP2RAGEWorker < qb.workers.Worker
                                                 'space', 'MP2RAGE', ...
                                                 'desc', 'UNIT1corrected', ...
                                                 'suffix', 'R1map');
-            obj.bidsfilter.MP2RAGE_T1w = struct('modality', 'anat', ...
-                                                'part', '', ...
-                                                'space', obj.bidsfilter.R1map.space, ...
-                                                'desc', 'UNIT1corrected', ...
-                                                'suffix', 'T1w');
+            obj.bidsfilter.M0map       = setfield(obj.bidsfilter.R1map, 'suffix', 'M0map');
+            obj.bidsfilter.MP2RAGE_T1w = setfield(obj.bidsfilter.R1map, 'suffix', 'T1w');
 
             % Make the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
@@ -127,8 +124,8 @@ classdef MP2RAGEWorker < qb.workers.Worker
                 end
 
                 % Perform the unbiased B1-map estimation
-                if B1correctM0 ~= 0
-                    M0map = M0map ./ flipdim(B1img, B1correctM0);
+                if obj.config.MP2RAGEWorker.B1correctM0 ~= 0
+                    M0map = M0map ./ flipdim(B1img, obj.config.MP2RAGEWorker.B1correctM0);
                 end
 
                 % Data is only valid where B1 was mapped
@@ -140,11 +137,11 @@ classdef MP2RAGEWorker < qb.workers.Worker
                 bfile.metadata.Sources             = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME + add a JSON sidecar file
                 bfile.metadata.InversionEfficiency = MP2RAGE.InvEff;
                 bfile.metadata.NZslices            = MP2RAGE.NZslices;
-                bfile.ematadata.EchoSpacing        = MP2RAGE.EchoSpacing;
+                bfile.metadata.EchoSpacing         = MP2RAGE.EchoSpacing;
                 spm_write_vol_gz(UNIhdr, R1map, bfile.path);
 
                 % Save the M0-map
-                bfile = obj.bfile_set(bfile, obj.bidsfilter.M0Map);
+                bfile = obj.bfile_set(bfile, obj.bidsfilter.M0map);
                 spm_write_vol_gz(UNIhdr, M0map);                                            % TODO: add a JSON sidecar file
 
                 % Save the corrected UNIT1

@@ -80,7 +80,7 @@ fprintf('\nFinger printing %d B1-values: %f -> %f            ', length(B1vector)
 for B1 = B1vector
 
     if toc(last_update) > 0.1  % Update every 100ms
-        fprintf('\b\b\b\b\b\b\b\b\b\b\b[%9.2f]', B1)
+        fprintf('\b\b\b\b\b\b\b\b\b\b\b[%9.3f]', B1)
         last_update = tic;
     end
 

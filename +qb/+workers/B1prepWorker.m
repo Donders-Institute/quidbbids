@@ -78,8 +78,8 @@ classdef B1prepWorker < qb.workers.Worker
                 % Regularize the FA-map in order to avoid influence of salt & pepper border noise
                 if obj.config.B1prepWorker.FWHM ~= 0
                     dim = spm_imatrix(FAVol.mat);
-                    FA  = spm_read_vols(B1anat{n}) .* exp(1i*FA);                            % Make complex and multiply with anat to avoid smoothing skull-noise across tissue borders
-                    FA  = angle(smooth3D(FA, obj.config.B1prepWorker.FWHM, abs(dim(7:9))));  % Smooth and take angle again
+                    FA  = spm_read_vols(spm_vol(B1anat{n})) .* exp(1i*FA);                              % Make complex and multiply with anat to avoid smoothing skull-noise across tissue borders
+                    FA  = angle(qb.MP2RAGE.smooth3D(FA, obj.config.B1prepWorker.FWHM, abs(dim(7:9))));  % Smooth and take angle again
                 end
 
                 % Save the FA-map image & json file

@@ -21,6 +21,9 @@ InvEff                  = 0.96              # Inversion efficiency, Siemens defa
 EchoSpacing             = ""                # The RepetitionTimeExcitation value in secs that typically is not given on the json file. Default: twice the echo time
 NZslices                = 176               # The number of shots (slices) in the inner loop (inversion segment), the json file doesn't usually accommodate this
 Fingerprint             = true
+B1correctM0             = 0                 # If 0 no correction is applied (default), if 1,2,3 applies a flip on the left right direction of the transmit field as an
+                                            # approximation of the receive field. The number 1 2 3 refers to the left-right dimension only use this option if anatomical data
+                                            # is well centred in the field of view (as provided by auto-align) and if the bias Field correction was enabled on the scanner
 
 # --------------------- R1R2sWorker parameters ---------------------
 [R1R2sWorker.fitting.GPU]

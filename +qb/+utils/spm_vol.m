@@ -109,7 +109,8 @@ switch ext
                 V(i).dat   = spm_read_vols(V(i));
                 V(i).private.dat.fname = spm_file(p,'ext','');
                 V(i).fname = p;
-                V(i).dt(1) = V(1).dt(1);    % NB: QuIDBBIDS change: keep the original data type and pinfo
+                V(i).dt(1) = V(1).dt(1);    % NB: QuIDBBIDS change: keep the original data type
+                V(i).pinfo = [1 0 0]';
             end
         catch
             warning('Cannot read uncompressed file "%s".',p);

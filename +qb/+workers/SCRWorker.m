@@ -138,7 +138,6 @@ classdef SCRWorker < qb.workers.Worker
                 Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
                 bfileR2s = obj.bfile_set(S0data{1}, obj.bidsfilter.meanR2starmap);
                 bfileChi = obj.bfile_set(S0data{1}, obj.bidsfilter.meanChimap);
-                V.dt(1)  = 16;                  % Set datatype to float32
                 spm_write_vol_gz(V, R2smean.*mask, bfileR2s.path);          % TODO: Add JSON sidecar files
                 spm_write_vol_gz(V, Chimean.*mask, bfileChi.path);          % TODO: Add JSON sidecar files
 

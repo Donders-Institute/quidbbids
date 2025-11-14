@@ -153,8 +153,7 @@ classdef MCRWorker < qb.workers.Worker
             askadam_mcr       = objGPU.estimate(img, mask, extraData, obj.config.MCRWorker.fitting.GPU);  % TODO: Is single() really needed/desired?
 
             % Extract and save the output data
-            V(1).dim   = dims(1:3);
-            V(1).dt(1) = 16;           % Set datatype to float32
+            V(1).dim = dims(1:3);
             spm_write_vol_gz(V(1), askadam_mcr.final.MWF * 100,	                      obj.bfile_set(bfile, obj.bidsfilter.MWFmap      ).path);  % TODO: Ask Jose: Multiply by 100 to get percentage?
             spm_write_vol_gz(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.bfile_set(bfile, obj.bidsfilter.MW_M0map    ).path);
             spm_write_vol_gz(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.bfile_set(bfile, obj.bidsfilter.FW_M0map    ).path);

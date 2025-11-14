@@ -1,10 +1,23 @@
-function V = spm_write_vol_gz(V, Y, fname)
-% FUNCTION V = SPM_WRITE_VOL_GZ(V, Y, fname)
+function V = spm_write_vol_gz(V, Y, fname, dt)
+% A convenient wrapper around SPM_WRITE_VOL that writes either a .nii or .nii.gz file.
 %
-% A wrapper around SPM_WRITE_VOL that sets an appropriate datatype, writes a .nii or
-% a .nii.gz file. If fname is provided, it will override the file name in V.fname.
-% The V.mat field is required or V must be an array with voxelsizes in the x-, y- and
-% z- dimension.
+% Usage:
+%   V = spm_write_vol_gz(V, Y)
+%   V = spm_write_vol_gz(V, Y, fname)
+%   V = spm_write_vol_gz(V, Y, fname, dt)
+%
+% Inputs:
+%   V     - Volume structure containing header information (see spm_vol).
+%           Alternatively, V can be a numeric vector specifying voxel sizes [vx vy vz]
+%   Y     - Image 3D data array to write to disk
+%   fname - (Optional) Output file name. If provided, overrides V.fname. Needed
+%           if V is specified as voxel sizes.
+%   dt    - (Optional) Desired data type as a string. If not specified, an appropriate
+%           type is automatically chosen based on Y.
+%
+% Ooutput:
+%   V     - Updated volume structure after writing, with the correct filename
+%           and data type.
 %__________________________________________________________________________
 %   SPM_WRITE_VOL
 %
@@ -17,6 +30,10 @@ function V = spm_write_vol_gz(V, Y, fname)
 %   Note that if there is no 'pinfo' field, then SPM will figure out the
 %   max and min values from the data and use these to automatically determine
 %   scalefactors.  If 'pinfo' exists, then the scalefactor in this is used.
+
+if nargin < 4
+    dt = [];
+end
 
 % Create a minimal header struction if only voxel sizes are provided
 if isnumeric(V) && isvector(V)
@@ -31,16 +48,14 @@ if ~isfield(V, 'dim') || isempty(V.dim)
     V.dim = [size(Y, 1) size(Y, 2) size(Y, 3)];
 end
 
-% Choose appropriate data type if not specified
-if ~isfield(V, 'dt') || isempty(V.dt)
-    if isinteger(Y) || (all(abs(Y(:) - round(Y(:))) < 1e-6) && any(abs(Y(:)) > 0.5))
-        V.dt = [spm_type('int32') spm_platform('bigend')];
-    else
-        V.dt = [spm_type('float32') spm_platform('bigend')];
-    end
-end
-if islogical(Y)     % It makes no sense to store logical data (e.g. masks) as float or int32
-    V.dt(1) = spm_type('uint8');
+% Choose appropriate data type
+if dt
+    V.dt    = [spm_type(dt) spm_platform('bigend')];
+elseif islogical(Y)
+    V.dt    = [spm_type('uint8') spm_platform('bigend')];
+    V.pinfo = [1;0;0];      % Ensure no scaling is applied
+else
+    V.dt    = [spm_type('float32') spm_platform('bigend')];
 end
 
 % Override filename if provided
@@ -55,6 +70,7 @@ switch ext
     case '.gz'
         V.fname = spm_file(V.fname, 'ext','');
         V       = spm_write_vol(V, Y);
+        V.dat   = Y;                % Cache data in case of re-reading
         gzip(V.fname)
         delete(V.fname)
         V.fname = [V.fname '.gz'];

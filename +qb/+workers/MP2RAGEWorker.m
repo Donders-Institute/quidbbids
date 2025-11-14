@@ -142,6 +142,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
                 bfile.metadata.InversionEfficiency = MP2RAGE.InvEff;
                 bfile.metadata.NZslices            = MP2RAGE.NZslices;
                 bfile.metadata.EchoSpacing         = MP2RAGE.EchoSpacing;
+                UNIhdr.dt(1)                       = 16;                                    % Set datatype to float32
                 spm_write_vol_gz(UNIhdr, R1map, bfile.path);
 
                 % Save the M0-map

@@ -160,6 +160,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                 % TODO: Iterate the computation with the input images realigned to the synthetic T1w images
 
                 % Save T1w-like images in the work directory
+                Ve1m.dt(1) = 16;            % Set datatype to float32
                 for n = 1:length(flips)
                     T1w                    = M0 .* GRESignal(flips(n), TR, T1);
                     T1w(~isfinite(T1w))    = 0;
@@ -230,13 +231,14 @@ classdef MEGREprepWorker < qb.workers.Worker
                         end
                         Ve  = spm_vol(char(echo));
                         img = NaN(Vref.dim);
-                        T   = Ve.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxels in Vref to voxels in Ve
+                        T   = Ve.mat \ spm_matrix(x) * Vref.mat;        % Transformation from voxels in Vref to voxels in Ve
                         for z = 1:Vref.dim(3)
                             img(:,:,z) = spm_slice_vol(Ve, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                         end
                         bfile.entities.space   = obj.bidsfilter.syntheticT1.space;
                         bfile.entities.desc    = sprintf('VFA%02d', flips(n));
                         bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
+                        Vref.dt(1)             = 16;                    % Set datatype to float32
                         spm_write_vol_gz(Vref, img, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
                         bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                     end
@@ -266,7 +268,8 @@ classdef MEGREprepWorker < qb.workers.Worker
                     for z = 1:Vref.dim(3)
                         B1(:,:,z) = spm_slice_vol(B1_, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                     end
-                    bfile = obj.bfile_set(B1famp{1}, obj.bidsfilter.B1map_VFA);
+                    bfile      = obj.bfile_set(B1famp{1}, obj.bidsfilter.B1map_VFA);
+                    Vref.dt(1) = 16;                                % Set datatype to float32
                     obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
                     spm_write_vol_gz(Vref, B1, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
                     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)

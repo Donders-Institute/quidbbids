@@ -75,7 +75,8 @@ classdef B1prepWorker < qb.workers.Worker
                 FAVol = spm_vol(B1famp{n});
                 FA    = spm_read_vols(FAVol);
                 if isfield(obj.config.B1prepWorker.FAscaling, bfile.metadata.Manufacturer)
-                    FA = FA / obj.config.B1prepWorker.FAscaling.(bfile.metadata.Manufacturer); % Scale to degrees
+                    FA = FA / obj.config.B1prepWorker.FAscaling.(bfile.metadata.Manufacturer);  % Scale to degrees
+                    FAVol.dt(1) = 16;                                                           % Set datatype to float32
                 end
 
                 % Regularize the FA-map in order to avoid influence of salt & pepper border noise
@@ -83,6 +84,7 @@ classdef B1prepWorker < qb.workers.Worker
                     dim = spm_imatrix(FAVol.mat);
                     FA  = spm_read_vols(spm_vol(B1anat{n})) .* exp(1i*FA);                              % Make complex and multiply with anat to avoid smoothing skull-noise across tissue borders
                     FA  = angle(qb.MP2RAGE.smooth3D(FA, obj.config.B1prepWorker.FWHM, abs(dim(7:9))));  % Smooth and take angle again
+                    FAVol.dt(1) = 16;                                                           % Set datatype to float32
                 end
 
                 % Save the FA-map image & json file

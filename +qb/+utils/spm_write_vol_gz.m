@@ -1,10 +1,10 @@
 function V = spm_write_vol_gz(V, Y, fname)
 % FUNCTION V = SPM_WRITE_VOL_GZ(V, Y, fname)
 %
-% A wrapper around SPM_WRITE_VOL that removes the pinfo field for float datatypes,
-% writes a .nii or a .nii.gz file. If fname is provided, it will override the file
-% name in V.fname. The V.mat field is required or V must be an array with
-% voxelsizes in the x-, y- and z- dimension.
+% A wrapper around SPM_WRITE_VOL that sets an appropriate datatype, writes a .nii or
+% a .nii.gz file. If fname is provided, it will override the file name in V.fname.
+% The V.mat field is required or V must be an array with voxelsizes in the x-, y- and
+% z- dimension.
 %__________________________________________________________________________
 %   SPM_WRITE_VOL
 %
@@ -33,22 +33,14 @@ end
 
 % Choose appropriate data type if not specified
 if ~isfield(V, 'dt') || isempty(V.dt)
-    if islogical(Y)
-        V.dt = [spm_type('uint8') spm_platform('bigend')];
-    elseif isinteger(Y) || (all(abs(Y(:) - round(Y(:))) < 1e-6) && any(abs(Y(:)) > 0.5))
+    if isinteger(Y) || (all(abs(Y(:) - round(Y(:))) < 1e-6) && any(abs(Y(:)) > 0.5))
         V.dt = [spm_type('int32') spm_platform('bigend')];
     else
         V.dt = [spm_type('float32') spm_platform('bigend')];
     end
 end
-
-% Ensure pinfo field is correct for data type
-if isfield(V, 'pinfo')
-    if contains(spm_type(V.dt), 'float') || (contains(spm_type(V.dt), 'int') && V.pinfo(1) ~= 1)
-        V = rmfield(V, 'pinfo');
-    end
-elseif contains(spm_type(V.dt), 'int')
-    V.pinfo = [1; 0];
+if islogical(Y)     % It makes no sense to store logical data (e.g. masks) as float or int32
+    V.dt(1) = spm_type('uint8');
 end
 
 % Override filename if provided

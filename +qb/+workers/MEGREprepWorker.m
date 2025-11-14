@@ -125,6 +125,7 @@ classdef MEGREprepWorker < qb.workers.Worker
             % with the input images that have been realigned to the target in the common space
 
             import qb.utils.spm_write_vol_gz
+            import qb.utils.spm_vol
 
             GRESignal = @(FlipAngle, TR, T1) sind(FlipAngle) .* (1-exp(-TR./T1)) ./ (1-(exp(-TR./T1)) .* cosd(FlipAngle));
 
@@ -185,6 +186,7 @@ classdef MEGREprepWorker < qb.workers.Worker
             % coregister the B1 images as well to the M0 (which is also in the common GRE space)
 
             import qb.utils.spm_write_vol_gz
+            import qb.utils.spm_vol
 
             % Index the workdir layout (only for obj.subject)
             BIDSW = obj.layout_workdir();
@@ -275,6 +277,8 @@ classdef MEGREprepWorker < qb.workers.Worker
             % Create a brain mask for each FA using the echo-1_mag image. Combine the individual masks
             % to produce a minimal output mask (for QSM and MCR processing)
 
+            import qb.utils.spm_vol
+
             % Index the workdir layout, or just use obj.BIDS if no fmap is available
             if ismember("fmap", fieldnames(obj.subject))
                 BIDS     = obj.layout_workdir();
@@ -300,10 +304,8 @@ classdef MEGREprepWorker < qb.workers.Worker
                 end
 
                 % Combine the individual masks to create a minimal brain mask
-                bfile      = obj.bfile_set(bfile, obj.bidsfilter.brainmask);
-                Ve1m       = spm_vol(char(e1mag));
-                Ve1m.dt(1) = spm_type('uint8');
-                Ve1m.pinfo = [1; 0];
+                bfile = obj.bfile_set(bfile, obj.bidsfilter.brainmask);
+                Ve1m  = spm_vol(char(e1mag));
                 obj.logger.info(sprintf("--> Creating brain mask: %s", bfile.filename))
                 qb.utils.spm_write_vol_gz(Ve1m, mask, bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)

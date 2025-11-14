@@ -11,12 +11,12 @@ classdef SCRWorker < qb.workers.Worker
         needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
-    
+
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
-    
-    
+
+
     methods
 
         function obj = SCRWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
@@ -72,8 +72,9 @@ classdef SCRWorker < qb.workers.Worker
                 obj
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
-            
+
             import qb.utils.spm_write_vol_gz
+            import qb.utils.spm_vol
 
             % Check the input
             if ~ismember("fmap", fieldnames(obj.subject))
@@ -144,7 +145,7 @@ classdef SCRWorker < qb.workers.Worker
                 [T1, M0] = despot1_mapping(S0, flips, bfile.metadata.RepetitionTime, mask, B1);     % TODO: Check if we should only use the first two FA (as in MWI_tmp)
                 R1       = (mask ./ T1);
                 R1(~isfinite(R1)) = 0;          % set NaN and Inf to 0
-                
+
                 % Save the SCR output maps
                 bfileR1 = obj.bfile_set(S0data{1}, obj.bidsfilter.R1map_S0);
                 bfileM0 = obj.bfile_set(S0data{1}, obj.bidsfilter.M0map_S0);

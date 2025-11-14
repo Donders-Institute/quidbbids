@@ -11,12 +11,12 @@ classdef R1R2sWorker < qb.workers.Worker
         needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
-    
+
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
-    
-    
+
+
     methods
 
         function obj = R1R2sWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
@@ -50,7 +50,7 @@ classdef R1R2sWorker < qb.workers.Worker
                                               'suffix', 'R2starmap');
             obj.bidsfilter.M0map     = setfield(obj.bidsfilter.R2starmap, 'suffix','M0Map');
             obj.bidsfilter.R1map     = setfield(obj.bidsfilter.R2starmap, 'suffix','R1map');
-            
+
             % Make the workitems (if requested)
             if strlength(workitems)                 % isempty(string('')) -> false
                 for workitem = string(workitems)
@@ -66,8 +66,9 @@ classdef R1R2sWorker < qb.workers.Worker
                 obj
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
-            
+
             import qb.utils.spm_write_vol_gz
+            import qb.utils.spm_vol
 
             % Check the input
             if ~ismember("fmap", fieldnames(obj.subject))
@@ -89,7 +90,7 @@ classdef R1R2sWorker < qb.workers.Worker
             if length(brainmask) ~= 1           % TODO: FIXME
                 obj.logger.exception('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', brainmask{:}))
             end
-            
+
             % Load the data + metadata
             V    = spm_vol(echos4Dmag{1});                          % For reading the 3D image dimensions
             dims = [V(1).dim length(V) length(echos4Dmag)];

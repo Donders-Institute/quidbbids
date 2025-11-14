@@ -11,12 +11,12 @@ classdef MCRWorker < qb.workers.Worker
         needs       % List of workitems the worker needs. Workitems can contain regexp patterns
     end
 
-    
+
     properties
         bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
     end
-    
-    
+
+
     methods
 
         function obj = MCRWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
@@ -87,8 +87,9 @@ classdef MCRWorker < qb.workers.Worker
                 obj
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
-            
+
             import qb.utils.spm_write_vol_gz
+            import qb.utils.spm_vol
 
             % Check the input
             if ~ismember("fmap", fieldnames(obj.subject))
@@ -116,7 +117,7 @@ classdef MCRWorker < qb.workers.Worker
             if length(localfmask) ~= length(echos4Dmag)
                 obj.logger.exception('%s expected %d brainmasks but got:%s', obj.name, length(echos4Dmag), sprintf(' %s', localfmask{:}))
             end
-            
+
             % Load the data + metadata
             V              = spm_vol(echos4Dmag{1});                    % For reading the 3D image dimensions
             dims           = [V(1).dim length(V) length(echos4Dmag)];

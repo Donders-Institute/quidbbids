@@ -15,7 +15,7 @@ arguments
 end
 
 if ischar(V) || isstring(V)
-    V = spm_vol(char(V));
+    V = qb.utils.spm_vol(char(V));
 end
 
 Phase = spm_read_vols(V);

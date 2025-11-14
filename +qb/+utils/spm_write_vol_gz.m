@@ -21,6 +21,9 @@ function V = spm_write_vol_gz(V, Y, fname)
 % Create a minimal header struction if only voxel sizes are provided
 if isnumeric(V) && isvector(V)
     V = struct('mat', diag([V(:); 1]));
+    if nargin < 3 || isempty(fname)
+        error('When providing only voxel sizes, an output filename must be specified')
+    end
 end
 
 % Ensure dim field is correct (e.g. if only voxel sizes are provided)

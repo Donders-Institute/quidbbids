@@ -59,6 +59,7 @@ classdef B1prepWorker < qb.workers.Worker
             end
 
             import qb.utils.spm_vol
+            import qb.utils.spm_read_vols
 
             % Get the B1 anat and fa-map images
             B1anat = obj.query_ses(obj.BIDS,  'data', 'modality','fmap', 'acq','anat', 'echo',[]);

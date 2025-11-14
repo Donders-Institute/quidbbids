@@ -126,6 +126,7 @@ classdef MEGREprepWorker < qb.workers.Worker
 
             import qb.utils.spm_write_vol_gz
             import qb.utils.spm_vol
+            import qb.utils.spm_read_vols
 
             GRESignal = @(FlipAngle, TR, T1) sind(FlipAngle) .* (1-exp(-TR./T1)) ./ (1-(exp(-TR./T1)) .* cosd(FlipAngle));
 
@@ -278,6 +279,7 @@ classdef MEGREprepWorker < qb.workers.Worker
             % to produce a minimal output mask (for QSM and MCR processing)
 
             import qb.utils.spm_vol
+            import qb.utils.spm_read_vols
 
             % Index the workdir layout, or just use obj.BIDS if no fmap is available
             if ismember("fmap", fieldnames(obj.subject))

@@ -68,7 +68,7 @@ switch ext
         V4 = spm_file_merge(V, fullfile(pth, name), varargin{:});   % NB: Here "name" has a '.nii' extension
         gzip(V4(1).fname)
         delete(V4(1).fname)
-        V4 = qb.utils.spm_vol([V4(1).fname '.gz']);
+        V4 = qb.utils.spm_vol([V4(1).fname '.gz']);                 % NB: data type is not the default float64 (may clash with spm_slice_vol)
     case '.nii'
         V4 = spm_file_merge(V, fname, varargin{:});                 % NB: This fails if V contains .nii.gz files
     otherwise

@@ -75,6 +75,7 @@ classdef SCRWorker < qb.workers.Worker
 
             import qb.utils.spm_write_vol_gz
             import qb.utils.spm_vol
+            import qb.utils.spm_read_vols
 
             % Check the input
             if ~ismember("fmap", fieldnames(obj.subject))

@@ -68,6 +68,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
             import qb.utils.spm_vol
             import qb.utils.spm_read_vols
             import qb.utils.spm_coreg
+            import qb.utils.spm_slice_vol
 
             % Get the B1 images from the team
             B1famp = obj.ask_team('B1map_angle');

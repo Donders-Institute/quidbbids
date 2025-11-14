@@ -188,6 +188,7 @@ classdef MEGREprepWorker < qb.workers.Worker
 
             import qb.utils.spm_write_vol_gz
             import qb.utils.spm_vol
+            import qb.utils.spm_coreg
 
             % Index the workdir layout (only for obj.subject)
             BIDSW = obj.layout_workdir();

@@ -67,9 +67,8 @@ classdef R1R2sWorker < qb.workers.Worker
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            import qb.utils.spm_write_vol_gz
+            import qb.utils.spm_write_vol
             import qb.utils.spm_vol
-            import qb.utils.spm_read_vols
 
             % Check the input
             if ~ismember("fmap", fieldnames(obj.subject))
@@ -114,9 +113,9 @@ classdef R1R2sWorker < qb.workers.Worker
 
             % Save the output data
             V(1).dim = dims(1:3);
-            spm_write_vol_gz(V(1), askadam_R1R2s.final.R1,     obj.bfile_set(bfile, obj.bidsfilter.R1map    ).path);
-            spm_write_vol_gz(V(1), askadam_R1R2s.final.M0,     obj.bfile_set(bfile, obj.bidsfilter.M0map    ).path);
-            spm_write_vol_gz(V(1), askadam_R1R2s.final.R2star, obj.bfile_set(bfile, obj.bidsfilter.R2starmap).path);
+            spm_write_vol(V(1), askadam_R1R2s.final.R1,     obj.bfile_set(bfile, obj.bidsfilter.R1map    ).path);
+            spm_write_vol(V(1), askadam_R1R2s.final.M0,     obj.bfile_set(bfile, obj.bidsfilter.M0map    ).path);
+            spm_write_vol(V(1), askadam_R1R2s.final.R2star, obj.bfile_set(bfile, obj.bidsfilter.R2starmap).path);
         end
 
     end

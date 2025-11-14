@@ -1,4 +1,4 @@
-function V4 = spm_file_merge_gz(V, fname, metafields, cleanup, varargin)
+function V4 = spm_file_merge(V, fname, metafields, cleanup, varargin)
 % SPM_FILE_MERGE_GZ  Concatenate 3D volumes into a single 4D volume.
 %
 % V4 = SPM_FILE_MERGE_GZ(V, fname, metafields, dt, RT) is a wrapper around
@@ -29,7 +29,7 @@ function V4 = spm_file_merge_gz(V, fname, metafields, cleanup, varargin)
 %
 % EXAMPLE:
 %   V  = spm_vol(char({'sub-01_echo-1.nii.gz', 'sub-01_echo-2.nii.gz'}));
-%   V4 = spm_file_merge_gz(V, 'sub-01_4D.nii.gz', {'EchoNumber', 'EchoTime'});
+%   V4 = spm_file_merge(V, 'sub-01_4D.nii.gz', {'EchoNumber', 'EchoTime'});
 
 arguments (Input)
     V
@@ -68,7 +68,10 @@ switch ext
         V4 = spm_file_merge(V, fullfile(pth, name), varargin{:});   % NB: Here "name" has a '.nii' extension
         gzip(V4(1).fname)
         delete(V4(1).fname)
-        V4 = qb.utils.spm_vol([V4(1).fname '.gz']);                 % NB: data type is not the default float64 (may clash with spm_slice_vol)
+        for n = 1:numel(V4)
+            V4(n).fname = [V4(1).fname '.gz'];                      % Update filenames to .nii.gz
+            V4(n).dt(1) = 64;                                       % Update datatype to align with spm_vol reading of .nii.gz files
+        end
     case '.nii'
         V4 = spm_file_merge(V, fname, varargin{:});                 % NB: This fails if V contains .nii.gz files
     otherwise

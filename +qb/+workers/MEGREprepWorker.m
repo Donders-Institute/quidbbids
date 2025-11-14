@@ -124,9 +124,8 @@ classdef MEGREprepWorker < qb.workers.Worker
             % The results are blurry but within the common GRE space, hence, iterate the computation
             % with the input images that have been realigned to the target in the common space
 
-            import qb.utils.spm_write_vol_gz
+            import qb.utils.spm_write_vol
             import qb.utils.spm_vol
-            import qb.utils.spm_read_vols
 
             GRESignal = @(FlipAngle, TR, T1) sind(FlipAngle) .* (1-exp(-TR./T1)) ./ (1-(exp(-TR./T1)) .* cosd(FlipAngle));
 
@@ -167,7 +166,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                     bfile                  = obj.bfile_set(VFA_e1m{n}, specs);
                     bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};                               % TODO: FIXME
                     obj.logger.info("Saving T1like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
-                    spm_write_vol_gz(Ve1m, T1w, bfile.path);
+                    spm_write_vol(Ve1m, T1w, bfile.path);
                     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                 end
 
@@ -175,7 +174,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                 bfile                  = obj.bfile_set(VFA_e1m{n}, obj.bidsfilter.M0map_echo1);
                 bfile.metadata.Sources = strrep(VFA_e1m, extractBefore(VFA_e1m{1}, bfile.bids_path), 'bids:raw:');
                 obj.logger.info("Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
-                spm_write_vol_gz(Ve1m, M0, bfile.path);
+                spm_write_vol(Ve1m, M0, bfile.path);
                 bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
             end
         end
@@ -186,10 +185,8 @@ classdef MEGREprepWorker < qb.workers.Worker
             % Coregister all MEGRE FA-images to each T1w-like target image (using echo-1_mag),
             % coregister the B1 images as well to the M0 (which is also in the common GRE space)
 
-            import qb.utils.spm_write_vol_gz
+            import qb.utils.spm_write_vol
             import qb.utils.spm_vol
-            import qb.utils.spm_coreg
-            import qb.utils.spm_slice_vol
 
             % Index the workdir layout (only for obj.subject)
             BIDSW = obj.layout_workdir();
@@ -237,7 +234,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                         bfile.entities.space   = obj.bidsfilter.syntheticT1.space;
                         bfile.entities.desc    = sprintf('VFA%02d', flips(n));
                         bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
-                        spm_write_vol_gz(Vref, img, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+                        spm_write_vol(Vref, img, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
                         bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                     end
 
@@ -268,7 +265,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                     end
                     bfile = obj.bfile_set(B1famp{1}, obj.bidsfilter.B1map_VFA);
                     obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
-                    spm_write_vol_gz(Vref, B1, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+                    spm_write_vol(Vref, B1, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
                     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                 end
             end
@@ -281,7 +278,6 @@ classdef MEGREprepWorker < qb.workers.Worker
             % to produce a minimal output mask (for QSM and MCR processing)
 
             import qb.utils.spm_vol
-            import qb.utils.spm_read_vols
 
             % Index the workdir layout, or just use obj.BIDS if no fmap is available
             if ismember("fmap", fieldnames(obj.subject))
@@ -311,7 +307,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                 bfile = obj.bfile_set(bfile, obj.bidsfilter.brainmask);
                 Ve1m  = spm_vol(char(e1mag));
                 obj.logger.info(sprintf("--> Creating brain mask: %s", bfile.filename))
-                qb.utils.spm_write_vol_gz(Ve1m, mask, bfile.path);
+                qb.utils.spm_write_vol(Ve1m, mask, bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
 
             end
@@ -322,7 +318,7 @@ classdef MEGREprepWorker < qb.workers.Worker
             %
             % Merge the 3D echos files for each flip angle into 4D files
 
-            import qb.utils.spm_file_merge_gz
+            import qb.utils.spm_file_merge
 
             % Index the workdir layout (only for obj.subject)
             BIDSW = obj.layout_workdir();
@@ -356,11 +352,11 @@ classdef MEGREprepWorker < qb.workers.Worker
                     % Create the 4D mag and phase QSM/MCR input data
                     bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
-                    spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
+                    spm_file_merge(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
                     bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.echos4Dphase);
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
-                    spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
+                    spm_file_merge(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
 
                 end
             end
@@ -371,7 +367,7 @@ classdef MEGREprepWorker < qb.workers.Worker
             %
             % Merge the raw 3D echos files for each acquisition protocol into 4D files
 
-            import qb.utils.spm_file_merge_gz
+            import qb.utils.spm_file_merge
 
             % Merge the 3D echos files into 4D files for all MEGRE acq/runs independently
             bfilter = struct('modality','anat', 'part','mag', 'echo',1:999);
@@ -394,11 +390,11 @@ classdef MEGREprepWorker < qb.workers.Worker
                     % Create the 4D mag and phase QSM/MCR input data
                     bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);
                     obj.logger.info(sprintf("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename))
-                    spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'}, false);
+                    spm_file_merge(magfiles, bfile.path, {'EchoNumber', 'EchoTime'}, false);
 
                     bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.echos4Dphase);
                     obj.logger.info(sprintf("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename))
-                    spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'}, false);
+                    spm_file_merge(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'}, false);
 
                 end
             end

@@ -51,7 +51,7 @@ elseif isstruct(P)
     V = P;
 
 elseif iscell(P)
-    V = cellfun(@qb.utils.spm_vol,P, 'UniformOutput',false);
+    V = cellfun(@spm_vol,P, 'UniformOutput',false);
 
 else
     V = spm_vol;
@@ -109,7 +109,7 @@ switch ext
                 V(i).dat   = spm_read_vols(V(i));
                 V(i).private.dat.fname = spm_file(p,'ext','');
                 V(i).fname = p;
-                V(i).dt(1) = V(1).dt(1);    % NB: QuIDBBIDS change: keep the original data type
+                V(i).dt(1) = 64;
                 V(i).pinfo = [1 0 0]';
             end
         catch

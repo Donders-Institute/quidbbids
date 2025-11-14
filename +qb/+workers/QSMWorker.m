@@ -112,7 +112,7 @@ classdef QSMWorker < qb.workers.Worker
                 input.TEFileList = {spm_file(spm_file(magfiles{n}, 'ext',''), 'ext','.json')};                   % Could just be left empty??
                 bfile            = obj.bfile_set(magfiles{n}, setfield(obj.bidsfilter.R2starmap, 'suffix',''));  % Output basename; SEPIA adds suffixes of its own
                 output           = extractBefore(bfile.path, bfile.extension);          % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
-                save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output) % Override SEPIA's TE values with what the bfile says (-> added by spm_file_merge_gz)
+                save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output) % Override SEPIA's TE values with what the bfile says (-> added by spm_file_merge)
 
                 % Get the SEPIA parameters
                 switch workitem

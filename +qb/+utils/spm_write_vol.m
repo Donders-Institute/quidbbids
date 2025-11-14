@@ -1,10 +1,10 @@
-function V = spm_write_vol_gz(V, Y, fname, dt)
+function V = spm_write_vol(V, Y, fname, dt)
 % A convenient wrapper around SPM_WRITE_VOL that writes either a .nii or .nii.gz file.
 %
 % Usage:
-%   V = spm_write_vol_gz(V, Y)
-%   V = spm_write_vol_gz(V, Y, fname)
-%   V = spm_write_vol_gz(V, Y, fname, dt)
+%   V = spm_write_vol(V, Y)
+%   V = spm_write_vol(V, Y, fname)
+%   V = spm_write_vol(V, Y, fname, dt)
 %
 % Inputs:
 %   V     - Volume structure containing header information (see spm_vol).
@@ -74,6 +74,7 @@ switch ext
         gzip(V.fname)
         delete(V.fname)
         V.fname = [V.fname '.gz'];
+        V.dt(1) = 64;               % Update datatype to align with spm_vol reading of .nii.gz files
     case '.nii'
         V = spm_write_vol(V, Y);
     otherwise

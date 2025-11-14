@@ -73,9 +73,8 @@ classdef SCRWorker < qb.workers.Worker
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            import qb.utils.spm_write_vol_gz
+            import qb.utils.spm_write_vol
             import qb.utils.spm_vol
-            import qb.utils.spm_read_vols
 
             % Check the input
             if ~ismember("fmap", fieldnames(obj.subject))
@@ -138,8 +137,8 @@ classdef SCRWorker < qb.workers.Worker
                 Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
                 bfileR2s = obj.bfile_set(S0data{1}, obj.bidsfilter.meanR2starmap);
                 bfileChi = obj.bfile_set(S0data{1}, obj.bidsfilter.meanChimap);
-                spm_write_vol_gz(V, R2smean.*mask, bfileR2s.path);          % TODO: Add JSON sidecar files
-                spm_write_vol_gz(V, Chimean.*mask, bfileChi.path);          % TODO: Add JSON sidecar files
+                spm_write_vol(V, R2smean.*mask, bfileR2s.path);          % TODO: Add JSON sidecar files
+                spm_write_vol(V, Chimean.*mask, bfileChi.path);          % TODO: Add JSON sidecar files
 
                 % Compute the R1 and M0 maps using DESPOT1 (based on S0).     TODO: Adapt for using echo data as an alternative to S0
                 bfile    = bids.File(S0data{1});                            % TODO: FIXME: Random
@@ -150,8 +149,8 @@ classdef SCRWorker < qb.workers.Worker
                 % Save the SCR output maps
                 bfileR1 = obj.bfile_set(S0data{1}, obj.bidsfilter.R1map_S0);
                 bfileM0 = obj.bfile_set(S0data{1}, obj.bidsfilter.M0map_S0);
-                spm_write_vol_gz(V, R1,       bfileR1.path);                % TODO: Add JSON sidecar files
-                spm_write_vol_gz(V, M0.*mask, bfileM0.path);                % TODO: Add JSON sidecar files
+                spm_write_vol(V, R1,       bfileR1.path);                % TODO: Add JSON sidecar files
+                spm_write_vol(V, M0.*mask, bfileM0.path);                % TODO: Add JSON sidecar files
 
             end
         end

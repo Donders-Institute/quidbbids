@@ -88,9 +88,8 @@ classdef MCRWorker < qb.workers.Worker
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            import qb.utils.spm_write_vol_gz
+            import qb.utils.spm_write_vol
             import qb.utils.spm_vol
-            import qb.utils.spm_read_vols
 
             % Check the input
             if ~ismember("fmap", fieldnames(obj.subject))
@@ -154,16 +153,16 @@ classdef MCRWorker < qb.workers.Worker
 
             % Extract and save the output data
             V(1).dim = dims(1:3);
-            spm_write_vol_gz(V(1), askadam_mcr.final.MWF * 100,	                      obj.bfile_set(bfile, obj.bidsfilter.MWFmap      ).path);  % TODO: Ask Jose: Multiply by 100 to get percentage?
-            spm_write_vol_gz(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.bfile_set(bfile, obj.bidsfilter.MW_M0map    ).path);
-            spm_write_vol_gz(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.bfile_set(bfile, obj.bidsfilter.FW_M0map    ).path);
-            spm_write_vol_gz(V(1), askadam_mcr.final.R2sMW,                           obj.bfile_set(bfile, obj.bidsfilter.MW_R2starmap).path);
-            spm_write_vol_gz(V(1), askadam_mcr.final.R2sIW,                           obj.bfile_set(bfile, obj.bidsfilter.FW_R2starmap).path);
-            spm_write_vol_gz(V(1), 1 ./ askadam_mcr.final.R1IEW,                      obj.bfile_set(bfile, obj.bidsfilter.FW_T1map    ).path);
-            spm_write_vol_gz(V(1), askadam_mcr.final.R1IEW,                           obj.bfile_set(bfile, obj.bidsfilter.FW_R1map    ).path);
-            spm_write_vol_gz(V(1), askadam_mcr.final.kIEWM,                           obj.bfile_set(bfile, obj.bidsfilter.FMW_exrate  ).path);
-            spm_write_vol_gz(V(1), mask,                                              obj.bfile_set(bfile, obj.bidsfilter.FitMask     ).path); % Check if this is correct
-            % spm_write_vol_gz(V(1), extraData.pini + askadam_mcr.final.dpini,          obj.bfile_set(bfile, obj.bidsfilter.MW_M0map    ).path); '_Initialphase.nii.gz'])); TODO: Ask Jose if needed
+            spm_write_vol(V(1), askadam_mcr.final.MWF * 100,                       obj.bfile_set(bfile, obj.bidsfilter.MWFmap      ).path);  % TODO: Ask Jose: Multiply by 100 to get percentage?
+            spm_write_vol(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.bfile_set(bfile, obj.bidsfilter.MW_M0map    ).path);
+            spm_write_vol(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.bfile_set(bfile, obj.bidsfilter.FW_M0map    ).path);
+            spm_write_vol(V(1), askadam_mcr.final.R2sMW,                           obj.bfile_set(bfile, obj.bidsfilter.MW_R2starmap).path);
+            spm_write_vol(V(1), askadam_mcr.final.R2sIW,                           obj.bfile_set(bfile, obj.bidsfilter.FW_R2starmap).path);
+            spm_write_vol(V(1), 1 ./ askadam_mcr.final.R1IEW,                      obj.bfile_set(bfile, obj.bidsfilter.FW_T1map    ).path);
+            spm_write_vol(V(1), askadam_mcr.final.R1IEW,                           obj.bfile_set(bfile, obj.bidsfilter.FW_R1map    ).path);
+            spm_write_vol(V(1), askadam_mcr.final.kIEWM,                           obj.bfile_set(bfile, obj.bidsfilter.FMW_exrate  ).path);
+            spm_write_vol(V(1), mask,                                              obj.bfile_set(bfile, obj.bidsfilter.FitMask     ).path); % Check if this is correct
+            % spm_write_vol(V(1), extraData.pini + askadam_mcr.final.dpini,          obj.bfile_set(bfile, obj.bidsfilter.MW_M0map    ).path); '_Initialphase.nii.gz'])); TODO: Ask Jose if needed
         end
 
     end

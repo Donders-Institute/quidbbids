@@ -59,7 +59,6 @@ classdef B1prepWorker < qb.workers.Worker
             end
 
             import qb.utils.spm_vol
-            import qb.utils.spm_read_vols
 
             % Get the B1 anat and fa-map images
             B1anat = obj.query_ses(obj.BIDS,  'data', 'modality','fmap', 'acq','anat', 'echo',[]);
@@ -88,7 +87,7 @@ classdef B1prepWorker < qb.workers.Worker
                 % Save the FA-map image & json file
                 bfile = obj.bfile_set(bfile, obj.bidsfilter.B1map_angle);
                 obj.logger.info(sprintf("--> Saving regularized B1-map: %s", bfile.filename))
-                qb.utils.spm_write_vol_gz(FAVol, FA, bfile.path);
+                qb.utils.spm_write_vol(FAVol, FA, bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
 
                 % Copy the anat image & json file

@@ -18,7 +18,7 @@ if ischar(V) || isstring(V)
     V = qb.utils.spm_vol(char(V));
 end
 
-Phase = qb.utils.spm_read_vols(V);
+Phase = spm_read_vols(V);
 phmax = max(Phase(:));
 phmin = min(Phase(:));
 if (phmin > -4090) && (phmax > 4090)

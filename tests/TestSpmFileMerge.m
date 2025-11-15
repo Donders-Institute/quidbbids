@@ -104,7 +104,7 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
 
             % Verify output is gzipped
             testCase.assertTrue(endsWith(V4(1).fname, '.gz'), 'Output should be gzipped');
-            testCase.assertTrue(isfile(V4(1))e), 'Output file should exist');
+            testCase.assertTrue(isfile(V4(1).fname), 'Output file should exist');
             testCase.assertEqual(V4(1).dt(1), 64, 'Output datatype should be 64 (float32)');
 
             % Verify JSON sidecar was created

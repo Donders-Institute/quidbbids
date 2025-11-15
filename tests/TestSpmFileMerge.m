@@ -1,11 +1,10 @@
 classdef TestSpmFileMerge < matlab.unittest.TestCase
-    % TestSpmFileMerge - Unit tests for spm_file_merge function
+    % TestSpmFileMerge - Unit tests for spm_file_merge_gz function
 
     properties
         TestData
         TempDir
         NiftiFiles
-        JsonFiles
     end
 
     methods (TestClassSetup)
@@ -64,19 +63,22 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             testCase.assertEqual(V4.dt, 2, 'Output datatype should be 2 (UINT8)');
 
             % Verify output dimensions (4D with nrinputs volumes)
-            outputVol = spm_vol(outputFile);
+            outputVol = qb.utils.spm_vol(outputFile);
             testCase.assertEqual(length(outputVol), nrinputs, "Output should have " + nrinputs + "volumes");
 
             % Verify JSON sidecar was created
-            jsonOutput = spm_file(outputFile, 'ext', '.json');
+            [pth, nm] = fileparts(outputFile);
+            jsonOutput = fullfile(pth, [nm '.json']);
             testCase.assertTrue(isfile(jsonOutput), 'JSON sidecar should exist');
-            metadata = bids.File(jsonOutput).metadata;
+            metadata = jsondecode(fileread(jsonOutput));
             testCase.assertTrue(isfield(metadata, 'MagneticFieldStrength'), 'MagneticFieldStrength field should exist');
 
             % Verify that the input files still exist
             for inputFile = inputFiles
                 testCase.assertTrue(isfile(inputFile{1}), 'Input NIfTI file should still exist');
-                testCase.assertTrue(isfile(spm_file(inputFile{1}, 'ext','.json')), 'Input JSON file should still exist');
+                [pth, nm] = fileparts(inputFile{1});
+                jsonSidecar = fullfile(pth, [nm '.json']);
+                testCase.assertTrue(isfile(jsonSidecar), 'Input JSON file should still exist');
             end
         end
 
@@ -107,13 +109,19 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             testCase.assertEqual(V4.dt, 64, 'Output datatype should be 64 (float32)');
 
             % Verify JSON sidecar was created
-            jsonOutput = spm_file(spm_file(outputFile, 'ext',''), 'ext','.json');
+            [pth,nm,ext] = fileparts(outputFile);
+            if strcmp(ext,'.gz')
+                [pth,nm] = fileparts(fullfile(pth,nm)); % strip .nii
+            end
+            jsonOutput = fullfile(pth, [nm '.json']);
             testCase.assertTrue(isfile(jsonOutput), 'JSON sidecar should exist');
 
             % Verify input files were deleted
             for niftiFile = testCase.NiftiFiles
                 testCase.assertFalse(isfile(niftiFile{1}), 'Input NIfTI files should be deleted');
-                testCase.assertFalse(isfile(spm_file(niftiFile{1}, 'ext','.json')), 'Input JSON files should be deleted');
+                [pth, nm] = fileparts(niftiFile{1});
+                jsonSidecar = fullfile(pth, [nm '.json']);
+                testCase.assertFalse(isfile(jsonSidecar), 'Input JSON files should be deleted');
             end
         end
 
@@ -121,7 +129,7 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             % Test merging with specific metadata field aggregation
 
             % Prepare inputs
-            Vin        = spm_vol(char(testCase.NiftiFiles));
+            Vin        = qb.utils.spm_vol(char(testCase.NiftiFiles));
             outputFile = fullfile(testCase.TempDir, 'merged_meta.nii');
             nrinputs   = length(testCase.NiftiFiles);
 
@@ -132,22 +140,24 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             qb.utils.spm_file_merge_gz(Vin, outputFile, metafields);
 
             % Verify JSON sidecar
-            jsonOutput = spm_file(outputFile, 'ext', '.json');
-            testCase.assertTrue(isfile(jsonOutput), 'JSON sidecar should exist');
+            [pth, nm] = fileparts(outputFile);
+            jsonOutput = fullfile(pth, [nm '.json']);
+            testCase.assertTrue(isfile(jsonOutput));
 
-            % Verify aggregated metadata
-            metadata = bids.File(jsonOutput).metadata;
+            metadata = jsondecode(fileread(jsonOutput));
             for metafield = metafields
                 testCase.assertTrue(isfield(metadata, metafield{1}), metafield + " field should exist");
                 testCase.assertEqual(length(metadata.(metafield{1})), nrinputs, "EchoTime should have " + nrinputs + " values");
             end
-            testCase.assertTrue(isfield(metadata, 'MagneticFieldStrength'), 'MagneticFieldStrength field should exist');
-            testCase.assertTrue(isscalar(metadata.MagneticFieldStrength), 'MagneticFieldStrength should have 1 value');
+            testCase.assertTrue(isfield(metadata, 'MagneticFieldStrength'));
+            testCase.assertTrue(isscalar(metadata.MagneticFieldStrength));
 
             % Verify input files were deleted
             for niftiFile = testCase.NiftiFiles
                 testCase.assertFalse(isfile(niftiFile{1}), 'Input NIfTI files should be deleted');
-                testCase.assertFalse(isfile(spm_file(niftiFile{1}, 'ext','.json')), 'Input JSON files should be deleted');
+                [pth, nm] = fileparts(niftiFile{1});
+                jsonSidecar = fullfile(pth, [nm '.json']);
+                testCase.assertFalse(isfile(jsonSidecar));
             end
         end
     end
@@ -159,7 +169,8 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
 
             for i = 1:length(testCase.NiftiFiles)
                 niftiFile = testCase.NiftiFiles{i};
-                jsonFile  = spm_file(niftiFile, 'ext', '.json');    % Assumes .nii extension
+                [pth, nm] = fileparts(niftiFile);
+                jsonFile  = fullfile(pth, [nm '.json']);
 
                 % Create BIDS-style metadata
                 metadata = struct();
@@ -169,11 +180,9 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
                 metadata.PhaseEncodingDirection = 'j';
 
                 % Write JSON file
-                bids.util.jsonencode(jsonFile, metadata);
-
-                if nargin < 2
-                    testCase.JsonFiles{i} = jsonFile;
-                end
+                fid = fopen(jsonFile, 'w');
+                fprintf(fid, '%s', jsonencode(metadata));
+                fclose(fid);
             end
         end
     end

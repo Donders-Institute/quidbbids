@@ -143,10 +143,12 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             jsonOutput = fullfile(pth, [nm '.json']);
             testCase.assertTrue(isfile(jsonOutput), 'JSON sidecar should exist');
 
+            % Verify metadata aggregation
             metadata = jsondecode(fileread(jsonOutput));
             for metafield = metafields
                 testCase.assertTrue(isfield(metadata, metafield{1}), metafield + " field should exist");
                 testCase.assertEqual(length(metadata.(metafield{1})), nrinputs, "EchoTime should have " + nrinputs + " values");
+                testCase.assertEqual(metadata.(metafield{1}), 1:nrinputs, metafield + " values should match input values");
             end
             testCase.assertTrue(isfield(metadata, 'MagneticFieldStrength'), 'MagneticFieldStrength field should exist');
             testCase.assertTrue(isscalar(metadata.MagneticFieldStrength), 'MagneticFieldStrength should have 1 value');
@@ -172,11 +174,9 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
                 jsonFile  = fullfile(pth, [nm '.json']);
 
                 % Create BIDS-style metadata
-                metadata = struct();
-                metadata.EchoTime = 0.01 * i; % Different values for each file
-                metadata.RepetitionTime = 2.0 + 0.1 * (i-1);
-                metadata.MagneticFieldStrength = 3.0;
-                metadata.PhaseEncodingDirection = 'j';
+                metadata.EchoTime               = i;      % Different values for each file (-> metadata aggregation test)
+                metadata.RepetitionTime         = i;      % Different values for each file (-> metadata aggregation test)
+                metadata.MagneticFieldStrength  = 3;
 
                 % Write JSON file
                 fid = fopen(jsonFile, 'w');

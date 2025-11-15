@@ -65,15 +65,24 @@ switch ext
                 end
             end
         end
-        V4 = spm_file_merge(V, fullfile(pth, name), varargin{:});   % NB: Here "name" has a '.nii' extension
-        gzip(V4(1).fname)
-        delete(V4(1).fname)
-        for n = 1:numel(V4)
-            V4(n).fname = [V4(1).fname '.gz'];                      % Update filenames to .nii.gz
-            V4(n).dt(1) = 64;                                       % Update datatype to align with spm_vol reading of .nii.gz files
+        niifile = fullfile(pth, name);  % NB: Here "name" has a '.nii' extension
+        if nargout
+            V4 = spm_file_merge(V, niifile, varargin{:});
+            for n = 1:numel(V4)
+                V4(n).fname = fname;
+                V4(n).dt(1) = 64;                           % Update datatype to align with spm_vol reading of .nii.gz files
+            end
+        else
+            spm_file_merge(V, niifile, varargin{:})
         end
+        gzip(niifile)
+        delete(niifile)
     case '.nii'
-        V4 = spm_file_merge(V, fname, varargin{:});                 % NB: This fails if V contains .nii.gz files
+        if nargout
+            V4 = spm_file_merge(V, fname, varargin{:});     % NB: This fails if V contains .nii.gz files
+        else
+            spm_file_merge(V, fname, varargin{:})
+        end
     otherwise
         error('Unknown file extension %s in %s', ext, fname)
 end
@@ -116,5 +125,5 @@ end
 
 % Write the output JSON sidecar (if there was at least one input sidecar)
 if ~isempty(metadata)
-    bids.util.jsonencode(spm_file(spm_file(V4(1).fname, 'ext',''), 'ext','.json'), metadata)
+    bids.util.jsonencode(spm_file(spm_file(fname, 'ext',''), 'ext','.json'), metadata)
 end

@@ -3,15 +3,16 @@ classdef TestQuIDBBIDS < matlab.unittest.TestCase
     properties
         TmpDir  % Temporary directory path
     end
-    
+
     methods(TestClassSetup)
         % Shared setup for the entire test class
     end
-    
+
     methods(TestMethodSetup)
         function createTempDir(testCase)
             testCase.TmpDir = fullfile(tempdir, ['test_', char(java.util.UUID.randomUUID)]);
             mkdir(testCase.TmpDir);
+            bids.init(testCase.TmpDir);
         end
     end
 
@@ -28,7 +29,7 @@ classdef TestQuIDBBIDS < matlab.unittest.TestCase
             obj = qb.QuIDBBIDS(testCase.TmpDir);
             testCase.assertClass(obj, 'qb.QuIDBBIDS');
         end
-    
+
         function test_getconfig(testCase)
             % Test if settings are created correctly
             obj = qb.QuIDBBIDS(testCase.TmpDir);
@@ -39,5 +40,5 @@ classdef TestQuIDBBIDS < matlab.unittest.TestCase
             % testCase.assertTrue(isfile(configfile), sprintf('Configfile "%s" not found', configfile));
         end
     end
-    
+
 end

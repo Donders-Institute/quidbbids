@@ -58,9 +58,9 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             V4 = qb.utils.spm_file_merge_gz(inputFiles, outputFile, [], false);
 
             % Verify outputs
-            testCase.assertTrue(isscalar(V4), 'Output should be a single volume struct');
+            testCase.assertEqual(length(V4), nrinputs);
             testCase.assertTrue(isfile(outputFile), 'Output file should exist');
-            testCase.assertEqual(V4.dt, 2, 'Output datatype should be 2 (UINT8)');
+            testCase.assertEqual(V4(1).dt, 2, 'Output datatype should be 2 (UINT8)');
 
             % Verify output dimensions (4D with nrinputs volumes)
             outputVol = qb.utils.spm_vol(outputFile);
@@ -100,13 +100,12 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             V4 = qb.utils.spm_file_merge_gz(gzippedFiles, outputFile, [], true);
 
             % Verify outputs
-            testCase.assertTrue(isscalar(V4), 'Output should be a single volume struct');
             testCase.assertTrue(isfile(outputFile), 'Output file should exist');
 
             % Verify output is gzipped
             testCase.assertTrue(endsWith(V4.fname, '.gz'), 'Output should be gzipped');
             testCase.assertTrue(isfile(V4.fname), 'Output file should exist');
-            testCase.assertEqual(V4.dt, 64, 'Output datatype should be 64 (float32)');
+            testCase.assertEqual(V4(1).dt, 64, 'Output datatype should be 64 (float32)');
 
             % Verify JSON sidecar was created
             [pth,nm,ext] = fileparts(outputFile);
@@ -142,22 +141,22 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             % Verify JSON sidecar
             [pth, nm] = fileparts(outputFile);
             jsonOutput = fullfile(pth, [nm '.json']);
-            testCase.assertTrue(isfile(jsonOutput));
+            testCase.assertTrue(isfile(jsonOutput), 'JSON sidecar should exist');
 
             metadata = jsondecode(fileread(jsonOutput));
             for metafield = metafields
                 testCase.assertTrue(isfield(metadata, metafield{1}), metafield + " field should exist");
                 testCase.assertEqual(length(metadata.(metafield{1})), nrinputs, "EchoTime should have " + nrinputs + " values");
             end
-            testCase.assertTrue(isfield(metadata, 'MagneticFieldStrength'));
-            testCase.assertTrue(isscalar(metadata.MagneticFieldStrength));
+            testCase.assertTrue(isfield(metadata, 'MagneticFieldStrength'), 'MagneticFieldStrength field should exist');
+            testCase.assertTrue(isscalar(metadata.MagneticFieldStrength), 'MagneticFieldStrength should have 1 value');
 
             % Verify input files were deleted
             for niftiFile = testCase.NiftiFiles
                 testCase.assertFalse(isfile(niftiFile{1}), 'Input NIfTI files should be deleted');
                 [pth, nm] = fileparts(niftiFile{1});
                 jsonSidecar = fullfile(pth, [nm '.json']);
-                testCase.assertFalse(isfile(jsonSidecar));
+                testCase.assertFalse(isfile(jsonSidecar), 'Input JSON files should be deleted');
             end
         end
     end

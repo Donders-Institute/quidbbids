@@ -148,7 +148,7 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             for metafield = metafields
                 testCase.assertTrue(isfield(metadata, metafield{1}), metafield + " field should exist");
                 testCase.assertEqual(length(metadata.(metafield{1})), nrinputs, "EchoTime should have " + nrinputs + " values");
-                testCase.assertEqual(metadata.(metafield{1}), 1:nrinputs, metafield + " values should match input values");
+                testCase.assertEqual(metadata.(metafield{1}), [1:nrinputs]', metafield + " values should match input values");  % NB: matlab-bids converts arrays to column vectors
             end
             testCase.assertTrue(isfield(metadata, 'MagneticFieldStrength'), 'MagneticFieldStrength field should exist');
             testCase.assertTrue(isscalar(metadata.MagneticFieldStrength), 'MagneticFieldStrength should have 1 value');

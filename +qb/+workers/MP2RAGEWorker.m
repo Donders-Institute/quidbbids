@@ -64,7 +64,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
                 workitem {mustBeTextScalar, mustBeNonempty}
             end
 
-            import qb.utils.spm_write_vol
+            import qb.utils.spm_write_vol_gz
             import qb.utils.spm_vol
 
             % Get the B1 images from the team
@@ -139,15 +139,15 @@ classdef MP2RAGEWorker < qb.workers.Worker
                 bfile.metadata.InversionEfficiency = MP2RAGE.InvEff;
                 bfile.metadata.NZslices            = MP2RAGE.NZslices;
                 bfile.metadata.EchoSpacing         = MP2RAGE.EchoSpacing;
-                spm_write_vol(UNIhdr, R1map, bfile.path);
+                spm_write_vol_gz(UNIhdr, R1map, bfile.path);
 
                 % Save the M0-map
                 bfile = obj.bfile_set(bfile, obj.bidsfilter.M0map);
-                spm_write_vol(UNIhdr, M0map);                                            % TODO: add a JSON sidecar file
+                spm_write_vol_gz(UNIhdr, M0map);                                            % TODO: add a JSON sidecar file
 
                 % Save the corrected UNIT1
                 bfile = obj.bfile_set(bfile, obj.bidsfilter.MP2RAGE_T1w);
-                spm_write_vol(UNIhdr, UNIcorr, bfile.path);                              % TODO: add a JSON sidecar file
+                spm_write_vol_gz(UNIhdr, UNIcorr, bfile.path);                              % TODO: add a JSON sidecar file
 
             end
         end

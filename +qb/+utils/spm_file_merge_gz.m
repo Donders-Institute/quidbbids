@@ -1,11 +1,11 @@
-function V4 = spm_file_merge(V, fname, metafields, cleanup, varargin)
+function V4 = spm_file_merge_gz(V, fname, metafields, cleanup, varargin)
 % SPM_FILE_MERGE_GZ  Concatenate 3D volumes into a single 4D volume.
 %
 % V4 = SPM_FILE_MERGE_GZ(V, fname, metafields, dt, RT) is a wrapper around
 % SPM_FILE_MERGE that writes out a 4D NIfTI volume (.nii or .nii.gz) and
 % generates a JSON sidecar based on the first input JSON file (if available).
 %
-% INPUTS:
+% Inputs:
 %   V          - Images to concatenate. Can be a cellstr of filenames, or an
 %                spm_vol struct array.
 %   fname      - Output filename for the 4D volume (string or char).
@@ -19,17 +19,17 @@ function V4 = spm_file_merge(V, fname, metafields, cleanup, varargin)
 %   dt         - Data type (see spm_type). Default: 0 (same as first input volume).
 %   RT         - Interscan interval in seconds. Default: NaN.
 %
-% OUTPUT:
+% Output:
 %   V4         - spm_vol struct describing the merged 4D volume.
 %
-% NOTE:
+% Note:
 % For integer datatypes, the scale factor is chosen to maximize the range of
 % representable values. This may introduce small quantization differences between
 % the input and output data.
 %
-% EXAMPLE:
+% Example:
 %   V  = spm_vol(char({'sub-01_echo-1.nii.gz', 'sub-01_echo-2.nii.gz'}));
-%   V4 = spm_file_merge(V, 'sub-01_4D.nii.gz', {'EchoNumber', 'EchoTime'});
+%   V4 = spm_file_merge_gz(V, 'sub-01_4D.nii.gz', {'EchoNumber', 'EchoTime'});
 
 arguments (Input)
     V

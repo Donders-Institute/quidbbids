@@ -56,7 +56,7 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             nrinputs   = length(testCase.NiftiFiles);
 
             % Execute function
-            V4 = qb.utils.spm_file_merge(inputFiles, outputFile, [], false);
+            V4 = qb.utils.spm_file_merge_gz(inputFiles, outputFile, [], false);
 
             % Verify outputs
             testCase.assertTrue(isscalar(V4), 'Output should be a single volume struct');
@@ -95,7 +95,7 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             outputFile = fullfile(testCase.TempDir, 'merged_gzipped.nii.gz');
 
             % Execute function
-            V4 = qb.utils.spm_file_merge(gzippedFiles, outputFile, [], true);
+            V4 = qb.utils.spm_file_merge_gz(gzippedFiles, outputFile, [], true);
 
             % Verify outputs
             testCase.assertTrue(isscalar(V4), 'Output should be a single volume struct');
@@ -129,7 +129,7 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             metafields = {'EchoTime', 'RepetitionTime'};
 
             % Execute function
-            qb.utils.spm_file_merge(Vin, outputFile, metafields);
+            qb.utils.spm_file_merge_gz(Vin, outputFile, metafields);
 
             % Verify JSON sidecar
             jsonOutput = spm_file(outputFile, 'ext', '.json');

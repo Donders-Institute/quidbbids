@@ -60,7 +60,7 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             % Verify outputs
             testCase.assertEqual(length(V4), nrinputs);
             testCase.assertTrue(isfile(outputFile), 'Output file should exist');
-            testCase.assertEqual(V4(1).dt, 2, 'Output datatype should be 2 (UINT8)');
+            testCase.assertEqual(V4(1).dt(1), 2, 'Output datatype should be 2 (UINT8)');
 
             % Verify output dimensions (4D with nrinputs volumes)
             outputVol = qb.utils.spm_vol(outputFile);
@@ -103,9 +103,9 @@ classdef TestSpmFileMerge < matlab.unittest.TestCase
             testCase.assertTrue(isfile(outputFile), 'Output file should exist');
 
             % Verify output is gzipped
-            testCase.assertTrue(endsWith(V4.fname, '.gz'), 'Output should be gzipped');
-            testCase.assertTrue(isfile(V4.fname), 'Output file should exist');
-            testCase.assertEqual(V4(1).dt, 64, 'Output datatype should be 64 (float32)');
+            testCase.assertTrue(endsWith(V4(1).fname, '.gz'), 'Output should be gzipped');
+            testCase.assertTrue(isfile(V4(1))e), 'Output file should exist');
+            testCase.assertEqual(V4(1).dt(1), 64, 'Output datatype should be 64 (float32)');
 
             % Verify JSON sidecar was created
             [pth,nm,ext] = fileparts(outputFile);

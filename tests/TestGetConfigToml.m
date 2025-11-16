@@ -31,9 +31,6 @@ classdef TestGetConfigToml < matlab.mock.TestCase
             testCase.assignOutputsWhen(behavior.version, testCase.MockVersion, 'withAnyInputs')
             assignin('base', 'qb', mockQB)
 
-            testCase.assignOutputsWhen(behavior.version, testCase.MockVersion)
-            assignin('base', 'qb', mockQB);
-
             % --- Create a minimal default config so copyfile works ---
             defaultTemplate = fullfile(fileparts(mfilename("fullpath")), "config_default.toml");
             fid = fopen(defaultTemplate, 'w');

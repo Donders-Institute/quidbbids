@@ -105,14 +105,14 @@ classdef MCRWorker < qb.workers.Worker
 
             % Check the number of items we got: TODO: FIXME: multi-run acquisitions
             if numel(unique([length(echos4Dmag), length(unwrapped), length(fieldmap)])) > 1
-                obj.logger.exception(sprintf('%s received an ambiguous number of echos4Dmag, unwrapped or fieldmaps:%s', obj.name, ...
-                                     sprintf('\n%s', echos4Dmag{:}, unwrapped{:}, fieldmap{:})))
+                obj.logger.exception('%s received an ambiguous number of echos4Dmag, unwrapped or fieldmaps:%s', obj.name, ...
+                                     sprintf('\n%s', echos4Dmag{:}, unwrapped{:}, fieldmap{:}))
             end
             if length(echos4Dmag) < 2
-                obj.logger.exception(sprintf('%s received data for only %d flip angles', obj.name, length(echos4Dmag)))
+                obj.logger.exception('%s received data for only %d flip angles', obj.name, length(echos4Dmag))
             end
             if length(B1map_VFA) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-                obj.logger.exception(sprintf('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', B1map_VFA{:})))
+                obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', B1map_VFA{:}))
             end
             if length(localfmask) ~= length(echos4Dmag)
                 obj.logger.exception('%s expected %d brainmasks but got:%s', obj.name, length(echos4Dmag), sprintf(' %s', localfmask{:}))

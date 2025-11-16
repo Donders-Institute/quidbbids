@@ -102,7 +102,7 @@ classdef (Abstract) Worker < handle
 
             % Check the input
             if ~ismember(workitem, obj.makes())
-                obj.logger.error(sprintf("Tell the manager that %s does not know what a %s workitem is", obj.name, workitem))
+                obj.logger.error("Tell the manager that %s does not know what a %s workitem is", obj.name, workitem)
                 work = {};
                 return
             end
@@ -111,13 +111,13 @@ classdef (Abstract) Worker < handle
             work = obj.query_ses(obj.layout_workdir(), 'data', obj.bidsfilter.(workitem));
             if isempty(work) || force
 
-                obj.logger.info(sprintf("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path))
+                obj.logger.info("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path)
                 locked = obj.is_locked();
                 if locked
                     if force
-                        obj.logger.warning(sprintf("Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked))
+                        obj.logger.warning("Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked)
                     else
-                        obj.logger.error(sprintf("%s was: %s", fileparts(obj.statusfile('.lock')), locked))
+                        obj.logger.error("%s was: %s", fileparts(obj.statusfile('.lock')), locked)
                         return
                     end
                 end
@@ -137,17 +137,17 @@ classdef (Abstract) Worker < handle
                     obj.done()
                     obj.logger.info(obj.name + " has finished working on: " + obj.subject.path)
                 else
-                    obj.logger.error(sprintf("%s could not produce the requested %s item (%s/%s)", obj.name, workitem, obj.subject.name, obj.subject.session))
+                    obj.logger.error("%s could not produce the requested %s item (%s/%s)", obj.name, workitem, obj.subject.name, obj.subject.session)
                 end
 
             else
-                obj.logger.info(sprintf("%s fetched %d requested %s items (%s/%s)", obj.name, length(work), workitem, obj.subject.name, obj.subject.session))
+                obj.logger.info("%s fetched %d requested %s items (%s/%s)", obj.name, length(work), workitem, obj.subject.name, obj.subject.session)
             end
 
             % Make sure that the work exists
             for item = work
                 if ~isfile(item)
-                    obj.logger.exception(sprintf('%s said he made %s but it does not exist', obj.name, item))
+                    obj.logger.exception('%s said he made %s but it does not exist', obj.name, item)
                 end
             end
         end
@@ -164,7 +164,7 @@ classdef (Abstract) Worker < handle
             workitems = fieldnames(obj.team)';
             match     = ~cellfun(@isempty, regexp(workitems, "^" + workitem + "$"));
             if ~any(match)
-                obj.logger.exception(sprintf("%s asked for a %s workitem but nobody in the team knows what that is", obj.name, workitem))
+                obj.logger.exception("%s asked for a %s workitem but nobody in the team knows what that is", obj.name, workitem)
             elseif sum(match) ~= 1
                 obj.logger.exception('%s asked for a %s workitem but got multiple answers:%s', sprintf(' %s', workitems{match}))
             end
@@ -173,7 +173,7 @@ classdef (Abstract) Worker < handle
             workitem   = workitems{match};
 
             % Put the coworker to work
-            obj.logger.info(sprintf("%s asks for %s workitem(s)", obj.name, workitem))
+            obj.logger.info("%s asks for %s workitem(s)", obj.name, workitem)
             coworker   = obj.team.(workitem).handle(obj.BIDS, obj.subject, obj.config, obj.workdir, obj.outputdir, obj.team);
             work       = coworker.fetch(workitem);
             bidsfilter = coworker.bidsfilter.(workitem);
@@ -213,7 +213,7 @@ classdef (Abstract) Worker < handle
                 fprintf(fid, "Locked for %s by %s on %s", class(obj), getenv('USERNAME'), datetime('now'));
                 fclose(fid);
             else
-                obj.logger.exception(sprintf("%s could not lock %s", obj.name, lock_file))
+                obj.logger.exception("%s could not lock %s", obj.name, lock_file)
             end
         end
 
@@ -253,7 +253,7 @@ classdef (Abstract) Worker < handle
                 fprintf(fid, "%s work was done by %s on %s\n", class(obj), getenv('USERNAME'), datetime('now'));
                 fclose(fid);
             else
-                obj.logger.error(sprintf("%s could not write a done-file in %s", obj.name, done_file))
+                obj.logger.error("%s could not write a done-file in %s", obj.name, done_file)
             end
         end
 
@@ -262,7 +262,7 @@ classdef (Abstract) Worker < handle
             label = strsplit(obj.subject.name, '-');
             label = label{end};
             if isempty(label)
-                obj.logger.warning(sprintf('Subject label could not be determined from subject.name: %s', obj.subject.name))
+                obj.logger.warning('Subject label could not be determined from subject.name: %s', obj.subject.name)
             end
         end
 
@@ -315,7 +315,7 @@ classdef (Abstract) Worker < handle
 
             % Check for errors
             if status ~= 0
-                obj.logger.error(sprintf('Command failed with status %d\nOutput:\n%s', status, output));
+                obj.logger.error('Command failed with status %d\nOutput:\n%s', status, output)
             elseif ~silent && ~isempty(output)
                 obj.logger.info(output)
             end
@@ -345,7 +345,7 @@ classdef (Abstract) Worker < handle
             elseif isstruct(varargin{1})
                 bfilter = varargin{1};
             else
-                obj.logger.exception('QUERY_SES expects the FILTER to be a struct or name-value pairs');
+                obj.logger.exception('QUERY_SES expects the FILTER to be a struct or name-value pairs')
             end
 
             % Do the query with the subject/session filter added

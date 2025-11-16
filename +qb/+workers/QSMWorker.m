@@ -82,10 +82,10 @@ classdef QSMWorker < qb.workers.Worker
 
             % Check the received workitems
             if length(magfiles) ~= length(phasefiles)
-                obj.logger.exception(sprintf('%s got %d magnitude vs %d phase files', obj.name, length(magfiles), length(phasefiles)))
+                obj.logger.exception('%s got %d magnitude vs %d phase files', obj.name, length(magfiles), length(phasefiles))
             end
             if length(mask) ~= 1
-                obj.logger.warning(sprintf('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', mask{:})))
+                obj.logger.warning('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', mask{:}))
                 entmag = bids.File(magfiles{1}).entities;
                 for mask_ = mask
                     entmask = bids.File(char(mask_)).entities;
@@ -103,7 +103,7 @@ classdef QSMWorker < qb.workers.Worker
 
                 % Make sure the magnitude and phase images belong together
                 if ~strcmp(magfiles{n}, replace(phasefiles{n}, '_part-phase_','_part-mag_'))
-                    obj.logger.exception(sprintf("Magnitude and phase images do not match:\n%s\n%s", magfiles{n}, phasefiles{n}))
+                    obj.logger.exception("Magnitude and phase images do not match:\n%s\n%s", magfiles{n}, phasefiles{n})
                 end
 
                 % Create a SEPIA header file
@@ -123,7 +123,7 @@ classdef QSMWorker < qb.workers.Worker
                     case {"Chimap", "unwrapped", "localfmask"}
                         param = obj.config.QSMWorker.("QSM");
                     otherwise
-                        obj.logger.exception(sprintf("%s cannot find the SEPIA parameters for: %s ", obj.name, workitem))
+                        obj.logger.exception("%s cannot find the SEPIA parameters for: %s ", obj.name, workitem)
                 end
 
                 % Run the SEPIA workflow
@@ -132,7 +132,7 @@ classdef QSMWorker < qb.workers.Worker
                 input(2).name = magfiles{n};
                 input(3).name = '';
                 input(4).name = [output '_header.mat'];
-                obj.logger.info(sprintf("--> Running SEPIA %s workflow for %s/%s", workitem, obj.subject.name, obj.subject.session))
+                obj.logger.info("--> Running SEPIA %s workflow for %s/%s", workitem, obj.subject.name, obj.subject.session)
                 sepiaIO(input, output, char(mask), param)
 
                 % Bluntly rename mask files to make them BIDS valid (bids-matlab fails on the original files)
@@ -140,7 +140,7 @@ classdef QSMWorker < qb.workers.Worker
                     bname  = extractBefore(srcmask.name, bfile.extension);
                     source = fullfile(srcmask.folder, srcmask.name);
                     target = fullfile(srcmask.folder, [replace(bname, '_mask_', '_label-') '_mask' bfile.extension]);
-                    obj.logger.verbose(sprintf('Renaming %s -> %s', source, target))
+                    obj.logger.verbose('Renaming %s -> %s', source, target)
                     movefile(source, target)
                 end
 

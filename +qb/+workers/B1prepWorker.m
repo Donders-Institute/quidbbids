@@ -38,9 +38,11 @@ classdef B1prepWorker < qb.workers.Worker
             obj.name        = "Yoda";
             obj.description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"];
             obj.version     = "0.1.0";
-            obj.needs       = [];         % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
-            obj.bidsfilter.B1map_angle = struct('modality', 'fmap', 'acq', 'famp', 'desc', 'degrees', 'space', '');
-            obj.bidsfilter.B1map_anat  = setfield(obj.bidsfilter.B1map_angle, 'acq', 'anat');
+            obj.needs       = [];
+            obj.bidsfilter.rawB1map_angle = struct('modality', 'fmap', 'acq', 'famp', 'suffix', 'TB1(TFL|RFM).*');
+            obj.bidsfilter.rawB1map_anat  = setfield(obj.bidsfilter.rawB1map_angle, 'acq', 'anat');
+            obj.bidsfilter.B1map_angle    = setfield(setfield(obj.bidsfilter.rawB1map_angle, 'desc', 'degrees'), 'space', '');
+            obj.bidsfilter.B1map_anat     = setfield(obj.bidsfilter.B1map_angle, 'acq', 'anat');
 
             % Make the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
@@ -61,13 +63,13 @@ classdef B1prepWorker < qb.workers.Worker
             import qb.utils.spm_vol
 
             % Get the B1 anat and fa-map images
-            B1anat = obj.query_ses(obj.BIDS,  'data', 'modality','fmap', 'acq','anat', 'echo',[]);
-            B1famp = obj.query_ses(obj.BIDS,  'data', 'modality','fmap', 'acq','famp', 'echo',[]);
+            B1famp = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawB1map_famp);
+            B1anat = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawB1map_anat);
             if length(B1anat) ~= length(B1famp)
-                error("Unexpected number of B1-files found: acq-anat=%d vs acq-famp=%d", length(B1anat), length(B1famp))
+                obj.logger.warning("Unexpected number of B1-files found: acq-anat=%d vs acq-famp=%d", length(B1anat), length(B1famp))
             end
 
-            for n = 1:length(B1anat)
+            for n = 1:length(B1famp)
 
                 % Load the FA-map
                 bfile = bids.File(B1famp{n});
@@ -78,7 +80,7 @@ classdef B1prepWorker < qb.workers.Worker
                 end
 
                 % Regularize the FA-map in order to avoid influence of salt & pepper border noise
-                if obj.config.B1prepWorker.FWHM ~= 0
+                if ~isempty(B1anat) && obj.config.B1prepWorker.FWHM ~= 0
                     dim = spm_imatrix(FAVol.mat);
                     FA  = spm_read_vols(spm_vol(B1anat{n})) .* exp(1i*FA);                              % Make complex and multiply with anat to avoid smoothing skull-noise across tissue borders
                     FA  = angle(qb.MP2RAGE.smooth3D(FA, obj.config.B1prepWorker.FWHM, abs(dim(7:9))));  % Smooth and take angle again
@@ -86,14 +88,16 @@ classdef B1prepWorker < qb.workers.Worker
 
                 % Save the FA-map image & json file
                 bfile = obj.bfile_set(bfile, obj.bidsfilter.B1map_angle);
-                obj.logger.info(sprintf("--> Saving regularized B1-map: %s", bfile.filename))
+                obj.logger.info("--> Saving regularized B1-map: %s", bfile.filename)
                 qb.utils.spm_write_vol_gz(FAVol, FA, bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
 
                 % Copy the anat image & json file
-                bfile = obj.bfile_set(B1anat{n}, obj.bidsfilter.B1map_anat);
-                copyfile(B1anat{n}, bfile.path);
-                bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
+                if ~isempty(B1anat)
+                    bfile = obj.bfile_set(B1anat{n}, obj.bidsfilter.B1map_anat);
+                    copyfile(B1anat{n}, bfile.path);
+                    bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
+                end
 
             end
         end

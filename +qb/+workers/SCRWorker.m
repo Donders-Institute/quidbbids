@@ -90,7 +90,7 @@ classdef SCRWorker < qb.workers.Worker
             % Get B1map from a colleague
             B1map             = obj.ask_team('B1map_VFA');
             if length(B1map) ~= 1       % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-                obj.logger.exception(sprintf('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', B1map{:})))
+                obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', B1map{:}))
             end
             B1 = spm_read_vols(spm_vol(char(B1map)));
 
@@ -109,14 +109,14 @@ classdef SCRWorker < qb.workers.Worker
 
                 % Check the queries workitems
                 if numel(unique([length(S0data), length(R2stardata), length(Chidata), length(maskdata)])) > 1
-                    obj.logger.exception(sprintf('%s received an ambiguous number of S0maps, R2starmaps, Chimaps or localfmasks:%s', obj.name, ...
-                                         sprintf('\n%s', S0data{:}, R2stardata{:}, Chidata{:}, maskdata{:})))
+                    obj.logger.exception('%s received an ambiguous number of S0maps, R2starmaps, Chimaps or localfmasks:%s', obj.name, ...
+                                         sprintf('\n%s', S0data{:}, R2stardata{:}, Chidata{:}, maskdata{:}))
                 end
                 if length(S0data) < 2
-                    obj.logger.exception(sprintf('%s received data for only %d flip angles', obj.name, length(S0data)))
+                    obj.logger.exception('%s received data for only %d flip angles', obj.name, length(S0data))
                 end
                 if length(flips) <= 1
-                    obj.logger.exception("Need at least two different flip angles to compute T1 and S0 maps, found:" + sprintf(" %s", flips{:}));
+                    obj.logger.exception("Need at least two different flip angles to compute T1 and S0 maps, found:" + sprintf(" %s", flips{:}))
                 end
 
                 % Read the QSM images (4th dimension = flip angle)

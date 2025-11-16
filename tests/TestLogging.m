@@ -9,24 +9,21 @@ classdef testLogging < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setupEnvironment(testCase)
 
-            % Create a temp directory for isolated testing
+            % Create a temp subject directory for isolated testing
             testCase.TempDir = tempname;
-            mkdir(testCase.TempDir);
+            SubjectDir       = fullfile(testCase.TempDir, 'sub-01', 'ses-01');
+            mkdir(SubjectDir)
 
             % Create a fake BIDS structure
-            bidsStruct.pth = testCase.TempDir;
-
-            % Create a fake subject folder
-            SubjectDir = fullfile(testCase.TempDir, 'sub-01', 'ses-01');
-            mkdir(SubjectDir)
+            BIDS.pth = testCase.TempDir;
 
             % Define a minimal mock worker class inline (MATLAB allows dynamic class creation for test use)
             MockWorker.outputdir    = testCase.TempDir;
-            MockWorker.BIDS         = bidsStruct;
+            MockWorker.BIDS         = BIDS;
             MockWorker.subject.path = SubjectDir;
 
             % Create Logger instance
-            testCase.Logger = Logging(struct2obj(MockWorker));  % convert struct to handle object fake
+            testCase.Logger = Logging(struct2obj(MockWorker));  % convert struct to a fake handle object
         end
     end
 
@@ -44,8 +41,8 @@ classdef testLogging < matlab.unittest.TestCase
             logFile = fullfile(testCase.Logger.outputdir, [testCase.Logger.sub_ses() '.log']);
             testCase.verifyTrue(isfile(logFile), "The main log file was not created")
             contents = fileread(logFile);
-            testCase.verifyContains(contents, "INFO", "INFO level not written to log.")
-            testCase.verifyContains(contents, "Test message 123", "Message not written correctly.")
+            testCase.verifyContains(contents, "INFO", "INFO level not written to log")
+            testCase.verifyContains(contents, "Test message 123", "Message not written correctly")
         end
 
         function testLogVerbose(testCase)
@@ -53,7 +50,7 @@ classdef testLogging < matlab.unittest.TestCase
 
             logFile = fullfile(testCase.Logger.outputdir, [testCase.Logger.sub_ses() '.log']);
             contents = fileread(logFile);
-            testCase.verifyContains(contents, "VERBOSE", "Verbose level not logged correctly.")
+            testCase.verifyContains(contents, "VERBOSE", "Verbose level not logged correctly")
             testCase.verifyContains(contents, "Verbose XYZ")
         end
 
@@ -83,15 +80,13 @@ classdef testLogging < matlab.unittest.TestCase
 
         function testLogException(testCase)
             testCase.verifyError(@() testCase.Logger.exception("Oops %d", 9), "MATLAB:SomeDummyID", ...
-                "Expected an error. Update this if you set a specific ID.");
+                "Expected an error. Update this if you set a specific ID");
         end
 
         function testSubSesParsing(testCase)
-            % The expected subject-session string
-            expected = "sub-01_ses-01";
-            actual = testCase.Logger.sub_ses();
+            subses = testCase.Logger.sub_ses();
 
-            testCase.verifyEqual(actual, expected, "Subject/session parsing incorrect.");
+            testCase.verifyEqual(subses, "sub-01_ses-01", "Subject/session parsing incorrect");
         end
 
     end
@@ -102,14 +97,10 @@ function obj = struct2obj(S)
     % Helper function to convert struct to a dummy handle object.
     % Create a dynamic handle class on the fly to host struct fields
 
-    mc = meta.class.fromName('dynamicHandleClassForWorkerMock');
-    if isempty(mc)
-        eval('classdef dynamicHandleClassForWorkerMock < handle; end');
-    end
+    meta.class.fromName('dynamicHandleClassForWorkerMock');
     obj = dynamicHandleClassForWorkerMock();
 
-    f = fieldnames(S);
-    for i = 1:numel(f)
-        obj.(f{i}) = S.(f{i});
+    for fieldname = fieldnames(S)'
+        obj.(fieldname{1}) = S.(fieldname{1});
     end
 end

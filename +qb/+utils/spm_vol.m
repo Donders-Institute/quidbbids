@@ -113,7 +113,7 @@ switch ext
                 V(i).pinfo = [1 0 0]';
             end
         catch
-            warning('Cannot read uncompressed file "%s".',p);
+            warning('QuIDBBIDS:Nifti:IOError', 'Cannot read uncompressed file "%s".',p);
         end
         spm_unlink(tmpname);
         rmdir(fileparts(tmpname));

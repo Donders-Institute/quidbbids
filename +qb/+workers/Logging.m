@@ -91,7 +91,7 @@ classdef Logging < handle
                 fprintf(fid, "[%s] %s\t| %s\n", datetime('now'), level_, sprintf(message, varargin{:}));
                 fclose(fid);
             else
-                warning("[Error %d] Failed to write to %s", fid, logfile)
+                warning("QuIDBBIDS:Logging:IOError", "[Error %d] Failed to write to %s", fid, logfile)
             end
 
             % TODO: Also log in the terminal if user sets the terminal logging level to VERBOSE
@@ -230,7 +230,7 @@ classdef Logging < handle
                 fprintf(fid, "[%s] %s\n", datetime('now'), sprintf(message, varargin{:}));
                 fclose(fid);
             else
-                warning("[Error] Failed to write to %s", logfile)
+                warning("QuIDBBIDS:Logging:IOError", "[Error] Failed to write to %s", logfile)
             end
 
             % Write to the info file and terminal

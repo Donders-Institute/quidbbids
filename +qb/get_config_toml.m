@@ -53,7 +53,7 @@ else
 
     % Check for version conflicts
     if config.version ~= qb.version()
-        warning("The config file version (" + config.version + ") does not match the current QuIDBBIDS version (" + qb.version() + "). Please update your config file if needed.")
+        warning("QuIDBBIDS:Config:VersionMismatch", "The config file version (" + config.version + ") does not match the current QuIDBBIDS version (" + qb.version() + "). Please update your config file if needed.")
     end
 end
 

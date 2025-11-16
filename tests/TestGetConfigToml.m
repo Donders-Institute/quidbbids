@@ -38,7 +38,7 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
             % --- Create a minimal default config so copyfile works ---
             defaultTemplate = fullfile(fileparts(mfilename("fullpath")), "config_default.toml");
             fid = fopen(defaultTemplate, 'w');
-            fprintf(fid, "version = \"%s\"\nvalue = 10\n", testCase.MockVersion);
+            fprintf(fid, 'version = "%s"\nvalue = 10\n', testCase.MockVersion);
             fclose(fid);
         end
     end
@@ -108,7 +108,7 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
             fprintf(fid, 'version = "WRONG"\n');
             fclose(fid);
 
-            testCase.verifyWarning(@() get_config_toml(testCase.ConfigFile), 'MATLAB:warning')
+            testCase.verifyWarning(@() get_config_toml(testCase.ConfigFile), 'QuIDBBIDS:Config:VersionMismatch');
         end
 
     end

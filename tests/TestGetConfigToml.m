@@ -1,4 +1,4 @@
-classdef TestGetConfigToml < matlab.unittest.TestCase
+classdef TestGetConfigToml < matlab.mock.TestCase
     % Unit tests for get_config_toml
 
     properties
@@ -27,8 +27,10 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
             testCase.ConfigFile = fullfile(testCase.TempDir, "study", "config.toml");
 
             % --- Mock qb.version() ---
-            mockTC = matlab.mock.TestCase.forInteractiveUse;
-            [mockQB, behavior] = mockTC.createMock('AddedMethods',"version");
+            [mockQB, behavior] = testCase.createMock('AddedMethods', "version");
+            testCase.assignOutputsWhen(behavior.version, testCase.MockVersion);
+
+            assignin('base', 'qb', mockQB);
 
             testCase.assignOutputsWhen(behavior.version, testCase.MockVersion)
             assignin('base', 'qb', mockQB);

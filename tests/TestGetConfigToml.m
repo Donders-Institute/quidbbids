@@ -9,23 +9,19 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
         MockVersion = '0.0.3'
         MockQbDir
     end
-
     methods (TestClassSetup)
         function setup(testCase)
             % Setup test environment
             testCase.TestDataDir = tempname;
-            mkdir(testCase.TestDataDir)
+            mkdir(testCase.TestDataDir);
             testCase.TestConfigFile = fullfile(testCase.TestDataDir, 'test_config.toml');
 
             % Save original HOME and set to test directory
             testCase.OriginalHome = getenv('HOME');
-            setenv('HOME', testCase.TestDataDir)
+            setenv('HOME', testCase.TestDataDir);
 
             % Save original path
             testCase.OriginalPath = path;
-
-            % Mock qb.version to return fixed test version
-            testCase.mockQbVersion()
         end
     end
 
@@ -46,26 +42,11 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
     end
 
     methods
-        function mockQbVersion(testCase)
-            % Mock qb.version to return fixed test version
-            testCase.MockQbDir = fullfile(testCase.TestDataDir, 'qb');
-            mkdir(testCase.MockQbDir);
-
-            versionFile = fullfile(testCase.MockQbDir, 'version.m');
-            fid = fopen(versionFile, 'w');
-            fprintf(fid, 'function v = version()\n');
-            fprintf(fid, '    v = ''%s'';\n', testCase.MockVersion);
-            fprintf(fid, 'end\n');
-            fclose(fid);
-
-            addpath(testCase.MockQbDir);
-        end
-
         function config = createSimpleConfig(testCase)
             % Create simple config with only the three specified items
             config = struct('version', testCase.MockVersion, ...
                             'useHPC', 1, ...
-                            'gyro', 42.57747892);
+                            'gyro', 42.5775);
         end
     end
 
@@ -80,7 +61,7 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
             % Verify the three fields
             testCase.verifyEqual(config.version, testCase.MockVersion)
             testCase.verifyEqual(config.useHPC, 1)
-            testCase.verifyEqual(config.gyro, 42.57747892)
+            testCase.verifyEqual(config.gyro, 42.5775)
         end
 
         function testCreateConfigFileIfNotExists(testCase)

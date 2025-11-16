@@ -4,7 +4,6 @@ classdef testLogging < matlab.unittest.TestCase
     properties
         TempDir
         Logger
-        SubjectDir
     end
 
     methods (TestMethodSetup)
@@ -18,13 +17,13 @@ classdef testLogging < matlab.unittest.TestCase
             bidsStruct.pth = testCase.TempDir;
 
             % Create a fake subject folder
-            testCase.SubjectDir = fullfile(testCase.TempDir, 'sub-01', 'ses-01');
-            mkdir(testCase.SubjectDir);
+            SubjectDir = fullfile(testCase.TempDir, 'sub-01', 'ses-01');
+            mkdir(SubjectDir)
 
             % Define a minimal mock worker class inline (MATLAB allows dynamic class creation for test use)
             MockWorker.outputdir    = testCase.TempDir;
             MockWorker.BIDS         = bidsStruct;
-            MockWorker.subject.path = testCase.SubjectDir;
+            MockWorker.subject.path = SubjectDir;
 
             % Create Logger instance
             testCase.Logger = Logging(struct2obj(MockWorker));  % convert struct to handle object fake
@@ -78,12 +77,8 @@ classdef testLogging < matlab.unittest.TestCase
 
             testCase.verifyTrue(isfile(errFile))
             testCase.verifyTrue(isfile(mainFile))
-
-            errText = fileread(errFile);
-            mainText = fileread(mainFile);
-
-            testCase.verifyContains(errText, "Err XYZ");
-            testCase.verifyContains(mainText, "ERROR");
+            testCase.verifyContains(fileread(errFile), "Err XYZ");
+            testCase.verifyContains(fileread(mainFile), "ERROR");
         end
 
         function testLogException(testCase)

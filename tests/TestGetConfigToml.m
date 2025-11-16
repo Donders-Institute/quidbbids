@@ -54,7 +54,7 @@ classdef TestGetConfigToml < matlab.mock.TestCase
 
         function testDefaultConfigCreated(testCase)
             % Call without config struct → should create default config first
-            get_config_toml(testCase.ConfigFile);
+            qb.get_config_toml(testCase.ConfigFile);
 
             expectedDefault = fullfile(testCase.DefaultDir, "config_default.toml");
 
@@ -62,7 +62,7 @@ classdef TestGetConfigToml < matlab.mock.TestCase
         end
 
         function testStudyConfigCreatedFromDefault(testCase)
-            get_config_toml(testCase.ConfigFile);
+            qb.get_config_toml(testCase.ConfigFile);
 
             testCase.verifyTrue(isfile(testCase.ConfigFile), "Study config file was not created.")
 
@@ -71,7 +71,7 @@ classdef TestGetConfigToml < matlab.mock.TestCase
         end
 
         function testReadingConfigReturnsStruct(testCase)
-            config = get_config_toml(testCase.ConfigFile);
+            config = qb.get_config_toml(testCase.ConfigFile);
 
             testCase.verifyClass(config, "struct")
             testCase.verifyEqual(config.version, testCase.MockVersion)
@@ -81,10 +81,10 @@ classdef TestGetConfigToml < matlab.mock.TestCase
 
             % First create a config file
             cfg = struct("version", testCase.MockVersion, "value", 123);
-            get_config_toml(testCase.ConfigFile, cfg);
+            qb.get_config_toml(testCase.ConfigFile, cfg);
 
             % Now load it again
-            loaded = get_config_toml(testCase.ConfigFile);
+            loaded = qb.get_config_toml(testCase.ConfigFile);
 
             testCase.verifyEqual(loaded.value, 123)
         end
@@ -92,8 +92,8 @@ classdef TestGetConfigToml < matlab.mock.TestCase
         function testCastInt64Converted(testCase)
             cfg = struct("a", int64(5), "b", { {int64(3)} });
 
-            out  = evalc('get_config_toml("dummy.toml", cfg)');
-            conv = get_config_toml("dummy.toml", cfg);
+            out  = evalc('qb.get_config_toml("dummy.toml", cfg)');
+            conv = qb.get_config_toml("dummy.toml", cfg);
 
             testCase.verifyClass(conv.a, "double")
             testCase.verifyClass(conv.b{1}, "double")
@@ -105,7 +105,7 @@ classdef TestGetConfigToml < matlab.mock.TestCase
             fprintf(fid, 'version = "WRONG"\n');
             fclose(fid);
 
-            testCase.verifyWarning(@() get_config_toml(testCase.ConfigFile), 'QuIDBBIDS:Config:VersionMismatch');
+            testCase.verifyWarning(@() qb.get_config_toml(testCase.ConfigFile), 'QuIDBBIDS:Config:VersionMismatch');
         end
 
     end

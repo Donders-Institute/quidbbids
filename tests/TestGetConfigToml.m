@@ -1,102 +1,254 @@
 classdef TestGetConfigToml < matlab.unittest.TestCase
-    % Unit tests for qb.get_config_toml using dependency injection
+    % Test class for qb.get_config_toml function
 
     properties
-        TempDir
-        ConfigFile
-        DefaultDir
+        TestConfigFile
+        TestDataDir
+        OriginalPath
         OriginalHome
-        MockVersion = "1.2.3"
+        MockVersion = '99.99.99'  % Fixed test version
     end
 
-    methods (TestMethodSetup)
-        function setupEnvironment(testCase)
-            % Create a temporary test directory
-            testCase.TempDir = tempname;
-            mkdir(testCase.TempDir);
+    methods (TestClassSetup)
+        function setup(testCase)
+            % Setup test environment
+            testCase.TestDataDir = tempname;
+            mkdir(testCase.TestDataDir)
+            testCase.TestConfigFile = fullfile(testCase.TestDataDir, 'test_config.toml');
 
-            % Pretend HOME is the temp directory
-            testCase.OriginalHome = getenv("HOME");
-            setenv("HOME", testCase.TempDir);
+            % Save original HOME and set to test directory
+            testCase.OriginalHome = getenv('HOME');
+            setenv('HOME', testCase.TestDataDir);
 
-            % Location where default configs should be created
-            testCase.DefaultDir = fullfile(testCase.TempDir, ".quidbbids", testCase.MockVersion);
+            % Add the function to path if not already there
+            testCase.OriginalPath = path;
 
-            % Where study-level config will be read/written
-            testCase.ConfigFile = fullfile(testCase.TempDir, "study", "config.toml");
-
-            % --- Create a minimal default config template ---
-            templateDir = fileparts(mfilename("fullpath"));
-            if ~isfolder(templateDir)
-                mkdir(templateDir);
-            end
-            defaultTemplate = fullfile(templateDir, "config_default.toml");
-            fid = fopen(defaultTemplate, 'w');
-            fprintf(fid, 'version = "%s"\nvalue = 10\n', testCase.MockVersion);
-            fclose(fid);
+            % Mock qb.version to return fixed test version
+            testCase.mockQbVersion();
         end
     end
 
-    methods (TestMethodTeardown)
-        function teardownEnvironment(testCase)
-            % Restore original environment variable
-            setenv("HOME", testCase.OriginalHome);
+    methods (TestClassTeardown)
+        function teardown(testCase)
+            % Clean up test environment
+            if isfolder(testCase.TestDataDir)
+                rmdir(testCase.TestDataDir, 's');
+            end
+            path(testCase.OriginalPath);
+            setenv('HOME', testCase.OriginalHome);
+        end
+    end
 
-            rmdir(testCase.TempDir, 's')
+    methods
+        function mockQbVersion(testCase)
+            % Mock qb.version to return fixed test version
+            % This ensures deterministic behavior in tests
+
+            % Create a temporary function that shadows qb.version
+            mockDir = fullfile(testCase.TestDataDir, 'qb');
+            mkdir(mockDir);
+
+            % Create version.m that returns our test version
+            versionFile = fullfile(mockDir, 'version.m');
+            fid = fopen(versionFile, 'w');
+            fprintf(fid, 'function v = version()\n');
+            fprintf(fid, '    v = ''%s'';\n', testCase.MockVersion);
+            fprintf(fid, 'end\n');
+            fclose(fid);
+
+            % Add to path so it shadows the real qb.version
+            addpath(mockDir)
         end
     end
 
     methods (Test)
+        function testReadConfigFile(testCase)
+            % Test reading an existing config file
+            % Create a test config file
+            testConfig = struct('version', testCase.MockVersion, 'setting1', 'value1', 'numeric_setting', 42);
+            toml.write(testCase.TestConfigFile, testConfig);
 
-        function testDefaultConfigCreated(testCase)
-            % Call without config struct → should create default config first
-            qb.get_config_toml(testCase.ConfigFile, struct(), @() testCase.MockVersion);
+            % Read the config
+            config = qb.get_config_toml(testCase.TestConfigFile);
 
-            expectedDefault = fullfile(testCase.DefaultDir, "config_default.toml");
-            testCase.verifyTrue(isfile(expectedDefault), "Default config file was not created.")
+            % Verify the content
+            testCase.verifyEqual(config.version, testCase.MockVersion);
+            testCase.verifyEqual(config.setting1, 'value1');
+            testCase.verifyEqual(config.numeric_setting, 42);
         end
 
-        function testStudyConfigCreatedFromDefault(testCase)
-            qb.get_config_toml(testCase.ConfigFile, struct(), @() testCase.MockVersion);
+        function testCreateConfigFileIfNotExists(testCase)
+            % Test that config file is created if it doesn't exist
+            nonExistentFile = fullfile(testCase.TestDataDir, 'nonexistent_config.toml');
 
-            testCase.verifyTrue(isfile(testCase.ConfigFile), "Study config file was not created.")
+            % This should create the file
+            config = qb.get_config_toml(nonExistentFile);
 
-            contents = fileread(testCase.ConfigFile);
-            testCase.verifyContains(contents, "version")
+            % Verify file was created
+            testCase.verifyTrue(isfile(nonExistentFile));
+
+            % Verify config has expected structure (at minimum version field)
+            testCase.verifyTrue(isfield(config, 'version'));
         end
 
-        function testReadingConfigReturnsStruct(testCase)
-            config = qb.get_config_toml(testCase.ConfigFile, struct(), @() testCase.MockVersion);
+        function testWriteConfigFile(testCase)
+            % Test writing a config file
+            testConfig = struct('version', testCase.MockVersion, 'new_setting', 'new_value', 'number', 123);
 
-            testCase.verifyClass(config, "struct")
-            testCase.verifyEqual(config.version, testCase.MockVersion)
+            % Write the config
+            qb.get_config_toml(testCase.TestConfigFile, testConfig);
+
+            % Verify file was created
+            testCase.verifyTrue(isfile(testCase.TestConfigFile));
+
+            % Read it back and verify content
+            readConfig = toml.read(testCase.TestConfigFile);
+            testCase.verifyEqual(readConfig.version, testCase.MockVersion);
+            testCase.verifyEqual(readConfig.new_setting, 'new_value');
+            testCase.verifyEqual(readConfig.number, 123);
         end
 
-        function testWritingConfigOverwritesFile(testCase)
-            cfg = struct("version", testCase.MockVersion, "value", 123);
-            qb.get_config_toml(testCase.ConfigFile, cfg, @() testCase.MockVersion);
+        function testInt64ToDoubleConversion(testCase)
+            % Test that int64 values are converted to double
+            % Create a config with int64 values (simulating TOML parsing)
+            testConfig = struct('int64_value', int64(100), 'double_value', 3.14, 'text', 'hello');
 
-            % Load it again
-            loaded = qb.get_config_toml(testCase.ConfigFile, struct(), @() testCase.MockVersion);
-            testCase.verifyEqual(loaded.value, 123)
+            % Write and read back to test the conversion
+            toml.write(testCase.TestConfigFile, testConfig);
+            config = qb.get_config_toml(testCase.TestConfigFile);
+
+            % Verify int64 was converted to double
+            testCase.verifyClass(config.int64_value, 'double');
+            testCase.verifyEqual(config.int64_value, 100);
+
+            % Verify other types unchanged
+            testCase.verifyClass(config.double_value, 'double');
+            testCase.verifyEqual(config.text, 'hello');
         end
 
-        function testCastInt64Converted(testCase)
-            cfg = struct("a", int64(5), "b", { {int64(3)} });
-            conv = qb.get_config_toml("dummy.toml", cfg, @() testCase.MockVersion);
+        function testNestedStructureConversion(testCase)
+            % Test int64 conversion with nested structures
+            nestedConfig = struct('level1', struct('int64_val', int64(200), ...
+                                                   'level2', struct('another_int64', int64(300))), ...
+                                  'simple_int64', int64(400));
 
-            testCase.verifyClass(conv.a, "double")
-            testCase.verifyClass(conv.b{1}, "double")
+            toml.write(testCase.TestConfigFile, nestedConfig);
+            config = qb.get_config_toml(testCase.TestConfigFile);
+
+            % Verify all levels converted
+            testCase.verifyClass(config.level1.int64_val, 'double');
+            testCase.verifyClass(config.level1.level2.another_int64, 'double');
+            testCase.verifyClass(config.simple_int64, 'double');
+        end
+
+        function testCellArrayConversion(testCase)
+            % Test int64 conversion with cell arrays
+            cellConfig = struct('cell_with_int64', {{int64(1), int64(2), int64(3)}}, ...
+                                'mixed_cell', {{'text', int64(99), 3.14}});
+
+            toml.write(testCase.TestConfigFile, cellConfig);
+            config = qb.get_config_toml(testCase.TestConfigFile);
+
+            % Verify cell array elements converted
+            testCase.verifyClass(config.cell_with_int64{1}, 'double');
+            testCase.verifyClass(config.cell_with_int64{2}, 'double');
+            testCase.verifyClass(config.cell_with_int64{3}, 'double');
+            testCase.verifyClass(config.mixed_cell{2}, 'double');
         end
 
         function testVersionMismatchWarning(testCase)
-            % Create a config file with the wrong version
-            fid = fopen(testCase.ConfigFile, 'w');
-            fprintf(fid, 'version = "WRONG"\n');
-            fclose(fid);
+            % Test that version mismatch produces warning
+            % Use a different version in config file
+            differentVersion = '0.9.0';
+            testConfig = struct('version', differentVersion, 'setting', 'test');
+            toml.write(testCase.TestConfigFile, testConfig);
 
-            testCase.verifyWarning(@() qb.get_config_toml(testCase.ConfigFile, struct(), @() testCase.MockVersion), 'QuIDBBIDS:Config:VersionMismatch');
+            % This should trigger a warning due to version mismatch
+            testCase.verifyWarning(@() qb.get_config_toml(testCase.TestConfigFile), ...
+                                  'QuIDBBIDS:Config:VersionMismatch');
         end
 
+        function testNoVersionMismatchWarning(testCase)
+            % Test that no warning is produced when versions match
+            testConfig = struct('version', testCase.MockVersion, 'setting', 'test');
+            toml.write(testCase.TestConfigFile, testConfig);
+
+            % This should NOT trigger a warning
+            testCase.verifyWarningFree(@() qb.get_config_toml(testCase.TestConfigFile));
+        end
+
+        function testDefaultConfigCreation(testCase)
+            % Test that default config is created in HOME directory
+            expectedDefaultPath = fullfile(testCase.TestDataDir, '.quidbbids', testCase.MockVersion, 'config_default.toml');
+
+            % Ensure default config doesn't exist initially
+            if isfile(expectedDefaultPath)
+                delete(expectedDefaultPath);
+            end
+
+            % Call function - should create default config in test HOME
+            config = qb.get_config_toml(testCase.TestConfigFile);
+
+            % Verify default config was created in test directory
+            testCase.verifyTrue(isfile(expectedDefaultPath), ...
+                'Default config should be created in test HOME directory');
+
+            % Verify the directory structure was created
+            testCase.verifyTrue(isfolder(fullfile(testCase.TestDataDir, '.quidbbids', testCase.MockVersion)));
+        end
+
+        function testDefaultConfigCopyWhenMissing(testCase)
+            % Test that default config is copied when study config is missing
+            studyConfigFile = fullfile(testCase.TestDataDir, 'study_config.toml');
+
+            % First ensure default config exists
+            defaultConfigPath = fullfile(testCase.TestDataDir, '.quidbbids', testCase.MockVersion, 'config_default.toml');
+            if ~isfile(defaultConfigPath)
+                [pth, ~, ~] = fileparts(defaultConfigPath);
+                mkdir(pth);
+                % Create a minimal default config
+                defaultConfig = struct('version', testCase.MockVersion, 'default_setting', 'default_value');
+                toml.write(defaultConfigPath, defaultConfig);
+            end
+
+            % Now call get_config_toml with non-existent study config
+            config = qb.get_config_toml(studyConfigFile);
+
+            % Verify study config was created as copy of default
+            testCase.verifyTrue(isfile(studyConfigFile));
+            testCase.verifyEqual(config.version, testCase.MockVersion);
+            testCase.verifyEqual(config.default_setting, 'default_value');
+        end
+
+        function testInvalidInputs(testCase)
+            % Test function behavior with invalid inputs
+            % Test non-scalar text input
+            testCase.verifyError(@() qb.get_config_toml(['file1.toml'; 'file2.toml']), ...
+                                'MATLAB:validators:mustBeTextScalar');
+        end
+    end
+
+    methods (Test, TestTags = {'Integration'})
+        function testRoundTrip(testCase)
+            % Integration test: write and read back configuration
+            originalConfig = struct('version', testCase.MockVersion, ...
+                                   'database', struct('host', 'localhost', 'port', 5432), ...
+                                   'processing', struct('enabled', true, 'max_workers', int64(4)), ...
+                                   'tags', {{'EEG', 'MEG', 'fMRI'}});
+
+            % Write config
+            qb.get_config_toml(testCase.TestConfigFile, originalConfig);
+
+            % Read config back
+            readConfig = qb.get_config_toml(testCase.TestConfigFile);
+
+            % Verify all values preserved (with int64 conversion)
+            testCase.verifyEqual(readConfig.version, testCase.MockVersion);
+            testCase.verifyEqual(readConfig.database.host, 'localhost');
+            testCase.verifyEqual(readConfig.database.port, 5432);
+            testCase.verifyEqual(readConfig.processing.enabled, true);
+            testCase.verifyEqual(readConfig.processing.max_workers, 4); % Should be double now
+            testCase.verifyEqual(readConfig.tags, {'EEG', 'MEG', 'fMRI'});
+        end
     end
 end

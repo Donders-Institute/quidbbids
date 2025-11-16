@@ -29,8 +29,8 @@ classdef TestGetConfigToml < matlab.mock.TestCase
             % --- Mock qb.version() ---
             [mockQB, behavior] = testCase.createMock('AddedMethods', "version");
 
-            % Assign outputs for any call to version()
-            testCase.assignOutputsWhen(behavior.version, testCase.MockVersion, 'withAnyInputs');
+            % Return the mock version for any call to version()
+            when(behavior.version, 'withAnyInputs').thenReturn(testCase.MockVersion);
 
             % Inject mock into base workspace
             assignin('base', 'qb', mockQB);

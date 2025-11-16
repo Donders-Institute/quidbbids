@@ -1,164 +1,76 @@
-classdef get_config_toml < matlab.unittest.TestCase
-    % Test class for qb.get_config_toml function
+function config = get_config_toml(configfile, config)
+%GET_CONFIG_TOML Helper function to read and optionally write QuIDBBIDS configuration file.
+%
+% CONFIG = GET_CONFIG_TOML(CONFIGFILE) reads the configuration from the specified CONFIGFILE.
+% If it does not exist, a default configuration is copied from the user's HOME directory.
+%
+% CONFIG = GET_CONFIG_TOML(CONFIGFILE, CONFIG) writes the provided CONFIG struct to CONFIGFILE
+% in TOML format. This updates or creates the configuration file.
+%
+% Inputs:
+%   CONFIG - A struct with configuration parameters. If provided, GETCONFIG writes this
+%            data to the CONFIGFILE, else it reads it from CONFIGFILE.
+%
+% Output:
+%   CONFIG - A struct with the loaded configuration settings.
+%
+% The function ensures that a default config exists in:
+%   <HOME>/.quidbbids/<version>/config_default.toml
+%
+% Usage:
+%   config = get_config_toml("myconfig.toml");
+%   get_config_toml("myconfig.toml", config);
 
-    properties
-        TestConfigFile
-        TestDataDir
-        OriginalPath
-        OriginalHome
-        MockVersion = '0.0.3'
-        MockQbDir
+arguments (Input)
+    configfile   {mustBeTextScalar}
+    config (1,1) struct = struct()
+end
+
+arguments (Output)
+    config struct
+end
+
+% Create a default configfile if it does not exist
+config_default = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), "config_default.toml");
+if ~isfile(config_default)
+    disp("Creating default configuration file: " + config_default)
+    [pth, name, ext] = fileparts(config_default);
+    [~,~] = mkdir(pth);
+    copyfile(fullfile(fileparts(mfilename("fullpath")), name + ext), config_default)
+end
+
+% Write or read the study configuration data (create if needed)
+if nargin > 2
+    toml.write(configfile, config);
+else
+    if ~isfile(configfile)
+        disp("Writing study configuration to: " + configfile)
+        [~,~] = mkdir(fileparts(configfile));
+        copyfile(config_default, configfile)
     end
+    config = toml.map_to_struct(toml.read(configfile));
+    config = castInt64ToDouble(config);
 
-    methods (TestClassSetup)
-        function setup(testCase)
-            % Setup test environment
-            testCase.TestDataDir = tempname
-            mkdir(testCase.TestDataDir)
-            testCase.TestConfigFile = fullfile(testCase.TestDataDir, 'test_config.toml')
-
-            % Save original HOME and set to test directory
-            testCase.OriginalHome = getenv('HOME');
-            setenv('HOME', testCase.TestDataDir)
-
-            % Save original path
-            testCase.OriginalPath = path;
-
-            % Mock qb.version to return fixed test version
-            testCase.mockQbVersion()
-        end
+    % Check for version conflicts
+    if config.version ~= qb.version()
+        warning("QuIDBBIDS:Config:VersionMismatch", "The config file version (" + config.version + ") does not match the current QuIDBBIDS version (" + qb.version() + "). Please update your config file if needed.")
     end
+end
 
-    methods (TestClassTeardown)
-        function teardown(testCase)
-            % Clean up test environment
-            rmdir(testCase.TestDataDir, 's')
 
-            % Remove mock path and restore original path
-            if ~isempty(testCase.MockQbDir) && isfolder(testCase.MockQbDir)
-                rmpath(testCase.MockQbDir)
-            end
-            path(testCase.OriginalPath)
+function config = castInt64ToDouble(config)
+% Recursively casts all int64 values in CONFIG into doubles.
+%
+% CONFIG = CASTINT64TODOUBLE(CONFIG) traverses CONFIG and converts all int64 scalars and
+% arrays into doubles. Useful for reading TOML files where integers are parsed as int64.
 
-            % Restore original HOME
-            setenv('HOME', testCase.OriginalHome)
-        end
+if isstruct(config)
+    f = fieldnames(config);
+    for k = 1:numel(f)
+        config.(f{k}) = castInt64ToDouble(config.(f{k}));
     end
-
-    methods
-        function mockQbVersion(testCase)
-            % Mock qb.version to return fixed test version
-            testCase.MockQbDir = fullfile(testCase.TestDataDir, 'qb');
-            mkdir(testCase.MockQbDir)
-
-            versionFile = fullfile(testCase.MockQbDir, 'version.m');
-            fid = fopen(versionFile, 'w');
-            fprintf(fid, 'function v = version()\n');
-            fprintf(fid, '    v = ''%s'';\n', testCase.MockVersion);
-            fprintf(fid, 'end\n');
-            fclose(fid);
-
-            addpath(testCase.MockQbDir)
-        end
-
-        function config = createSimpleConfig(testCase)
-            % Create simple config with only the three specified items
-            config = struct(...
-                'version', testCase.MockVersion, ...
-                'useHPC', 1, ...
-                'gyro', 42.57747892 ...
-            );
-        end
-    end
-
-    methods (Test)
-        function testReadConfigFile(testCase)
-            % Test reading an existing config file
-            testConfig = testCase.createSimpleConfig();
-            toml.write(testCase.TestConfigFile, testConfig)
-
-            config = qb.get_config_toml(testCase.TestConfigFile);
-
-            % Verify the three fields
-            testCase.verifyEqual(config.version, testCase.MockVersion)
-            testCase.verifyEqual(config.useHPC, 1)
-            testCase.verifyEqual(config.gyro, 42.57747892)
-        end
-
-        function testCreateConfigFileIfNotExists(testCase)
-            % Test that config file is created if it doesn't exist
-            nonExistentFile = fullfile(testCase.TestDataDir, 'nonexistent_config.toml');
-
-            % Don't pre-create default config - let get_config_toml handle it
-            % This tests the actual automatic creation logic
-            config = qb.get_config_toml(nonExistentFile);
-
-            testCase.verifyTrue(isfile(nonExistentFile))
-            testCase.verifyEqual(config.version, testCase.MockVersion)
-
-            % Verify default config was also created automatically
-            expectedDefaultPath = fullfile(testCase.TestDataDir, '.quidbbids', testCase.MockVersion, 'config_default.toml');
-            testCase.verifyTrue(isfile(expectedDefaultPath))
-        end
-
-        function testWriteConfigFile(testCase)
-            % Test writing a config file
-            testConfig = testCase.createSimpleConfig();
-            testConfig.useHPC = 0;  % Modified value
-
-            qb.get_config_toml(testCase.TestConfigFile, testConfig);
-
-            testCase.verifyTrue(isfile(testCase.TestConfigFile))
-
-            % Read back and verify modified field
-            readConfig = toml.read(testCase.TestConfigFile);
-            testCase.verifyEqual(readConfig.useHPC, 0)
-        end
-
-        function testInt64ToDoubleConversion(testCase)
-            % Test that int64 values are converted to double
-            testConfig = testCase.createSimpleConfig();
-            testConfig.useHPC = int64(1);  % Simulate TOML int64
-
-            toml.write(testCase.TestConfigFile, testConfig)
-            config = qb.get_config_toml(testCase.TestConfigFile);
-
-            % Verify conversion happened
-            testCase.verifyClass(config.useHPC, 'double')
-            testCase.verifyEqual(config.useHPC, 1)
-        end
-
-        function testVersionMismatchWarning(testCase)
-            % Test that version mismatch produces warning
-            testConfig = testCase.createSimpleConfig();
-            testConfig.version = '0.0.2';  % Different version
-
-            toml.write(testCase.TestConfigFile, testConfig)
-
-            testCase.verifyWarning(@() qb.get_config_toml(testCase.TestConfigFile), 'QuIDBBIDS:Config:VersionMismatch')
-        end
-
-        function testNoVersionMismatchWarning(testCase)
-            % Test that no warning is produced when versions match
-            testConfig = testCase.createSimpleConfig();
-            toml.write(testCase.TestConfigFile, testConfig)
-
-            testCase.verifyWarningFree(@() qb.get_config_toml(testCase.TestConfigFile))
-        end
-
-        function testDefaultConfigCreation(testCase)
-            % Test that default config is created in HOME directory
-            expectedDefaultPath = fullfile(testCase.TestDataDir, '.quidbbids', testCase.MockVersion, 'config_default.toml');
-
-            % Ensure default config doesn't exist initially
-            if isfile(expectedDefaultPath)
-                delete(expectedDefaultPath);
-            end
-
-            config = qb.get_config_toml(testCase.TestConfigFile);
-
-            testCase.verifyTrue(isfile(expectedDefaultPath))
-            testCase.verifyEqual(config.version, testCase.MockVersion)
-        end
-    end
+elseif iscell(config)
+    config = cellfun(@castInt64ToDouble, config, 'UniformOutput', false);
+elseif isa(config, 'int64')
+    config = double(config);
 end

@@ -1,4 +1,4 @@
-classdef TestGetConfigToml < matlab.unittest.TestCase
+classdef get_config_toml < matlab.unittest.TestCase
     % Test class for qb.get_config_toml function
 
     properties
@@ -13,9 +13,9 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
     methods (TestClassSetup)
         function setup(testCase)
             % Setup test environment
-            testCase.TestDataDir = tempname;
+            testCase.TestDataDir = tempname
             mkdir(testCase.TestDataDir)
-            testCase.TestConfigFile = fullfile(testCase.TestDataDir, 'test_config.toml');
+            testCase.TestConfigFile = fullfile(testCase.TestDataDir, 'test_config.toml')
 
             % Save original HOME and set to test directory
             testCase.OriginalHome = getenv('HOME');
@@ -63,9 +63,11 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
 
         function config = createSimpleConfig(testCase)
             % Create simple config with only the three specified items
-            config = struct('version', testCase.MockVersion, ...
-                            'useHPC', 1, ...
-                            'gyro', 42.57747892);
+            config = struct(...
+                'version', testCase.MockVersion, ...
+                'useHPC', 1, ...
+                'gyro', 42.57747892 ...
+            );
         end
     end
 
@@ -87,15 +89,16 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
             % Test that config file is created if it doesn't exist
             nonExistentFile = fullfile(testCase.TestDataDir, 'nonexistent_config.toml');
 
-            % Create default config in HOME
-            defaultConfigDir = fullfile(testCase.TestDataDir, '.quidbbids', testCase.MockVersion);
-            mkdir(defaultConfigDir)
-            toml.write(fullfile(defaultConfigDir, 'config_default.toml'), testCase.createSimpleConfig())
-
+            % Don't pre-create default config - let get_config_toml handle it
+            % This tests the actual automatic creation logic
             config = qb.get_config_toml(nonExistentFile);
 
             testCase.verifyTrue(isfile(nonExistentFile))
             testCase.verifyEqual(config.version, testCase.MockVersion)
+
+            % Verify default config was also created automatically
+            expectedDefaultPath = fullfile(testCase.TestDataDir, '.quidbbids', testCase.MockVersion, 'config_default.toml');
+            testCase.verifyTrue(isfile(expectedDefaultPath))
         end
 
         function testWriteConfigFile(testCase)
@@ -117,7 +120,7 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
             testConfig = testCase.createSimpleConfig();
             testConfig.useHPC = int64(1);  % Simulate TOML int64
 
-            toml.write(testCase.TestConfigFile, testConfig);
+            toml.write(testCase.TestConfigFile, testConfig)
             config = qb.get_config_toml(testCase.TestConfigFile);
 
             % Verify conversion happened
@@ -149,7 +152,7 @@ classdef TestGetConfigToml < matlab.unittest.TestCase
 
             % Ensure default config doesn't exist initially
             if isfile(expectedDefaultPath)
-                delete(expectedDefaultPath)
+                delete(expectedDefaultPath);
             end
 
             config = qb.get_config_toml(testCase.TestConfigFile);

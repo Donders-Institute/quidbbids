@@ -27,8 +27,9 @@ classdef TestGetConfigToml < matlab.mock.TestCase
             testCase.ConfigFile = fullfile(testCase.TempDir, "study", "config.toml");
 
             % --- Mock qb.version() ---
+            import matlab.mock.actions.AssignOutputs
             [mockQB, behavior] = testCase.createMock('AddedMethods', "version");
-            testCase.assignOutputsWhen(behavior.version, testCase.MockVersion);
+            when(withExactInputs(behavior.version), AssignOutputs(testCase.MockVersion));
             assignin('base', 'qb', mockQB);
 
             % --- Create a minimal default config so copyfile works ---

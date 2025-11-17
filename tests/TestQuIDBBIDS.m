@@ -31,7 +31,7 @@ classdef TestQuIDBBIDS < matlab.unittest.TestCase
         end
 
         function test_getconfig(testCase)
-            configfile = fullfile(testCase.TmpDir, 'derivatives', 'QuIDBBIDS', 'code', 'config.toml');
+            configfile = fullfile(testCase.TmpDir, 'derivatives', 'QuIDBBIDS', 'code', 'config.yaml');
             testCase.assertFalse(isfile(configfile), sprintf('Configfile "%s" should not yet exist', configfile))
 
             % Test if settings are created correctly

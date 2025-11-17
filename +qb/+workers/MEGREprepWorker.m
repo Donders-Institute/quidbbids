@@ -36,7 +36,7 @@ classdef MEGREprepWorker < qb.workers.Worker
             arguments
                 BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
                 subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-                config    (1,1) struct = struct()   % Configuration struct loaded from the config TOML file
+                config    (1,1) struct = struct()   % Configuration struct loaded from the config file
                 workdir   {mustBeTextScalar} = ''
                 outputdir {mustBeTextScalar} = ''
                 team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
@@ -331,7 +331,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                 % Get the flip angles for this run
                 VFA = obj.query_ses(BIDSW, 'descriptions', anat{:}, 'desc','VFA\d*', 'part','mag', 'echo',1, 'run',char(run));
                 if length(VFA) < 2
-                    obj.logger.error("No flip angle images found in: " + obj.subject.path)
+                    obj.logger.error("No flip angle images found in: %s", obj.subject.path)
                 end
 
                 % Merge the 3D echos files for each flip angle into 4D files

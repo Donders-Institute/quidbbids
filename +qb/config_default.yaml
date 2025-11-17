@@ -1,0 +1,126 @@
+# --------------------- General settings ---------------------
+version: "0.0.3"              # QuIDBBIDS version that should match the version in resources/mpackage.json
+useHPC: false                 # Use HPC cluster (true/false)
+gyro: 42.57747892             # in ppm
+kappa_mw: 0.36                # Jung, NI., myelin water density
+kappa_iew: 0.86               # Jung, NI., intra-/extra-axonal water density
+
+# --------------------- BIDS input filters ---------------------
+bids:
+  select:
+    modality: ["anat", "fmap"]
+    suffix: ["MEGRE", "TB1TFL"]
+
+# --------------------- B1prepWorker parameters ---------------------
+B1prepWorker:
+  FWHM: 10                    # in mm, smoothing kernel for regularizing the B1 map
+  FAscaling:
+    Siemens: 800              # 800 is what SIEMENS seems to use on TFL B1-mapping
+
+# --------------------- MP2RAGEWorker parameters ---------------------
+MP2RAGEWorker:
+  InvEff: 0.96                # Inversion efficiency, Siemens default value
+  EchoSpacing: ""             # The RepetitionTimeExcitation value in secs that typically is not given on the json file. Default: twice the echo time
+  NZslices: 176               # The number of shots (slices) in the inner loop (inversion segment), the json file doesn't usually accommodate this
+  Fingerprint: true
+  B1correctM0: 0              # If 0 no correction is applied (default), if 1,2,3 applies a flip on the left right direction of the transmit field as an
+                              # approximation of the receive field. The number 1 2 3 refers to the left-right dimension only use this option if anatomical data
+                              # is well centred in the field of view (as provided by auto-align) and if the bias Field correction was enabled on the scanner
+
+# --------------------- R1R2sWorker parameters ---------------------
+R1R2sWorker:
+  fitting:
+    GPU:
+      iteration: 4000
+      convergenceWindow: 25   # At least 100 iterations and more robust convergence estimate
+      convergenceValue: 1e-8
+      initialLearnRate: 0.001
+      decayRate: 0
+      tol: 1e-3
+      isWeighted: false       # Residual option
+
+# --------------------- MCRWorker parameters ---------------------
+MCRWorker:
+  fixed_params:               # Fixed parameters for gacelle??? MCRMWI
+    x_i: -0.1                 # ppm
+    x_a: -0.1                 # ppm
+    E: 0.02                   # ppm
+    rho_mw: 0.4186            # Computed as kappa_mw/kappa_iew, i.e. 0.36/0.86
+    t1_mw: 0.234              # s
+    B0: 3.0                   # Field strength, in tesla. TODO: Replace with sidecar data
+    B0dir: [0.0, 0.0, 1.0]    # Main magnetic field direction with respect to FOV -- Replace with actual sepia_header{end}.B0_dir
+    thres_R2star: 150         # 1/s, upper bound
+    thres_T1: 3.1             # s
+
+  fitting:
+    GPU:
+      Nepoch: 4000
+      initialLearnRate: 0.001
+      decayRate: 0
+      convergenceValue: -inf
+      tol: 1e-8
+      display: false
+      lossFunction: "l1"
+      start: "prior"
+      patience: 20
+      isFitExchange: true
+      isEPG: false
+
+# --------------------- QSMWorker parameters ---------------------
+QSMWorker:
+  QSM:
+    general:
+      isBET: 0
+      isRefineBrainMask: 0
+      isInvert: 0
+
+    unwrap:
+      echoCombMethod: "Optimum weights"
+      unwrapMethod: "SEGUE"
+      isEddyCorrect: 0
+      isSaveUnwrappedEcho: 1
+      excludeMaskThreshold: 0.4
+      excludeMethod: "Weighting map"
+
+    bfr:
+      refine_method: "None"
+      refine_order: 4
+      erode_radius: 0
+      erode_before_radius: 0
+      method: "VSHARP"
+      radius: [12,11,10,9,8,7,6,5,4,3,2,1]
+
+    qsm:
+      reference_tissue: "CSF"
+      method: "MRI Suscep. Calc."
+      solver: "Iterative Tikhonov"
+      lambda: 0.05
+      tolerance: 0.03
+
+  R2starmap:
+    general:
+      isBET: 0
+      isInvert: 0
+      isRefineBrainMask: 0
+
+    r2s:
+      method: "Trapezoidal"
+      s0mode: "1st echo"
+
+      # Fitting options
+      maxIter: 200
+      fcnTol: 1e-4
+      stepTol: 1e-4
+
+      # Residual options
+      numMagn: true           # false: complex fitting
+      isWeighted: true
+      weightMethod: "quadratic_1stEcho"  # Options: "1stEcho" or "quadratic_1stEcho"
+
+      # T1 model
+      isExchange: true        # BM model
+      isEPG: true             # Using EPG-X
+      npulse: 50              # Number of pulses
+      rfphase: 150            # RF phase for EPG, degree. Phase increment for Philips = 150
+      isT1mw: false           # Fitting myelin water T1
+      T1mw: 0.234             # Fixed myelin water T1 in seconds (234e-3)

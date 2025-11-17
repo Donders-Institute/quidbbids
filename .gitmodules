@@ -22,9 +22,9 @@
 [submodule "MP-PCA-Denoising"]
 	path = dependencies/MP-PCA-Denoising
 	url = https://github.com/Neurophysics-CFIN/MP-PCA-Denoising.git
-[submodule "dependencies/matlab-toml"]
-	path = dependencies/matlab-toml
-	url = https://github.com/g-s-k/matlab-toml.git
-[submodule "dependencies/gacelle"]
+[submodule "yaml"]
+	path = dependencies/yaml
+	url = https://github.com/MartinKoch123/yaml.git
+[submodule "gacelle"]
 	path = dependencies/gacelle
 	url = https://github.com/kschan0214/gacelle.git

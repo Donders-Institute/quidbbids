@@ -25,7 +25,7 @@ classdef QSMWorker < qb.workers.Worker
             arguments
                 BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
                 subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-                config    (1,1) struct = struct()   % Configuration struct loaded from the config TOML file
+                config    (1,1) struct = struct()   % Configuration struct loaded from the config file
                 workdir   {mustBeTextScalar} = ''
                 outputdir {mustBeTextScalar} = ''
                 team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname

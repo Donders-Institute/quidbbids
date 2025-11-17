@@ -37,8 +37,8 @@ classdef QuIDBBIDS < qb.workers.Coordinator
             %   DERIVDIR   - Path to the QuIDBBIDS derivatives directory where output will be written.
             %                Default: [BIDSDIR]/derivatives/QuIDBBIDS
             %   WORKDIR    - Working directory for intermediate results. Default: outputdir/QuIDBBIDS_work.
-            %   CONFIGFILE - Path to a TOML configuration file with workflow settings.
-            %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.toml
+            %   CONFIGFILE - Path to the configuration file with workflow settings.
+            %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.yaml
             %
             % Usage:
             %   quidb = qb.QuIDBBIDS();             % Select BIDS root directory via GUI
@@ -58,12 +58,12 @@ classdef QuIDBBIDS < qb.workers.Coordinator
                 bidsdir = uigetdir(pwd, "Select the root BIDS directory");
             end
             if strlength(configfile) == 0
-                configfile = fullfile(bidsdir, "derivatives", "QuIDBBIDS", "code", "config.toml");  % A bit of a hack because obj is not yet fully constructed
+                configfile = fullfile(bidsdir, "derivatives", "QuIDBBIDS", "code", "config.yaml");  % A bit of a hack because obj is not yet fully constructed
             elseif isfolder(configfile)
-                error("QuIDBBIDS:Nifti:InvalidInputArgument", "The configfile must be a file, not a folder: " + configfile)
+                error("QuIDBBIDS:Nifti:InvalidInputArgument", "The configfile must be a file, not a folder: %s", configfile)
             end
 
-            config = qb.get_config_toml(configfile);    % Cannot call obj.get_config directly because obj is not yet fully constructed
+            config = qb.get_config_yaml(configfile);    % Cannot call obj.get_config directly because obj is not yet fully constructed
             BIDS   = bids.layout(char(bidsdir), 'use_schema', true, ...
                                                 'index_derivatives', false, ...
                                                 'index_dependencies', false, ...
@@ -119,10 +119,10 @@ classdef QuIDBBIDS < qb.workers.Coordinator
             % exist, a default configuration is copied from the user's HOME directory.
             %
             % CONFIG = GET_CONFIG(CONFIG) writes the provided CONFIG struct to CONFIGFILE
-            % (in TOML format). This updates or creates the configuration file.
+            % (in YAML format). This updates or creates the configuration file.
             %
             % The function ensures that a default config exists in:
-            %   <HOME>/.quidbbids/<version>/config_default.toml
+            %   <HOME>/.quidbbids/<version>/config_default.yaml
 
             arguments (Input)
                 obj
@@ -133,7 +133,8 @@ classdef QuIDBBIDS < qb.workers.Coordinator
                 config struct
             end
 
-            config = qb.get_config_toml(obj.configfile, config);    % Implementation is in get_config_toml to avoid circularity issues
+            config = qb.get_config_yaml(obj.configfile, config);    % Implementation is in get_config_yaml to avoid circularity issues during object construction
+
         end
 
     end

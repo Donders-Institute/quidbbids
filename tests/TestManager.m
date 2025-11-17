@@ -28,8 +28,8 @@ classdef TestManager < matlab.unittest.TestCase
 
         function testInitialization(testCase)
             % Manager should not have looked up workers and created an empty team
-            testCase.verifyEmpty(testCase.mgr.products, 'Manager should have initialized an empty product list')
-            testCase.verifyEmpty(testCase.mgr.team, 'Manager team should hence be empty')
+            testCase.verifyEmpty(testCase.mgr.products, 'products should hence be empty')
+            testCase.verifyEqual(testCase.mgr.team, struct(), 'Manager team should hence be empty')
             testCase.verifyTrue(isstruct(testCase.mgr.team), 'Team must be a struct mapping workitems -> worker resumes')
 
             % start_workflow must run without throwing an error, even without workers

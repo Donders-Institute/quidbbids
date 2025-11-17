@@ -60,6 +60,7 @@ classdef Manager < handle
         function set.products(obj, val)
             % Force anything assigned to be stored as a string row
             obj.products = string(val(:)');
+            obj.products(obj.products=="") = [];
         end
 
         function create_team(obj, workitems)

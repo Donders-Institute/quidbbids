@@ -53,8 +53,8 @@ classdef TestCoordinator < matlab.unittest.TestCase
                 testCase.verifyTrue(isfield(res,'name') && isstring(res.name), "Resume must have name as string")
                 testCase.verifyTrue(isfield(res,'description') && isstring(res.description), "Resume must have description as string")
                 testCase.verifyTrue(isfield(res,'version') && isstring(res.version), "Resume must have version as string")
-                testCase.verifyTrue(isfield(res,'makes') && iscell(res.makes), "Resume must have makes as cell array")
-                testCase.verifyTrue(isfield(res,'needs') && iscell(res.needs), "Resume must have needs as cell array")
+                testCase.verifyTrue(isfield(res,'makes') && isstring(res.needs) && isrow(res.needs), "Resume must have makes as list")
+                testCase.verifyTrue(isfield(res,'needs') && (isempty(res.needs) || (isstring(res.needs) && isrow(res.needs))), "Resume must have needs as list")
                 testCase.verifyTrue(isfield(res,'usesGPU') && islogical(res.usesGPU), "Resume must have usesGPU as logical")
                 testCase.verifyTrue(isfield(res,'preferred') && islogical(res.preferred), "Resume must have preferred as logical")
             end

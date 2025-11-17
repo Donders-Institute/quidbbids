@@ -75,7 +75,7 @@ classdef (Abstract) Worker < handle
         end
 
         function workitems = makes(obj)
-            workitems = fieldnames(obj.bidsfilter)';
+            workitems = string(fieldnames(obj.bidsfilter)');
         end
 
         function work = fetch(obj, workitem, force)

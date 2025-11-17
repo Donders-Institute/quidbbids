@@ -12,13 +12,13 @@ classdef (Abstract) Coordinator < handle
         configfile      % Path to the active configuration file
         config          % Configuration struct loaded from the config file
     end
-    
+
 
     methods (Abstract)
         config = get_config(obj, config)   % Reads CONFIG from the configuration file or writes to it if CONFIG is given
     end
 
-    
+
     methods
 
         function obj = Coordinator(BIDS, outputdir, workdir, configfile)
@@ -58,7 +58,12 @@ classdef (Abstract) Coordinator < handle
 
         function items = workitems(obj)
             %WORKITEMS Gets a list of all the workitems the workers can make
-            items = string(unique(horzcat(obj.resumes.makes)));
+
+            makes = [];
+            for name = fieldnames(obj.resumes)'
+                makes = [makes, obj.resumes.(name{1}).makes];       %#ok<AGROW>
+            end
+            items = unique(makes);
         end
 
         function resumes = get_resumes(obj)
@@ -77,7 +82,7 @@ classdef (Abstract) Coordinator < handle
             % NB: Assumes the qb.workers have a "Worker" substring in their m-filename
 
             resumes = {};
-            wfiles  = dir(fullfile(fileparts(which("qb.workers.Worker")), "*Worker*.m"))';             
+            wfiles  = dir(fullfile(fileparts(which("qb.workers.Worker")), "*Worker*.m"))';
             if ~isdeployed
                 wfiles = [wfiles, dir(fullfile(fileparts(obj.configfile), "*Worker*.m"))'];
             end

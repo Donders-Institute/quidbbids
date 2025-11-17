@@ -81,9 +81,9 @@ classdef Manager < handle
                     match = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
                     if any(match)                               % Add to the team if the worker is capable
                         if sum(match) ~= 1
-                            error('QuIDBBIDS:WorkItem:Ambiguous', 'Could not uniquely identify a "%s" workitem from what %s makes:%s', workitem, worker.name, sprintf(' %s', makes{:}))
+                            error('QuIDBBIDS:WorkItem:Ambiguous', 'Could not uniquely identify a "%s" workitem from what %s makes:%s', workitem, worker.name, sprintf(' %s', makes))
                         end
-                        workitem_ = makes{match};               % The workitem without optional regexp pattern
+                        workitem_ = makes(match);               % The workitem without optional regexp pattern
                         if isfield(obj.team, workitem_)
                             if ~ismember(func2str(worker.handle), cellfun(@func2str, {obj.team.(workitem_).handle}, 'UniformOutput', false))    % Check if we haven't already added this worker
                                 obj.team.(workitem_)(end+1) = worker;

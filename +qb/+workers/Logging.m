@@ -213,7 +213,7 @@ classdef Logging < handle
 
     end
 
-    methods (Access = private)
+    methods (Access = ?TestLogging)
 
         function subses = sub_ses(obj)
             % Parses the sub-#_ses-# prefix from a BIDS.subjects item.

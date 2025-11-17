@@ -39,7 +39,7 @@ end
 if isnumeric(V) && isvector(V)
     V = struct('mat', diag([V(:); 1]));
     if nargin < 3 || isempty(fname)
-        error('When providing only voxel sizes, an output filename must be specified')
+        error('QuIDBBIDS:Nifti:MissingInputArgument', 'When providing only voxel sizes, an output filename must be specified')
     end
 end
 
@@ -78,5 +78,5 @@ switch ext
     case '.nii'
         V = spm_write_vol(V, Y);
     otherwise
-        error('Unknown file extension %s in %s', ext, V.fname)
+        error('QuIDBBIDS:Nifti:InvalidInputArgument', 'Unknown file extension %s in %s', ext, V.fname)
 end

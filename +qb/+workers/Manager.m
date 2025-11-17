@@ -1,6 +1,6 @@
 classdef Manager < handle
     %MANAGER Manages the entire workflow to make the end products that the user wants
-    % 
+    %
     % This class defines the common interface and base functionality for interacting with the user,
     % composing workflows, setting config parameters, creating a team of workers from the pool, and
     % putting the team to work.
@@ -73,6 +73,7 @@ classdef Manager < handle
             end
 
             % Find and select one capable worker per workitem
+            obj.team = struct();                                % Reset the team
             for workitem = string(workitems(:)')                % The workitem with optional regexp pattern
                 for name = fieldnames(obj.coord.resumes)'       % Iterate over all available workers
                     worker = obj.coord.resumes.(char(name));
@@ -80,7 +81,7 @@ classdef Manager < handle
                     match = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
                     if any(match)                               % Add to the team if the worker is capable
                         if sum(match) ~= 1
-                            error('Could not uniquely identify a "$s" workitem from what %s makes:%s', workitem, worker.name, sprintf(' %s', makes{:}))
+                            error('QuIDBBIDS:WorkItem:Ambiguous', 'Could not uniquely identify a "%s" workitem from what %s makes:%s', workitem, worker.name, sprintf(' %s', makes{:}))
                         end
                         workitem_ = makes{match};               % The workitem without optional regexp pattern
                         if isfield(obj.team, workitem_)
@@ -99,7 +100,7 @@ classdef Manager < handle
                         obj.create_team(obj.team.(workitem_).needs)
                     end
                 elseif strlength(workitem)
-                    error("Could not find a worker that can make: " + workitem)
+                    error('QuIDBBIDS:WorkItem:NotFound', 'Could not find a worker that can make: %s', workitem)
                 end
             end
         end
@@ -140,7 +141,7 @@ classdef Manager < handle
                     else
                         worker(args{:}).fetch(product, obj.force);     % TODO: Catch the work done (at some point)
                     end
-                    
+
                 end
 
                 if obj.coord.config.useHPC
@@ -213,7 +214,7 @@ classdef Manager < handle
                 end
             end
             if length(obj.team.(workitem)) ~= 1
-                error("Expected only a single workitem, but got %d", length(obj.team.(workitem)))
+                error('QuIDBBIDS:WorkItem:InvalidCount', "Expected only a single workitem, but got %d", length(obj.team.(workitem)))
             end
 
         end

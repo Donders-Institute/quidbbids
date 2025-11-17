@@ -10,8 +10,8 @@ classdef TestQuIDBBIDS < matlab.unittest.TestCase
 
     methods(TestMethodSetup)
         function createTempDir(testCase)
-            testCase.TmpDir = fullfile(tempdir, ['test_', char(java.util.UUID.randomUUID)]);
-            mkdir(testCase.TmpDir)
+            testCase.TmpDir = tempname;
+            mkdir(fullfile(testCase.TmpDir, 'sub-01', 'ses-01'))
             bids.init(testCase.TmpDir)
         end
     end
@@ -31,13 +31,13 @@ classdef TestQuIDBBIDS < matlab.unittest.TestCase
         end
 
         function test_getconfig(testCase)
+            configfile = fullfile(testCase.TmpDir, 'derivatives', 'QuIDBBIDS', 'code', 'config.toml');
+            testCase.assertFalse(isfile(configfile), sprintf('Configfile "%s" should not yet exist', configfile))
+
             % Test if settings are created correctly
             obj = qb.QuIDBBIDS(testCase.TmpDir);
-            configfile = fullfile(testCase.TmpDir, 'config_test.toml');
-            testCase.assertFalse(isfile(configfile), sprintf('Configfile "%s" should not yet exist', configfile))
+            testCase.assertTrue(isfile(configfile), sprintf('Configfile "%s" not found', configfile));
             testCase.assertClass(obj.get_config(struct('configfile',configfile)), 'struct', 'Settings should be a struct')
-            % TODO: FIXME
-            % testCase.assertTrue(isfile(configfile), sprintf('Configfile "%s" not found', configfile));
         end
     end
 

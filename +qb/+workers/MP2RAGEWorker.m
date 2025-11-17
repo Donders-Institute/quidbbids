@@ -71,7 +71,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
             B1famp = obj.ask_team('B1map_angle');
             B1anat = obj.ask_team('B1map_anat');
             if length(B1famp) > 1 || length(B1anat) > 1
-                error("Expected one B1map_angle and one B1map_anat file, but got %d and %d files", length(B1famp), length(B1anat))
+                obj.logger.error("Expected one B1map_angle and one B1map_anat file, but got %d and %d files", length(B1famp), length(B1anat))
             end
 
             % Process all runs independently
@@ -83,7 +83,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
                 INV1  = obj.query_ses(obj.BIDS, 'data', anat{:}, 'inv','1', 'suffix','MP2RAGE', 'run',char(run));
                 INV2  = obj.query_ses(obj.BIDS, 'data', anat{:}, 'inv','2', 'suffix','MP2RAGE', 'run',char(run));
                 if length(UNIT1) ~= 1 || length(INV1) ~= 1 || length(INV2) ~= 1
-                    error("Expected one UNIT1, INV1 and INV2 file for run %s, but got %d, %d and %d files", char(run), length(UNIT1), length(INV1), length(INV2))
+                    obj.logger.error("Expected one UNIT1, INV1 and INV2 file for run %s, but got %d, %d and %d files", char(run), length(UNIT1), length(INV1), length(INV2))
                 end
                 UNIhdr  = spm_vol(char(UNIT1));
                 INV1hdr = spm_vol(char(INV1));

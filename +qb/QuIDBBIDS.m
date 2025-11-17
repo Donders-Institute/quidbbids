@@ -1,5 +1,5 @@
 classdef QuIDBBIDS < qb.workers.Coordinator
-    %   ___       ___ ___  ___ ___ ___ ___  ___ 
+    %   ___       ___ ___  ___ ___ ___ ___  ___
     %  / _ \ _  _|_ _|   \| _ ) _ )_ _|   \/ __|
     % | (_) | || || || |) | _ \ _ \| || |) \__ \
     %  \__\_\\_,_|___|___/|___/___/___|___/|___/
@@ -21,7 +21,7 @@ classdef QuIDBBIDS < qb.workers.Coordinator
     % For comprehensive documentation with tutorials, examples, and API reference:
     %
     %   <a href="matlab: web('https://quidbbids.readthedocs.io')">Documentation on Read the Docs</a>
-    % 
+    %
     % For more concise help on using a QuIDBBIDS object and its methods:
 
 
@@ -46,7 +46,7 @@ classdef QuIDBBIDS < qb.workers.Coordinator
             %   etc.
             %
             % See also: qb.QuIDBBIDS (for overview)
-            
+
             arguments
                 bidsdir    {mustBeTextScalar} = ""
                 outputdir  {mustBeTextScalar} = ""
@@ -60,7 +60,7 @@ classdef QuIDBBIDS < qb.workers.Coordinator
             if strlength(configfile) == 0
                 configfile = fullfile(bidsdir, "derivatives", "QuIDBBIDS", "code", "config.toml");  % A bit of a hack because obj is not yet fully constructed
             elseif isfolder(configfile)
-                error("The configfile must be a file, not a folder: " + configfile)
+                error("QuIDBBIDS:Nifti:InvalidInputArgument", "The configfile must be a file, not a folder: " + configfile)
             end
 
             config = qb.get_config_toml(configfile);    % Cannot call obj.get_config directly because obj is not yet fully constructed
@@ -123,7 +123,7 @@ classdef QuIDBBIDS < qb.workers.Coordinator
             %
             % The function ensures that a default config exists in:
             %   <HOME>/.quidbbids/<version>/config_default.toml
-            
+
             arguments (Input)
                 obj
                 config struct = struct()
@@ -132,7 +132,7 @@ classdef QuIDBBIDS < qb.workers.Coordinator
             arguments (Output)
                 config struct
             end
-            
+
             config = qb.get_config_toml(obj.configfile, config);    % Implementation is in get_config_toml to avoid circularity issues
         end
 
@@ -175,10 +175,10 @@ classdef QuIDBBIDS < qb.workers.Coordinator
                 end
                 addpath(toolpath)
             else
-                error("Cannot find '" + toolname + "' on the MATLAB-path, please make sure it is installed")
+                error('QuIDBBIDS:Dependency:MissingToolbox', "Cannot find '%s' on the MATLAB-path, please make sure it is installed", toolname)
             end
         end
-        
+
     end
 
 end

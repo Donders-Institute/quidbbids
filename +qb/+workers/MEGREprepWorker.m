@@ -244,13 +244,13 @@ classdef MEGREprepWorker < qb.workers.Worker
                 % Get the B1 images and the common M0 target image
                 M0ref = obj.query_ses(BIDSW, 'data', setfield(obj.bidsfilter.M0map_echo1, 'run',char(run)));
                 if length(M0ref) ~= 1
-                    error("Unexpected M0map images found: %s", sprintf("\n%s", M0ref{:}));
+                    obj.logger.error("Unexpected M0map images found: %s", sprintf("\n%s", M0ref{:}))
                 end
 
                 % Coregister the B1-anat fmap to the M0 target image using Normalized Mutual Information (NMI)
                 if ~isempty(B1famp)
                     if length(B1famp) ~= 1 || length(B1anat) ~= 1
-                        error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}));
+                        obj.logger.error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}))
                     end
 
                     Vref = spm_vol(char(M0ref));

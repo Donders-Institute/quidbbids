@@ -77,8 +77,7 @@ classdef TestLogging < matlab.unittest.TestCase
         end
 
         function testLogException(testCase)
-            testCase.verifyError(@() testCase.Logger.exception("Oops %d", 9), "QuIDBBIDS:Exception", ...
-                "Expected a raised QuIDBBIDS error")
+            testCase.verifyError(@() testCase.Logger.exception("Oops %d", 9), "QuIDBBIDS:FatalException", "Expected a raised QuIDBBIDS error")
         end
 
         function testSubSesParsing(testCase)
@@ -87,18 +86,5 @@ classdef TestLogging < matlab.unittest.TestCase
             testCase.verifyEqual(subses, 'sub-01_ses-01', "Subject/session parsing incorrect");
         end
 
-    end
-end
-
-
-function obj = struct2obj(S)
-    % Helper function to convert struct to a dummy handle object.
-    % Create a dynamic handle class on the fly to host struct fields
-
-    meta.class.fromName('dynamicHandleClassForWorkerMock');
-    obj = dynamicHandleClassForWorkerMock();
-
-    for fieldname = fieldnames(S)'
-        obj.(fieldname{1}) = S.(fieldname{1});
     end
 end

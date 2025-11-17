@@ -84,7 +84,7 @@ switch ext
             spm_file_merge(V, fname, varargin{:})
         end
     otherwise
-        error('Unknown file extension %s in %s', ext, fname)
+        error('QuIDBBIDS:Nifti:InvalidInputArgument', 'Unknown file extension %s in %s', ext, fname)
 end
 
 % Read/aggregate sidecar metadata, and delete the original .nii + sidecar files (if available)

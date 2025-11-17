@@ -207,8 +207,8 @@ classdef Logging < handle
                 varargin
             end
 
-            obj.loghandler(message, '_errors', varargin{:})                     % Log on disk and normally
-            builtin('error', 'QuIDBBIDS:FatalException', message, varargin{:})  % Also raise an error
+            obj.loghandler(message, '_errors', varargin{:})             % Log on disk and normally
+            error('QuIDBBIDS:FatalException', message, varargin{:})     % Also raise an error
         end
 
     end

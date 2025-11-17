@@ -9,21 +9,19 @@ classdef TestLogging < matlab.unittest.TestCase
     methods (TestMethodSetup)
         function setupEnvironment(testCase)
 
-            % Create a temp subject directory for isolated testing
+            % Create a temp subject directory
             testCase.TempDir = tempname;
             SubjectDir       = fullfile(testCase.TempDir, 'sub-01', 'ses-01');
             mkdir(SubjectDir)
 
-            % Create a fake BIDS structure
-            BIDS.pth = testCase.TempDir;
+            % BIDS struct
+            bids.init(testCase.TempDir)
+            BIDS = bids.layout(testCase.TempDir);
 
-            % Define a minimal mock worker class inline (MATLAB allows dynamic class creation for test use)
-            MockWorker.outputdir    = testCase.TempDir;
-            MockWorker.BIDS         = BIDS;
-            MockWorker.subject.path = SubjectDir;
+            % Create any concrete worker
+            worker = qb.workers.B1prepWorker(BIDS, BIDS.subjects(1), struct(), '', testCase.TempDir);
 
-            % Create Logger instance
-            testCase.Logger = Logging(struct2obj(MockWorker));  % convert struct to a fake handle object
+            testCase.Logger = worker.logger;
         end
     end
 
@@ -41,8 +39,8 @@ classdef TestLogging < matlab.unittest.TestCase
             logFile = fullfile(testCase.Logger.outputdir, [testCase.Logger.sub_ses() '.log']);
             testCase.verifyTrue(isfile(logFile), "The main log file was not created")
             contents = fileread(logFile);
-            testCase.verifyContains(contents, "INFO", "INFO level not written to log")
-            testCase.verifyContains(contents, "Test message 123", "Message not written correctly")
+            testCase.verifySubstring(contents, "INFO", "INFO level not written to log")
+            testCase.verifySubstring(contents, "Test message 123", "Message not written correctly")
         end
 
         function testLogVerbose(testCase)
@@ -50,8 +48,8 @@ classdef TestLogging < matlab.unittest.TestCase
 
             logFile = fullfile(testCase.Logger.outputdir, [testCase.Logger.sub_ses() '.log']);
             contents = fileread(logFile);
-            testCase.verifyContains(contents, "VERBOSE", "Verbose level not logged correctly")
-            testCase.verifyContains(contents, "Verbose XYZ")
+            testCase.verifySubstring(contents, "VERBOSE", "Verbose level not logged correctly")
+            testCase.verifySubstring(contents, "Verbose XYZ")
         end
 
         function testLogWarning(testCase)
@@ -62,8 +60,8 @@ classdef TestLogging < matlab.unittest.TestCase
 
             testCase.verifyTrue(isfile(warnFile), "Warning log file not created")
             testCase.verifyTrue(isfile(mainFile), "Main log was not created by warning")
-            testCase.verifyContains(fileread(warnFile), "Warn ABC DEF")
-            testCase.verifyContains(fileread(mainFile), "WARNING")
+            testCase.verifySubstring(fileread(warnFile), "Warn ABC DEF")
+            testCase.verifySubstring(fileread(mainFile), "WARNING")
         end
 
         function testLogError(testCase)
@@ -74,19 +72,19 @@ classdef TestLogging < matlab.unittest.TestCase
 
             testCase.verifyTrue(isfile(errFile))
             testCase.verifyTrue(isfile(mainFile))
-            testCase.verifyContains(fileread(errFile), "Err XYZ");
-            testCase.verifyContains(fileread(mainFile), "ERROR");
+            testCase.verifySubstring(fileread(errFile), "Err XYZ")
+            testCase.verifySubstring(fileread(mainFile), "ERROR")
         end
 
         function testLogException(testCase)
-            testCase.verifyError(@() testCase.Logger.exception("Oops %d", 9), "MATLAB:SomeDummyID", ...
-                "Expected an error. Update this if you set a specific ID");
+            testCase.verifyError(@() testCase.Logger.exception("Oops %d", 9), "QuIDBBIDS:Exception", ...
+                "Expected a raised QuIDBBIDS error")
         end
 
         function testSubSesParsing(testCase)
             subses = testCase.Logger.sub_ses();
 
-            testCase.verifyEqual(subses, "sub-01_ses-01", "Subject/session parsing incorrect");
+            testCase.verifyEqual(subses, 'sub-01_ses-01', "Subject/session parsing incorrect");
         end
 
     end

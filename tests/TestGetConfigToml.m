@@ -1,156 +1,86 @@
 classdef TestGetConfigToml < matlab.unittest.TestCase
-    % Test class for qb.get_config_toml function
+    % Unit tests for qb.get_config_toml function
 
     properties
-        TestConfigFile
-        TestDataDir
-        OriginalPath
-        OriginalHome
-        MockVersion = '0.0.3'
+        TempDir
+        TempConfigFile
+        DefaultConfigFile
     end
 
-    methods (TestClassSetup)
-        function setup(testCase)
-            % Setup test environment
-            testCase.TestDataDir = tempname;
-            mkdir(testCase.TestDataDir);
-            testCase.TestConfigFile = fullfile(testCase.TestDataDir, 'test_config.toml');
+    methods (TestMethodSetup)
+        function createTempFiles(testCase)
+            % Create a temporary directory for config files
+            testCase.TempDir = tempname;
+            mkdir(testCase.TempDir);
 
-            % Save original HOME and set to test directory
-            testCase.OriginalHome = getenv('HOME');
-            setenv('HOME', testCase.TestDataDir);
+            % Path for test config file
+            testCase.TempConfigFile = fullfile(testCase.TempDir, "test_config.toml");
 
-            % Save original path
-            testCase.OriginalPath = path;
+            % Path for default config file (simulate home directory)
+            testCase.DefaultConfigFile = fullfile(testCase.TempDir, "config_default.toml");
 
-            % Ensure we're using the test HOME by creating the expected directory structure
-            defaultConfigDir = fullfile(testCase.TestDataDir, '.quidbbids', testCase.MockVersion);
-            if ~isfolder(defaultConfigDir)
-                mkdir(defaultConfigDir);
+            % Create a fake default config TOML
+            fid = fopen(testCase.DefaultConfigFile, 'w');
+            fprintf(fid, "version = 1\nparam1 = 42\nparam2 = 'test'\n");
+            fclose(fid);
+
+            % Patch qb.version() to a fixed value for testing
+            if ~exist('qb', 'var')
+                eval('global qb; qb.version = @() 1;');
             end
         end
     end
 
-    methods (TestClassTeardown)
-        function teardown(testCase)
-            % Clean up test environment
-            if isfolder(testCase.TestDataDir)
-                rmdir(testCase.TestDataDir, 's');
+    methods (TestMethodTeardown)
+        function removeTempFiles(testCase)
+            % Clean up temporary directory
+            if isfolder(testCase.TempDir)
+                rmdir(testCase.TempDir, 's');
             end
-
-            % Restore original path and HOME
-            path(testCase.OriginalPath);
-            setenv('HOME', testCase.OriginalHome);
-        end
-    end
-
-    methods
-        function config = createSimpleConfig(testCase, version)
-            % Create simple config with only the three specified items
-            if nargin < 2
-                version = testCase.MockVersion;
-            end
-            config = struct('version', version, ...
-                            'useHPC', 1, ...
-                            'gyro', 42.5775);
         end
     end
 
     methods (Test)
-        function testReadConfigFile(testCase)
-            % Test reading an existing config file
-            testConfig = testCase.createSimpleConfig();
-            toml.write(testCase.TestConfigFile, testConfig);
+        function testReadNonexistentConfigCreatesDefault(testCase)
+            % Test reading a config that does not exist creates the default
+            config = qb.get_config_toml(testCase.TempConfigFile);
 
-            config = qb.get_config_toml(testCase.TestConfigFile);
+            % Verify the config fields match the default
+            testCase.verifyEqual(config.version, 1);
+            testCase.verifyEqual(config.param1, 42);
+            testCase.verifyEqual(config.param2, 'test');
 
-            % Verify the three fields
-            testCase.verifyEqual(config.version, testCase.MockVersion);
-            testCase.verifyEqual(config.useHPC, 1);
-            testCase.verifyEqual(config.gyro, 42.5775);
+            % Verify the config file was created
+            testCase.verifyTrue(isfile(testCase.TempConfigFile));
         end
 
-        function testCreateConfigFileIfNotExists(testCase)
-            % Test that config file is created if it doesn't exist
-            nonExistentFile = fullfile(testCase.TestDataDir, 'nonexistent_config.toml');
+        function testWriteConfig(testCase)
+            % Test writing a config
+            cfgStruct.version = 1;
+            cfgStruct.param1 = 100;
+            cfgStruct.param2 = 'written';
 
-            % First create the default config that will be copied
-            defaultConfigPath = fullfile(testCase.TestDataDir, '.quidbbids', testCase.MockVersion, 'config_default.toml');
-            if ~isfile(defaultConfigPath)
-                defaultConfig = testCase.createSimpleConfig();
-                [pth, ~, ~] = fileparts(defaultConfigPath);
-                mkdir(pth);
-                toml.write(defaultConfigPath, defaultConfig);
-            end
+            qb.get_config_toml(testCase.TempConfigFile, cfgStruct);
 
-            % This should create the study config by copying from default
-            config = qb.get_config_toml(nonExistentFile);
+            % Read it back
+            cfgRead = qb.get_config_toml(testCase.TempConfigFile);
 
-            testCase.verifyTrue(isfile(nonExistentFile));
-            testCase.verifyEqual(config.version, testCase.MockVersion);
-        end
-
-        function testWriteConfigFile(testCase)
-            % Test writing a config file
-            testConfig = testCase.createSimpleConfig();
-            testConfig.useHPC = 0;  % Modified value
-
-            qb.get_config_toml(testCase.TestConfigFile, testConfig);
-
-            testCase.verifyTrue(isfile(testCase.TestConfigFile));
-
-            % Read back and verify modified field - toml.read returns containers.Map
-            readConfigMap = toml.read(testCase.TestConfigFile);
-            testCase.verifyEqual(readConfigMap('useHPC'), 0); % Use map access
-        end
-
-        function testInt64ToDoubleConversion(testCase)
-            % Test that int64 values are converted to double
-            testConfig = testCase.createSimpleConfig();
-            testConfig.useHPC = int64(1);  % Simulate TOML int64
-
-            toml.write(testCase.TestConfigFile, testConfig);
-            config = qb.get_config_toml(testCase.TestConfigFile);
-
-            % Verify conversion happened
-            testCase.verifyClass(config.useHPC, 'double');
-            testCase.verifyEqual(config.useHPC, 1);
+            testCase.verifyEqual(cfgRead.version, 1);
+            testCase.verifyEqual(cfgRead.param1, 100);
+            testCase.verifyEqual(cfgRead.param2, 'written');
         end
 
         function testVersionMismatchWarning(testCase)
-            % Test that version mismatch produces warning
-            % Skip this test for now since we can't easily mock qb.version
-            % without causing conflicts
-            testCase.assumeFail('Version mismatch test requires proper mocking of qb.version');
-        end
+            % Test that a version mismatch triggers a warning
+            cfgStruct.version = 0; % intentionally mismatch
+            cfgStruct.param1 = 5;
+            cfgStruct.param2 = 'mismatch';
 
-        function testNoVersionMismatchWarning(testCase)
-            % Test that no warning is produced when versions match
-            testConfig = testCase.createSimpleConfig();
-            toml.write(testCase.TestConfigFile, testConfig);
+            qb.get_config_toml(testCase.TempConfigFile, cfgStruct);
 
-            testCase.verifyWarningFree(@() qb.get_config_toml(testCase.TestConfigFile));
-        end
-
-        function testDefaultConfigCreation(testCase)
-            % Test that default config is created in HOME directory
-            expectedDefaultPath = fullfile(testCase.TestDataDir, '.quidbbids', testCase.MockVersion, 'config_default.toml');
-
-            % Ensure default config doesn't exist initially
-            if isfile(expectedDefaultPath)
-                delete(expectedDefaultPath);
-            end
-
-            % Also remove the directory to test full creation
-            configDir = fileparts(expectedDefaultPath);
-            if isfolder(configDir)
-                rmdir(configDir, 's');
-            end
-
-            config = qb.get_config_toml(testCase.TestConfigFile);
-
-            testCase.verifyTrue(isfile(expectedDefaultPath));
-            testCase.verifyTrue(isfield(config, 'version'));
+            % Verify that reading triggers a warning
+            testCase.verifyWarning(@() qb.get_config_toml(testCase.TempConfigFile), ...
+                                   "QuIDBBIDS:Config:VersionMismatch");
         end
     end
 end

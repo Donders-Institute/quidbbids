@@ -1,27 +1,3 @@
-[submodule "bids-matlab"]
-	path = dependencies/bids-matlab
-	url = https://github.com/bids-standard/bids-matlab.git
-[submodule "spm"]
-	path = dependencies/spm
-	url = https://github.com/spm/spm.git
-[submodule "despot1"]
-	path = dependencies/despot1
-	url = https://github.com/kschan0214/despot1.git
-[submodule "mwi"]
-	path = dependencies/mwi
-	url = https://github.com/kschan0214/mwi.git
-[submodule "EPG-X"]
-	path = dependencies/EPG-X
-	url = https://github.com/mriphysics/EPG-X.git
-[submodule "sepia"]
-	path = dependencies/sepia
-	url = https://github.com/kschan0214/sepia.git
-[submodule "qsub"]
-	path = dependencies/qsub
-	url = https://github.com/fieldtrip/qsub.git
-[submodule "MP-PCA-Denoising"]
-	path = dependencies/MP-PCA-Denoising
-	url = https://github.com/Neurophysics-CFIN/MP-PCA-Denoising.git
 [submodule "yaml"]
 	path = dependencies/yaml
 	url = https://github.com/MartinKoch123/yaml.git

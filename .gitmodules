@@ -28,3 +28,27 @@
 [submodule "gacelle"]
 	path = dependencies/gacelle
 	url = https://github.com/kschan0214/gacelle.git
+[submodule "dependencies/bids-matlab"]
+	path = dependencies/bids-matlab
+	url = https://github.com/bids-standard/bids-matlab.git
+[submodule "dependencies/spm"]
+	path = dependencies/spm
+	url = https://github.com/spm/spm.git
+[submodule "dependencies/despot1"]
+	path = dependencies/despot1
+	url = https://github.com/kschan0214/despot1.git
+[submodule "dependencies/mwi"]
+	path = dependencies/mwi
+	url = https://github.com/kschan0214/mwi.git
+[submodule "dependencies/EPG-X"]
+	path = dependencies/EPG-X
+	url = https://github.com/mriphysics/EPG-X.git
+[submodule "dependencies/sepia"]
+	path = dependencies/sepia
+	url = https://github.com/kschan0214/sepia.git
+[submodule "dependencies/qsub"]
+	path = dependencies/qsub
+	url = https://github.com/fieldtrip/qsub.git
+[submodule "dependencies/MP-PCA-Denoising"]
+	path = dependencies/MP-PCA-Denoising
+	url = https://github.com/Neurophysics-CFIN/MP-PCA-Denoising.git

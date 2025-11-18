@@ -8,14 +8,14 @@ function [B1corr, T1corr, UNIcorr] = correctT1B1(Sa2RAGEimg, B1img, Sa2RAGE, UNI
 %    Sa2RAGE.TR          = 2.4;
 %    Sa2RAGE.TRFLASH     = 3.1e-3;
 %    Sa2RAGE.TIs         = [75e-3 1800e-3];
-%    Sa2RAGE.NZslices    = [16+4 16+4];         % Excitations before and after kspace centre
+%    Sa2RAGE.NumberShots = [16+4 16+4];         % Excitations before and after kspace centre
 %    Sa2RAGE.FlipDegrees = [4 11];
 %    Sa2RAGE.averageT1   = 1.5;
 %
 %    MP2RAGE.TR          = 6;                   % MP2RAGE TR in seconds
 %    MP2RAGE.EchoSpacing = 6.7e-3;              % TR of the GRE readout
 %    MP2RAGE.TIs         = [800e-3 2700e-3];    % Inversion times - time between middle of refocusing pulse and excitatoin of the k-space center encoding
-%    MP2RAGE.NZslices    = [40 80];             % Slices Per Slab * [PartialFourierInSlice-0.5  0.5]
+%    MP2RAGE.NumberShots = [40 80];             % Slices Per Slab * [PartialFourierInSlice-0.5  0.5]
 %    MP2RAGE.FlipDegrees = [4 5];               % Flip angle of the two readouts in degrees
 %    MP2RAGE.InvEff      = 0.96;                % Inversion efficiency of the adiabatic inversion pulse
 %
@@ -54,7 +54,7 @@ if ~isfield(MP2RAGE,'InvEff')
 end
 
 %% definition of range of B1s and T1s and creation of MP2RAGE and Sa2RAGE lookupvector to make sure the input data for the rest of the code is the Sa2RAGEimg and the UNIT1
-[Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
+[Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NumberShots, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
 if isempty(UNIT1)
     UNIT1 = reshape(interp1(T1vector, Intensity, T1img(:)), size(B1img));
     UNIT1(isnan(UNIT1)) = -0.5;
@@ -62,7 +62,7 @@ else
     UNIT1 = qb.MP2RAGE.scaleUNI(UNIT1);    % scale UNIT1 to -0.5 to 0.5 range
 end
 
-[B1vector, Intensity] = Sa2RAGElookuptable(2, Sa2RAGE.TR, Sa2RAGE.TIs, Sa2RAGE.FlipDegrees, Sa2RAGE.NZslices, Sa2RAGE.TRFLASH, Sa2RAGE.averageT1);
+[B1vector, Intensity] = Sa2RAGElookuptable(2, Sa2RAGE.TR, Sa2RAGE.TIs, Sa2RAGE.FlipDegrees, Sa2RAGE.NumberShots, Sa2RAGE.TRFLASH, Sa2RAGE.averageT1);
 if isempty(Sa2RAGEimg)
     Sa2RAGEimg = reshape(interp1(B1vector, Intensity, B1img(:)), size(B1img));
 else
@@ -76,14 +76,14 @@ T1_vector = 0.5:0.05:5.2;
 k = 0;
 for b1val = B1_vector
     k = k + 1;
-    [Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, b1val*MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
+    [Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, b1val*MP2RAGE.FlipDegrees, MP2RAGE.NumberShots, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
     MP2RAGEmatrix(k,:)    = interp1(T1vector, Intensity, T1_vector);
 end
 
 k = 0;
 for t1val = T1_vector
     k = k + 1;
-    [B1vector, Intensity] = Sa2RAGElookuptable(2, Sa2RAGE.TR, Sa2RAGE.TIs, Sa2RAGE.FlipDegrees, Sa2RAGE.NZslices, Sa2RAGE.TRFLASH, t1val);
+    [B1vector, Intensity] = Sa2RAGElookuptable(2, Sa2RAGE.TR, Sa2RAGE.TIs, Sa2RAGE.FlipDegrees, Sa2RAGE.NumberShots, Sa2RAGE.TRFLASH, t1val);
     Sa2RAGEmatrix(k,:)    = interp1(B1vector, Intensity, B1_vector);
 end
 
@@ -130,7 +130,7 @@ for k = 1:3
 end
 
 %% creates an UNIcorr image and puts both the B1 and T1 in the ms scale
-[Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
+[Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NumberShots, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
 UNIcorr = reshape(interp1(T1vector, Intensity, T1corr(:)), size(T1corr));
 UNIcorr(isnan(UNIcorr)) = -0.5;
 UNIcorr = unscale(UNIcorr);     % unscale MP2RAGE back to 0-4095 range

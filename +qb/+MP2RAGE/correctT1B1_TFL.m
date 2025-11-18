@@ -13,7 +13,7 @@ function [T1corr, UNIcorr] = correctT1B1_TFL(B1, UNIT1, T1, MP2RAGE, brain)
 %     MP2RAGE.TR          = 6;                  % MP2RAGE TR in seconds
 %     MP2RAGE.EchoSpacing = 6.7e-3;             % TR of the GRE readout
 %     MP2RAGE.TIs         = [800e-3 2700e-3];   % Inversion times - time between middle of refocusing pulse and excitatoin of the k-space center encoding
-%     MP2RAGE.NZslices    = [40 80];            % Slices Per Slab * [PartialFourierInSlice-0.5  0.5]
+%     MP2RAGE.NumberShots = [40 80];            % Slices Per Slab * [PartialFourierInSlice-0.5  0.5]
 %     MP2RAGE.FlipDegrees = [4 5];              % Flip angle of the two readouts in degrees
 %     MP2RAGE.InvEff      = 0.96;               % Inversion efficiency of the adiabatic inversion pulse
 %
@@ -47,7 +47,7 @@ if nargin < 5 || isempty(brain)
 end
 
 %% definition of range of B1s and T1s and creation of MP2RAGE lookupvector to make sure the input data for the rest of the code is the UNIT1
-[Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
+[Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NumberShots, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
 
 if isempty(UNIT1)
     UNIT1 = reshape(interp1(T1vector, Intensity, T1(:)), size(B1));
@@ -62,7 +62,7 @@ T1_vector = 0.5:0.05:5.2;
 k = 0;
 for b1val = B1_vector
     k = k + 1;
-    [Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, b1val*MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
+    [Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, b1val*MP2RAGE.FlipDegrees, MP2RAGE.NumberShots, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
     MP2RAGEmatrix(k,:)    = interp1(T1vector, Intensity, T1_vector);
 end
 
@@ -92,7 +92,7 @@ T1corr(isnan(T1corr))   = 4;  % Set NaN to 4sec: When T1s are very long, you can
 
 %% creates an UNIcorr image and puts both the B1 and T1 in the ms scale
 if nargout > 1
-    [Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
+    [Intensity, T1vector] = lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NumberShots, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
     UNIcorr = reshape(interp1(T1vector, Intensity, T1corr(:)), size(T1corr));
     UNIcorr(isnan(UNIcorr)) = -0.5;
     UNIcorr = qb.MP2RAGE.unscaleUNI(UNIcorr);      % unscale UNIT1 back to 0-4095 range

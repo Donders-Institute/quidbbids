@@ -92,7 +92,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                                                  'part', 'mag', ...
                                                  'desc', 'ME4D');
             obj.bidsfilter.echos4Dphase = setfield(obj.bidsfilter.echos4Dmag, 'part', 'phase');
-            obj.bidsfilter.B1map_VFA    = struct('modality', 'fmap', ...
+            obj.bidsfilter.TB1map_VFA   = struct('modality', 'fmap', ...
                                                  'desc', 'degrees', ...
                                                  'space', obj.bidsfilter.syntheticT1.space, ...
                                                  'acq', 'famp');
@@ -266,7 +266,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                     for z = 1:Vref.dim(3)
                         B1(:,:,z) = spm_slice_vol(B1_, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                     end
-                    bfile = obj.bfile_set(B1famp{1}, obj.bidsfilter.B1map_VFA);
+                    bfile = obj.bfile_set(B1famp{1}, obj.bidsfilter.TB1map_VFA);
                     obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
                     spm_write_vol_gz(Vref, B1, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
                     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)

@@ -92,7 +92,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
                 INV2img = spm_read_vols(INV2hdr);
 
                 % Construct the (legacy) MP2RAGE metadata struct
-                MP2RAGE = obj.getMP2RAGE(INV1, INV2, obj.config.MP2RAGEWorker.InvEff, obj.config.MP2RAGEWorker.EchoSpacing, obj.config.MP2RAGEWorker.NZslices);
+                MP2RAGE = obj.getMP2RAGE(INV1, INV2, obj.config.MP2RAGEWorker.InvEff, obj.config.MP2RAGEWorker.EchoSpacing, obj.config.MP2RAGEWorker.NumberShots);
 
                 % Realign & reslice the B1 reference image to the INV2 image
                 Vin   = spm_vol(char(B1anat));
@@ -117,7 +117,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
                     INV1img               = spm_read_vols(INV1hdr);
                     INV1img               = qb.MP2RAGE.correctINV1INV2(INV1img, INV2img, UNIimg, 0);
                     [~, M0map, R1map]     = qb.MP2RAGE.dictmatching(MP2RAGE, INV1img, INV2img, B1img, [0.002, 0.005], 1, B1img ~= 0);
-                    [Intensity, T1vector] = qb.MP2RAGE.lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
+                    [Intensity, T1vector] = qb.MP2RAGE.lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NumberShots, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
                     UNIcorr = reshape(interp1(T1vector, Intensity, 1./R1map(:)), size(R1map));
                     UNIcorr(isnan(UNIcorr)) = -0.5;
                     UNIcorr = qb.MP2RAGE.unscaleUNI(UNIcorr);      % unscale UNIT1 back to 0-4095 range
@@ -137,7 +137,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
                 bfile                              = obj.bfile_set(char(UNIT1), obj.bidsfilter.R1map);
                 bfile.metadata.Sources             = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME + add a JSON sidecar file
                 bfile.metadata.InversionEfficiency = MP2RAGE.InvEff;
-                bfile.metadata.NZslices            = MP2RAGE.NZslices;
+                bfile.metadata.NumberShots         = MP2RAGE.NumberShots;
                 bfile.metadata.EchoSpacing         = MP2RAGE.EchoSpacing;
                 spm_write_vol_gz(UNIhdr, R1map, bfile.path);
 
@@ -156,14 +156,14 @@ classdef MP2RAGEWorker < qb.workers.Worker
 
     methods (Access = private)
 
-        function MP2RAGE = getMP2RAGE(obj, INV1, INV2, InvEff, EchoSpacing, NZslices)
+        function MP2RAGE = getMP2RAGE(obj, INV1, INV2, InvEff, EchoSpacing, NumberShots)
             %GETMP2RAGE Extracts the MP2RAGE parameters from the INV1 and INV2 metadata and constructs the (legacy) MP2RAGE metadata struct
             %
             % inv1        - The INV1 image
             % inv2        - The INV2 image
             % InvEff      - Inversion efficiency of the adiabatic inversion pulse
             % EchoSpacing - The RepetitionTimeExcitation value in secs that typically is not given on the json file. Default: twice the echo time
-            % NZslices    - The number of shots (slices) in the inner loop (inversion segment), the json file doesn't usually accommodate this
+            % NumberShots - The number of shots (slices) in the inner loop (inversion segment), the json file doesn't usually accommodate this
 
             % Extract the relevant MP2RAGE parameters from the BIDS metadata
             inv1                = bids.File(char(INV1)).metadata;
@@ -172,7 +172,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
             MP2RAGE.TIs         = [inv1.InversionTime inv2.InversionTime];      % Inversion times - time between middle of refocusing pulse and excitatoin of the k-space center encoding
             MP2RAGE.FlipDegrees = [inv1.FlipAngle     inv2.FlipAngle];          % Flip angle of the two readouts in degrees
             MP2RAGE.InvEff      = InvEff;                                       % Inversion efficiency of the adiabatic inversion pulse
-            MP2RAGE.NZslices    = NZslices;
+            MP2RAGE.NumberShots = NumberShots;
             if isempty(EchoSpacing)
                 if isfield(inv1, 'RepetitionTimeExcitation')
                     EchoSpacing = inv1.RepetitionTimeExcitation;                % TR of the GRE readout in seconds

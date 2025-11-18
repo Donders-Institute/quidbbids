@@ -4,7 +4,7 @@ function [T1, PD, R1] = dictmatching(MP2RAGE, INV1, INV2, B1map, varargin)
 % MP2RAGE is a structure that should have the following fields:
 %       MP2RAGE.TR
 %       MP2RAGE.TIs
-%       MP2RAGE.NZslices
+%       MP2RAGE.NumberShots
 %       MP2RAGE.EchoSpacing
 %       MP2RAGE.FlipDegrees
 %       MP2RAGE.InvEff
@@ -86,7 +86,7 @@ for B1 = B1vector
 
     %% create dictionary for the specific B1 value
     for j = 1:length(R1vector)
-        Signal(j,1:2) = qb.MP2RAGE.estimateMPRAGE(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.NZslices, MP2RAGE.EchoSpacing, B1*MP2RAGE.FlipDegrees, 'normal', 1/R1vector(j), MP2RAGE.InvEff);
+        Signal(j,1:2) = qb.MP2RAGE.estimateMPRAGE(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.NumberShots, MP2RAGE.EchoSpacing, B1*MP2RAGE.FlipDegrees, 'normal', 1/R1vector(j), MP2RAGE.InvEff);
     end
     dictionary = Signal(:,:) ./ vecnorm(Signal(:,:),2,2);
 

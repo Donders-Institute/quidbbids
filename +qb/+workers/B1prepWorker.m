@@ -41,10 +41,10 @@ classdef B1prepWorker < qb.workers.Worker
             obj.description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"];
             obj.version     = "0.1.0";
             obj.needs       = [];
-            obj.bidsfilter.rawB1map_angle = struct('modality','fmap', 'acq','famp', 'suffix','TB1(TFL|RFM).*');
-            obj.bidsfilter.rawB1map_anat  = setfields(obj.bidsfilter.rawB1map_angle, 'acq','anat');
-            obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawB1map_angle, 'desc','degrees', 'space','', 'suffix','TB1map');
-            obj.bidsfilter.TB1map_anat    = setfields(obj.bidsfilter.TB1map_angle, 'acq','anat');
+            obj.bidsfilter.rawTB1map_angle = struct('modality','fmap', 'acq','famp', 'suffix','TB1(TFL|RFM).*');
+            obj.bidsfilter.rawTB1map_anat  = setfields(obj.bidsfilter.rawTB1map_angle, 'acq','anat');
+            obj.bidsfilter.TB1map_angle    = setfields(obj.bidsfilter.rawTB1map_angle, 'desc','degrees', 'space','', 'suffix','TB1map');
+            obj.bidsfilter.TB1map_anat     = setfields(obj.bidsfilter.TB1map_angle, 'acq','anat');
 
             % Make the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
@@ -65,8 +65,8 @@ classdef B1prepWorker < qb.workers.Worker
             import qb.utils.spm_vol
 
             % Get the B1 anat and fa-map images
-            B1famp = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawB1map_famp);
-            B1anat = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawB1map_anat);
+            B1famp = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawTB1map_famp);
+            B1anat = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawTB1map_anat);
             if length(B1anat) ~= length(B1famp)
                 obj.logger.warning("Unexpected number of B1-files found: acq-anat=%d vs acq-famp=%d", length(B1anat), length(B1famp))
             end

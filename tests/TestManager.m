@@ -12,7 +12,7 @@ classdef TestManager < matlab.unittest.TestCase
     methods(TestMethodSetup)
         function createTempDir(testCase)
             testCase.TmpDir = tempname;
-            mkdir(fullfile(testCase.TmpDir, 'sub-01', 'ses-01', 'anat'))
+            mkdir(fullfile(testCase.TmpDir))
             bids.init(testCase.TmpDir)
             testCase.mgr = qb.QuIDBBIDS(testCase.TmpDir).manager();
         end

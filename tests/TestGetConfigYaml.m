@@ -37,14 +37,14 @@ classdef TestGetConfigYaml < matlab.unittest.TestCase
 
             % Test writing a config
             config.param1  = 100;
-            config.param2  = 'written';
+            config.param2  = "written";
             qb.get_config_yaml(testCase.ConfigFile, config);
 
             % Read it back
             newconfig = qb.get_config_yaml(testCase.ConfigFile);
 
-            testCase.verifyEqual(newconfig.param1, 100)
-            testCase.verifyEqual(newconfig.param2, 'written')
+            testCase.verifyEqual(newconfig.param1, config.param1)
+            testCase.verifyEqual(newconfig.param2, config.param2)
         end
 
         function testVersionMismatchWarning(testCase)

@@ -11,7 +11,7 @@ classdef TestQuIDBBIDS < matlab.unittest.TestCase
     methods(TestMethodSetup)
         function createTempDir(testCase)
             testCase.TmpDir = tempname;
-            mkdir(fullfile(testCase.TmpDir, 'sub-01', 'ses-01'))
+            mkdir(fullfile(testCase.TmpDir))
             bids.init(testCase.TmpDir)
         end
     end

@@ -11,7 +11,7 @@ classdef TestLogging < matlab.unittest.TestCase
 
             % Create a temp subject directory
             testCase.TempDir = tempname;
-            SubjectDir       = fullfile(testCase.TempDir);
+            SubjectDir       = fullfile(testCase.TempDir, 'sub-01', 'ses-01');
             mkdir(SubjectDir)
 
             % BIDS struct

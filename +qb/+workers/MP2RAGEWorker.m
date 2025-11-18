@@ -13,7 +13,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
 
 
     properties
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
     end
 
 
@@ -39,7 +39,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
             obj.name        = "Anakin";
             obj.description = ["I am a working class hero that will happily do the following pre-processing work for you:"];
             obj.version     = "0.1.0";
-            obj.needs       = ["B1map_anat", "B1map_angle"];        % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
+            obj.needs       = ["TB1map_anat", "TB1map_angle"];        % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
             obj.bidsfilter.R1map       = struct('modality', 'anat', ...
                                                 'part', '', ...
                                                 'space', 'MP2RAGE', ...
@@ -68,10 +68,10 @@ classdef MP2RAGEWorker < qb.workers.Worker
             import qb.utils.spm_vol
 
             % Get the B1 images from the team
-            B1famp = obj.ask_team('B1map_angle');
-            B1anat = obj.ask_team('B1map_anat');
+            B1famp = obj.ask_team('TB1map_angle');
+            B1anat = obj.ask_team('TB1map_anat');
             if length(B1famp) > 1 || length(B1anat) > 1
-                obj.logger.error("Expected one B1map_angle and one B1map_anat file, but got %d and %d files", length(B1famp), length(B1anat))
+                obj.logger.error("Expected one TB1map_angle and one TB1map_anat file, but got %d and %d files", length(B1famp), length(B1anat))
             end
 
             % Process all runs independently

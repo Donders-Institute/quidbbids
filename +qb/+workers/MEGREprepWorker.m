@@ -24,7 +24,7 @@ classdef MEGREprepWorker < qb.workers.Worker
 
 
     properties
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
     end
 
 
@@ -61,7 +61,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                                "";
                                "If only MEGRE data is available, then steps 1 and 2 are skipped"];
             obj.version     = "0.1.0";
-            obj.needs       = ["B1map_anat", "B1map_angle"];
+            obj.needs       = ["TB1map_anat", "TB1map_angle"];
             obj.bidsfilter.rawMEVFA     = struct('modality', 'anat', ...
                                                  'echo', 1:999, ...
                                                  'flip', 1:999, ...
@@ -134,6 +134,7 @@ classdef MEGREprepWorker < qb.workers.Worker
 
             import qb.utils.spm_write_vol_gz
             import qb.utils.spm_vol
+            import qb.utils.setfields
 
             GRESignal = @(FlipAngle, TR, T1) sind(FlipAngle) .* (1-exp(-TR./T1)) ./ (1-(exp(-TR./T1)) .* cosd(FlipAngle));
 
@@ -141,7 +142,7 @@ classdef MEGREprepWorker < qb.workers.Worker
             for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawMEVFA)
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this run
-                VFA_e1m_filter = setfield(setfield(setfield(obj.bidsfilter.rawMEVFA, 'echo',1), 'run',char(run)), 'part','(mag)?');
+                VFA_e1m_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','(mag)?');
                 VFA_e1m = obj.query_ses(obj.BIDS,  'data', VFA_e1m_filter);
                 flips   = obj.query_ses(obj.BIDS, 'flips', VFA_e1m_filter);
                 if length(flips) <= 1
@@ -192,27 +193,28 @@ classdef MEGREprepWorker < qb.workers.Worker
 
             import qb.utils.spm_write_vol_gz
             import qb.utils.spm_vol
+            import qb.utils.setfields
 
             % Index the workdir layout (only for obj.subject)
             BIDSW = obj.layout_workdir();
 
             % Get the B1 images from the team
-            B1famp = obj.ask_team('B1map_angle');
-            B1anat = obj.ask_team('B1map_anat');
+            B1famp = obj.ask_team('TB1map_angle');
+            B1anat = obj.ask_team('TB1map_anat');
 
             % Process all runs independently
             for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawMEVFA)
 
-                VFA_e1m_filter = setfield(setfield(setfield(obj.bidsfilter.rawMEVFA, 'echo',1), 'run',char(run)), 'part','(mag)?');
+                VFA_e1m_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','(mag)?');
 
                 % Realign all FA images to their synthetic targets
                 for flip = obj.query_ses(obj.BIDS, 'flips', VFA_e1m_filter)
 
                     % Get the raw echo-1 magnitude file for this flip angle of this run
-                    VFA_e1m = obj.query_ses(obj.BIDS, 'data', setfield(VFA_e1m_filter, 'flip',char(flip)));
+                    VFA_e1m = obj.query_ses(obj.BIDS, 'data', VFA_e1m_filter, 'flip',char(flip));
 
                     % Get the common synthetic FA target image
-                    VFAref = obj.query_ses(BIDSW, 'data', setfield(setfield(obj.bidsfilter.syntheticT1, 'run',char(run)), 'desc',sprintf('VFAflip%s', char(flip))));    % Keep in sync with obj.bidsfilter.syntheticT1
+                    VFAref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.syntheticT1, 'run',char(run), 'desc',sprintf('VFAflip%s', char(flip)));    % Keep in sync with obj.bidsfilter.syntheticT1
                     if length(VFAref) ~= 1
                         obj.logger.exception("I expected one synthetic reference images, but found:" + sprintf("\n%s",VFAref{:}))
                     end
@@ -224,7 +226,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                     x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
                     % Save all resliced echo images for this flip angle (they will be merged to a 4D-file later)
-                    for echo = obj.query_ses(obj.BIDS, 'echos', setfield(setfield(obj.bidsfilter.rawMEGRE, 'run',char(run)), 'flip',char(flip)))
+                    for echo = obj.query_ses(obj.BIDS, 'echos', obj.bidsfilter.rawMEGRE, 'run',char(run), 'flip',char(flip))
                         Ve  = spm_vol(char(echo));
                         img = NaN(Vref.dim);
                         T   = Ve.mat \ spm_matrix(x) * Vref.mat;        % Transformation from voxels in Vref to voxels in Ve
@@ -242,7 +244,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                 end
 
                 % Get the B1 images and the common M0 target image
-                M0ref = obj.query_ses(BIDSW, 'data', setfield(obj.bidsfilter.M0map_echo1, 'run',char(run)));
+                M0ref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.M0map_echo1, 'run',char(run));
                 if length(M0ref) ~= 1
                     obj.logger.error("Unexpected M0map images found: %s", sprintf("\n%s", M0ref{:}))
                 end
@@ -373,14 +375,14 @@ classdef MEGREprepWorker < qb.workers.Worker
             % Merge the 3D echos files into 4D files for all MEGRE acq/runs independently
             bfilter = struct('modality','anat', 'part','mag', 'echo',1:999);
             for acq = obj.query_ses(obj.BIDS, 'acquisitions', bfilter)
-                for run = obj.query_ses(obj.BIDS, 'runs', setfield(bfilter, 'acq',char(acq)))
+                for run = obj.query_ses(obj.BIDS, 'runs', bfilter, 'acq',char(acq))
 
                     % Get the mag/phase echo images for this flip angle & run
-                    magfiles   = obj.query_ses(obj.BIDS, 'data',          setfield(setfield(bfilter, 'acq',char(acq)), 'run',char(run)));
-                    phasefiles = obj.query_ses(obj.BIDS, 'data', setfield(setfield(setfield(bfilter, 'acq',char(acq)), 'run',char(run)), 'part','phase'));
+                    magfiles   = obj.query_ses(obj.BIDS, 'data', bfilter, 'acq',char(acq), 'run',char(run));
+                    phasefiles = obj.query_ses(obj.BIDS, 'data', bfilter, 'acq',char(acq), 'run',char(run), 'part','phase');
 
                     % Reorder the data because SEPIA (possibly?) expects the TE to be in increasing order
-                    meta       = obj.query_ses(obj.BIDS, 'metadata', setfield(setfield(bfilter, 'acq',char(acq)), 'run',char(run)));
+                    meta       = obj.query_ses(obj.BIDS, 'metadata', bfilter, 'acq',char(acq), 'run',char(run));
                     [TEs, idx] = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
                     magfiles   = magfiles(idx);
                     phasefiles = phasefiles(idx);

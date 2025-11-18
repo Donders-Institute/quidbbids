@@ -13,7 +13,7 @@ classdef SCRWorker < qb.workers.Worker
 
 
     properties
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
     end
 
 
@@ -100,11 +100,11 @@ classdef SCRWorker < qb.workers.Worker
             % Process all runs independently
             for run = obj.query_ses(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs
 
-                S0data     = obj.query_ses(BIDSWS, 'data',     setfield(S0filter,     'run', char(run)));
-                R2stardata = obj.query_ses(BIDSWS, 'data',     setfield(R2starfilter, 'run', char(run)));
-                Chidata    = obj.query_ses(BIDSWS, 'data',     setfield(Chifilter,    'run', char(run)));
-                maskdata   = obj.query_ses(BIDSWS, 'data',     setfield(maskfilter,   'run', char(run)));
-                meta       = obj.query_ses(BIDSWS, 'metadata', setfield(S0filter,     'run', char(run)));
+                S0data     = obj.query_ses(BIDSWS, 'data',     S0filter,     'run', char(run));
+                R2stardata = obj.query_ses(BIDSWS, 'data',     R2starfilter, 'run', char(run));
+                Chidata    = obj.query_ses(BIDSWS, 'data',     Chifilter,    'run', char(run));
+                maskdata   = obj.query_ses(BIDSWS, 'data',     maskfilter,   'run', char(run));
+                meta       = obj.query_ses(BIDSWS, 'metadata', S0filter,     'run', char(run));
                 flips      = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
 
                 % Check the queries workitems

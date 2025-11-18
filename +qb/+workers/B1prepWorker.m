@@ -12,7 +12,7 @@ classdef B1prepWorker < qb.workers.Worker
     end
 
     properties
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', setfield(bidsfilter.(workitem), 'run',1))`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
     end
 
 
@@ -31,6 +31,8 @@ classdef B1prepWorker < qb.workers.Worker
                 workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
             end
 
+            import qb.utils.setfields
+
             % Call the abstract parent constructor
             obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
 
@@ -39,10 +41,10 @@ classdef B1prepWorker < qb.workers.Worker
             obj.description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"];
             obj.version     = "0.1.0";
             obj.needs       = [];
-            obj.bidsfilter.rawB1map_angle = struct('modality', 'fmap', 'acq', 'famp', 'suffix', 'TB1(TFL|RFM).*');
-            obj.bidsfilter.rawB1map_anat  = setfield(obj.bidsfilter.rawB1map_angle, 'acq', 'anat');
-            obj.bidsfilter.B1map_angle    = setfield(setfield(obj.bidsfilter.rawB1map_angle, 'desc', 'degrees'), 'space', '');
-            obj.bidsfilter.B1map_anat     = setfield(obj.bidsfilter.B1map_angle, 'acq', 'anat');
+            obj.bidsfilter.rawB1map_angle = struct('modality','fmap', 'acq','famp', 'suffix','TB1(TFL|RFM).*');
+            obj.bidsfilter.rawB1map_anat  = setfields(obj.bidsfilter.rawB1map_angle, 'acq','anat');
+            obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawB1map_angle, 'desc','degrees', 'space','', 'suffix','TB1map');
+            obj.bidsfilter.TB1map_anat    = setfields(obj.bidsfilter.TB1map_angle, 'acq','anat');
 
             % Make the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
@@ -87,14 +89,14 @@ classdef B1prepWorker < qb.workers.Worker
                 end
 
                 % Save the FA-map image & json file
-                bfile = obj.bfile_set(bfile, obj.bidsfilter.B1map_angle);
+                bfile = obj.bfile_set(bfile, obj.bidsfilter.TB1map_angle);
                 obj.logger.info("--> Saving regularized B1-map: %s", bfile.filename)
                 qb.utils.spm_write_vol_gz(FAVol, FA, bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
 
                 % Copy the anat image & json file
                 if ~isempty(B1anat)
-                    bfile = obj.bfile_set(B1anat{n}, obj.bidsfilter.B1map_anat);
+                    bfile = obj.bfile_set(B1anat{n}, obj.bidsfilter.TB1map_anat);
                     copyfile(B1anat{n}, bfile.path);
                     bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
                 end

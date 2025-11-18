@@ -20,7 +20,7 @@ classdef (Abstract) Worker < handle
 
 
     properties (Abstract)
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout_workdir, 'data', setfield(bidsfilter.(workitem), 'run',1))`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout_workdir, 'data', bidsfilter.(workitem), 'run',1)`
     end
 
 
@@ -327,7 +327,8 @@ classdef (Abstract) Worker < handle
             % Inputs:
             %   LAYOUT - BIDS directory name or BIDS structure (from bids.layout) to query
             %   QUERY  - The type of query to perform (e.g., 'data', 'metadata', 'runs', etc.)
-            %   FILTER - (optional) A struct or name-value pairs specifying additional filters for the query
+            %   FILTER - (optional) Either a struct, or name-value pairs specifying additional filters for the query (i.e. as
+            %            in bids.query), or a struct followed by the name-value pairs
             %
             % Output:
             %   RESULT - The result of the bids.query with the subject/session filter applied. NB: always a row cell array
@@ -336,20 +337,22 @@ classdef (Abstract) Worker < handle
             %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, [FILTER])
             %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, struct('name1', value1, 'name2', value2, ...))
             %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
+            %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, struct('name1', value1), 'name2', value2, ...)
             %
             % See also: bids.query
 
             % Parse the filter input
-            if isempty(varargin) || ~isscalar(varargin)
-                bfilter = struct(varargin{:});
-            elseif isstruct(varargin{1})
+            bfilter = struct();
+            if ~isempty(varargin) && isstruct(varargin{1})
                 bfilter = varargin{1};
-            else
-                obj.logger.exception('QUERY_SES expects the FILTER to be a struct or name-value pairs')
+                varargin(1) = [];
+            end
+            if mod(length(varargin),2) ~= 0
+                obj.logger.exception('QUERY_SES expects the FILTER to be either a struct, or name-value pairs or a struct followed by name-value pairs')
             end
 
-            % Do the query with the subject/session filter added
-            result = bids.query(layout, query, setfield(setfield(bfilter, 'sub',obj.sub()), 'ses',obj.ses()));
+            % Do the query with the subject/session + any additional filters added
+            result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), 'ses',obj.ses()), varargin{:});
 
             % Postprocess the query result (i.e. fix the quirky bids.query behavior)
             switch query

@@ -42,7 +42,7 @@ classdef R1R2sWorker < qb.workers.Worker
                                "Methods:"
                                "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"];
             obj.version     = "0.1.0";
-            obj.needs       = ["echos4Dmag", "TB1map_VFA", "brainmask"];  % TODO: Ask Jose which mask to use
+            obj.needs       = ["echos4Dmag", "TB1map_GRE", "brainmask"];  % TODO: Ask Jose which mask to use
             obj.bidsfilter.R2starmap = struct('modality', 'anat', ...
                                               'echo', [], ...
                                               'part', '', ...
@@ -77,15 +77,15 @@ classdef R1R2sWorker < qb.workers.Worker
 
             % Get the workitems we need from a colleague
             echos4Dmag = obj.ask_team('echos4Dmag');    % Multiple FA-images per run
-            TB1map_VFA = obj.ask_team('TB1map_VFA');     % Single image per run
+            TB1map_GRE = obj.ask_team('TB1map_GRE');     % Single image per run
             brainmask  = obj.ask_team('brainmask');     % Multiple FA-images per run
 
             % Check the number of items we got: TODO: FIXME: multi-run acquisitions
             if length(echos4Dmag) < 2
                 obj.logger.exception('%s received data for only %d flip angles', obj.name, length(echos4Dmag))
             end
-            if length(TB1map_VFA) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-                obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', TB1map_VFA{:}))
+            if length(TB1map_GRE) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
+                obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', TB1map_GRE{:}))
             end
             if length(brainmask) ~= 1           % TODO: FIXME
                 obj.logger.exception('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', brainmask{:}))
@@ -101,7 +101,7 @@ classdef R1R2sWorker < qb.workers.Worker
                 FA(n)          = bfile.metadata.FlipAngle;
             end
             mask = spm_read_vols(spm_vol(char(brainmask))) & all(~isnan(img), [4 5]);
-            B1   = spm_read_vols(spm_vol(char(TB1map_VFA)));
+            B1   = spm_read_vols(spm_vol(char(TB1map_GRE)));
             TR   = bfile.metadata.RepetitionTime;
             TE   = bfile.metadata.EchoTime;
 

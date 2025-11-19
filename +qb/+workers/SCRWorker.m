@@ -43,7 +43,7 @@ classdef SCRWorker < qb.workers.Worker
                                "- Compute weighted means of the R2-star & Chi-maps over the different flip-angles";
                                "- Compute R1- & M0-maps based on despot1 with S0 estimates"];
             obj.version     = "0.0.1";
-            obj.needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "TB1map_VFA"];
+            obj.needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "TB1map_GRE"];
             obj.bidsfilter.R1map_S0      = struct('modality', 'anat', ...
                                                   'echo', [], ...
                                                   'part', '', ...
@@ -88,14 +88,14 @@ classdef SCRWorker < qb.workers.Worker
             [~, Chifilter]    = obj.ask_team('Chimap');     % TODO: Make optional (-> ME-VFA data)
 
             % Get B1map from a colleague
-            B1map             = obj.ask_team('TB1map_VFA');
+            B1map             = obj.ask_team('TB1map_GRE');
             if length(B1map) ~= 1       % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
                 obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', B1map{:}))
             end
             B1 = spm_read_vols(spm_vol(char(B1map)));
 
             % Index the (special) SEPIA workdir layout (only for obj.subject)
-            BIDSWS = obj.layout_workdir(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
+            BIDSWS = obj.BIDSW_ses(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
 
             % Process all runs independently
             for run = obj.query_ses(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs

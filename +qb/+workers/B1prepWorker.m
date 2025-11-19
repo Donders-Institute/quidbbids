@@ -43,7 +43,7 @@ classdef B1prepWorker < qb.workers.Worker
             obj.needs       = [];
             obj.bidsfilter.rawTB1map_angle = struct('modality','fmap', 'acq','famp', 'suffix','TB1(TFL|RFM).*');
             obj.bidsfilter.rawTB1map_anat  = setfields(obj.bidsfilter.rawTB1map_angle, 'acq','anat');
-            obj.bidsfilter.TB1map_angle    = setfields(obj.bidsfilter.rawTB1map_angle, 'desc','degrees', 'space','', 'suffix','TB1map');
+            obj.bidsfilter.TB1map_angle    = setfields(obj.bidsfilter.rawTB1map_angle, 'desc','corrected', 'space','raw', 'suffix','TB1map');
             obj.bidsfilter.TB1map_anat     = setfields(obj.bidsfilter.TB1map_angle, 'acq','anat');
 
             % Make the workitems (if requested)

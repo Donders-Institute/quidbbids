@@ -114,8 +114,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
 
                 else
 
-                    INV1img               = spm_read_vols(INV1hdr);
-                    INV1img               = qb.MP2RAGE.correctINV1INV2(INV1img, INV2img, UNIimg, 0);
+                    INV1img               = qb.MP2RAGE.correctINV1INV2(spm_read_vols(INV1hdr), INV2img, UNIimg, 0);
                     [~, M0map, R1map]     = qb.MP2RAGE.dictmatching(MP2RAGE, INV1img, INV2img, B1img, [0.002, 0.005], 1, B1img ~= 0);
                     [Intensity, T1vector] = qb.MP2RAGE.lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NumberShots, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
                     UNIcorr = reshape(interp1(T1vector, Intensity, 1./R1map(:)), size(R1map));
@@ -134,7 +133,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
                 M0map(B1img == 0) = 0;
 
                 % Save the R1-map
-                bfile                              = obj.bfile_set(char(UNIT1), obj.bidsfilter.R1map);
+                bfile                              = obj.bfile_set(UNIT1, obj.bidsfilter.R1map);
                 bfile.metadata.Sources             = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME + add a JSON sidecar file
                 bfile.metadata.InversionEfficiency = MP2RAGE.InvEff;
                 bfile.metadata.NumberShots         = MP2RAGE.NumberShots;

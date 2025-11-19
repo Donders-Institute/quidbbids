@@ -20,7 +20,7 @@ classdef (Abstract) Worker < handle
 
 
     properties (Abstract)
-        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout_workdir, 'data', bidsfilter.(workitem), 'run',1)`
+        bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), 'run',1)`
     end
 
 
@@ -108,7 +108,7 @@ classdef (Abstract) Worker < handle
             end
 
             % See if we can collect the requested workitem
-            work = obj.query_ses(obj.layout_workdir(), 'data', obj.bidsfilter.(workitem));
+            work = obj.query_ses(obj.BIDSW_ses(), 'data', obj.bidsfilter.(workitem));
             if isempty(work) || force
 
                 obj.logger.info("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path)
@@ -132,7 +132,7 @@ classdef (Abstract) Worker < handle
                 % TODO: update the dashboard (non-HPC usage)
 
                 % Collect the requested workitem
-                work = obj.query_ses(obj.layout_workdir(), 'data', obj.bidsfilter.(workitem));
+                work = obj.query_ses(obj.BIDSW_ses(), 'data', obj.bidsfilter.(workitem));
                 if ~isempty(work)
                     obj.done()
                     obj.logger.info(obj.name + " has finished working on: " + obj.subject.path)
@@ -272,8 +272,8 @@ classdef (Abstract) Worker < handle
             label = label{end};
         end
 
-        function BIDSW = layout_workdir(obj, workdir)
-            %LAYOUT_WORKDIR Gets a tolerant bids.layout() for the sub/ses WORKDIR (default: obj.workdir)
+        function BIDSW = BIDSW_ses(obj, workdir)
+            %LAYOUT_WORKDIR Gets a tolerant bids.layout() for the WORKDIR sub/ses (default: obj.workdir)
 
             if nargin < 2 || isempty(workdir)
                 workdir = obj.workdir;
@@ -374,7 +374,7 @@ classdef (Abstract) Worker < handle
             %   in the SPECS structure.
             %
             %   Inputs:
-            %       BFILE   - Either a bids.File object or a character/string path to a
+            %       BFILE   - Either a bids.File object or a cell/string/character path to a
             %                 BIDS-formatted file. If a path is provided, it is converted
             %                 internally to a bids.File object.
             %       SPECS   - (optional) A structure specifying entity/suffix/modality names
@@ -396,13 +396,13 @@ classdef (Abstract) Worker < handle
 
             arguments
                 obj
-                bfile   {mustBeA(bfile, {'bids.File','char','string'})}
+                bfile   {mustBeA(bfile, {'bids.File','char','string','cellstr'})}
                 specs   (1,1) struct = struct()
                 rootdir {mustBeTextScalar} = ''
             end
 
             % Parse the input arguments
-            if ischar(bfile) || isstring(bfile)
+            if ischar(bfile) || isstring(bfile) || iscellstr(bfile)
                 bfile = bids.File(char(bfile));
             end
             if ~strlength(rootdir)

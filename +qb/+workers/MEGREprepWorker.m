@@ -92,10 +92,10 @@ classdef MEGREprepWorker < qb.workers.Worker
                                                  'part', 'mag', ...
                                                  'desc', 'ME4D');
             obj.bidsfilter.echos4Dphase = setfield(obj.bidsfilter.echos4Dmag, 'part', 'phase');
-            obj.bidsfilter.TB1map_VFA   = struct('modality', 'fmap', ...
-                                                 'desc', 'degrees', ...
+            obj.bidsfilter.TB1map_GRE   = struct('modality', 'fmap', ...
                                                  'space', obj.bidsfilter.syntheticT1.space, ...
-                                                 'acq', 'famp');
+                                                 'acq', 'famp', ...
+                                                 'suffix', 'TB1map');
 
             % Make the workitems (if requested)
             if strlength(workitems)                             % isempty(string('')) -> false
@@ -115,13 +115,14 @@ classdef MEGREprepWorker < qb.workers.Worker
 
             % Get the work done
             if obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawMEVFA)
-                obj.create_syntheticT1_M0()     % Processing step 1
-                obj.coreg_VFA_B1_2synthetic()   % Processing step 2
-                obj.create_brainmask()          % Processing step 3
-                obj.merge_MEVFAfiles()          % Processing step 4
-            else
-                obj.create_brainmask()          % Processing step 3
-                obj.merge_MEfiles()             % Processing step 4
+                obj.create_syntheticT1_M0()                                     % Processing step 1
+                obj.coreg_VFA_B1_2synthetic()                                   % Processing step 2
+                obj.create_brainmask(obj.BIDSW_ses(), obj.bidsfilter.rawMEVFA)  % Processing step 3
+                obj.merge_MEVFAfiles()                                          % Processing step 4
+            end
+            if obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawMEGRE)
+                obj.create_brainmask(obj.BIDS, obj.bidsfilter.rawMEGRE)         % Processing step 3
+                obj.merge_MEfiles()                                             % Processing step 4
             end
         end
 
@@ -142,22 +143,22 @@ classdef MEGREprepWorker < qb.workers.Worker
             for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawMEVFA)
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this run
-                VFA_e1m_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','(mag)?');
-                VFA_e1m = obj.query_ses(obj.BIDS,  'data', VFA_e1m_filter);
-                flips   = obj.query_ses(obj.BIDS, 'flips', VFA_e1m_filter);
+                VFA_e1_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','(mag)?');
+                VFA_e1 = obj.query_ses(obj.BIDS,  'data', VFA_e1_filter);
+                flips  = obj.query_ses(obj.BIDS, 'flips', VFA_e1_filter);
                 if length(flips) <= 1
                     obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + flips)
                 end
 
                 % Get metadata from the first FA file (assume TR and nii-header identical for all VFAs of the same run)
-                Ve1 = spm_vol(VFA_e1m{1});
+                Ve1 = spm_vol(VFA_e1{1});
 
                 % Compute T1 and M0 maps
-                obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1m{1})
+                obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1{1})
                 e1img = NaN([Ve1.dim length(flips)]);
                 for n = 1:length(flips)
-                    e1img(:,:,:,n) = spm_read_vols(spm_vol(VFA_e1m{n}));
-                    metadata       = bids.File(VFA_e1m{n}).metadata;
+                    e1img(:,:,:,n) = spm_read_vols(spm_vol(VFA_e1{n}));
+                    metadata       = bids.File(VFA_e1{n}).metadata;
                     flipangles(n)  = metadata.FlipAngle;
                 end
                 [T1, M0] = despot1_mapping(e1img, flipangles, metadata.RepetitionTime);
@@ -169,7 +170,7 @@ classdef MEGREprepWorker < qb.workers.Worker
                     T1w                    = M0 .* GRESignal(flipangles(n), metadata.RepetitionTime, T1);
                     T1w(~isfinite(T1w))    = 0;
                     specs                  = setfield(obj.bidsfilter.syntheticT1, 'desc', sprintf('VFAflip%s', flips{n}));  % Keep in sync with obj.bidsfilter.syntheticT1.desc
-                    bfile                  = obj.bfile_set(VFA_e1m{n}, specs);
+                    bfile                  = obj.bfile_set(VFA_e1{n}, specs);
                     bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};                               % TODO: FIXME
                     obj.logger.info("Saving T1like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
                     spm_write_vol_gz(Ve1, T1w, bfile.path);
@@ -178,7 +179,7 @@ classdef MEGREprepWorker < qb.workers.Worker
 
                 % Save the M0 volume as well
                 bfile                  = obj.bfile_set(Ve1.fname, obj.bidsfilter.M0map_echo1);
-                bfile.metadata.Sources = strrep(VFA_e1m, extractBefore(VFA_e1m{1}, bfile.bids_path), 'bids:raw:');
+                bfile.metadata.Sources = strrep(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids:raw:');
                 obj.logger.info("Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
                 spm_write_vol_gz(Ve1, M0, bfile.path);
                 bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
@@ -196,7 +197,7 @@ classdef MEGREprepWorker < qb.workers.Worker
             import qb.utils.setfields
 
             % Index the workdir layout (only for obj.subject)
-            BIDSW = obj.layout_workdir();
+            BIDSW = obj.BIDSW_ses();
 
             % Get the B1 images from the team
             B1famp = obj.ask_team('TB1map_angle');
@@ -205,13 +206,13 @@ classdef MEGREprepWorker < qb.workers.Worker
             % Process all runs independently
             for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawMEVFA)
 
-                VFA_e1m_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','(mag)?');
+                VFA_e1_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','(mag)?');
 
                 % Realign all FA images to their synthetic targets
-                for flip = obj.query_ses(obj.BIDS, 'flips', VFA_e1m_filter)
+                for flip = obj.query_ses(obj.BIDS, 'flips', VFA_e1_filter)
 
                     % Get the raw echo-1 magnitude file for this flip angle of this run
-                    VFA_e1m = obj.query_ses(obj.BIDS, 'data', VFA_e1m_filter, 'flip',char(flip));
+                    VFA_e1 = obj.query_ses(obj.BIDS, 'data', VFA_e1_filter, 'flip',char(flip));
 
                     % Get the common synthetic FA target image
                     VFAref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.syntheticT1, 'run',char(run), 'desc',sprintf('VFAflip%s', char(flip)));    % Keep in sync with obj.bidsfilter.syntheticT1
@@ -219,25 +220,25 @@ classdef MEGREprepWorker < qb.workers.Worker
                         obj.logger.exception("I expected one synthetic reference images, but found:" + sprintf("\n%s",VFAref{:}))
                     end
 
-                    % Coregister the VFA_e1m image to the synthetic target image using Normalized Cross-Correlation (NCC)
+                    % Coregister the VFA_e1 image to the synthetic target image using Normalized Cross-Correlation (NCC)
                     obj.logger.info("--> Coregistering echo images for FA: " + flip)
                     Vref = spm_vol(char(VFAref));
-                    Vin  = spm_vol(char(VFA_e1m));
+                    Vin  = spm_vol(char(VFA_e1));
                     x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
                     % Save all resliced echo images for this flip angle (they will be merged to a 4D-file later)
-                    for echo = obj.query_ses(obj.BIDS, 'echos', obj.bidsfilter.rawMEGRE, 'run',char(run), 'flip',char(flip))
-                        Ve  = spm_vol(char(echo));
-                        img = NaN(Vref.dim);
-                        T   = Ve.mat \ spm_matrix(x) * Vref.mat;        % Transformation from voxels in Vref to voxels in Ve
+                    VFA_flip_filter = setfields(obj.bidsfilter.rawMEVFA, 'flip',char(flip), 'run',char(run), 'part','(mag)?');
+                    for echo = obj.query_ses(obj.BIDS, 'echos', VFA_flip_filter)
+                        VFA_fe = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo));
+                        Vfe    = spm_vol(char(VFA_fe));
+                        img    = NaN(Vref.dim);
+                        T      = Vfe.mat \ spm_matrix(x) * Vref.mat;     % Transformation from voxels in Vref to voxels in Vfe
                         for z = 1:Vref.dim(3)
-                            img(:,:,z) = spm_slice_vol(Ve, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
+                            img(:,:,z) = spm_slice_vol(Vfe, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);    % Using trilinear interpolation
                         end
-                        bfile = bids.File(char(VFAref));
-                        bfile.entities.space   = obj.bidsfilter.syntheticT1.space;
-                        bfile.entities.desc    = sprintf('VFA%02d', flips(n));
+                        bfile = obj.bfile_set(Vfe.fname, 'space',obj.bidsfilter.syntheticT1.space, 'desc','temp3D');  % Will be merged to desc=ME4D
                         bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
-                        spm_write_vol_gz(Vref, img, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+                        spm_write_vol_gz(Vref, img, bfile.path);
                         bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                     end
 
@@ -255,62 +256,53 @@ classdef MEGREprepWorker < qb.workers.Worker
                         obj.logger.error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}))
                     end
 
-                    Vref = spm_vol(char(M0ref));
+                    Vref = spm_vol(char(M0ref));                    % Same space as synthetic T1
                     Vin  = spm_vol(char(B1anat));
                     x    = spm_coreg(Vref, Vin, struct('cost_fun', 'nmi'));
 
                     % Save the resliced FA-map
-                    B1_ = spm_vol(char(B1famp));
+                    VB1 = spm_vol(char(B1famp));
                     B1  = NaN(Vref.dim);
-                    T   = B1_.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxels in Vref to voxels in B1_
+                    T   = VB1.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxels in Vref to voxels in VB1
                     for z = 1:Vref.dim(3)
-                        B1(:,:,z) = spm_slice_vol(B1_, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
+                        B1(:,:,z) = spm_slice_vol(VB1, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                     end
-                    bfile = obj.bfile_set(B1famp{1}, obj.bidsfilter.TB1map_VFA);
+                    bfile = obj.bfile_set(B1famp, obj.bidsfilter.TB1map_GRE);
                     obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
-                    spm_write_vol_gz(Vref, B1, fullfile(obj.workdir, bfile.bids_path, bfile.filename));
+                    spm_write_vol_gz(Vref, B1, bfile.path);
                     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
                 end
 
             end
         end
 
-        function create_brainmask(obj)
+        function create_brainmask(obj, BIDS, bfilter)
             %CREATE_BRAINMASK Implements processing step 3
             %
-            % Create a brain mask for each FA using the echo-1_mag image. Combine the individual masks
-            % to produce a minimal output mask (for QSM and MCR processing)
+            % Create brain masks for the BFILTER images in BIDS. Combine flip-masks
+            % to produce a combined minimal output mask (for QSM and MCR processing)
 
             import qb.utils.spm_vol
 
-            % Index the workdir layout, or just use obj.BIDS if no fmap is available
-            if ismember("fmap", fieldnames(obj.subject))
-                BIDS     = obj.layout_workdir();
-                anat_mag = {'modality','anat', 'space',obj.bidsfilter.syntheticT1.space, 'part','mag'};  % Keep in sync
-            else
-                BIDS     = obj.BIDS;
-                anat_mag = {'modality','anat', 'part','mag'};
-            end
-
             % Process all runs independently
-            for run = obj.query_ses(BIDS, 'runs', anat_mag{:}, 'echo',1:999)
+            for run = obj.query_ses(BIDS, 'runs', bfilter)
 
-                % Create individual brain masks per acquisition / flip angle from echo-1 magnitude images using mri_synthstrip
+                % Combine all (echo-1) masks to create a minimal brain mask (using mri_synthstrip)
                 mask = true;
-                for e1mag = obj.query_ses(BIDS, 'data', anat_mag{:}, 'echo',1, 'run',char(run))
-                    bfile = bids.File(char(e1mag));
-                    specs = setfield(obj.bidsfilter.brainmask, 'desc', sprintf('VFA%02d', bfile.metadata.FlipAngle));
+                for echo1 = obj.query_ses(BIDS, 'data', bfilter, 'echo',1, 'run',char(run))     % This will loop over flips (NB: and possibly more)
+                    bfile = bids.File(char(echo1));
+                    specs = setfield(obj.bidsfilter.brainmask, 'desc', sprintf('VFA%02d', bfile.metadata.FlipAngle));   % Add desc -> (flip)mask is a temporary file
                     bfile = obj.bfile_set(bfile, specs);
                     [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
-                    obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(e1mag), bfile.path));
+                    obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(echo1), bfile.path));
                     mask  = spm_read_vols(spm_vol(bfile.path)) & mask;
-                    delete(bfile.path)                      % Delete the individual mask files to save space
+                    delete(bfile.path)                      % Delete the temporary mask file
                 end
 
-                % Combine the individual masks to create a minimal brain mask
-                bfile = obj.bfile_set(bfile, obj.bidsfilter.brainmask);
+                % Save the combined mask
+                bfile = obj.bfile_set(echo1, obj.bidsfilter.brainmask);
                 obj.logger.info("--> Creating brain mask: %s", bfile.filename)
-                qb.utils.spm_write_vol_gz(spm_vol(char(e1mag)), mask, bfile.path);
+                qb.utils.spm_write_vol_gz(spm_vol(char(echo1)), mask, bfile.path);
                 bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
 
             end
@@ -324,42 +316,35 @@ classdef MEGREprepWorker < qb.workers.Worker
             import qb.utils.spm_file_merge_gz
 
             % Index the workdir layout (only for obj.subject)
-            BIDSW = obj.layout_workdir();
+            BIDSW = obj.BIDSW_ses();
 
             % Process all runs independently
-            anat = {'modality','anat', 'space',obj.bidsfilter.syntheticT1.space};
-            for run = obj.query_ses(BIDSW, 'runs', anat{:}, 'part','mag', 'echo',1:999, 'desc','VFA\d*')
+            bfilter.desc = 'temp3D';
+            for run = obj.query_ses(BIDSW, 'runs', bfilter)
+                bfilter.run = char(run);
 
-                % Get the flip angles for this run
-                VFA = obj.query_ses(BIDSW, 'descriptions', anat{:}, 'desc','VFA\d*', 'part','mag', 'echo',1, 'run',char(run));
-                if length(VFA) < 2
-                    obj.logger.error("No flip angle images found in: %s", obj.subject.path)
-                end
-
-                % Merge the 3D echos files for each flip angle into 4D files
-                for FA = VFA
+                % Merge the temp3D echos files for each flip angle into 4D files
+                for flip = obj.query_ses(BIDSW, 'flips', bfilter)
+                    bfilter.flip = char(flip);
 
                     % Get the mag/phase echo images for this flip angle & run
-                    magfiles   = obj.query_ses(BIDSW, 'data', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','mag');
-                    phasefiles = obj.query_ses(BIDSW, 'data', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','phase');
+                    magfiles   = obj.query_ses(BIDSW, 'data',  bfilter, 'part','(mag)?');
+                    phasefiles = obj.query_ses(BIDSW, 'data',  bfilter, 'part','phase');
 
-                    % Reorder the data because SEPIA (possibly?) expects the TE to be in increasing order
-                    meta       = obj.query_ses(BIDSW, 'metadata', anat{:}, 'echo',1:999, 'run',char(run), 'desc',char(FA), 'part','mag');
-                    [TEs, idx] = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
-                    magfiles   = magfiles(idx);
-                    phasefiles = phasefiles(idx);
-                    if length(TEs) ~= length(unique(TEs))           % Check if the TEs are unique
-                        obj.logger.exception("Non-unique TEs (%s) found in: %s", strtrim(sprintf('%g ', TEs)), subject.path)
-                    end
-
+                    % Sort the mag/phase files by their echo index
+                    phaseechos    = obj.query_ses(BIDSW, 'echos', bfilter, 'part','phase');
+                    magechos      = obj.query_ses(BIDSW, 'echos', bfilter, 'part','(mag)?');
+                    [~, magidx]   = sort(double(string(magechos)));
+                    [~, phaseidx] = sort(double(string(phaseechos)));
+                    
                     % Create the 4D mag and phase QSM/MCR input data
                     bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);
                     obj.logger.info("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
-                    spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'});
+                    spm_file_merge_gz(magfiles(magidx), bfile.path, {'EchoNumber', 'EchoTime'});
 
                     bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.echos4Dphase);
                     obj.logger.info("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
-                    spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'});
+                    spm_file_merge_gz(phasefiles(phaseidx), bfile.path, {'EchoNumber', 'EchoTime'});
 
                 end
             end
@@ -373,31 +358,30 @@ classdef MEGREprepWorker < qb.workers.Worker
             import qb.utils.spm_file_merge_gz
 
             % Merge the 3D echos files into 4D files for all MEGRE acq/runs independently
-            bfilter = struct('modality','anat', 'part','mag', 'echo',1:999);
+            bfilter = obj.bidsfilter.rawMEGRE;
             for acq = obj.query_ses(obj.BIDS, 'acquisitions', bfilter)
-                for run = obj.query_ses(obj.BIDS, 'runs', bfilter, 'acq',char(acq))
+                bfilter.acq = char(acq);
+                for run = obj.query_ses(obj.BIDS, 'runs', bfilter)
+                    bfilter.run = char(run);
 
                     % Get the mag/phase echo images for this flip angle & run
-                    magfiles   = obj.query_ses(obj.BIDS, 'data', bfilter, 'acq',char(acq), 'run',char(run));
-                    phasefiles = obj.query_ses(obj.BIDS, 'data', bfilter, 'acq',char(acq), 'run',char(run), 'part','phase');
+                    magfiles   = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','(mag)?');
+                    phasefiles = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','phase');
 
-                    % Reorder the data because SEPIA (possibly?) expects the TE to be in increasing order
-                    meta       = obj.query_ses(obj.BIDS, 'metadata', bfilter, 'acq',char(acq), 'run',char(run));
-                    [TEs, idx] = sort(cellfun(@getfield, meta, repmat({'EchoTime'}, size(meta)), "UniformOutput", true));
-                    magfiles   = magfiles(idx);
-                    phasefiles = phasefiles(idx);
-                    if length(TEs) ~= length(unique(TEs))           % Check if the TEs are unique
-                        obj.logger.exception("Non-unique TEs (%s) found in: %s", strtrim(sprintf('%g ', TEs)), subject.path)
-                    end
+                    % Sort the mag/phase files by their echo index
+                    phaseechos    = obj.query_ses(BIDSW, 'echos', bfilter, 'part','phase');
+                    magechos      = obj.query_ses(BIDSW, 'echos', bfilter, 'part','(mag)?');
+                    [~, magidx]   = sort(double(string(magechos)));
+                    [~, phaseidx] = sort(double(string(phaseechos)));
 
                     % Create the 4D mag and phase QSM/MCR input data
                     bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);
                     obj.logger.info("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
-                    spm_file_merge_gz(magfiles, bfile.path, {'EchoNumber', 'EchoTime'}, false);
+                    spm_file_merge_gz(magfiles(magidx), bfile.path, {'EchoNumber', 'EchoTime'}, false);
 
                     bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.echos4Dphase);
                     obj.logger.info("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
-                    spm_file_merge_gz(phasefiles, bfile.path, {'EchoNumber', 'EchoTime'}, false);
+                    spm_file_merge_gz(phasefiles(phaseidx), bfile.path, {'EchoNumber', 'EchoTime'}, false);
 
                 end
             end

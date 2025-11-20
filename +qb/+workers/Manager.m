@@ -1,225 +1,225 @@
 classdef Manager < handle
-    %MANAGER Manages the entire workflow to make the end products that the user wants
-    %
-    % This class defines the common interface and base functionality for interacting with the user,
-    % composing workflows, setting config parameters, creating a team of workers from the pool, and
-    % putting the team to work.
-    %
-    % Interactive workflow:
-    %   0. User initializes the workflow and calls Manager
-    %   1. Manager loads an existing workflow from the output directory (if present) and asks user
-    %      what products to make
-    %   2. Manager assembles a team that can make the products (and asks the user for help if needed)
-    %   3. Manager lets the user tweak the config parameters and saves it all back in the output folder
-    %   4. Manager puts the team to work (subject by subject or in parallel):
-    %       a. For each end product, the manager asks the responsible team worker to produce it
-    %       b. If this worker needs a workitem to get the work done, he/she will ask another
-    %          team worker to produce it. In turn, that worker can ask other team workers to
-    %          produce their workitems -- all the way up until only raw BIDS data items are needed
-    %   5. Manager monitors the progress of the workers and informs the user until all work is done
-    %   6. Manager fetches the end products and copies them to the output directory
-    %
-    % Batch workflow:
-    %
-    % Usage:
-    %
-    % Limitation:
-    %   In the workflow, each workitem is always made by the same worker, i.e. it is not possible to
-    %   have a certain workitem produced by one worker in one part of the workflow, but in another part
-    %   have that same workitem produced by another worker. The alternative would be to specify the
-    %   complete workflow (i.e. all nodes in the graph), which is a much more complicated thing to do
-    %
-    % See also: qb.QuIDBBIDS (for overview)
+%MANAGER Manages the entire workflow to make the end products that the user wants
+%
+% This class defines the common interface and base functionality for interacting with the user,
+% composing workflows, setting config parameters, creating a team of workers from the pool, and
+% putting the team to work.
+%
+% Interactive workflow:
+%   0. User initializes the workflow and calls Manager
+%   1. Manager loads an existing workflow from the output directory (if present) and asks user
+%      what products to make
+%   2. Manager assembles a team that can make the products (and asks the user for help if needed)
+%   3. Manager lets the user tweak the config parameters and saves it all back in the output folder
+%   4. Manager puts the team to work (subject by subject or in parallel):
+%       a. For each end product, the manager asks the responsible team worker to produce it
+%       b. If this worker needs a workitem to get the work done, he/she will ask another
+%          team worker to produce it. In turn, that worker can ask other team workers to
+%          produce their workitems -- all the way up until only raw BIDS data items are needed
+%   5. Manager monitors the progress of the workers and informs the user until all work is done
+%   6. Manager fetches the end products and copies them to the output directory
+%
+% Batch workflow:
+%
+% Usage:
+%
+% Limitation:
+%   In the workflow, each workitem is always made by the same worker, i.e. it is not possible to
+%   have a certain workitem produced by one worker in one part of the workflow, but in another part
+%   have that same workitem produced by another worker. The alternative would be to specify the
+%   complete workflow (i.e. all nodes in the graph), which is a much more complicated thing to do
+%
+% See also: qb.QuIDBBIDS (for overview)
 
 
-    properties
-        products    % The end productcs (workitems) requested by the user
-        team        % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
-        coord       % The coordinator that help the manager with administrative tasks
-        force       % Force workers to start working, even if the subject is locked or existing results exist
+properties
+    products    % The end productcs (workitems) requested by the user
+    team        % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+    coord       % The coordinator that help the manager with administrative tasks
+    force       % Force workers to start working, even if the subject is locked or existing results exist
+end
+
+
+methods
+
+    function obj = Manager(coord, products)
+        % Constructor for the Manager class
+
+        arguments
+            coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
+            products  {mustBeText} = ""         % The end productcs (workitems) requested by the user
+        end
+
+        obj.coord    = coord;                   % The coordinator that help the manager with administrative tasks
+        obj.team     = struct();                % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+        obj.products = products;                % The end productcs (workitems) requested by the user
+        obj.force    = false;
+        obj.create_team()
     end
 
+    function set.products(obj, val)
+        % Force anything assigned to be stored as a string row
+        obj.products = string(val(:)');
+        obj.products(obj.products=="") = [];
+    end
 
-    methods
+    function create_team(obj, workitems)
+        %CREATE_TEAM Selects workers from the pool that together are capable of making the PRODUCTS (workitems)
+        %
+        % Asks the user for help if needed. The assembled team is stored in the TEAM property
 
-        function obj = Manager(coord, products)
-            % Constructor for the Manager class
-
-            arguments
-                coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
-                products  {mustBeText} = ""         % The end productcs (workitems) requested by the user
-            end
-
-            obj.coord    = coord;                   % The coordinator that help the manager with administrative tasks
-            obj.team     = struct();                % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
-            obj.products = products;                % The end productcs (workitems) requested by the user
-            obj.force    = false;
-            obj.create_team()
+        arguments
+            obj
+            workitems {mustBeText} = obj.products
         end
 
-        function set.products(obj, val)
-            % Force anything assigned to be stored as a string row
-            obj.products = string(val(:)');
-            obj.products(obj.products=="") = [];
-        end
-
-        function create_team(obj, workitems)
-            %CREATE_TEAM Selects workers from the pool that together are capable of making the PRODUCTS (workitems)
-            %
-            % Asks the user for help if needed. The assembled team is stored in the TEAM property
-
-            arguments
-                obj
-                workitems {mustBeText} = obj.products
-            end
-
-            % Find and select one capable worker per workitem
-            obj.team = struct();                                % Reset the team
-            for workitem = string(workitems(:)')                % The workitem with optional regexp pattern
-                for name = fieldnames(obj.coord.resumes)'       % Iterate over all available workers
-                    worker = obj.coord.resumes.(char(name));
-                    makes = worker.makes();
-                    match = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
-                    if any(match)                               % Add to the team if the worker is capable
-                        if sum(match) ~= 1
-                            error('QuIDBBIDS:WorkItem:Ambiguous', 'Could not uniquely identify a "%s" workitem from what %s makes:%s', workitem, worker.name, sprintf(' %s', makes))
+        % Find and select one capable worker per workitem
+        obj.team = struct();                                % Reset the team
+        for workitem = string(workitems(:)')                % The workitem with optional regexp pattern
+            for name = fieldnames(obj.coord.resumes)'       % Iterate over all available workers
+                worker = obj.coord.resumes.(char(name));
+                makes = worker.makes();
+                match = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
+                if any(match)                               % Add to the team if the worker is capable
+                    if sum(match) ~= 1
+                        error('QuIDBBIDS:WorkItem:Ambiguous', 'Could not uniquely identify a "%s" workitem from what %s makes:%s', workitem, worker.name, sprintf(' %s', makes))
+                    end
+                    workitem_ = makes(match);               % The workitem without optional regexp pattern
+                    if isfield(obj.team, workitem_)
+                        if ~ismember(func2str(worker.handle), cellfun(@func2str, {obj.team.(workitem_).handle}, 'UniformOutput', false))    % Check if we haven't already added this worker
+                            obj.team.(workitem_)(end+1) = worker;
                         end
-                        workitem_ = makes(match);               % The workitem without optional regexp pattern
-                        if isfield(obj.team, workitem_)
-                            if ~ismember(func2str(worker.handle), cellfun(@func2str, {obj.team.(workitem_).handle}, 'UniformOutput', false))    % Check if we haven't already added this worker
-                                obj.team.(workitem_)(end+1) = worker;
-                            end
-                        else
-                            obj.team.(workitem_) = worker;
-                        end
-                    end
-                end
-                match = ~cellfun(@isempty, regexp(fieldnames(obj.team), "^" + workitem + "$"));
-                if any(match)
-                    workitem_ = obj.selectworker(workitem);     % Keep the preferred worker only (if multiple). NB: workitem_ is without regexp pattern
-                    if ~isempty(obj.team.(workitem_).needs)     % Recursively add upstream workers to the team
-                        obj.create_team(obj.team.(workitem_).needs)
-                    end
-                elseif strlength(workitem)
-                    error('QuIDBBIDS:WorkItem:NotFound', 'Could not find a worker that can make: %s', workitem)
-                end
-            end
-        end
-
-        function choose_products(obj)
-            obj.products = qb.ChooseProducts(obj.coord.resumes);
-        end
-
-        function load_workflow(obj)
-        end
-
-        function save_workflow(obj)
-            %SAVE_WORKFLOW Saves the PRODUCT and TEAM properties to the output directory
-        end
-
-        function start_workflow(obj, subjects)
-            %START_WORKFLOW For each end product, asks the responsible team worker to fetch it
-
-            arguments
-                obj
-                subjects struct = obj.coord.BIDS.subjects;
-            end
-
-            % Block the start button in the GUI (if any) and initialize the workers
-            for product = obj.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
-                worker = obj.team.(product).handle;
-                for subject = subjects
-
-                    % Make sure we have anat data for this subject
-                    if ~ismember("anat", fieldnames(subject)) || isempty(subject.anat)
-                        continue
-                    end
-
-                    % Ask the worker to fetch the product for this subject
-                    args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
-                    if obj.coord.config.useHPC
-                        qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:});   % NB: products are passed directly
                     else
-                        worker(args{:}).fetch(product, obj.force);     % TODO: Catch the work done (at some point)
+                        obj.team.(workitem_) = worker;
                     end
+                end
+            end
+            match = ~cellfun(@isempty, regexp(fieldnames(obj.team), "^" + workitem + "$"));
+            if any(match)
+                workitem_ = obj.selectworker(workitem);     % Keep the preferred worker only (if multiple). NB: workitem_ is without regexp pattern
+                if ~isempty(obj.team.(workitem_).needs)     % Recursively add upstream workers to the team
+                    obj.create_team(obj.team.(workitem_).needs)
+                end
+            elseif strlength(workitem)
+                error('QuIDBBIDS:WorkItem:NotFound', 'Could not find a worker that can make: %s', workitem)
+            end
+        end
+    end
 
+    function choose_products(obj)
+        obj.products = qb.ChooseProducts(obj.coord.resumes);
+    end
+
+    function load_workflow(obj)
+    end
+
+    function save_workflow(obj)
+        %SAVE_WORKFLOW Saves the PRODUCT and TEAM properties to the output directory
+    end
+
+    function start_workflow(obj, subjects)
+        %START_WORKFLOW For each end product, asks the responsible team worker to fetch it
+
+        arguments
+            obj
+            subjects struct = obj.coord.BIDS.subjects;
+        end
+
+        % Block the start button in the GUI (if any) and initialize the workers
+        for product = obj.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
+            worker = obj.team.(product).handle;
+            for subject = subjects
+
+                % Make sure we have anat data for this subject
+                if ~ismember("anat", fieldnames(subject)) || isempty(subject.anat)
+                    continue
                 end
 
+                % Ask the worker to fetch the product for this subject
+                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
                 if obj.coord.config.useHPC
-                    obj.monitor_progress(product)
-                end
-            end
-            % Unblock the start button in the GUI (if any)
-        end
-
-        function monitor_progress(obj, workitem)
-            %MONITOR_PROGRESS Watches over the progress of the workers until all work is done
-
-            % Launch a dashboard
-            logdir    = fullfile(obj.coord.outputdir, 'logs', class(obj));   % TODO: FIXME
-            dashboard = qb.workers.Dashboard(obj.coord.BIDS, logdir, workitem);
-
-            % Wait until all work is done
-            while ~all([dashboard.jobs.finished])
-                pause(5)
-                dashboard.update()
-            end
-
-            % Report any errors or warnings
-            dashboard.has_warnings(verbose)
-            dashboard.has_errors(verbose)
-
-            % Close the dashboard
-            dashboard.close()
-        end
-
-    end
-
-
-    methods (Access = private)
-
-        function workitem = selectworker(obj, workitem)
-            % Select a worker for this workitem and make him/her the "preferred worker"
-
-            workitems = fieldnames(obj.team)';
-            matches   = ~cellfun(@isempty, regexp(workitems, "^" + workitem + "$"));
-
-            % Make records of matching workers, their indices and their workitems (for when the user has to chose)
-            workers = []; indices = []; items = [];
-            for workitem_ = workitems(matches)
-                workrs  = obj.team.(char(workitem_));   % NB: obj.team.(workitem_) is copied by value
-                workers = [workers, workrs];            %#ok<AGROW>
-                indices = [indices, 1:length(workrs)];
-                items   = [items, repmat(workitem_, size(workrs))];
-            end
-            if isscalar(workers)                        % Only a single worker found
-                workitem = workitems{matches};          % This resolves the regexp pattern
-                return
-            end
-
-            % Check if any of the workers is preferred. If not ask the user and make the worker preferred
-            if ~any([workers.preferred])
-                chosen = askuser(workers, workitem);    % TODO: implement askuser GUI to select the worker
-                obj.team.(items{chosen})(indices(chosen)).preferred = true;
-            end
-
-            % Keep the preferred worker only
-            for workitem_ = workitems(matches)
-                item      = char(workitem_);
-                preferred = [obj.team.(item).preferred];
-                if any(preferred)
-                    obj.team.(item) = obj.team.(item)(preferred);
-                    workitem        = item;             % Resolve the regexp pattern
+                    qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:});   % NB: products are passed directly
                 else
-                    obj.team = rmfield(obj.team, item);
+                    worker(args{:}).fetch(product, obj.force);     % TODO: Catch the work done (at some point)
                 end
-            end
-            if length(obj.team.(workitem)) ~= 1
-                error('QuIDBBIDS:WorkItem:InvalidCount', "Expected only a single workitem, but got %d", length(obj.team.(workitem)))
+
             end
 
+            if obj.coord.config.useHPC
+                obj.monitor_progress(product)
+            end
+        end
+        % Unblock the start button in the GUI (if any)
+    end
+
+    function monitor_progress(obj, workitem)
+        %MONITOR_PROGRESS Watches over the progress of the workers until all work is done
+
+        % Launch a dashboard
+        logdir    = fullfile(obj.coord.outputdir, 'logs', class(obj));   % TODO: FIXME
+        dashboard = qb.workers.Dashboard(obj.coord.BIDS, logdir, workitem);
+
+        % Wait until all work is done
+        while ~all([dashboard.jobs.finished])
+            pause(5)
+            dashboard.update()
+        end
+
+        % Report any errors or warnings
+        dashboard.has_warnings(verbose)
+        dashboard.has_errors(verbose)
+
+        % Close the dashboard
+        dashboard.close()
+    end
+
+end
+
+
+methods (Access = private)
+
+    function workitem = selectworker(obj, workitem)
+        % Select a worker for this workitem and make him/her the "preferred worker"
+
+        workitems = fieldnames(obj.team)';
+        matches   = ~cellfun(@isempty, regexp(workitems, "^" + workitem + "$"));
+
+        % Make records of matching workers, their indices and their workitems (for when the user has to chose)
+        workers = []; indices = []; items = [];
+        for workitem_ = workitems(matches)
+            workrs  = obj.team.(char(workitem_));   % NB: obj.team.(workitem_) is copied by value
+            workers = [workers, workrs];            %#ok<AGROW>
+            indices = [indices, 1:length(workrs)];
+            items   = [items, repmat(workitem_, size(workrs))];
+        end
+        if isscalar(workers)                        % Only a single worker found
+            workitem = workitems{matches};          % This resolves the regexp pattern
+            return
+        end
+
+        % Check if any of the workers is preferred. If not ask the user and make the worker preferred
+        if ~any([workers.preferred])
+            chosen = askuser(workers, workitem);    % TODO: implement askuser GUI to select the worker
+            obj.team.(items{chosen})(indices(chosen)).preferred = true;
+        end
+
+        % Keep the preferred worker only
+        for workitem_ = workitems(matches)
+            item      = char(workitem_);
+            preferred = [obj.team.(item).preferred];
+            if any(preferred)
+                obj.team.(item) = obj.team.(item)(preferred);
+                workitem        = item;             % Resolve the regexp pattern
+            else
+                obj.team = rmfield(obj.team, item);
+            end
+        end
+        if length(obj.team.(workitem)) ~= 1
+            error('QuIDBBIDS:WorkItem:InvalidCount', "Expected only a single workitem, but got %d", length(obj.team.(workitem)))
         end
 
     end
+
+end
 
 end

@@ -1,11 +1,11 @@
-function config = get_config_yaml(configfile, config)
-%GET_CONFIG_YAML Helper function to read and optionally write QuIDBBIDS configuration file.
+function config = get_config(configfile, config)
+%GET_CONFIG_JSON Helper function to read and optionally write QuIDBBIDS configuration file.
 %
-% CONFIG = GET_CONFIG_YAML(CONFIGFILE) reads the configuration from the specified CONFIGFILE.
+% CONFIG = GET_CONFIG_JSON(CONFIGFILE) reads the configuration from the specified CONFIGFILE.
 % If it does not exist, a default configuration is copied from the user's HOME directory.
 %
-% CONFIG = GET_CONFIG_YAML(CONFIGFILE, CONFIG) writes the provided CONFIG struct to CONFIGFILE
-% in YAML format. This updates or creates the configuration file.
+% CONFIG = GET_CONFIG_JSON(CONFIGFILE, CONFIG) writes the provided CONFIG struct to CONFIGFILE
+% in JSON format. This updates or creates the configuration file.
 %
 % Inputs:
 %   CONFIG - A struct with configuration parameters. If provided, GETCONFIG writes this
@@ -15,11 +15,11 @@ function config = get_config_yaml(configfile, config)
 %   CONFIG - A struct with the loaded configuration settings.
 %
 % The function ensures that a default config exists in:
-%   <HOME>/.quidbbids/<version>/config_default.yaml
+%   <HOME>/.quidbbids/<version>/config_default.json
 %
 % Usage:
-%   config = get_config_yaml("myconfig.yaml");
-%   get_config_yaml("myconfig.yaml", config);
+%   config = get_config("myconfig.json");
+%   get_config("myconfig.json", config);
 
 arguments (Input)
     configfile   {mustBeTextScalar}
@@ -31,7 +31,7 @@ arguments (Output)
 end
 
 % Create a default configfile if it does not exist
-config_default = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), "config_default.yaml");
+config_default = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), "config_default.json");
 if ~isfile(config_default)
     disp("Creating default configuration file: " + config_default)
     [pth, name, ext] = fileparts(config_default);
@@ -40,18 +40,20 @@ if ~isfile(config_default)
 end
 
 % Write or read the study configuration data (create if needed)
-if nargin > 1
-    yaml.dumpFile(configfile, config)
-else
+if nargin > 1       % Write JSON
+    fid = fopen(configfile, 'w');
+    fprintf(fid, '%s', jsonencode(config, 'PrettyPrint', true));
+    fclose(fid);
+else                % Read JSON
     if ~isfile(configfile)
         disp("Writing study configuration to: " + configfile)
         [~,~] = mkdir(fileparts(configfile));
         copyfile(config_default, configfile)
     end
-    config = yaml.loadFile(configfile);
+    config = jsondecode(fileread(configfile));
 
     % Check for version conflicts
-    if config.version ~= qb.version()
+    if config.version.value ~= qb.version()
         warning("QuIDBBIDS:Config:VersionMismatch", "The config file version (%s) does not match the current QuIDBBIDS version (%s). Please update your config file if needed", config.version, qb.version())
     end
 end

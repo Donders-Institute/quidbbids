@@ -1,0 +1,128 @@
+{
+  "version": {"value": "0.0.3", "description": "QuIDBBIDS version that should match the version in resources/mpackage.json"},
+  "useHPC": {"value": false, "description": "Use HPC cluster (true/false)"},
+  "gyro": {"value": 42.57747892, "description": "in ppm"},
+  "kappa_mw": {"value": 0.36, "description": "Jung, NI., myelin water density"},
+  "kappa_iew": {"value": 0.86, "description": "Jung, NI., intra-/extra-axonal water density"},
+
+  "bids": {
+    "select": {
+      "modality": {"value": ["anat", "fmap"], "description": "BIDS modalities to process"},
+      "suffix": {"value": ["MEGRE", "TB1TFL"], "description": "BIDS suffixes to include"}
+    }
+  },
+
+  "B1prepWorker": {
+    "FWHM": {"value": 10, "description": "in mm, smoothing kernel for regularizing the B1 map"},
+    "FAscaling": {
+      "Siemens": {"value": 800, "description": "800 is what SIEMENS seems to use on TFL B1-mapping"}
+    }
+  },
+
+  "MP2RAGEWorker": {
+    "InvEff": {"value": 0.96, "description": "Inversion efficiency, Siemens default value"},
+    "EchoSpacing": {"value": "", "description": "RepetitionTimeExcitation value in secs, default twice echo time when missing in JSON"},
+    "NumberShots": {"value": 176, "description": "Number of shots (NZslices) in inversion segment; not usually in JSON. See: https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#numbershots-metadata-field"},
+    "Fingerprint": {"value": true, "description": "Enable MP2RAGE-based fingerprinting"},
+    "B1correctM0": {"value": 0, "description": "0 = no correction; 1/2/3 applies left-right flip approximation of the transmit field as an approximation of the receive field. The number 1/2/3 refers to the left-right dimension. Only use this option if the anatomical data is well centered in the field of view (as provided by auto-align) and if the bias Field correction was enabled on the scanner"}
+  },
+
+  "R1R2sWorker": {
+    "fitting": {
+      "GPU": {
+        "iteration": {"value": 4000, "description": "Maximum number of GPU fitting iterations"},
+        "convergenceWindow": {"value": 25, "description": "Window size for estimating convergence (> 100 iterations for more robust estimate)"},
+        "convergenceValue": {"value": 1e-8, "description": "Threshold for convergence"},
+        "initialLearnRate": {"value": 0.001, "description": "Initial learning rate for optimizer"},
+        "decayRate": {"value": 0, "description": "Learning rate decay factor"},
+        "tol": {"value": 1e-3, "description": "Tolerance for optimization termination"},
+        "isWeighted": {"value": false, "description": "Use weighted residuals"}
+      }
+    }
+  },
+
+  "MCRWorker": {
+    "fixed_params": {
+      "x_i": {"value": -0.1, "description": "ppm"},
+      "x_a": {"value": -0.1, "description": "ppm"},
+      "E": {"value": 0.02, "description": "ppm"},
+      "rho_mw": {"value": 0.4186, "description": "Computed as kappa_mw/kappa_iew, i.e. 0.36/0.86"},
+      "t1_mw": {"value": 0.234, "description": "seconds"},
+      "B0": {"value": 3.0, "description": "Field strength, in tesla"},
+      "B0dir": {"value": [0.0, 0.0, 1.0], "description": "Main magnetic field direction with respect to FOV -- Replace with actual sepia_header{end}.B0_dir"},
+      "thres_R2star": {"value": 150, "description": "1/seconds, upper bound"},
+      "thres_T1": {"value": 3.1, "description": "seconds, upper bound"}
+    },
+    "fitting": {
+      "GPU": {
+        "Nepoch": {"value": 4000, "description": "Number of training epochs"},
+        "initialLearnRate": {"value": 0.001, "description": "Initial learning rate"},
+        "decayRate": {"value": 0, "description": "Learning rate decay"},
+        "convergenceValue": {"value": "-inf", "description": "Convergence stopping value"},
+        "tol": {"value": 1e-8, "description": "Tolerance for stopping optimization"},
+        "display": {"value": false, "description": "Display fitting progress"},
+        "lossFunction": {"value": "l1", "description": "Loss function for optimization"},
+        "start": {"value": "prior", "description": "Initialization strategy"},
+        "patience": {"value": 20, "description": "Early stopping patience"},
+        "isFitExchange": {"value": true, "description": "Fit exchange parameters"},
+        "isEPG": {"value": false, "description": "Use EPG simulation model"}
+      }
+    }
+  },
+
+  "QSMWorker": {
+    "QSM": {
+      "general": {
+        "isBET": {"value": 0, "description": "Apply brain extraction"},
+        "isRefineBrainMask": {"value": 0, "description": "Refine brain mask"},
+        "isInvert": {"value": 0, "description": "Invert field map prior to QSM"}
+      },
+      "unwrap": {
+        "echoCombMethod": {"value": "Optimum weights", "description": "Method for combining multi-echo data"},
+        "unwrapMethod": {"value": "SEGUE", "description": "Phase unwrapping method"},
+        "isEddyCorrect": {"value": 0, "description": "Apply eddy current correction"},
+        "isSaveUnwrappedEcho": {"value": 1, "description": "Save intermediate unwrapped echoes"},
+        "excludeMaskThreshold": {"value": 0.4, "description": "Threshold for excluding unreliable voxels"},
+        "excludeMethod": {"value": "Weighting map", "description": "Method for voxel exclusion weighting"}
+      },
+      "bfr": {
+        "refine_method": {"value": "None", "description": "Mask refinement method"},
+        "refine_order": {"value": 4, "description": "Order of refinement polynomial"},
+        "erode_radius": {"value": 0, "description": "Erosion radius after refinement"},
+        "erode_before_radius": {"value": 0, "description": "Erosion radius before refinement"},
+        "method": {"value": "VSHARP", "description": "Background field removal algorithm"},
+        "radius": {"value": [12,11,10,9,8,7,6,5,4,3,2,1], "description": "Spherical kernel radii for VSHARP"}
+      },
+      "qsm": {
+        "reference_tissue": {"value": "CSF", "description": "Tissue used as susceptibility reference"},
+        "method": {"value": "MRI Suscep. Calc.", "description": "QSM reconstruction method"},
+        "solver": {"value": "Iterative Tikhonov", "description": "Regularized solver method"},
+        "lambda": {"value": 0.05, "description": "Regularization parameter"},
+        "tolerance": {"value": 0.03, "description": "Solver tolerance"}
+      }
+    },
+    "R2starmap": {
+      "general": {
+        "isBET": {"value": 0, "description": "Apply brain extraction"},
+        "isInvert": {"value": 0, "description": "Invert input images"},
+        "isRefineBrainMask": {"value": 0, "description": "Refine brain mask"}
+      },
+      "r2s": {
+        "method": {"value": "Trapezoidal", "description": "R2* fitting method"},
+        "s0mode": {"value": "1st echo", "description": "S0 estimation mode"},
+        "maxIter": {"value": 200, "description": "Maximum fitting iterations"},
+        "fcnTol": {"value": 1e-4, "description": "Function tolerance threshold"},
+        "stepTol": {"value": 1e-4, "description": "Step size tolerance"},
+        "numMagn": {"value": true, "description": "Use magnitude-only fitting"},
+        "isWeighted": {"value": true, "description": "Use weighted fitting"},
+        "weightMethod": {"value": "quadratic_1stEcho", "description": "Weighting scheme Options: '1stEcho' or 'quadratic_1stEcho'"},
+        "isExchange": {"value": true, "description": "Include water exchange model"},
+        "isEPG": {"value": true, "description": "Use EPG-X simulation"},
+        "npulse": {"value": 50, "description": "Number of pulses in EPG model"},
+        "rfphase": {"value": 150, "description": "RF phase increment (degrees). Philips = 150"},
+        "isT1mw": {"value": false, "description": "Fit myelin water T1"},
+        "T1mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"}
+      }
+    }
+  }
+}

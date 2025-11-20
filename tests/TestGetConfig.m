@@ -36,8 +36,8 @@ classdef TestGetConfig < matlab.unittest.TestCase
             testCase.verifyTrue(isfield(config, 'MP2RAGEWorker'))
 
             % Test writing a config
-            config.param1  = [100, 101];
-            config.param2  = "written";
+            config.param1  = [100; 101];
+            config.param2  = 'written';
             qb.get_config(testCase.ConfigFile, config);
 
             % Read it back
@@ -52,7 +52,7 @@ classdef TestGetConfig < matlab.unittest.TestCase
             config = qb.get_config(testCase.ConfigFile);
 
             % Write a version mismatch that triggers a warning
-            config.version = 'foo.bar.baz';     % intentionally mismatch
+            config.version.value = 'foo.bar.baz';     % intentionally mismatch
             qb.get_config(testCase.ConfigFile, config);
 
             % Verify that reading triggers a warning

@@ -53,7 +53,11 @@ else                % Read JSON
     config = jsondecode(fileread(configfile));
 
     % Check for version conflicts
-    if config.version.value ~= qb.version()
-        warning("QuIDBBIDS:Config:VersionMismatch", "The config file version (%s) does not match the current QuIDBBIDS version (%s). Please update your config file if needed", config.version, qb.version())
+    try
+        if ~strcmp(config.version.value, qb.version())
+            warning("QuIDBBIDS:Config:VersionMismatch", "The config file version (%s) does not match the current QuIDBBIDS version (%s). Please update your config file if needed", config.version.value, qb.version())
+        end
+    catch exception
+        warning("QuIDBBIDS:Config:ParseError", "Could not parse: %s", configfile)
     end
 end

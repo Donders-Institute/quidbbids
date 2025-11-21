@@ -508,8 +508,8 @@ classdef ConfigEditorGUI < handle
             end
         end
 
-        % SEARCH: invoked when search field changes or enter pressed
         function onSearchChanged(obj)
+            % invoked when search field changes or enter pressed
             % Do not auto-select; just update the matches list
             obj.updateSearchMatches(strtrim(obj.SearchField.Value))
         end

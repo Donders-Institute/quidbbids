@@ -1,14 +1,13 @@
 {
-  "version": {"value": "0.0.3", "description": "QuIDBBIDS version that should match the version in resources/mpackage.json"},
-  "useHPC": {"value": false, "description": "Use HPC cluster (true/false)"},
-  "gyro": {"value": 42.57747892, "description": "in ppm"},
-  "kappa_mw": {"value": 0.36, "description": "Jung, NI., myelin water density"},
-  "kappa_iew": {"value": 0.86, "description": "Jung, NI., intra-/extra-axonal water density"},
+  "General": {
+    "version": {"value": "0.0.3", "description": "QuIDBBIDS version that should match the version in resources/mpackage.json"},
+    "useHPC": {"value": false, "description": "Use HPC cluster (true/false)"},
+    "gyro": {"value": 42.57747892, "description": "in ppm"},
+    "kappa_mw": {"value": 0.36, "description": "Jung, NI., myelin water density"},
+    "kappa_iew": {"value": 0.86, "description": "Jung, NI., intra-/extra-axonal water density"},
 
-  "bids": {
-    "select": {
-      "modality": {"value": ["anat", "fmap"], "description": "BIDS modalities to process"},
-      "suffix": {"value": ["MEGRE", "TB1TFL"], "description": "BIDS suffixes to include"}
+    "BIDS": {
+      "select": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "TB1TFL"]}, "description": "BIDS data to include"}
     }
   },
 

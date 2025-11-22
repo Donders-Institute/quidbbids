@@ -37,6 +37,7 @@ classdef ConfigEditorGUI < handle
         BtnSearchPrev
         SearchMatches % cell array of nodes that match
         SearchIndex = 0
+        SearchResultsLabel % uilabel for search results counter
 
         % Bottom buttons
         BtnLoad
@@ -101,38 +102,48 @@ classdef ConfigEditorGUI < handle
         function buildGUI(obj)
 
             % Create main uifigure
-            obj.UIFig = uifigure('Position',[300 200 1000 650]);
+            obj.UIFig = uifigure('Position',[300 100 1000 650]);
             obj.Fig = obj.UIFig;
             obj.updateWindowTitle()
 
             % Left panel (tree + search)
-            leftX = 10; leftW = 360;
-            % Tree area rectangle in pixels
+            leftX = 20; leftW = 360;        % Tree area rectangle in pixels
+            
             % Create search label and field
-            uilabel(obj.UIFig,'Text','Search:','Position',[leftX 600 50 22],'HorizontalAlignment','left');
-            obj.SearchField = uieditfield(obj.UIFig,'text','Position',[leftX+55 600 leftW-55 24], 'ValueChangedFcn',@(src,~)obj.onSearchChanged(), 'Value','');
+            uilabel(obj.UIFig,'Text','Search:','Position',[leftX 607 45 22],'HorizontalAlignment','left');
+            obj.SearchField = uieditfield(obj.UIFig,'text','Position',[leftX+45 606 leftW-45 24], 'ValueChangedFcn',@(src,~)obj.onSearchChanged(), 'Value','');
 
             % Prev/Next buttons
-            obj.BtnSearchPrev = uibutton(obj.UIFig,'Text','◀','Position',[leftX 570 40 24],    'ButtonPushedFcn',@(~,~)obj.searchPrev());
-            obj.BtnSearchNext = uibutton(obj.UIFig,'Text','▶','Position',[leftX+45 570 40 24], 'ButtonPushedFcn',@(~,~)obj.searchNext());
+            obj.BtnSearchPrev = uibutton(obj.UIFig,'Text','◀','Position',[leftX 572 40 24],    'ButtonPushedFcn',@(~,~)obj.searchPrev());
+            obj.BtnSearchNext = uibutton(obj.UIFig,'Text','▶','Position',[leftX+45 572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchNext());
+
+            % Search results counter
+            obj.SearchResultsLabel = uilabel(obj.UIFig,'Text','','Position',[leftX+95 572 80 24], 'HorizontalAlignment','left');
 
             % Info label for search state
-            uilabel(obj.UIFig,'Text','(supports *, ? and regex wildcards)','Position',[leftX+95 570 260 18], 'FontAngle','italic', 'HorizontalAlignment','left');
+            uilabel(obj.UIFig,'Text','(supports *, ? and regex wildcards)','Position',[leftX+130 572 200 24], 'FontAngle','italic', 'HorizontalAlignment','left');
 
             % Tree (use uitree within uifigure)
-            obj.Tree = uitree(obj.UIFig,'Position',[leftX 20 leftW 530], 'Multiselect','off', 'SelectionChangedFcn',@(src,evt)obj.nodeSelected(evt));
+            obj.Tree = uitree(obj.UIFig,'Position',[leftX 20 leftW 536], 'Multiselect','off', 'SelectionChangedFcn',@(src,evt)obj.nodeSelected(evt));
 
             % Right panel (Description and edit area)
             rpX = leftX + leftW + 20;
             rpW = 1000 - rpX - 20;
-            obj.DescArea = uitextarea(obj.UIFig,'Position',[rpX 450 rpW 175],'Editable','off');
+            topY = 606 + 24;
+            txtAreaH = 175;
 
-            % Value label and field
-            obj.ValLabel = uilabel(obj.UIFig,'Text','Value:','Position',[rpX 420 200 22],'HorizontalAlignment','left');
-            obj.ValField = uieditfield(obj.UIFig,'text','Position',[rpX 380 rpW 40], 'ValueChangedFcn',@(src,~)obj.updateLeafFromField());
+            % Description box
+            obj.DescArea = uitextarea(obj.UIFig, 'Position',[rpX, topY - txtAreaH, rpW, txtAreaH], 'Editable','off');
 
-            % Reset leaf button
-            obj.ResetLeafBtn = uibutton(obj.UIFig,'Text','Reset','Position',[rpX+rpW-110 340 100 30], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
+            % Value label (10 px below textarea)
+            valueLabelY = topY - txtAreaH - 10 - 22;
+            obj.ValLabel = uilabel(obj.UIFig,'Text','Value:', 'Position',[rpX valueLabelY 200 22], 'HorizontalAlignment','left');
+
+            % Value edit field
+            obj.ValField = uieditfield(obj.UIFig,'text', 'Position',[rpX valueLabelY - 40 rpW 40], 'ValueChangedFcn',@(src,~)obj.updateLeafFromField());
+
+            % Reset button
+            obj.ResetLeafBtn = uibutton(obj.UIFig,'Text','Reset', 'Position',[rpX+rpW-100 valueLabelY-80 100 30], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
 
             % Bottom row buttons
             btnY = 20; btnH = 30; btnW = 70; gap = 15;
@@ -170,6 +181,7 @@ classdef ConfigEditorGUI < handle
             % Clear search state
             obj.SearchMatches = {};
             obj.SearchIndex = 0;
+            obj.SearchResultsLabel.Text = '';
         end
 
         % recursively add children to the tree up to leaves
@@ -375,7 +387,9 @@ classdef ConfigEditorGUI < handle
         function resetAll(obj)
             obj.Config = obj.OrigConfig;
             obj.populateTree();
-            obj.nodeSelected(struct('SelectedNodes',[]));            % Clear the right panel
+            obj.nodeSelected(struct('SelectedNodes',[]));
+            obj.SearchField.Value = '';
+            obj.SearchResultsLabel.Text = '';
         end
 
         % Load JSON from a new file selected via file dialog and repopulate the tree
@@ -396,9 +410,11 @@ classdef ConfigEditorGUI < handle
                 obj.OrigConfig = obj.Config;
                 obj.updateWindowTitle()
                 
-                % Refresh the tree and clear right panel
+                % Refresh the tree, search state and clear right panel
                 obj.populateTree();
                 obj.nodeSelected(struct('SelectedNodes',[]));
+                obj.SearchField.Value = '';
+                obj.SearchResultsLabel.Text = '';
                 
             catch ME
                 errordlg(['Unable to load/parse JSON: ' ME.message],'Load error');
@@ -635,6 +651,7 @@ classdef ConfigEditorGUI < handle
                 % Clear search state when field is empty
                 obj.SearchMatches = {};
                 obj.SearchIndex = 0;
+                obj.SearchResultsLabel.Text = ''; % Just clear the label
             end
         end
 
@@ -653,16 +670,24 @@ classdef ConfigEditorGUI < handle
             % Update UI display manually
             obj.nodeSelected(struct('SelectedNodes',node));
             
-            % Update SearchIndex
+            % Update SearchIndex and results label
             obj.SearchIndex = idx;
+            obj.updateSearchResultsLabel(); % Add this one line
             
             % Scroll to make the node visible (if possible)
             drawnow
             try
-                % Try to ensure the selected node is visible
                 node.scrollIntoView();
             catch
-                % If scrollIntoView is not available, just continue
+            end
+        end
+
+        function updateSearchResultsLabel(obj)
+            % Simple search results counter
+            if isempty(obj.SearchMatches)
+                obj.SearchResultsLabel.Text = '';
+            else
+                obj.SearchResultsLabel.Text = sprintf('%d/%d', obj.SearchIndex, numel(obj.SearchMatches));
             end
         end
 

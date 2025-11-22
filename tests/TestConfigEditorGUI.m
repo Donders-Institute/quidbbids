@@ -86,13 +86,45 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'QSMWorker'});
             set(gui.Fig,'Visible','off');
 
-            % Change nested value
-            qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker')).Children(1); % QSM
-            unwrapNode = qsmNode.Children(1); % unwrap
-            leafNode = unwrapNode.Children(1); % echoCombMethod
-
+            % More robust way to find the specific leaf node
+            qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
+            
+            % Find QSM -> unwrap -> echoCombMethod path
+            foundLeaf = false;
+            for i = 1:numel(qsmNode.Children)
+                if strcmp(qsmNode.Children(i).Text, 'QSM')
+                    qsmSubNode = qsmNode.Children(i);
+                    for j = 1:numel(qsmSubNode.Children)
+                        if strcmp(qsmSubNode.Children(j).Text, 'unwrap')
+                            unwrapNode = qsmSubNode.Children(j);
+                            for k = 1:numel(unwrapNode.Children)
+                                if strcmp(unwrapNode.Children(k).Text, 'echoCombMethod')
+                                    leafNode = unwrapNode.Children(k);
+                                    foundLeaf = true;
+                                    break;
+                                end
+                            end
+                            if foundLeaf, break; end
+                        end
+                    end
+                    if foundLeaf, break; end
+                end
+            end
+            
+            testCase.verifyTrue(foundLeaf, 'Should find echoCombMethod leaf node');
+            
+            % Select and update the leaf node
             gui.Tree.SelectedNodes = leafNode;
-            gui.ValField.Value = 'Weighted';
+            
+            % Wait for selection to take effect
+            drawnow;
+            pause(0.1);
+            
+            % Verify we're editing the correct field
+            testCase.verifyEqual(gui.ValLabel.Text, 'echoCombMethod:');
+            
+            % Update value - use the exact string format expected
+            gui.ValField.Value = '"Weighted"';  % Add quotes for JSON string
             gui.updateLeafFromField();
 
             % Save to temp file
@@ -101,7 +133,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             gui.Config = gui.mergeIntoOriginal(gui.OrigConfig, partial);
             gui.jsonwrite(tmpSave, gui.Config);
 
-            % Load saved JSON
+            % Load saved JSON and verify the change
             savedConfig = jsondecode(fileread(tmpSave));
             testCase.verifyEqual(savedConfig.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Weighted');
             testCase.verifyEqual(savedConfig.QSMWorker.QSM.qsm.lambda.value, 0.05); % unchanged

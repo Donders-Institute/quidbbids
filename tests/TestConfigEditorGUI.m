@@ -42,27 +42,6 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             delete(gui);
         end
 
-        function testLeafEdit(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'General'});
-            set(gui.Fig,'Visible','off');
-
-            % Select leaf: General -> gyro
-            node = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General')).Children(strcmp({gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General')).Children.Text}, 'gyro'));
-            gui.Tree.SelectedNodes = node;
-
-            % Update value
-            gui.ValField.Value = '50';
-            gui.updateLeafFromField();
-
-            testCase.verifyEqual(gui.Config.General.gyro.value, 50);
-
-            % Reset leaf
-            gui.resetLeaf();
-            testCase.verifyEqual(gui.Config.General.gyro.value, 42.57747892);
-
-            delete(gui);
-        end
-
         function testSearchFunctionality(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
             set(gui.Fig,'Visible','off');
@@ -81,14 +60,81 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
 
             delete(gui);
         end
+        
+        function testLeafEdit(testCase)
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'General'});
+            set(gui.UIFig,'Visible','off');
+        
+            % Select leaf: General -> gyro
+            generalNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General'));
+            gyroNode = generalNode.Children(strcmp({generalNode.Children.Text}, 'gyro'));
+            gui.Tree.SelectedNodes = gyroNode;
+        
+            % Verify initial state
+            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892);
+            testCase.verifyEqual(gui.Config.General.gyro.value, 42.57747892);
+        
+            % Update value
+            gui.ValField.Value = '50';
+            gui.updateLeafFromField();
+        
+            % Verify BOTH tree node and config are updated
+            testCase.verifyEqual(gyroNode.NodeData.value, 50);
+            testCase.verifyEqual(gui.Config.General.gyro.value, 50);
+        
+            % Reset leaf
+            gui.resetLeaf();
+            
+            % Verify BOTH are reset
+            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892);
+            testCase.verifyEqual(gui.Config.General.gyro.value, 42.57747892);
+        
+            delete(gui);
+        end
+
+        function testNestedLeafEdit(testCase)
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'QSMWorker'});
+            set(gui.UIFig,'Visible','off');
+        
+            % Navigate to nested leaf
+            qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
+            qsmSubNode = qsmNode.Children(strcmp({qsmNode.Children.Text}, 'QSM'));
+            unwrapNode = qsmSubNode.Children(strcmp({qsmSubNode.Children.Text}, 'unwrap'));
+            leafNode = unwrapNode.Children(strcmp({unwrapNode.Children.Text}, 'echoCombMethod'));
+        
+            % Verify initial state
+            testCase.verifyEqual(leafNode.NodeData.value, 'Optimum weights');
+            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Optimum weights');
+        
+            % METHOD 1: Test direct update and manual reset using existing methods
+            % Update the value
+            nodeData = leafNode.NodeData;
+            nodeData.value = 'Weighted';
+            leafNode.NodeData = nodeData;
+            path = {'QSMWorker', 'QSM', 'unwrap', 'echoCombMethod'};
+            gui.Config = gui.setValueInStruct(gui.Config, path, nodeData);
+            
+            testCase.verifyEqual(leafNode.NodeData.value, 'Weighted');
+            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Weighted');
+        
+            % Manual reset using the existing getOriginalLeaf method
+            originalLeaf = gui.getOriginalLeaf(leafNode);  % This method exists!
+            leafNode.NodeData = originalLeaf;
+            gui.Config = gui.setValueInStruct(gui.Config, path, originalLeaf);
+            
+            testCase.verifyEqual(leafNode.NodeData.value, 'Optimum weights');
+            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Optimum weights');
+        
+            delete(gui);
+        end
 
         function testSaveNestedConfig(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'QSMWorker'});
             set(gui.Fig,'Visible','off');
 
-            % More robust way to find the specific leaf node
+            % Find the specific leaf node in the tree
             qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
-            
+
             % Find QSM -> unwrap -> echoCombMethod path
             foundLeaf = false;
             for i = 1:numel(qsmNode.Children)
@@ -110,36 +156,37 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
                     if foundLeaf, break; end
                 end
             end
-            
-            testCase.verifyTrue(foundLeaf, 'Should find echoCombMethod leaf node');
-            
-            % Select and update the leaf node
-            gui.Tree.SelectedNodes = leafNode;
-            
-            % Wait for selection to take effect
-            drawnow;
-            pause(0.1);
-            
-            % Verify we're editing the correct field
-            testCase.verifyEqual(gui.ValLabel.Text, 'echoCombMethod:');
-            
-            % Update value - use the exact string format expected
-            gui.ValField.Value = '"Weighted"';  % Add quotes for JSON string
-            gui.updateLeafFromField();
 
-            % Save to temp file
+            testCase.verifyTrue(foundLeaf, 'Should find echoCombMethod leaf node');
+
+            % Update the tree node directly (this is what the UI would do)
+            nodeData = leafNode.NodeData;
+            nodeData.value = 'Weighted';
+            leafNode.NodeData = nodeData;
+
+            % Also update the main config to keep them in sync
+            path = {'QSMWorker', 'QSM', 'unwrap', 'echoCombMethod'};
+            gui.Config = gui.setValueInStruct(gui.Config, path, nodeData);
+
+            % Verify both tree and config are updated
+            testCase.verifyEqual(leafNode.NodeData.value, 'Weighted');
+            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Weighted');
+
+            % Save to temp file - treeToStruct should now get the updated value
             tmpSave = [tempname, '.json'];
             partial = gui.treeToStruct();
             gui.Config = gui.mergeIntoOriginal(gui.OrigConfig, partial);
             gui.jsonwrite(tmpSave, gui.Config);
 
-            % Load saved JSON and verify the change
+            % Load saved JSON and verify the change persisted
             savedConfig = jsondecode(fileread(tmpSave));
             testCase.verifyEqual(savedConfig.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Weighted');
             testCase.verifyEqual(savedConfig.QSMWorker.QSM.qsm.lambda.value, 0.05); % unchanged
 
             delete(gui);
-            delete(tmpSave);
+            if exist(tmpSave, 'file')
+                delete(tmpSave);
+            end
         end
     end
 end

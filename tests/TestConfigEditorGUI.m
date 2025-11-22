@@ -33,7 +33,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
     methods(Test)
         function testConstructorLoadsConfig(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'General','QSMWorker'});
-            set(gui.UIFig,'Visible','off');
+            set(gui.Fig,'Visible','off');
 
             % Root nodes contain requested workers
             rootNames = {gui.RootNodes.Text};
@@ -44,7 +44,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
 
         function testLeafEdit(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'General'});
-            set(gui.UIFig,'Visible','off');
+            set(gui.Fig,'Visible','off');
 
             % Select leaf: General -> gyro
             node = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General')).Children(strcmp({gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General')).Children.Text}, 'gyro'));
@@ -65,7 +65,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
 
         function testNestedLeafEdit(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'QSMWorker'});
-            set(gui.UIFig,'Visible','off');
+            set(gui.Fig,'Visible','off');
 
             % Navigate to nested leaf: QSMWorker -> QSM -> unwrap -> echoCombMethod
             qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker')).Children(1); % QSM
@@ -87,7 +87,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
 
         function testSearchFunctionality(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
-            set(gui.UIFig,'Visible','off');
+            set(gui.Fig,'Visible','off');
 
             % Search exact leaf
             gui.SearchField.Value = 'gyro';
@@ -106,7 +106,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
 
         function testSaveNestedConfig(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'QSMWorker'});
-            set(gui.UIFig,'Visible','off');
+            set(gui.Fig,'Visible','off');
 
             % Change nested value
             qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker')).Children(1); % QSM

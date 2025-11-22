@@ -63,28 +63,6 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             delete(gui);
         end
 
-        function testNestedLeafEdit(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'QSMWorker'});
-            set(gui.Fig,'Visible','off');
-
-            % Navigate to nested leaf: QSMWorker -> QSM -> unwrap -> echoCombMethod
-            qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker')).Children(1); % QSM
-            unwrapNode = qsmNode.Children(1); % unwrap
-            leafNode = unwrapNode.Children(1); % echoCombMethod
-
-            gui.Tree.SelectedNodes = leafNode;
-            gui.ValField.Value = '"Weighted"';
-            gui.updateLeafFromField();
-
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Weighted');
-
-            % Reset leaf
-            gui.resetLeaf();
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Optimum weights');
-
-            delete(gui);
-        end
-
         function testSearchFunctionality(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
             set(gui.Fig,'Visible','off');

@@ -160,7 +160,7 @@ classdef ConfigEditorGUI < handle
             for k = 1:numel(topKeys)
                 key = topKeys{k};
                 if ~isfield(obj.Config,key)
-                    continue;
+                    continue
                 end
                 node = uitreenode(obj.Tree,'Text',key,'NodeData',obj.Config.(key));
                 obj.buildSubtree(node, obj.Config.(key));
@@ -381,7 +381,8 @@ classdef ConfigEditorGUI < handle
         % Load JSON from a new file selected via file dialog and repopulate the tree
         function loadJSON(obj)
             % Open file dialog to select JSON file
-            [f, p] = uigetfile({'*.json','JSON Files (*.json)'}, 'Select configuration file to load', fileparts(obj.ConfigFile));
+            [f, p] = fileparts(obj.ConfigFile);
+            [f, p] = uigetfile({'*.json','JSON Files (*.json)'}, 'Select configuration file to load', fullfile(f,p));
             if isequal(f, 0)
                 return
             end
@@ -416,11 +417,27 @@ classdef ConfigEditorGUI < handle
             obj.updateWindowTitle()
             
             % Reconstruct struct from tree and save
-            obj.Config = obj.treeToStruct();            
+            partial = obj.treeToStruct();
+            obj.Config = obj.mergeIntoOriginal(obj.OrigConfig, partial);
             try
                 obj.jsonwrite(obj.ConfigFile, obj.Config);
             catch ME
                 errordlg(['Failed to save: ' ME.message],'Save error');
+            end
+        end
+
+        function out = mergeIntoOriginal(obj, orig, partial)
+            out = orig;
+            fields = fieldnames(partial);
+            for i = 1:numel(fields)
+                f = fields{i};
+                if isfield(orig, f) && isstruct(partial.(f)) && isstruct(orig.(f))
+                    % Recursive merge
+                    out.(f) = obj.mergeIntoOriginal(orig.(f), partial.(f));
+                else
+                    % Overwrite or add
+                    out.(f) = partial.(f);
+                end
             end
         end
 

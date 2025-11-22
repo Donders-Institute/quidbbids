@@ -142,7 +142,7 @@ methods
 end
 
 
-methods(Access = private, Static)
+methods (Access = ?TestConfigEditorGUI, Static)
 
     function addtoolbox(toolpath, recursive)
         % Add an external toolbox to the MATLAB path.

@@ -92,7 +92,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             leafNode = unwrapNode.Children(1); % echoCombMethod
 
             gui.Tree.SelectedNodes = leafNode;
-            gui.ValField.Value = '"Weighted"';
+            gui.ValField.Value = 'Weighted';
             gui.updateLeafFromField();
 
             % Save to temp file

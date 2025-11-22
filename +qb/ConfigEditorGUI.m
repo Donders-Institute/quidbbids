@@ -102,7 +102,7 @@ classdef ConfigEditorGUI < handle
         function buildGUI(obj)
 
             % Create main uifigure
-            obj.UIFig = uifigure('Position',[300 100 1000 650]);
+            obj.UIFig = uifigure('Position',[300 100 745 650]);
             obj.Fig = obj.UIFig;
             obj.updateWindowTitle()
 
@@ -111,8 +111,8 @@ classdef ConfigEditorGUI < handle
             
             % Create search label and field
             uilabel(obj.UIFig,'Text','Search:','Position',[leftX 607 45 22],'HorizontalAlignment','left');
-            obj.SearchField = uieditfield(obj.UIFig,'text','Position',[leftX+45 606 leftW-45 24], 'ValueChangedFcn',@(src,~)obj.onSearchChanged(), 'Value','');
-
+            obj.SearchField = uieditfield(obj.UIFig,'text','Position',[leftX+45 606 leftW-45 24], 'ValueChangingFcn',@(src,evt)obj.onSearchLive(evt), 'ValueChangedFcn',@(src,evt)obj.onSearchEnter(evt), 'Value','');
+            
             % Prev/Next buttons
             obj.BtnSearchPrev = uibutton(obj.UIFig,'Text','◀','Position',[leftX 572 40 24],    'ButtonPushedFcn',@(~,~)obj.searchPrev());
             obj.BtnSearchNext = uibutton(obj.UIFig,'Text','▶','Position',[leftX+45 572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchNext());
@@ -128,7 +128,7 @@ classdef ConfigEditorGUI < handle
 
             % Right panel (Description and edit area)
             rpX = leftX + leftW + 20;
-            rpW = 1000 - rpX - 20;
+            rpW = 745 - rpX - 20;
             topY = 606 + 24;
             txtAreaH = 175;
 
@@ -143,17 +143,14 @@ classdef ConfigEditorGUI < handle
             obj.ValField = uieditfield(obj.UIFig,'text', 'Position',[rpX valueLabelY - 40 rpW 40], 'ValueChangedFcn',@(src,~)obj.updateLeafFromField());
 
             % Reset button
-            obj.ResetLeafBtn = uibutton(obj.UIFig,'Text','Reset', 'Position',[rpX+rpW-100 valueLabelY-80 100 30], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
+            obj.ResetLeafBtn = uibutton(obj.UIFig,'Text','Reset', 'Position',[rpX+rpW-70 valueLabelY-83 70 30], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
 
             % Bottom row buttons
             btnY = 20; btnH = 30; btnW = 70; gap = 15;
-            obj.BtnLoad     = uibutton(obj.UIFig,'Text','Load',     'Position',[rpX+20 btnY btnW btnH],              'ButtonPushedFcn',@(~,~)obj.loadJSON());
-            obj.BtnSave     = uibutton(obj.UIFig,'Text','Save',     'Position',[rpX+20+btnW+gap btnY btnW btnH],     'ButtonPushedFcn',@(~,~)obj.saveJSON());
-            obj.BtnResetAll = uibutton(obj.UIFig,'Text','Reset All','Position',[rpX+20+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
-            obj.BtnCancel   = uibutton(obj.UIFig,'Text','Cancel',   'Position',[rpX+20+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.UIFig));
-
-            % Use ValueChangedFcn with a custom approach for Enter key detection. We'll modify the existing ValueChangedFcn to handle Enter key behavior
-            obj.SearchField.ValueChangedFcn = @(src,evt)obj.onSearchFieldChanged(evt);
+            obj.BtnResetAll = uibutton(obj.UIFig,'Text','Reset All','Position',[rpX btnY btnW btnH],              'ButtonPushedFcn',@(~,~)obj.resetAll());
+            obj.BtnCancel   = uibutton(obj.UIFig,'Text','Cancel',   'Position',[rpX+btnW+gap btnY btnW btnH],     'ButtonPushedFcn',@(~,~)close(obj.UIFig));
+            obj.BtnLoad     = uibutton(obj.UIFig,'Text','Load',     'Position',[rpX+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.loadJSON());
+            obj.BtnSave     = uibutton(obj.UIFig,'Text','Save',     'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveJSON());
         end
 
         % populate tree directly with top-level keys (no single "config" root)
@@ -541,12 +538,6 @@ classdef ConfigEditorGUI < handle
             end
         end
 
-        function onSearchChanged(obj)
-            % invoked when search field changes or enter pressed
-            % Do not auto-select; just update the matches list
-            obj.updateSearchMatches(strtrim(obj.SearchField.Value))
-        end
-
         function collectLeafMatches(obj, node, qlow)
             % Check if this node is a leaf (has value and description)
             if obj.isLeaf(node.NodeData)
@@ -623,6 +614,32 @@ classdef ConfigEditorGUI < handle
             end
         end
 
+        function onSearchLive(obj, evt)
+            q = strtrim(evt.Value);
+            obj.updateSearchMatches(q);
+
+            if ~isempty(obj.SearchMatches)
+                obj.SearchIndex = 1;
+                obj.selectMatch(1);
+            else
+                obj.SearchIndex = 0;
+                obj.updateSearchResultsLabel();
+            end
+        end
+
+        function onSearchEnter(obj, evt)
+            q = strtrim(evt.Value);
+
+            obj.updateSearchMatches(q);
+
+            if ~isempty(obj.SearchMatches)
+                obj.SearchIndex = 1;
+                obj.selectMatch(1);
+            else
+                uialert(obj.UIFig,'No matches found.','Search');
+            end
+        end
+
         function collectMatchingNodes(obj, node, pattern)
             % Check if this node's text matches the pattern
             nodeText = lower(node.Text);
@@ -633,25 +650,6 @@ classdef ConfigEditorGUI < handle
             % Continue searching in all children
             for i = 1:numel(node.Children)
                 obj.collectMatchingNodes(node.Children(i), pattern);
-            end
-        end
-
-        function onSearchFieldChanged(obj, evt)
-            % Only trigger search when field is non-empty
-            q = strtrim(obj.SearchField.Value);
-            if ~isempty(q)
-                obj.updateSearchMatches(q);
-                if ~isempty(obj.SearchMatches)
-                    obj.SearchIndex = 1;
-                    obj.selectMatch(obj.SearchIndex);
-                else
-                    uialert(obj.UIFig,'No matches found.','Search');
-                end
-            else
-                % Clear search state when field is empty
-                obj.SearchMatches = {};
-                obj.SearchIndex = 0;
-                obj.SearchResultsLabel.Text = ''; % Just clear the label
             end
         end
 
@@ -672,14 +670,10 @@ classdef ConfigEditorGUI < handle
             
             % Update SearchIndex and results label
             obj.SearchIndex = idx;
-            obj.updateSearchResultsLabel(); % Add this one line
+            obj.updateSearchResultsLabel();
             
-            % Scroll to make the node visible (if possible)
+            % Force UI update to ensure tree renders expanded state
             drawnow
-            try
-                node.scrollIntoView();
-            catch
-            end
         end
 
         function updateSearchResultsLabel(obj)

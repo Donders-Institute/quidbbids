@@ -46,17 +46,36 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
             set(gui.Fig,'Visible','off');
 
-            % Search exact leaf
+            % Test incremental search (ValueChangingFcn)
             gui.SearchField.Value = 'gyro';
-            gui.onSearchFieldChanged(struct('Source', gui.SearchField));
+            gui.onSearchLive(struct('Value', 'gyro'));  % Use onSearchLive for incremental search
             testCase.verifyGreaterThanOrEqual(numel(gui.SearchMatches), 1);
             testCase.verifyEqual(gui.SearchMatches{1}.Text, 'gyro');
 
-            % Search with wildcard
+            % Test search with wildcard using incremental search
             gui.SearchField.Value = '*WH*';
-            gui.onSearchFieldChanged(struct('Source', gui.SearchField));
+            gui.onSearchLive(struct('Value', '*WH*'));  % Use onSearchLive for incremental search
             matches = {gui.SearchMatches{:}.Text};
             testCase.verifyTrue(any(contains(matches,'FWHM')));
+
+            delete(gui);
+        end
+
+        function testSearchEnterKeyAlert(testCase)
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
+            set(gui.Fig,'Visible','off');
+
+            % Test that Enter key shows alert when no matches found
+            gui.SearchField.Value = 'nonexistent123';
+            
+            % Mock the ValueChangedFcn (Enter key or focus loss)
+            % We need to capture the uialert - this is tricky to test directly
+            % Instead, verify the search state is updated correctly
+            gui.onSearchEnter(struct('Value', 'nonexistent123'));
+            
+            % Verify no matches were found
+            testCase.verifyEmpty(gui.SearchMatches);
+            testCase.verifyEqual(gui.SearchIndex, 0);
 
             delete(gui);
         end
@@ -187,6 +206,29 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             if exist(tmpSave, 'file')
                 delete(tmpSave);
             end
+        end
+
+        function testIncrementalSearchUpdates(testCase)
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
+            set(gui.Fig,'Visible','off');
+
+            % Test that incremental search updates with each character
+            gui.onSearchLive(struct('Value', 'g'));  % Type 'g'
+            initialMatches = numel(gui.SearchMatches);
+            
+            gui.onSearchLive(struct('Value', 'gy'));  % Type 'y' - more specific
+            refinedMatches = numel(gui.SearchMatches);
+            
+            % The matches should become more specific (fewer or equal matches)
+            testCase.verifyTrue(refinedMatches <= initialMatches);
+            
+            % Should find 'gyro' specifically
+            if refinedMatches > 0
+                matchTexts = {gui.SearchMatches{:}.Text};
+                testCase.verifyTrue(any(contains(matchTexts, 'gyro')));
+            end
+
+            delete(gui);
         end
     end
 end

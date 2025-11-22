@@ -76,11 +76,11 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             gui.ValField.Value = '"Weighted"';
             gui.updateLeafFromField();
 
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, "Weighted");
+            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Weighted');
 
             % Reset leaf
             gui.resetLeaf();
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, "Optimum weights");
+            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Optimum weights');
 
             delete(gui);
         end
@@ -125,7 +125,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
 
             % Load saved JSON
             savedConfig = jsondecode(fileread(tmpSave));
-            testCase.verifyEqual(savedConfig.QSMWorker.QSM.unwrap.echoCombMethod.value, "Weighted");
+            testCase.verifyEqual(savedConfig.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Weighted');
             testCase.verifyEqual(savedConfig.QSMWorker.QSM.qsm.lambda.value, 0.05); % unchanged
 
             delete(gui);

@@ -74,7 +74,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             testCase.verifyEqual(gui.SearchMatches{1}.Text, 'gyro');
 
             % Search with wildcard
-            gui.SearchField.Value = '*B1*';
+            gui.SearchField.Value = '*WH*';
             gui.onSearchFieldChanged(struct('Source', gui.SearchField));
             matches = {gui.SearchMatches{:}.Text};
             testCase.verifyTrue(any(contains(matches,'FWHM')));

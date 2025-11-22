@@ -18,7 +18,7 @@ classdef ConfigEditorGUI < handle
         Config
     end
 
-    properties (Access = private)
+    properties ((Access = ?TestConfigEditorGUI)
         OrigConfig
 
         UIFig
@@ -95,7 +95,7 @@ classdef ConfigEditorGUI < handle
         end
     end
 
-    methods (Access = private)
+    methods ((Access = ?TestConfigEditorGUI)
 
         % build GUI layout with uifigure
         function buildGUI(obj)

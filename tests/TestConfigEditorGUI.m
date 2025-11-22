@@ -11,7 +11,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
     methods(TestMethodSetup)
         function setupDefaultConfig(testCase)
             % Path to default config in the repo
-            testCase.DefaultJSONPath = fullfile(fileparts(mfilename('fullpath')), 'qb.config_default.json');
+            testCase.DefaultJSONPath = fullfile(fileparts(mfilename('fullpath')), fullfile('..','+qb','config_default.json'));
 
             % Copy to temp file for safe testing
             testCase.TempJSONFile = [tempname, '.json'];

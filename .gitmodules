@@ -1,6 +1,3 @@
-[submodule "yaml"]
-	path = dependencies/yaml
-	url = https://github.com/MartinKoch123/yaml.git
 [submodule "gacelle"]
 	path = dependencies/gacelle
 	url = https://github.com/kschan0214/gacelle.git

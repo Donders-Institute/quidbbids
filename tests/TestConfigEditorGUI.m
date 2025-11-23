@@ -65,15 +65,30 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
             set(gui.Fig,'Visible','off');
 
-            % Test that Enter key shows alert when no matches found
+            % Test that Enter key behavior - we can't test the uialert directly
+            % since it requires visible figure, but we can verify the search logic
+            
+            % First test with a valid search to ensure matches work
+            gui.SearchField.Value = 'gyro';
+            gui.onSearchEnter(struct('Value', 'gyro'));
+            testCase.verifyGreaterThanOrEqual(numel(gui.SearchMatches), 1);
+            
+            % Now test with nonexistent search - verify search state is cleared
             gui.SearchField.Value = 'nonexistent123';
             
-            % Mock the ValueChangedFcn (Enter key or focus loss)
-            % We need to capture the uialert - this is tricky to test directly
-            % Instead, verify the search state is updated correctly
-            gui.onSearchEnter(struct('Value', 'nonexistent123'));
+            % Temporarily make figure visible to avoid uialert error
+            originalVisibility = gui.UIFig.Visible;
+            gui.UIFig.Visible = 'on';            
+            try
+                gui.onSearchEnter(struct('Value', 'nonexistent123'));
+            catch ME
+                if ~strcmp(ME.identifier, 'MATLAB:uitools:uidialogs:InvisibleFigure')
+                    rethrow(ME);
+                end
+            end
+            gui.UIFig.Visible = originalVisibility;            % Restore visibility
             
-            % Verify no matches were found
+            % Verify no matches were found and search state is reset
             testCase.verifyEmpty(gui.SearchMatches);
             testCase.verifyEqual(gui.SearchIndex, 0);
 

@@ -137,7 +137,7 @@ methods
 
                 % Ask the worker to fetch the product for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
-                if obj.coord.config.useHPC
+                if obj.coord.config.General.useHPC
                     qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:});   % NB: products are passed directly
                 else
                     worker(args{:}).fetch(product, obj.force);     % TODO: Catch the work done (at some point)
@@ -145,7 +145,7 @@ methods
 
             end
 
-            if obj.coord.config.useHPC
+            if obj.coord.config.General.useHPC
                 obj.monitor_progress(product)
             end
         end

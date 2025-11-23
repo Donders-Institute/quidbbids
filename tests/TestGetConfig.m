@@ -36,15 +36,21 @@ classdef TestGetConfig < matlab.unittest.TestCase
             testCase.verifyTrue(isfield(config, 'MP2RAGEWorker'))
 
             % Test writing a config
-            config.param1  = [100; 101];
-            config.param2  = 'written';
+            config.param1 = [100; 101];
+            config.param2 = [100, 101];
+            config.param3 = [1, 2; 3, 4]; 
+            config.param4 = {1, 'a'};
+            config.param5 = 'written';
             qb.get_config(testCase.ConfigFile, config);
 
             % Read it back
             newconfig = qb.get_config(testCase.ConfigFile);
 
             testCase.verifyEqual(newconfig.param1, config.param1)
-            testCase.verifyEqual(newconfig.param2, config.param2)
+            testCase.verifyEqual(newconfig.param2, config.param2')
+            testCase.verifyEqual(newconfig.param3, config.param3)
+            testCase.verifyEqual(newconfig.param4, config.param4')
+            testCase.verifyEqual(newconfig.param5, config.param5)
         end
 
         function testVersionMismatchWarning(testCase)
@@ -52,7 +58,7 @@ classdef TestGetConfig < matlab.unittest.TestCase
             config = qb.get_config(testCase.ConfigFile);
 
             % Write a version mismatch that triggers a warning
-            config.version.value = 'foo.bar.baz';     % intentionally mismatch
+            config.General.version.value = 'foo.bar.baz';     % intentionally mismatch
             qb.get_config(testCase.ConfigFile, config);
 
             % Verify that reading triggers a warning

@@ -145,7 +145,7 @@ methods
 
         % Estimate the MCR model
         extraData         = [];
-        extraData.freqBKG = single(totalField / (obj.config.gyro * obj.config.MCRWorker.fixed_params.B0));  % in ppm
+        extraData.freqBKG = single(totalField / (obj.config.General.gyro * obj.config.MCRWorker.fixed_params.B0));  % in ppm
         extraData.pini    = single(pini);
         extraData.b1      = single(B1);
         objGPU            = gpuMCRMWI(TE, TR, FA, obj.config.MCRWorker.fixed_params);

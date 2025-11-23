@@ -54,10 +54,10 @@ else                % Read JSON
 
     % Check for version conflicts
     try
-        if ~strcmp(config.version.value, qb.version())
-            warning("QuIDBBIDS:Config:VersionMismatch", "The config file version (%s) does not match the current QuIDBBIDS version (%s). Please update your config file if needed", config.version.value, qb.version())
+        if ~strcmp(config.General.version.value, qb.version())
+            warning("QuIDBBIDS:Config:VersionMismatch", "The config file version (%s) does not match the current QuIDBBIDS version (%s). Please update your config file if needed", config.General.version.value, qb.version())
         end
     catch exception
-        warning("QuIDBBIDS:Config:ParseError", "Could not parse: %s", configfile)
+        error("QuIDBBIDS:Config:ParseError", "Could not parse version: %s\n%s", configfile, exception)
     end
 end

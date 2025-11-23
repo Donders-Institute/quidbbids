@@ -245,5 +245,163 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
 
             delete(gui);
         end
+
+        function testLeafEditVariousDataTypes(testCase)
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
+            set(gui.UIFig,'Visible','off');
+
+            % Test 1: Numeric scalar (gyro)
+            generalNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General'));
+            gyroNode = generalNode.Children(strcmp({generalNode.Children.Text}, 'gyro'));
+            gui.Tree.SelectedNodes = gyroNode;
+            
+            % Verify initial state
+            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892);
+            
+            % Update to different numeric value
+            gui.ValField.Value = '99.5';
+            gui.updateLeafFromField();
+            testCase.verifyEqual(gyroNode.NodeData.value, 99.5);
+            gui.resetLeaf();
+            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892);
+
+            % Test 2: String value 
+            % Find a string parameter - look for echoCombMethod
+            qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
+            qsmSubNode = qsmNode.Children(strcmp({qsmNode.Children.Text}, 'QSM'));
+            unwrapNode = qsmSubNode.Children(strcmp({qsmSubNode.Children.Text}, 'unwrap'));
+            stringNode = unwrapNode.Children(strcmp({unwrapNode.Children.Text}, 'echoCombMethod'));
+            
+            if ~isempty(stringNode)
+                gui.Tree.SelectedNodes = stringNode;
+                originalValue = stringNode.NodeData.value;
+                
+                % Test string update
+                gui.ValField.Value = '"New String Value"';
+                gui.updateLeafFromField();
+                testCase.verifyEqual(stringNode.NodeData.value, "New String Value");
+                
+                % Test without quotes (should still work)
+                gui.ValField.Value = 'Another String';
+                gui.updateLeafFromField();
+                testCase.verifyEqual(stringNode.NodeData.value, "Another String");
+                
+                gui.resetLeaf();
+                testCase.verifyEqual(stringNode.NodeData.value, originalValue);
+            end
+            
+            % Test 3: Numeric array
+            % Look for array parameters - check if any exist in the config
+            arrayNodes = testCase.findArrayLeaves(gui.RootNodes);
+            
+            if ~isempty(arrayNodes)
+                arrayNode = arrayNodes{1};
+                gui.Tree.SelectedNodes = arrayNode;
+                originalArrayValue = arrayNode.NodeData.value;
+                
+                % Test array input in JSON format
+                gui.ValField.Value = '[1, 2, 3, 4]';
+                gui.updateLeafFromField();
+                testCase.verifyEqual(arrayNode.NodeData.value, [1, 2, 3, 4]);
+                
+                % Test MATLAB array format
+                gui.ValField.Value = '[5 6 7]';
+                gui.updateLeafFromField();
+                testCase.verifyEqual(arrayNode.NodeData.value, [5, 6, 7]);
+                
+                gui.resetLeaf();
+                testCase.verifyEqual(arrayNode.NodeData.value, originalArrayValue);
+            else
+                fprintf('No array leaf found for testing\n');
+            end
+            
+            % Test 4: Logical values
+            % Look for logical parameters - check if any exist in the config
+            logicalNodes = testCase.findLogicalLeaves(gui.RootNodes);
+            
+            if ~isempty(logicalNodes)
+                logicalNode = logicalNodes{1};
+                gui.Tree.SelectedNodes = logicalNode;
+                originalLogicalValue = logicalNode.NodeData.value;
+                
+                % Test different boolean representations
+                gui.ValField.Value = 'true';
+                gui.updateLeafFromField();
+                testCase.verifyEqual(logicalNode.NodeData.value, true);
+                
+                gui.ValField.Value = 'false';
+                gui.updateLeafFromField();
+                testCase.verifyEqual(logicalNode.NodeData.value, false);
+                
+                gui.ValField.Value = '1';
+                gui.updateLeafFromField();
+                testCase.verifyEqual(logicalNode.NodeData.value, true);
+                
+                gui.ValField.Value = '0';
+                gui.updateLeafFromField();
+                testCase.verifyEqual(logicalNode.NodeData.value, false);
+                
+                gui.resetLeaf();
+                testCase.verifyEqual(logicalNode.NodeData.value, originalLogicalValue);
+            else
+                fprintf('No logical leaf found for testing\n');
+            end
+            
+            delete(gui);
+        end
+
     end
+
+    methods (Access = private)
+        function arrayNodes = findArrayLeaves(testCase, rootNodes)
+            arrayNodes = {};
+            for i = 1:numel(rootNodes)
+                testCase.traverseForArrays(rootNodes(i), arrayNodes);
+            end
+        end
+        
+        function traverseForArrays(testCase, node, arrayNodes)
+            if isprop(node, 'Children') && ~isempty(node.Children)
+                for i = 1:numel(node.Children)
+                    child = node.Children(i);
+                    if isprop(child, 'NodeData') && isfield(child.NodeData, 'value')
+                        val = child.NodeData.value;
+                        if isnumeric(val) && numel(val) > 1
+                            arrayNodes{end+1} = child;
+                        end
+                    end
+                    % Recursively check children
+                    if isprop(child, 'Children') && ~isempty(child.Children)
+                        testCase.traverseForArrays(child, arrayNodes);
+                    end
+                end
+            end
+        end
+        
+        function logicalNodes = findLogicalLeaves(testCase, rootNodes)
+            logicalNodes = {};
+            for i = 1:numel(rootNodes)
+                testCase.traverseForLogicals(rootNodes(i), logicalNodes);
+            end
+        end
+        
+        function traverseForLogicals(testCase, node, logicalNodes)
+            if isprop(node, 'Children') && ~isempty(node.Children)
+                for i = 1:numel(node.Children)
+                    child = node.Children(i);
+                    if isprop(child, 'NodeData') && isfield(child.NodeData, 'value')
+                        if islogical(child.NodeData.value)
+                            logicalNodes{end+1} = child;
+                        end
+                    end
+                    % Recursively check children
+                    if isprop(child, 'Children') && ~isempty(child.Children)
+                        testCase.traverseForLogicals(child, logicalNodes);
+                    end
+                end
+            end
+        end
+
+    end
+
 end

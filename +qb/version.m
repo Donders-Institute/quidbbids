@@ -6,7 +6,8 @@ function ver = version()
     if exist(jsonfile, "file")
         ver = jsondecode(fileread(jsonfile)).version;
     else
-        error("The file '%s' does not exist", jsonfile)
+        warning("QuIDBBIDS:Setup:MissingMPackage", "The file '%s' does not exist", jsonfile)
+        ver = '';
     end
 
 end

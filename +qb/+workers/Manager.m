@@ -63,18 +63,26 @@ methods
         obj.products(obj.products=="") = [];
     end
 
-    function create_team(obj, workitems)
-        %CREATE_TEAM Selects workers from the pool that together are capable of making the PRODUCTS (workitems)
+    function create_team(obj, workitems, recurse_)
+        %CREATE_TEAM Selects workers from the pool that together are capable of making the
+        % WORKITEMS (products).
         %
-        % Asks the user for help if needed. The assembled team is stored in the TEAM property
+        % Asks the user for help if needed. The assembled team is stored in the TEAM property.
+        %
+        % NB: RECURSE_ is a private argument that should not be used
 
         arguments
             obj
             workitems {mustBeText} = obj.products
+            recurse_ logical       = false
+        end
+
+        % Reset the team
+        if ~recurse_
+            obj.team = struct();
         end
 
         % Find and select one capable worker per workitem
-        obj.team = struct();                                % Reset the team
         for workitem = string(workitems(:)')                % The workitem with optional regexp pattern
             for name = fieldnames(obj.coord.resumes)'       % Iterate over all available workers
                 worker = obj.coord.resumes.(char(name));
@@ -98,7 +106,7 @@ methods
             if any(match)
                 workitem_ = obj.selectworker(workitem);     % Keep the preferred worker only (if multiple). NB: workitem_ is without regexp pattern
                 if ~isempty(obj.team.(workitem_).needs)     % Recursively add upstream workers to the team
-                    obj.create_team(obj.team.(workitem_).needs)
+                    obj.create_team(obj.team.(workitem_).needs, true)
                 end
             elseif strlength(workitem)
                 error('QuIDBBIDS:WorkItem:NotFound', 'Could not find a worker that can make: %s', workitem)

@@ -438,7 +438,7 @@ classdef ConfigEditorGUI < handle
                 txt = jsonencode(obj.Config, 'PrettyPrint', true);
                 fid = fopen(obj.ConfigFile,'w');
                 if fid < 0
-                    error('Cannot open file for writing: %s', obj.ConfigFile);
+                    error('QuIDBBIDS:ConfigEditor:IOError', 'Cannot open file for writing: %s', obj.ConfigFile);
                 end
                 fwrite(fid, txt, 'char');
                 fclose(fid);
@@ -522,11 +522,7 @@ classdef ConfigEditorGUI < handle
             path = obj.nodePath(node);
             cur = obj.OrigConfig;
             for i = 1:numel(path)
-                if isfield(cur, path{i})
-                    cur = cur.(path{i});
-                else
-                    error('Original config path not found');
-                end
+                cur = cur.(path{i});
             end
             leaf = cur;
         end

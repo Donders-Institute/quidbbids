@@ -29,7 +29,7 @@ classdef TestGetConfig < matlab.unittest.TestCase
 
             % Verify the config file was created
             testCase.verifyFalse(isfile(testCase.ConfigFile))
-            config = qb.get_config(testCase.ConfigFile);
+            config = qb.get_config(testCase.ConfigFile, struct());
             testCase.verifyTrue(isfile(testCase.ConfigFile))
 
             % Verify the config fields match the default
@@ -44,7 +44,7 @@ classdef TestGetConfig < matlab.unittest.TestCase
             qb.get_config(testCase.ConfigFile, config);
 
             % Read it back
-            newconfig = qb.get_config(testCase.ConfigFile);
+            newconfig = qb.get_config(testCase.ConfigFile, struct());
 
             testCase.verifyEqual(newconfig.param1, config.param1)
             testCase.verifyEqual(newconfig.param2, config.param2')

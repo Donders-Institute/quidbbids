@@ -1,19 +1,11 @@
 function addpath_deps()
-%ADDPATH_DEPS Add the QuIDBBIDS dependencies to the MATLAB path if needed
+%ADDPATH_DEPS Adds the QuIDBBIDS dependencies to the MATLAB path if needed
 %
-% ADDPATH_DEPS() scans the 'dependencies' directory and adds all
-% submodules and toolboxes to the MATLAB search path. This function
-% automatically handles:
+% This function automatically handles:
 %   - MATLAB Add-Ons (enables them if installed but disabled)
-%   - Regular toolbox folders (added to path)
-%   - Special toolboxes that require recursive path addition
-%
-% Special Cases:
-%   - 'sepia', 'spm', 'bids-matlab' are added with their root folder only
-%   - Other toolboxes are added recursively with all subfolders
-%
-% Example:
-%   addpath_deps();
+%   - Regular dependencies are added recursively with all subfolders
+%   - 'sepia', 'spm', 'bids-matlab' are added with their root folder only,
+%     including running the 'sepia_addpath()' function
 %
 % See also: ADDPATH, GENPATH, MATLAB.ADDONS
 

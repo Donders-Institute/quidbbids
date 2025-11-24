@@ -76,6 +76,9 @@ methods
 
     function workitems = makes(obj)
         workitems = string(fieldnames(obj.bidsfilter)');
+        if isempty(workitems)
+            obj.logger.warning('%s does not seem to make anything!', obj.name)
+        end
     end
 
     function work = fetch(obj, workitem, force)

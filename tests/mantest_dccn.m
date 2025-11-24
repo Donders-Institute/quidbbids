@@ -13,9 +13,9 @@ clear classes
 
 %% MCR-MWI
 if isunix
-    bids_dir = '/project/3032002.02/data/bids_MCR-MWI_VFA';
+    bids_dir = '/project/3032002.02/testdata/bids_MCR-MWI_VFA';
 else
-    bids_dir = 'P:\3032002.02\data\bids_MCR-MWI_VFA';
+    bids_dir = 'P:\3032002.02\testdata\bids_MCR-MWI_VFA';
 end
 quidb = qb.QuIDBBIDS(bids_dir)
 quidb.resumes.R2D2.preferred = true;
@@ -25,9 +25,9 @@ mgr.start_workflow()
 
 %% ABRIM
 if isunix
-    bids_dir = '/project/3032002.02/data/bids_ABRIM';
+    bids_dir = '/project/3032002.02/testdata/bids_ABRIM';
 else
-    bids_dir = 'P:\3032002.02\data\bids_ABRIM';
+    bids_dir = 'P:\3032002.02\testdata\bids_ABRIM';
 end
 quidb = qb.QuIDBBIDS(bids_dir)
 quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect = 1;

@@ -1,18 +1,18 @@
 classdef ConfigEditorGUI < handle
-% ConfigEditorGUI  GUI-based JSON config editor
+% ConfigEditorGUI is a GUI-based JSON config editor
 %
-%   Usage (example from a wrapper):
-%       app = qb.ConfigEditorGUI(configfile, workers);
-%       uiwait(app.Fig);
-%       config = app.Config;
+% Input:
+%  CONFIGFILE - If empty or not provided, a file dialog is opened.
+%  CONFIG     - If  is empty or not provided, a file dialog is opened.
+%  WORKERS    - Optional cell array of top-level keys to show (empty => all)
 %
-%   - If configfile is empty or not provided, a file dialog is opened.
-%   - workers: optional cell array of top-level keys to show (empty => all)
+% Usage:
+%  app = qb.ConfigEditorGUI(configfile, config, workers);
+%  uiwait(app.Fig);
 %
-% Save this file as: ConfigEditorGUI.m
+% See also: qb.configeditor
 
     properties
-        % Public for wrapper access
         Fig
         ConfigFile
         Config
@@ -20,66 +20,67 @@ classdef ConfigEditorGUI < handle
 
     properties (Access = ?TestConfigEditorGUI)
         OrigConfig
-
+        Workers
         UIFig
         Tree
-        RootNodes % array of top-level nodes (children of tree)
+        RootNodes           % array of top-level nodes (children of tree)
 
         % Right-side editor
-        DescArea    % uitextarea (non-editable)
-        ValField    % uieditfield (or uieditfield('text'))
-        ValLabel    % uilabel for the value field that we can update
+        DescArea            % uitextarea (non-editable)
+        ValField            % uieditfield (or uieditfield('text'))
+        ValLabel            % uilabel for the value field that we can update
         ResetLeafBtn
 
         % Search controls
         SearchField
         BtnSearchNext
         BtnSearchPrev
-        SearchMatches % cell array of nodes that match
+        SearchMatches       % cell array of nodes that match
         SearchIndex = 0
-        SearchResultsLabel % uilabel for search results counter
+        SearchResultsLabel  % uilabel for search results counter
 
         % Bottom buttons
         BtnLoad
         BtnSave
         BtnResetAll
         BtnCancel
-
-        Workers
     end
 
     methods
-        function obj = ConfigEditorGUI(configfile, workers)
+        function obj = ConfigEditorGUI(configfile, config, workers)
             % CONFIGEDITORGUI Constructor to validate input and ask for file if needed
+            %
+            % See the QB.CONFIGEDITOR wrapper for usage
 
+            % Get the configfile
             if nargin < 1 || isempty(configfile)
                 [f,p] = uigetfile({'*.json','JSON Files (*.json)'}, 'Select configuration file');
                 if isequal(f,0)
-                    % user cancelled - create an invisible figure and return
-                    obj.Fig = [];
                     obj.ConfigFile = [];
-                    obj.Config = [];
                     return
                 end
                 configfile = fullfile(p,f);
             end
             obj.ConfigFile = configfile;
 
-            if nargin < 2
+            % Get the config
+            if nargin < 2 || isempty(config)
+                try
+                    txt = fileread(configfile);
+                    config = jsondecode(txt);
+                catch ME
+                    errordlg(['Unable to read/parse JSON: ' ME.message],'File Error');
+                    return
+                end
+            end
+            obj.Config     = config;
+            obj.OrigConfig = config;
+
+            % Set the workers that are to be edited
+            if nargin < 3
                 workers = [];
             end
             obj.Workers = workers;
-
-            % Read JSON
-            try
-                txt = fileread(configfile);
-                obj.Config = jsondecode(txt);
-            catch ME
-                errordlg(['Unable to read/parse JSON: ' ME.message],'File Error');
-                obj.Fig = [];
-                return
-            end
-            obj.OrigConfig = obj.Config;
 
             % Build GUI
             obj.buildGUI();
@@ -143,12 +144,12 @@ classdef ConfigEditorGUI < handle
             obj.ValField = uieditfield(obj.UIFig,'text', 'Position',[rpX valueLabelY - 40 rpW 40], 'ValueChangedFcn',@(src,~)obj.updateLeafFromField());
 
             % Reset button
-            obj.ResetLeafBtn = uibutton(obj.UIFig,'Text','Reset', 'Position',[rpX+rpW-70 valueLabelY-83 70 30], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
+            btnY = 20; btnH = 30; btnW = 70; gap = 15;
+            obj.ResetLeafBtn = uibutton(obj.UIFig,'Text','Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
 
             % Bottom row buttons
-            btnY = 20; btnH = 30; btnW = 70; gap = 15;
-            obj.BtnResetAll = uibutton(obj.UIFig,'Text','Reset All','Position',[rpX btnY btnW btnH],              'ButtonPushedFcn',@(~,~)obj.resetAll());
-            obj.BtnCancel   = uibutton(obj.UIFig,'Text','Cancel',   'Position',[rpX+btnW+gap btnY btnW btnH],     'ButtonPushedFcn',@(~,~)close(obj.UIFig));
+            obj.BtnResetAll = uibutton(obj.UIFig,'Text','Reset All','Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
+            obj.BtnCancel   = uibutton(obj.UIFig,'Text','Cancel',   'Position',[rpX+1*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.UIFig));
             obj.BtnLoad     = uibutton(obj.UIFig,'Text','Load',     'Position',[rpX+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.loadJSON());
             obj.BtnSave     = uibutton(obj.UIFig,'Text','Save',     'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveJSON());
         end
@@ -223,18 +224,15 @@ classdef ConfigEditorGUI < handle
             % Update the value label to show the selected node's name
             obj.ValLabel.Text = [node.Text ':'];
             
+            % Show description and the current value
             if obj.isLeaf(data)
-                % Show description and the current value
                 if isstring(data.description)
                     obj.DescArea.Value = cellstr(data.description);
                 elseif ischar(data.description)
                     obj.DescArea.Value = {data.description};
-                else
-                    % fallback: encode as JSON
+                else        % fallback: encode as JSON
                     obj.DescArea.Value = {jsonencode(data.description)};
                 end
-
-                % Format value for display
                 obj.ValField.Value = obj.valueToStringForDisplay(data.value);
             else
                 obj.DescArea.Value = {'(not editable)'};
@@ -391,14 +389,17 @@ classdef ConfigEditorGUI < handle
 
         % Load JSON from a new file selected via file dialog and repopulate the tree
         function loadJSON(obj)
-            % Open file dialog to select JSON file
-            [f, p] = fileparts(obj.ConfigFile);
-            [f, p] = uigetfile({'*.json','JSON Files (*.json)'}, 'Select configuration file to load', fullfile(f,p));
-            if isequal(f, 0)
-                return
-            end
-            obj.ConfigFile = fullfile(p, f);
             
+            % Open file dialog to select JSON file
+            if strcmp(obj.Fig.Visible, 'on')
+                [f, p] = fileparts(obj.ConfigFile);
+                [f, p] = uigetfile({'*.json','JSON Files (*.json)'}, 'Select configuration file to load', fullfile(f,p));
+                if isequal(f, 0)
+                    return
+                end
+                obj.ConfigFile = fullfile(p, f);
+            end
+
             try
                 % Read and parse the new JSON file
                 obj.Config = jsondecode(fileread(obj.ConfigFile));
@@ -412,7 +413,6 @@ classdef ConfigEditorGUI < handle
                 obj.nodeSelected(struct('SelectedNodes',[]));
                 obj.SearchField.Value = '';
                 obj.SearchResultsLabel.Text = '';
-                
             catch ME
                 errordlg(['Unable to load/parse JSON: ' ME.message],'Load error');
             end
@@ -422,18 +422,30 @@ classdef ConfigEditorGUI < handle
         function saveJSON(obj)
 
             % Open file dialog to select save location
-            [f, p] = uiputfile({'*.json','JSON Files (*.json)'}, 'Save configuration as...', obj.ConfigFile);
-            if isequal(f, 0)
-                return  % User cancelled
+            if strcmp(obj.Fig.Visible, 'on')
+                [f, p] = uiputfile({'*.json','JSON Files (*.json)'}, 'Save configuration as...', obj.ConfigFile);
+                if isequal(f, 0)
+                    return
+                end
+                obj.ConfigFile = fullfile(p, f);
             end
-            obj.ConfigFile = fullfile(p, f);
             obj.updateWindowTitle()
             
-            % Reconstruct struct from tree and save
+            % Reconstruct config struct from tree and save it
             partial = obj.treeToStruct();
             obj.Config = obj.mergeIntoOriginal(obj.OrigConfig, partial);
             try
-                obj.jsonwrite(obj.ConfigFile, obj.Config);
+                try
+                    txt = jsonencode(obj.Config, 'PrettyPrint', true);
+                catch
+                    txt = jsonencode(obj.Config);
+                end
+                fid = fopen(obj.ConfigFile,'w');
+                if fid < 0
+                    error('Cannot open file for writing: %s', obj.ConfigFile);
+                end
+                fwrite(fid, txt, 'char');
+                fclose(fid);
             catch ME
                 errordlg(['Failed to save: ' ME.message],'Save error');
             end
@@ -532,39 +544,9 @@ classdef ConfigEditorGUI < handle
             while ~isempty(cur) && ~isa(cur, 'matlab.ui.container.Tree')
                 % Only add nodes that have Text property (uitreenode objects)
                 if isprop(cur, 'Text')
-                    path = [{cur.Text}, path];
+                    path = [{cur.Text}, path]; %#ok<AGROW>
                 end
                 cur = cur.Parent;
-            end
-        end
-
-        function collectLeafMatches(obj, node, qlow)
-            % Check if this node is a leaf (has value and description)
-            if obj.isLeaf(node.NodeData)
-                % This is a leaf node - check if its name matches search
-                if contains(lower(node.Text), qlow)
-                    obj.SearchMatches{end+1} = node; 
-                end
-            else
-                % This is not a leaf - continue searching in children
-                for i = 1:numel(node.Children)
-                    obj.collectLeafMatches(node.Children(i), qlow);
-                end
-            end
-        end
-
-        function collectMatchesRecursive(obj, node, qlow)
-            % Check if this node has any leaf descendants
-            if obj.hasLeafDescendants(node)
-                % Check if node text matches search
-                if contains(lower(node.Text), qlow)
-                    obj.SearchMatches{end+1} = node; 
-                end
-            end
-            
-            % Continue searching in children
-            for i = 1:numel(node.Children)
-                obj.collectMatchesRecursive(node.Children(i), qlow);
             end
         end
 
@@ -658,22 +640,12 @@ classdef ConfigEditorGUI < handle
                 return
             end
             node = obj.SearchMatches{idx};
-            
-            % Make node visible (expand parents)
-            obj.expandParents(node);
-            
-            % Select node
-            obj.Tree.SelectedNodes = node;
-            
-            % Update UI display manually
-            obj.nodeSelected(struct('SelectedNodes',node));
-            
-            % Update SearchIndex and results label
+            obj.expandParents(node);                        % Make node visible (expand parents)
+            obj.Tree.SelectedNodes = node;                  % Select node
+            obj.nodeSelected(struct('SelectedNodes',node)); % Update UI display manually
             obj.SearchIndex = idx;
-            obj.updateSearchResultsLabel();
-            
-            % Force UI update to ensure tree renders expanded state
-            drawnow
+            obj.updateSearchResultsLabel();                 % Update SearchIndex and results label
+            drawnow                                         % Force UI update to ensure tree renders expanded state
         end
 
         function updateSearchResultsLabel(obj)
@@ -690,7 +662,6 @@ classdef ConfigEditorGUI < handle
             cur = node.Parent;
             while ~isempty(cur) && ~isa(cur,'uitree')
                 try
-                    % Try different methods to expand nodes
                     if isprop(cur, 'Expanded')
                         cur.Expanded = true;
                     elseif ismethod(cur, 'expand')
@@ -723,41 +694,6 @@ classdef ConfigEditorGUI < handle
                 obj.SearchIndex = numel(obj.SearchMatches); % Wrap around to last
             end
             obj.selectMatch(obj.SearchIndex);
-        end
-
-        % Helper method to check if a node has leaf descendants
-        function tf = hasLeafDescendants(obj, node)
-            % If this node itself is a leaf parent
-            if ~isempty(node.Children) && all(arrayfun(@(child) obj.isLeaf(child.NodeData), node.Children))
-                tf = true;
-                return
-            end
-            
-            % Check if any children have leaf descendants
-            for i = 1:numel(node.Children)
-                if obj.hasLeafDescendants(node.Children(i))
-                    tf = true;
-                    return
-                end
-            end
-            
-            tf = false;
-        end
-
-        % Convert MATLAB struct -> JSON file (embedded)
-        function jsonwrite(~, filename, data)
-            % Try modern pretty print option; fallback if not supported
-            try
-                txt = jsonencode(data, 'PrettyPrint', true);
-            catch
-                txt = jsonencode(data); % no pretty print
-            end
-            fid = fopen(filename,'w');
-            if fid < 0
-                error('Cannot open file for writing: %s', filename);
-            end
-            fwrite(fid, txt, 'char');
-            fclose(fid);
         end
 
         % Update window title with current config file path

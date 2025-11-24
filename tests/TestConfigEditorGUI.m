@@ -32,18 +32,17 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
 
     methods(Test)
         function testConstructorLoadsConfig(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'General','QSMWorker'});
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'General','QSMWorker'});
             set(gui.Fig,'Visible','off');
 
             % Root nodes contain requested workers
-            rootNames = {gui.RootNodes.Text};
-            testCase.verifyTrue(all(ismember({'General','QSMWorker'}, rootNames)));
+            testCase.verifyTrue(all(ismember({'General','QSMWorker'}, {gui.RootNodes.Text})));
 
             delete(gui);
         end
 
         function testSearchFunctionality(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
             set(gui.Fig,'Visible','off');
 
             % Test incremental search (ValueChangingFcn)
@@ -62,7 +61,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
         end
 
         function testSearchEnterKeyAlert(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
             set(gui.Fig,'Visible','off');
 
             % Test that Enter key behavior - we can't test the uialert directly
@@ -96,7 +95,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
         end
         
         function testLeafEdit(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'General'});
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'General'});
             set(gui.UIFig,'Visible','off');
         
             % Select leaf: General -> gyro
@@ -127,7 +126,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
         end
 
         function testNestedLeafEdit(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'QSMWorker'});
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'QSMWorker'});
             set(gui.UIFig,'Visible','off');
         
             % Navigate to nested leaf
@@ -143,13 +142,13 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             % METHOD 1: Test direct update and manual reset using existing methods
             % Update the value
             nodeData = leafNode.NodeData;
-            nodeData.value = 'Weighted';
+            nodeData.value = 'Test';
             leafNode.NodeData = nodeData;
             path = {'QSMWorker', 'QSM', 'unwrap', 'echoCombMethod'};
             gui.Config = gui.setValueInStruct(gui.Config, path, nodeData);
             
-            testCase.verifyEqual(leafNode.NodeData.value, 'Weighted');
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Weighted');
+            testCase.verifyEqual(leafNode.NodeData.value, 'Test');
+            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Test');
         
             % Manual reset using the existing getOriginalLeaf method
             originalLeaf = gui.getOriginalLeaf(leafNode);  % This method exists!
@@ -163,7 +162,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
         end
 
         function testSaveNestedConfig(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {'QSMWorker'});
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'QSMWorker'});
             set(gui.Fig,'Visible','off');
 
             % Find the specific leaf node in the tree
@@ -195,7 +194,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
 
             % Update the tree node directly (this is what the UI would do)
             nodeData = leafNode.NodeData;
-            nodeData.value = 'Weighted';
+            nodeData.value = 'TestNested';
             leafNode.NodeData = nodeData;
 
             % Also update the main config to keep them in sync
@@ -203,28 +202,20 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
             gui.Config = gui.setValueInStruct(gui.Config, path, nodeData);
 
             % Verify both tree and config are updated
-            testCase.verifyEqual(leafNode.NodeData.value, 'Weighted');
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Weighted');
+            testCase.verifyEqual(leafNode.NodeData.value, 'TestNested');
+            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'TestNested');
 
-            % Save to temp file - treeToStruct should now get the updated value
-            tmpSave = [tempname, '.json'];
-            partial = gui.treeToStruct();
-            gui.Config = gui.mergeIntoOriginal(gui.OrigConfig, partial);
-            gui.jsonwrite(tmpSave, gui.Config);
-
-            % Load saved JSON and verify the change persisted
-            savedConfig = jsondecode(fileread(tmpSave));
-            testCase.verifyEqual(savedConfig.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Weighted');
+            % Save and load back and verify the change persisted
+            gui.saveJSON()
+            savedConfig = jsondecode(fileread(testCase.TempJSONFile));
+            testCase.verifyEqual(savedConfig.QSMWorker.QSM.unwrap.echoCombMethod.value, 'TestNested');
             testCase.verifyEqual(savedConfig.QSMWorker.QSM.qsm.lambda.value, 0.05); % unchanged
 
-            delete(gui);
-            if exist(tmpSave, 'file')
-                delete(tmpSave);
-            end
+            delete(gui)
         end
 
         function testIncrementalSearchUpdates(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
             set(gui.Fig,'Visible','off');
 
             % Test that incremental search updates with each character
@@ -243,11 +234,11 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
                 testCase.verifyTrue(any(contains(matchTexts, 'gyro')));
             end
 
-            delete(gui);
+            delete(gui)
         end
 
         function testLeafEditVariousDataTypes(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, {});
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
             set(gui.UIFig,'Visible','off');
 
             % Test 1: Numeric scalar (gyro)
@@ -347,7 +338,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
                 fprintf('No logical leaf found for testing\n');
             end
             
-            delete(gui);
+            delete(gui)
         end
 
     end

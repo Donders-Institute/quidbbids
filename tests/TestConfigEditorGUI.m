@@ -358,7 +358,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
                     if isprop(child, 'NodeData') && isfield(child.NodeData, 'value')
                         val = child.NodeData.value;
                         if isnumeric(val) && numel(val) > 1
-                            arrayNodes{end+1} = child;
+                            arrayNodes{end+1} = child; %#ok<AGROW>
                         end
                     end
                     % Recursively check children
@@ -382,7 +382,7 @@ classdef TestConfigEditorGUI < matlab.unittest.TestCase
                     child = node.Children(i);
                     if isprop(child, 'NodeData') && isfield(child.NodeData, 'value')
                         if islogical(child.NodeData.value)
-                            logicalNodes{end+1} = child;
+                            logicalNodes{end+1} = child; %#ok<AGROW>
                         end
                     end
                     % Recursively check children

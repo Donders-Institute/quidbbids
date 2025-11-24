@@ -64,7 +64,7 @@ classdef ConfigEditorGUI < handle
             obj.ConfigFile = configfile;
 
             % Get the config
-            if nargin < 2 || isempty(config)
+            if nargin < 2 || isempty(config) || isempty(fieldnames(config))
                 try
                     txt = fileread(configfile);
                     config = jsondecode(txt);
@@ -435,11 +435,7 @@ classdef ConfigEditorGUI < handle
             partial = obj.treeToStruct();
             obj.Config = obj.mergeIntoOriginal(obj.OrigConfig, partial);
             try
-                try
-                    txt = jsonencode(obj.Config, 'PrettyPrint', true);
-                catch
-                    txt = jsonencode(obj.Config);
-                end
+                txt = jsonencode(obj.Config, 'PrettyPrint', true);
                 fid = fopen(obj.ConfigFile,'w');
                 if fid < 0
                     error('Cannot open file for writing: %s', obj.ConfigFile);

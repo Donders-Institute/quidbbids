@@ -131,7 +131,7 @@ methods
             unwrappedPhase(:,:,:,:,n) = spm_read_vols(spm_vol(unwrapped{n}));
             totalField(:,:,:,n)       = spm_read_vols(spm_vol(fieldmap{n}));
             mask                      = spm_read_vols(spm_vol(localfmask{n})) & mask;
-            FA(n)                     = bfile.metadata.FlipAngle;
+            FA(n)                     = bfile.metadata.FlipAngle; %#ok<AGROW>
         end
         B1 = spm_read_vols(spm_vol(char(TB1map_GRE)));
         TR = bfile.metadata.RepetitionTime;

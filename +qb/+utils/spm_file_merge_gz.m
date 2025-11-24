@@ -124,6 +124,6 @@ for n = 1:numel(V)
 end
 
 % Write the output JSON sidecar (if there was at least one input sidecar)
-if ~isempty(metadata)
+if ~isempty(fieldnames(metadata))
     bids.util.jsonencode(spm_file(spm_file(fname, 'ext',''), 'ext','.json'), metadata)
 end

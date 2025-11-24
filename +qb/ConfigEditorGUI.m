@@ -78,7 +78,7 @@ classdef ConfigEditorGUI < handle
 
             % Set the workers that are to be edited
             if nargin < 3
-                workers = [];
+                workers = {};
             end
             obj.Workers = workers;
 

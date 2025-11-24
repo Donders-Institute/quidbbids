@@ -20,9 +20,9 @@ function [configfile, config] = configeditor(configfile, config, workers)
 %   [configfile, config] = qb.configeditor('config.json', {'General', 'QSMWorker'})
 
 arguments
-    configfile = []
-    config     = []
-    workers    = []
+    configfile mustBeTextScalar = ''
+    config     struct           = []   % Configuration struct loaded from the config file
+    workers    cell             = {}
 end
 
 app = qb.ConfigEditorGUI(configfile, config, workers);

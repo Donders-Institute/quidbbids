@@ -63,6 +63,9 @@ methods
             error("QuIDBBIDS:Nifti:InvalidInputArgument", "The configfile must be a file, not a folder: %s", configfile)
         end
 
+        % Set the Matlab-path for the dependencies
+        qb.addpath_deps()
+
         config = qb.get_config(configfile);     % Cannot call qb.get_config directly because obj is not yet fully constructed
         BIDS   = bids.layout(char(bidsdir), 'use_schema', true, ...
                                             'index_derivatives', false, ...
@@ -71,19 +74,6 @@ methods
                                             'tolerant', true, ...
                                             'verbose', true);
         obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
-
-        % Set the Matlab-path for the dependencies
-        rootdir = fileparts(fileparts(mfilename("fullpath")));
-        for toolbox = dir(fullfile(rootdir, "dependencies"))'
-            toolpath = fullfile(rootdir, "dependencies", toolbox.name);
-            if toolbox.isdir && ~any(strcmp(toolbox.name, [".", ".."]))
-                continue
-            elseif ~any(strcmp(toolbox.name, ["sepia", "spm"]))
-                obj.addtoolbox(toolpath)
-            else
-                obj.addtoolbox(toolpath, true)
-            end
-        end
 
     end
 
@@ -137,49 +127,6 @@ methods
 
         config = qb.get_config(obj.configfile, config);    % Implementation is in get_config to avoid circularity issues during object construction
 
-    end
-
-end
-
-
-methods(Access = private, Static)
-
-    function addtoolbox(toolpath, recursive)
-        % Add an external toolbox to the MATLAB path.
-        %
-        % ADDTOOLBOX(TOOLPATH, RECURSIVE) checks if the specified toolbox is
-        % already available on the MATLAB path or installed as a MATLAB Add-On.
-        % If not it attempts to:
-        %   1. Enable it via the MATLAB Add-On manager if installed as an Add-On.
-        %   2. Otherwise, it adds the given folder to the MATLAB path.
-        %
-        % Inputs:
-        %   TOOLPATH  - Full path to the toolbox folder.
-        %   RECURSIVE - If true, use genpath to add the toolbox folder recursively
-        %               with all subfolders. Default: false
-
-        arguments
-            toolpath  {mustBeFolder}
-            recursive (1,1) logical = false
-        end
-
-        [~, toolname] = fileparts(toolpath);
-        if contains(path, filesep + toolname) || isdeployed
-            return
-        elseif any(strcmp(toolname, matlab.addons.installedAddons().Name)) && ~matlab.addons.isAddonEnabled(toolname)
-            disp("Enabling add-on: " + toolname)
-            matlab.addons.enableAddon(toolname)
-        elseif isfolder(toolpath)
-            disp("Adding path: " + toolpath)
-            if recursive
-                addpath(genpath(toolpath))
-            else
-                addpath(toolpath)
-            end
-            addpath(toolpath)
-        else
-            error('QuIDBBIDS:Dependency:MissingToolbox', "Cannot find '%s' on the MATLAB-path, please make sure it is installed", toolname)
-        end
     end
 
 end

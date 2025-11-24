@@ -40,13 +40,14 @@ if ~isfile(config_default)
 end
 
 % Write or read the study configuration data (create if needed)
-if nargin > 1       % Write JSON
+if nargin > 1 && ~isempty(fieldnames(config))   % Write JSON
+    disp("Writing configuration to: " + configfile)
     fid = fopen(configfile, 'w');
     fprintf(fid, '%s', jsonencode(config, 'PrettyPrint', true));
     fclose(fid);
-else                % Read JSON
+else                                            % Read JSON
     if ~isfile(configfile)
-        disp("Writing study configuration to: " + configfile)
+        disp("Creating study configuration: " + configfile)
         [~,~] = mkdir(fileparts(configfile));
         copyfile(config_default, configfile)
     end

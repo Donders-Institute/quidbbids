@@ -66,7 +66,7 @@ methods
         % Set the Matlab-path for the dependencies
         qb.addpath_deps()
 
-        config = qb.get_config(configfile);     % Cannot call qb.get_config directly because obj is not yet fully constructed / the superclass has not yet been called
+        config = get_config(configfile);    % Cannot call obj.get_config directly because obj is not yet fully constructed / the superclass has not yet been called
         BIDS   = bids.layout(char(bidsdir), 'use_schema', true, ...
                                             'index_derivatives', false, ...
                                             'index_dependencies', false, ...
@@ -125,7 +125,7 @@ methods
             config struct
         end
 
-        config = qb.get_config(obj.configfile, config);    % Implementation is in get_config to avoid circularity issues during object construction
+        config = get_config(obj.configfile, config);    % Implementation is in private/get_config to avoid circularity issues during object construction
 
     end
 

@@ -1,5 +1,5 @@
 classdef TestGetConfig < matlab.unittest.TestCase
-    % Unit tests for qb.get_config function
+    % Unit tests for private/get_config function
 
     properties
         TempDir
@@ -11,6 +11,7 @@ classdef TestGetConfig < matlab.unittest.TestCase
             % Create a temporary directory for config files
             testCase.TempDir = tempname;
             mkdir(testCase.TempDir)
+            cd(fullfile(fileparts(mfilename("fullpath")),'..','+qb','private'))
 
             % Path for test config file
             testCase.ConfigFile = fullfile(testCase.TempDir, 'derivatives', 'QuIDBBIDS', 'code', 'config.json');
@@ -29,7 +30,7 @@ classdef TestGetConfig < matlab.unittest.TestCase
 
             % Verify the config file was created
             testCase.verifyFalse(isfile(testCase.ConfigFile))
-            config = qb.get_config(testCase.ConfigFile, struct());
+            config = get_config(testCase.ConfigFile, struct());
             testCase.verifyTrue(isfile(testCase.ConfigFile))
 
             % Verify the config fields match the default
@@ -41,10 +42,10 @@ classdef TestGetConfig < matlab.unittest.TestCase
             config.param3 = [1, 2; 3, 4]; 
             config.param4 = {1, 'a'};
             config.param5 = 'written';
-            qb.get_config(testCase.ConfigFile, config);
+            get_config(testCase.ConfigFile, config);
 
             % Read it back
-            newconfig = qb.get_config(testCase.ConfigFile, struct());
+            newconfig = get_config(testCase.ConfigFile, struct());
 
             testCase.verifyEqual(newconfig.param1, config.param1)
             testCase.verifyEqual(newconfig.param2, config.param2')
@@ -55,14 +56,14 @@ classdef TestGetConfig < matlab.unittest.TestCase
 
         function testVersionMismatchWarning(testCase)
 
-            config = qb.get_config(testCase.ConfigFile);
+            config = get_config(testCase.ConfigFile);
 
             % Write a version mismatch that triggers a warning
             config.General.version.value = 'foo.bar.baz';     % intentionally mismatch
-            qb.get_config(testCase.ConfigFile, config);
+            get_config(testCase.ConfigFile, config);
 
             % Verify that reading triggers a warning
-            testCase.verifyWarning(@() qb.get_config(testCase.ConfigFile), "QuIDBBIDS:Config:VersionMismatch")
+            testCase.verifyWarning(@() get_config(testCase.ConfigFile), "QuIDBBIDS:Config:VersionMismatch")
         end
     end
 end

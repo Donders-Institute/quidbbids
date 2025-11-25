@@ -104,9 +104,9 @@ methods
         TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
 
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
-        if numel(unique([length(echos4Dmag), length(unwrapped), length(fieldmap)])) > 1
+        if numel(unique([length(unwrapped), length(fieldmap)])) > 1
             obj.logger.exception('%s received an ambiguous number of echos4Dmag, unwrapped or fieldmaps:%s', obj.name, ...
-                                    sprintf('\n%s', echos4Dmag{:}, unwrapped{:}, fieldmap{:}))
+                                    sprintf('\n%s', unwrapped{:}, fieldmap{:}))
         end
         if length(echos4Dmag) < 2
             obj.logger.exception('%s received data for only %d flip angles', obj.name, length(echos4Dmag))

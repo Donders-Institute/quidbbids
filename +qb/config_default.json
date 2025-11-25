@@ -57,7 +57,7 @@
         "Nepoch": {"value": 4000, "description": "Number of training epochs"},
         "initialLearnRate": {"value": 0.001, "description": "Initial learning rate"},
         "decayRate": {"value": 0, "description": "Learning rate decay"},
-        "convergenceValue": {"value": "-inf", "description": "Convergence stopping value"},
+        "convergenceValue": {"value": -1e308, "description": "Convergence stopping value"},
         "tol": {"value": 1e-8, "description": "Tolerance for stopping optimization"},
         "display": {"value": false, "description": "Display fitting progress"},
         "lossFunction": {"value": "l1", "description": "Loss function for optimization"},

@@ -145,9 +145,8 @@ methods
             % Get the echo-1 magnitude files and metadata for all flip angles of this run
             VFA_e1_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','(mag)?');
             VFA_e1 = obj.query_ses(obj.BIDS,  'data', VFA_e1_filter);
-            flips  = obj.query_ses(obj.BIDS, 'flips', VFA_e1_filter);
-            if length(flips) <= 1
-                obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + flips)
+            if length(VFA_e1) <= 1
+                obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
             end
 
             % Get metadata from the first FA file (assume TR and nii-header identical for all VFAs of the same run)
@@ -155,8 +154,8 @@ methods
 
             % Compute T1 and M0 maps
             obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1{1})
-            e1img = NaN([Ve1.dim length(flips)]);
-            for n = 1:length(flips)
+            e1img = NaN([Ve1.dim length(VFA_e1)]);
+            for n = 1:length(VFA_e1)
                 e1img(:,:,:,n) = spm_read_vols(spm_vol(VFA_e1{n}));
                 metadata       = bids.File(VFA_e1{n}).metadata;
                 flipangles(n)  = metadata.FlipAngle;
@@ -166,12 +165,11 @@ methods
             % TODO: Iterate the computation with the input images realigned to the synthetic T1w images
 
             % Save T1w-like images in the work directory
-            for n = 1:length(flips)
+            for n = 1:length(VFA_e1)
                 T1w                    = M0 .* GRESignal(flipangles(n), metadata.RepetitionTime, T1);
                 T1w(~isfinite(T1w))    = 0;
-                specs                  = setfield(obj.bidsfilter.syntheticT1, 'flip', flips{n});
-                bfile                  = obj.bfile_set(VFA_e1{n}, specs);
-                bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};                               % TODO: FIXME
+                bfile                  = obj.bfile_set(VFA_e1{n}, obj.bidsfilter.syntheticT1);
+                bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};
                 obj.logger.info("Saving T1like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
                 spm_write_vol_gz(Ve1, T1w, bfile.path);
                 bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
@@ -359,6 +357,9 @@ methods
 
         import qb.utils.spm_file_merge_gz
 
+        % Index the workdir layout (only for obj.subject)
+        BIDSW = obj.BIDSW_ses();
+        
         % Merge the 3D echos files into 4D files for all MEGRE acq/runs independently
         bfilter = obj.bidsfilter.rawMEGRE;
         for acq = obj.query_ses(obj.BIDS, 'acquisitions', bfilter)

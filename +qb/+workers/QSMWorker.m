@@ -47,9 +47,9 @@ methods
         obj.version     = "0.1.0";
         obj.needs       = ["echos4Dmag", "echos4Dphase", "brainmask"];
         obj.bidsfilter.R2starmap  = struct('modality', 'anat', ...
-                                            'echo', [], ...
-                                            'part', '', ...          % SEPIA outputs images with an appended "part-phase" substring
-                                            'suffix', 'R2starmap');
+                                           'echo', [], ...
+                                           'part', '', ...          % SEPIA outputs images with an appended "part-phase" substring
+                                           'suffix', 'R2starmap');
         obj.bidsfilter.T2starmap  = setfield(obj.bidsfilter.R2starmap, 'suffix','T2starmap');
         obj.bidsfilter.S0map      = setfield(obj.bidsfilter.R2starmap, 'suffix','S0map');
         obj.bidsfilter.Chimap     = setfield(obj.bidsfilter.R2starmap, 'suffix','Chimap');
@@ -119,11 +119,12 @@ methods
                 case fieldnames(obj.config.QSMWorker)
                     param = obj.config.QSMWorker.(workitem);
                 case {"T2starmap", "S0map"}
-                    param = obj.config.QSMWorker.("R2starmap");
+                    param = obj.config.QSMWorker.R2starmap;
                 case {"Chimap", "unwrapped", "localfmask"}
-                    param = obj.config.QSMWorker.("QSM");
+                    param = obj.config.QSMWorker.QSM;
+                    param.bfr.radius = param.bfr.radius';   % JSON format is always columns
                 otherwise
-                    obj.logger.exception("%s cannot find the SEPIA parameters for: %s ", obj.name, workitem)
+                    obj.logger.exception("%s cannot find the SEPIA parameters for: %s", obj.name, workitem)
             end
 
             % Run the SEPIA workflow

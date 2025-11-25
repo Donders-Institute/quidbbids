@@ -454,7 +454,7 @@ methods (Access = private)
         % Replace the leaf or recurse into each field
         if isfield(config, 'value') && isfield(config, 'description') && numel(fieldnames(config)) == 2
             config = config.value;
-        else
+        elseif isstruct(config)
             for field = fieldnames(config)'
                 config.(field{1}) = obj.flatvalues(config.(field{1}));
             end

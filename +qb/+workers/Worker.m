@@ -355,7 +355,7 @@ methods
         end
 
         % Do the query with the subject/session + any additional filters added
-        result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), 'ses',obj.ses()), varargin{:});
+        result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), 'ses',obj.ses(), varargin{:}));
 
         % Postprocess the query result (i.e. fix the quirky bids.query behavior)
         switch query
@@ -399,7 +399,7 @@ methods
 
         arguments
             obj
-            bfile   {mustBeA(bfile, {'bids.File','char','string','cellstr'})}
+            bfile   {mustBeA(bfile, {'bids.File','char','string','cell'})}
             specs   (1,1) struct = struct()
             rootdir {mustBeTextScalar} = ''
         end
@@ -454,7 +454,7 @@ methods (Access = private)
         % Replace the leaf or recurse into each field
         if isfield(config, 'value') && isfield(config, 'description') && numel(fieldnames(config)) == 2
             config = config.value;
-        elseif isstruct(config)
+        elseif isstruct(config)     % NB: The check is needed when Workers initialize other Workers (with an already flattened config)
             for field = fieldnames(config)'
                 config.(field{1}) = obj.flatvalues(config.(field{1}));
             end

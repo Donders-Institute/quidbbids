@@ -36,7 +36,7 @@ if ~isfile(config_default)
     disp("Creating default configuration file: " + config_default)
     [pth, name, ext] = fileparts(config_default);
     [~,~] = mkdir(pth);
-    copyfile(fullfile(fileparts(mfilename("fullpath")), name + ext), config_default)
+    copyfile(fullfile(fileparts(fileparts(mfilename("fullpath"))), name + ext), config_default)
 end
 
 % Write or read the study configuration data (create if needed)

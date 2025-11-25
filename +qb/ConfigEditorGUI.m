@@ -184,27 +184,18 @@ classdef ConfigEditorGUI < handle
 
         % recursively add children to the tree up to leaves
         function buildSubtree(obj, parentNode, value)
-            if isstruct(value)
-                names = fieldnames(value);
-                for i = 1:numel(names)
-                    nm = names{i};
-                    child = value.(nm);
-                    if obj.isLeaf(child)
-                        uitreenode(parentNode,'Text',nm,'NodeData',child);
-                    else
-                        node = uitreenode(parentNode,'Text',nm,'NodeData',child);
-                        obj.buildSubtree(node, child);
-                    end
+            for nm = fieldnames(value)'
+                child = value.(nm{1});
+                if obj.isLeaf(child)
+                    uitreenode(parentNode,'Text',nm{1},'NodeData',child);
+                else
+                    node = uitreenode(parentNode,'Text',nm{1},'NodeData',child);
+                    obj.buildSubtree(node, child);
                 end
             end
         end
 
         function tf = isLeaf(obj, S)
-            % More robust leaf detection
-            if ~isstruct(S)
-                tf = false;
-                return
-            end
             fields = fieldnames(S);
             tf = ismember('value', fields) && ismember('description', fields) && numel(fields) == 2;
         end

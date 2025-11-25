@@ -65,7 +65,7 @@ methods
 
         obj.BIDS      = BIDS;
         obj.subject   = subject;
-        obj.config    = flatvalues(config);     % Replace struct("value", VALUE, "description", DESCRIPTION) leaves with their VALUE
+        obj.config    = obj.flatvalues(config); % Replace struct("value", VALUE, "description", DESCRIPTION) leaves with their VALUE
         obj.workdir   = workdir;
         obj.outputdir = outputdir;
         obj.team      = team;
@@ -448,15 +448,15 @@ methods (Access = private)
         pth = fullfile(replace(obj.subject.path, obj.BIDS.pth, obj.workdir), [regexp(class(obj), '[^.]+$', 'match', 'once') ext]);  % Only take the class basename, i.e. the last part after the dot
     end
 
-    function out = flatvalues(~, config)
+    function config = flatvalues(obj, config)
         %FLATVALUES Recursively walks over the tree and replaces the struct("value",VAL, "description",DESC) leaves with VAL
 
         % Replace the leaf or recurse into each field
         if isfield(config, 'value') && isfield(config, 'description') && numel(fieldnames(config)) == 2
-            out = config.value;
+            config = config.value;
         else
             for field = fieldnames(config)'
-                out.(field{1}) = obj.flatvalues(config.(field{1}));
+                config.(field{1}) = obj.flatvalues(config.(field{1}));
             end
         end
     end

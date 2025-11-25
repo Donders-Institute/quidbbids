@@ -38,16 +38,16 @@ methods
         % Make the abstract properties concrete
         obj.name        = "R2D2";
         obj.description = ["I'm R2-D2, an astromech droid that can fix starships and, yes, generate precise R1- and R2-starmaps for all your neuro-navigation needs!";
-                            "";
-                            "Methods:"
-                            "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"];
+                           "";
+                           "Methods:"
+                           "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"];
         obj.version     = "0.1.0";
         obj.needs       = ["echos4Dmag", "TB1map_GRE", "brainmask"];  % TODO: Ask Jose which mask to use
         obj.bidsfilter.R2starmap = struct('modality', 'anat', ...
-                                            'echo', [], ...
-                                            'part', '', ...
-                                            'desc', 'gacelleR1R2s', ...
-                                            'suffix', 'R2starmap');
+                                          'echo', [], ...
+                                          'part', '', ...
+                                          'desc', 'gacelleR1R2s', ...
+                                          'suffix', 'R2starmap');
         obj.bidsfilter.M0map     = setfield(obj.bidsfilter.R2starmap, 'suffix','M0Map');
         obj.bidsfilter.R1map     = setfield(obj.bidsfilter.R2starmap, 'suffix','R1map');
 

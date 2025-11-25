@@ -49,17 +49,17 @@ methods
         % Make the abstract properties concrete
         obj.name        = "Marcel";
         obj.description = ["I am a working class hero that will happily do the following pre-processing work for you:";
-                            "";
-                            "1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
-                            "   The results are blurry but within the common GRE space, hence, iterate the computation";
-                            "   with the input images that have been realigned to the target in the common space";
-                            "2. Coregister all ME-VFA images to each T1w-like target image (using echo-1_mag),";
-                            "   coregister the B1 images as well to the M0 (which is also in the common GRE space)";
-                            "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
-                            "   to produce a minimal output mask (for SEPIA)";
-                            "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows";
-                            "";
-                            "If only MEGRE data is available, then steps 1 and 2 are skipped"];
+                           "";
+                           "1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
+                           "   The results are blurry but within the common GRE space, hence, iterate the computation";
+                           "   with the input images that have been realigned to the target in the common space";
+                           "2. Coregister all ME-VFA images to each T1w-like target image (using echo-1_mag),";
+                           "   coregister the B1 images as well to the M0 (which is also in the common GRE space)";
+                           "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
+                           "   to produce a minimal output mask (for SEPIA)";
+                           "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows";
+                           "";
+                           "If only MEGRE data is available, then steps 1 and 2 are skipped"];
         obj.version     = "0.1.0";
         obj.needs       = ["TB1map_anat", "TB1map_angle"];
         obj.bidsfilter.rawMEVFA     = struct('modality', 'anat', ...

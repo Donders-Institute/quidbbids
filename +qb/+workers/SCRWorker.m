@@ -38,23 +38,23 @@ methods
         % Make the abstract properties concrete
         obj.name        = "Samuel";
         obj.description = ["Your relaxed number cruncher that fits SCR models for breakfast";
-                            "";
-                            "Methods:"
-                            "- Compute weighted means of the R2-star & Chi-maps over the different flip-angles";
-                            "- Compute R1- & M0-maps based on despot1 with S0 estimates"];
+                           "";
+                           "Methods:"
+                           "- Compute weighted means of the R2-star & Chi-maps over the different flip-angles";
+                           "- Compute R1- & M0-maps based on despot1 with S0 estimates"];
         obj.version     = "0.0.1";
         obj.needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "TB1map_GRE"];
         obj.bidsfilter.R1map_S0      = struct('modality', 'anat', ...
-                                                'echo', [], ...
-                                                'part', '', ...
-                                                'desc', 'despot1S0', ...
-                                                'suffix', 'R1map');
+                                              'echo', [], ...
+                                              'part', '', ...
+                                              'desc', 'despot1S0', ...
+                                              'suffix', 'R1map');
         obj.bidsfilter.M0map_S0      = setfield(obj.bidsfilter.R1map_S0, 'suffix', 'M0map');
         obj.bidsfilter.meanR2starmap = struct('modality', 'anat', ...
-                                                'echo', [], ...
-                                                'part', '', ...
-                                                'desc', 'mean', ...
-                                                'suffix', 'R2starmap');
+                                              'echo', [], ...
+                                              'part', '', ...
+                                              'desc', 'mean', ...
+                                              'suffix', 'R2starmap');
         obj.bidsfilter.meanChimap    = setfield(obj.bidsfilter.meanR2starmap, 'suffix', 'Chimap');
 
         % Make the workitems (if requested)
@@ -127,9 +127,9 @@ methods
             mask = true;
             for n = 1:length(S0data)
                 S0(:,:,:,n)  = spm_read_vols(spm_vol(S0data{n}));
-                R2s(:,:,:,n) = spm_read_vols(spm_vol(R2stardata{n}));
-                Chi(:,:,:,n) = spm_read_vols(spm_vol(Chidata{n}));
-                mask         = spm_read_vols(spm_vol(maskdata{n})) & mask;
+                R2s(:,:,:,n) = spm_read_vols(spm_vol(R2stardata{n}));       % NB: Assumes the order of R2stardata is the same as for S0data
+                Chi(:,:,:,n) = spm_read_vols(spm_vol(Chidata{n}));          % Idem
+                mask         = spm_read_vols(spm_vol(maskdata{n})) & mask;  % Idem
             end
 
             % Compute and save weighted means of the R2-star & Chi maps. TODO: Change the `desc` value from `VFA\d*` -> `mean`. Also, only compute for ME-VFA data

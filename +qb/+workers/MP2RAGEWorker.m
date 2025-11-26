@@ -142,7 +142,7 @@ methods
 
             % Save the M0-map
             bfile = obj.bfile_set(bfile, obj.bidsfilter.M0map);
-            spm_write_vol_gz(UNIhdr, M0map);                                            % TODO: add a JSON sidecar file
+            spm_write_vol_gz(UNIhdr, M0map, bfile.path);                                % TODO: add a JSON sidecar file
 
             % Save the corrected UNIT1
             bfile = obj.bfile_set(bfile, obj.bidsfilter.MP2RAGE_T1w);

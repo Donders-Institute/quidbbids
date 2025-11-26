@@ -7,7 +7,14 @@ function UNIT1 = scaleUNI(UNIT1)
 %
 % See also: unscaleUNI
 
-if min(UNIT1(:)) >= 0 && max(UNIT1(:)) >= 0.51
-    % converts MP2RAGE UNIT1 to [-0.5, 0.5] scale - assumes that it is getting only positive values
-    UNIT1 = UNIT1/4095 - 0.5;       % = (UNIT1 - max(UNIT1(:))/2) ./ max(UNIT1(:))
+% Check the input
+minval = min(UNIT1(:));
+maxval = max(UNIT1(:));
+if minval < 0 || maxval > 4095 + 10     % Added an arbitrary margin
+    error('QuIDBBIDS:MP2RAGE:ValueError', 'Failed to scale UNIT1 from [0, 4095] to [-0.5, 0.5] -> scale = [%f, %f]', minval, maxval)
+end
+
+% Convert MP2RAGE UNIT1 to [-0.5, 0.5] scale - assumes that it is getting only positive values
+if minval >= 0 && maxval >= 0.51
+    UNIT1 = UNIT1/4095 - 0.5;           % = (UNIT1 - max(UNIT1(:))/2) ./ max(UNIT1(:))
 end

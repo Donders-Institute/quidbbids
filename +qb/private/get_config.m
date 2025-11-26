@@ -8,11 +8,12 @@ function config = get_config(configfile, config)
 % in JSON format. This updates or creates the configuration file.
 %
 % Inputs:
-%   CONFIG - A struct with configuration parameters. If provided, GETCONFIG writes this
-%            data to the CONFIGFILE, else it reads it from CONFIGFILE.
+%   CONFIGFILE - The path of the QuIDBBIDS configuration file with all workflow settings
+%   CONFIG     - A struct with configuration parameters. If provided, GETCONFIG writes this
+%                data to the CONFIGFILE, else it reads it from CONFIGFILE.
 %
 % Output:
-%   CONFIG - A struct with the loaded configuration settings.
+%   CONFIG     - A struct with the loaded configuration settings.
 %
 % The function ensures that a default config exists in:
 %   <HOME>/.quidbbids/<version>/config_default.json
@@ -33,7 +34,7 @@ end
 % Create a default configfile if it does not exist
 config_default = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), "config_default.json");
 if ~isfile(config_default)
-    disp("Creating default configuration file: " + config_default)
+    disp("Creating default configuration: " + config_default)
     [pth, name, ext] = fileparts(config_default);
     [~,~] = mkdir(pth);
     copyfile(fullfile(fileparts(fileparts(mfilename("fullpath"))), name + ext), config_default)

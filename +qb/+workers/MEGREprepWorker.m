@@ -351,15 +351,12 @@ methods
     end
 
     function merge_MEfiles(obj)
-        %MERGE_MEFILES Implements processing step 4 (without fmap data / single flip angle)
+        %MERGE_MEFILES Implements processing step 4 (single flip angle)
         %
         % Merge the raw 3D echos files for each acquisition protocol into 4D files
 
         import qb.utils.spm_file_merge_gz
 
-        % Index the workdir layout (only for obj.subject)
-        BIDSW = obj.BIDSW_ses();
-        
         % Merge the 3D echos files into 4D files for all MEGRE acq/runs independently
         bfilter = obj.bidsfilter.rawMEGRE;
         for acq = obj.query_ses(obj.BIDS, 'acquisitions', bfilter)
@@ -372,8 +369,8 @@ methods
                 phasefiles = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','phase');
 
                 % Sort the mag/phase files by their echo index
-                phaseechos    = obj.query_ses(BIDSW, 'echos', bfilter, 'part','phase');
-                magechos      = obj.query_ses(BIDSW, 'echos', bfilter, 'part','(mag)?');
+                phaseechos    = obj.query_ses(obj.BIDS, 'echos', bfilter, 'part','phase');
+                magechos      = obj.query_ses(obj.BIDS, 'echos', bfilter, 'part','(mag)?');
                 [~, magidx]   = sort(double(string(magechos)));
                 [~, phaseidx] = sort(double(string(phaseechos)));
 

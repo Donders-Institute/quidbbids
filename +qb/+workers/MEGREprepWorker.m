@@ -143,7 +143,7 @@ methods
         for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawMEVFA)
 
             % Get the echo-1 magnitude files and metadata for all flip angles of this run
-            VFA_e1_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','(mag)?');
+            VFA_e1_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','mag');
             VFA_e1 = obj.query_ses(obj.BIDS,  'data', VFA_e1_filter);
             if length(VFA_e1) <= 1
                 obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
@@ -204,7 +204,7 @@ methods
         % Process all runs independently
         for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawMEVFA)
 
-            VFA_e1_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','(mag)?');
+            VFA_e1_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','mag');
 
             % Realign all FA images to their synthetic targets
             for flip = obj.query_ses(obj.BIDS, 'flips', VFA_e1_filter)
@@ -225,7 +225,7 @@ methods
                 x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
                 % Save all resliced echo images for this flip angle (they will be merged to a 4D-file later)
-                for part = {'(mag)?', 'phase'}
+                for part = {'mag', 'phase'}
                     VFA_flip_filter = setfields(obj.bidsfilter.rawMEVFA, 'flip',char(flip), 'run',char(run), 'part',part);
                     for echo = obj.query_ses(obj.BIDS, 'echos', VFA_flip_filter)
                         VFA_fe = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo));
@@ -328,12 +328,12 @@ methods
                 bfilter.flip = char(flip);
 
                 % Get the mag/phase echo images for this flip angle & run
-                magfiles   = obj.query_ses(BIDSW, 'data',  bfilter, 'part','(mag)?');
+                magfiles   = obj.query_ses(BIDSW, 'data',  bfilter, 'part','mag');
                 phasefiles = obj.query_ses(BIDSW, 'data',  bfilter, 'part','phase');
 
                 % Sort the mag/phase files by their echo index
                 phaseechos    = obj.query_ses(BIDSW, 'echos', bfilter, 'part','phase');
-                magechos      = obj.query_ses(BIDSW, 'echos', bfilter, 'part','(mag)?');
+                magechos      = obj.query_ses(BIDSW, 'echos', bfilter, 'part','mag');
                 [~, magidx]   = sort(double(string(magechos)));
                 [~, phaseidx] = sort(double(string(phaseechos)));
                 
@@ -365,12 +365,12 @@ methods
                 bfilter.run = char(run);
 
                 % Get the mag/phase echo images for this flip angle & run
-                magfiles   = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','(mag)?');
+                magfiles   = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','mag');
                 phasefiles = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','phase');
 
                 % Sort the mag/phase files by their echo index
                 phaseechos    = obj.query_ses(obj.BIDS, 'echos', bfilter, 'part','phase');
-                magechos      = obj.query_ses(obj.BIDS, 'echos', bfilter, 'part','(mag)?');
+                magechos      = obj.query_ses(obj.BIDS, 'echos', bfilter, 'part','mag');
                 [~, magidx]   = sort(double(string(magechos)));
                 [~, phaseidx] = sort(double(string(phaseechos)));
 

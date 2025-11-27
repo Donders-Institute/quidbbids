@@ -39,7 +39,13 @@ methods
         obj.name        = "Anakin";
         obj.description = ["I am a working class hero that will happily do the following pre-processing work for you:"];
         obj.version     = "0.1.0";
-        obj.needs       = ["TB1map_anat", "TB1map_angle"];        % TODO: Think about using a worker or filter to fetch the raw BIDS (anat and fmap) input data
+        obj.needs       = ["TB1map_anat", "TB1map_angle"];
+        obj.bidsfilter.rawUNIT1    = struct('modality', 'anat', ...
+                                             'suffix', 'UNIT1');
+        obj.bidsfilter.rawINV1     = struct('modality', 'anat', ...
+                                             'inv', 1, ...
+                                             'suffix', 'MP2RAGE');
+        obj.bidsfilter.rawINV2     = setfield(obj.bidsfilter.rawINV1, 'inv', 2);
         obj.bidsfilter.R1map       = struct('modality', 'anat', ...
                                             'part', '', ...
                                             'space', 'MP2RAGE', ...
@@ -74,14 +80,13 @@ methods
             obj.logger.error("Expected one TB1map_angle and one TB1map_anat file, but got %d and %d files", length(B1famp), length(B1anat))
         end
 
-        % Process all runs independently
-        anat = {'modality','anat'};
-        for run = obj.query_ses(obj.BIDS, 'runs', anat{:}, 'part','mag', 'echo',1:999)
+        % Process all runs independently. TODO: think about multi-echo?
+        for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawUNIT1)
 
-            % Load the raw MP2RAGE headers & data
-            UNIT1 = obj.query_ses(obj.BIDS, 'data', anat{:}, 'suffix','UNIT1', 'run',char(run));    % TODO: Filter out part-phase images if present
-            INV1  = obj.query_ses(obj.BIDS, 'data', anat{:}, 'inv','1', 'suffix','MP2RAGE', 'run',char(run));
-            INV2  = obj.query_ses(obj.BIDS, 'data', anat{:}, 'inv','2', 'suffix','MP2RAGE', 'run',char(run));
+            % Load the raw MP2RAGE headers & data (https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#unit1-images)
+            UNIT1 = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawUNIT1, 'run',char(run), 'part','(mag)?');
+            INV1  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV1,  'run',char(run), 'part','(mag)?');
+            INV2  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV2,  'run',char(run), 'part','(mag)?');
             if length(UNIT1) ~= 1 || length(INV1) ~= 1 || length(INV2) ~= 1
                 obj.logger.error("Expected one UNIT1, INV1 and INV2 file for run %s, but got %d, %d and %d files", char(run), length(UNIT1), length(INV1), length(INV2))
             end

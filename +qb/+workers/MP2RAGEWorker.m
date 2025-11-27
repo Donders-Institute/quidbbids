@@ -41,10 +41,10 @@ methods
         obj.version     = "0.1.0";
         obj.needs       = ["TB1map_anat", "TB1map_angle"];
         obj.bidsfilter.rawUNIT1    = struct('modality', 'anat', ...
-                                             'suffix', 'UNIT1');
+                                            'suffix', 'UNIT1');
         obj.bidsfilter.rawINV1     = struct('modality', 'anat', ...
-                                             'inv', 1, ...
-                                             'suffix', 'MP2RAGE');
+                                            'inv', 1, ...
+                                            'suffix', 'MP2RAGE');
         obj.bidsfilter.rawINV2     = setfield(obj.bidsfilter.rawINV1, 'inv', 2);
         obj.bidsfilter.R1map       = struct('modality', 'anat', ...
                                             'part', '', ...
@@ -84,7 +84,7 @@ methods
         for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawUNIT1)
 
             % Load the raw MP2RAGE headers & data (https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#unit1-images)
-            UNIT1 = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawUNIT1, 'run',char(run));      % matlab-bids doesn't understand this: 'part','(mag)?'
+            UNIT1 = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawUNIT1, 'run',char(run));      % bids-matlab doesn't understand this: 'part','(mag)?'
             INV1  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV1,  'run',char(run));      % idem
             INV2  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV2,  'run',char(run));      % idem
             if length(UNIT1) ~= 1 || length(INV1) ~= 1 || length(INV2) ~= 1
@@ -97,7 +97,7 @@ methods
             INV2img = spm_read_vols(INV2hdr);
 
             % Construct the (legacy) MP2RAGE metadata struct
-            MP2RAGE = obj.getMP2RAGE(INV1, INV2, obj.config.MP2RAGEWorker.InvEff, obj.config.MP2RAGEWorker.EchoSpacing, obj.config.MP2RAGEWorker.NumberShots);
+            MP2RAGE = obj.getMP2RAGE(INV1, INV2, obj.config.MP2RAGEWorker);
 
             % Realign & reslice the B1 reference image to the INV2 image
             Vin   = spm_vol(char(B1anat));
@@ -130,7 +130,7 @@ methods
 
             % Perform the unbiased B1-map estimation
             if obj.config.MP2RAGEWorker.B1correctM0 ~= 0
-                M0map = M0map ./ flipdim(B1img, obj.config.MP2RAGEWorker.B1correctM0);
+                M0map = M0map ./ flip(B1img, obj.config.MP2RAGEWorker.B1correctM0);
             end
 
             % Data is only valid where B1 was mapped
@@ -160,32 +160,32 @@ end
 
 methods (Access = private)
 
-    function MP2RAGE = getMP2RAGE(obj, INV1, INV2, InvEff, EchoSpacing, NumberShots)
+    function MP2RAGE = getMP2RAGE(obj, INV1, INV2, config)
         %GETMP2RAGE Extracts the MP2RAGE parameters from the INV1 and INV2 metadata and constructs the (legacy) MP2RAGE metadata struct
         %
-        % inv1        - The INV1 image
-        % inv2        - The INV2 image
-        % InvEff      - Inversion efficiency of the adiabatic inversion pulse
-        % EchoSpacing - The RepetitionTimeExcitation value in secs that typically is not given on the json file. Default: twice the echo time
-        % NumberShots - The number of shots (slices) in the inner loop (inversion segment), the json file doesn't usually accommodate this
-
+        % inv1               - The INV1 image
+        % inv2               - The INV2 image
+        % config.InvEff      - Inversion efficiency of the adiabatic inversion pulse
+        % config.EchoSpacing - The RepetitionTimeExcitation value in secs that typically is not given on the json file. Default: twice the echo time
+        % config.NumberShots - The number of shots (slices) in the inner loop (inversion segment), the json file doesn't usually accommodate this
+        
         % Extract the relevant MP2RAGE parameters from the BIDS metadata
         inv1                = bids.File(char(INV1)).metadata;
         inv2                = bids.File(char(INV2)).metadata;
         MP2RAGE.TR          = inv1.RepetitionTime;                          % MP2RAGE TR in seconds
         MP2RAGE.TIs         = [inv1.InversionTime inv2.InversionTime];      % Inversion times - time between middle of refocusing pulse and excitatoin of the k-space center encoding
         MP2RAGE.FlipDegrees = [inv1.FlipAngle     inv2.FlipAngle];          % Flip angle of the two readouts in degrees
-        MP2RAGE.InvEff      = InvEff;                                       % Inversion efficiency of the adiabatic inversion pulse
-        MP2RAGE.NumberShots = NumberShots;
-        if isempty(EchoSpacing)
+        MP2RAGE.InvEff      = config.InvEff;                                % Inversion efficiency of the adiabatic inversion pulse
+        MP2RAGE.NumberShots = config.NumberShots;
+        if isempty(config.EchoSpacing)
             if isfield(inv1, 'RepetitionTimeExcitation')
-                EchoSpacing = inv1.RepetitionTimeExcitation;                % TR of the GRE readout in seconds
+                config.EchoSpacing = inv1.RepetitionTimeExcitation;         % TR of the GRE readout in seconds
             else
-                EchoSpacing = 2 * inv1.EchoTime;                            % 2*EchoTime can be used as a surrogate
+                config.EchoSpacing = 2 * inv1.EchoTime;                     % 2*EchoTime can be used as a surrogate
             end
-            obj.logger.verbose(['Extracted EchoSpacing: ' num2str(EchoSpacing)])
+            obj.logger.verbose(['Extracted EchoSpacing: ' num2str(config.EchoSpacing)])
         end
-        MP2RAGE.EchoSpacing = EchoSpacing;
+        MP2RAGE.EchoSpacing = config.EchoSpacing;
     end
 
 end

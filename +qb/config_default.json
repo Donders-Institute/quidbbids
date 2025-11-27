@@ -23,7 +23,7 @@
     "EchoSpacing": {"value": "", "description": "RepetitionTimeExcitation value in secs, default twice echo time when missing in JSON"},
     "NumberShots": {"value": 176, "description": "Number of shots (NZslices) in inversion segment; not usually in JSON. See: https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#numbershots-metadata-field"},
     "Fingerprint": {"value": true, "description": "Enable MP2RAGE-based fingerprinting"},
-    "B1correctM0": {"value": 0, "description": "0 = no correction; 1/2/3 applies left-right flip approximation of the transmit field as an approximation of the receive field. The number 1/2/3 refers to the left-right dimension. Only use this option if the anatomical data is well centered in the field of view (as provided by auto-align) and if the bias Field correction was enabled on the scanner"}
+    "B1correctM0": {"value": 0, "description": "0 = no correction; 1/2/3 applies a left-right, front-back or up-down flipped transmit field as an approximation of the receive field. Only use this option if the anatomical data is well centered in the field of view (as provided by auto-align) and if the bias Field correction was enabled on the scanner"}
   },
 
   "R1R2sWorker": {
@@ -72,44 +72,44 @@
   "QSMWorker": {
     "QSM": {
       "general": {
-        "isBET": {"value": 0, "description": "Apply brain extraction"},
-        "isRefineBrainMask": {"value": 0, "description": "Refine brain mask"},
-        "isInvert": {"value": 0, "description": "Invert field map prior to QSM"}
+        "isBET": {"value": 0, "description": "Logical value of performing brain extraction in SEPIA"},
+        "isRefineBrainMask": {"value": 0, "description": "Exclude high R2* voxels from the edge of the brain mask"},
+        "isInvert": {"value": 0, "description": "Use conjugate of the complex-valued data for processing"}
       },
       "unwrap": {
-        "echoCombMethod": {"value": "Optimum weights", "description": "Method for combining multi-echo data"},
-        "unwrapMethod": {"value": "SEGUE", "description": "Phase unwrapping method"},
-        "isEddyCorrect": {"value": 0, "description": "Apply eddy current correction"},
-        "isSaveUnwrappedEcho": {"value": 1, "description": "Save intermediate unwrapped echoes"},
-        "excludeMaskThreshold": {"value": 0.4, "description": "Threshold for excluding unreliable voxels"},
-        "excludeMethod": {"value": "Weighting map", "description": "Method for voxel exclusion weighting"}
+        "echoCombMethod": {"value": "Optimum weights", "description": "Temporal phase unwrapping method"},
+        "unwrapMethod": {"value": "SEGUE", "description": "Spatial phase unwrapping method"},
+        "isEddyCorrect": {"value": 0, "description": "Logical value of performing phase correction on data acquired with bipolar readout gradient"},
+        "isSaveUnwrappedEcho": {"value": 1, "description": "Logical value of saving unwrapped phase for all echoes"},
+        "excludeMaskThreshold": {"value": 0.4, "description": "Threshold on relative residual map to exclude unreliable voxels"},
+        "excludeMethod": {"value": "Weighting map", "description": "Method of how the unreliable voxels to be excluded"}
       },
       "bfr": {
-        "refine_method": {"value": "None", "description": "Mask refinement method"},
-        "refine_order": {"value": 4, "description": "Order of refinement polynomial"},
-        "erode_radius": {"value": 0, "description": "Erosion radius after refinement"},
-        "erode_before_radius": {"value": 0, "description": "Erosion radius before refinement"},
-        "method": {"value": "VSHARP", "description": "Background field removal algorithm"},
-        "radius": {"value": [12,11,10,9,8,7,6,5,4,3,2,1], "description": "Spherical kernel radii for VSHARP"}
+        "refine_method": {"value": "None", "description": "Method of residual B1 field removal"},
+        "refine_order": {"value": 4, "description": "Order of polynomial/spherical harmonic fitting"},
+        "erode_radius": {"value": 0, "description": "Voxel to be removed from mask edges after background field removal"},
+        "erode_before_radius": {"value": 0, "description": "Voxel to be removed from mask edges before background field removal"},
+        "method": {"value": "VSHARP", "description": "Method for background field removal"},
+        "radius": {"value": [12,11,10,9,8,7,6,5,4,3,2,1], "description": "Vector of radii of the spherical mean value operation in descending order"}
       },
       "qsm": {
-        "reference_tissue": {"value": "CSF", "description": "Tissue used as susceptibility reference"},
-        "method": {"value": "MRI Suscep. Calc.", "description": "QSM reconstruction method"},
-        "solver": {"value": "Iterative Tikhonov", "description": "Regularized solver method"},
-        "lambda": {"value": 0.05, "description": "Regularization parameter"},
-        "tolerance": {"value": 0.03, "description": "Solver tolerance"}
+        "reference_tissue": {"value": "CSF", "description": "Magnetic susceptibility map in ppm"},
+        "method": {"value": "MRI Suscep. Calc.", "description": "Method for dipole field inversion"},
+        "solver": {"value": "Iterative Tikhonov", "description": "Methods to be used for dipole field inversion"},
+        "lambda": {"value": 0.05, "description": "Regularisation parameter for Tikhonov algorithms"},
+        "tolerance": {"value": 0.03, "description": "Tolerance level for CG solver"}
       }
     },
     "R2starmap": {
       "general": {
-        "isBET": {"value": 0, "description": "Apply brain extraction"},
-        "isInvert": {"value": 0, "description": "Invert input images"},
-        "isRefineBrainMask": {"value": 0, "description": "Refine brain mask"}
+        "isBET": {"value": 0, "description": "Logical value of performing brain extraction in SEPIA"},
+        "isRefineBrainMask": {"value": 0, "description": "Exclude high R2* voxels from the edge of the brain mask"},
+        "isInvert": {"value": 0, "description": "Use conjugate of the complex-valued data for processing"}
       },
       "r2s": {
         "method": {"value": "Trapezoidal", "description": "R2* fitting method"},
         "s0mode": {"value": "1st echo", "description": "S0 estimation mode"},
-        "maxIter": {"value": 200, "description": "Maximum fitting iterations"},
+        "maxIter": {"value": 200, "description": "Maximum no. of iterations allowed"},
         "fcnTol": {"value": 1e-4, "description": "Function tolerance threshold"},
         "stepTol": {"value": 1e-4, "description": "Step size tolerance"},
         "numMagn": {"value": true, "description": "Use magnitude-only fitting"},

@@ -43,19 +43,59 @@ R1, R2*, and MWF maps as output:
 
 .. code-block:: matlab
 
-   quidb = qb.QuIDBBIDS('/path/to/bids/dataset')            % Initialize QuIDBBIDS coordinator
-   mgr   = quidb.manager(["R1map", "R2starmap", "MWFmap"])  % Create manager for requested output items
-   mgr.start_workflow()                                     % Start the workflow
+   >> quidb = qb.QuIDBBIDS('/path/to/bids/dataset');            % Initialize QuIDBBIDS coordinator
+   >> mgr   = quidb.manager(["R1map", "R2starmap", "MWFmap"]);  % Create manager for requested output items
+   >> mgr.start_workflow()                                      % Start the workflow
+
+Processing settings and options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+All configuration settings and options for processing the data of your dataset can be set per worker by 
+modifying the ``config`` properties of your ``QuIDBBIDS`` object. For instance, to inspect the ``NumberShots`` 
+parameter of the MP2RAGEWorker and modify it from ``176`` to ``192`` you can do:
+
+.. code-block:: matlab
+
+   >> quidb.config
+          General: [1×1 struct]
+     B1prepWorker: [1×1 struct]
+    MP2RAGEWorker: [1×1 struct]
+      R1R2sWorker: [1×1 struct]
+        MCRWorker: [1×1 struct]
+        QSMWorker: [1×1 struct]
+
+   >> quidb.config.MP2RAGEWorker.NumberShots
+          value: 176
+    description: 'Number of shots (NZslices) in inversion segment; not usually in JSON.
+                 See: https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#numbershots-metadata-field'
+
+   >> quidb.config.MP2RAGEWorker.NumberShots.value = 192;
 
 For getting more help on the various classes, methods and properties, you can use MATLAB's built-in documentation
 browser:
 
 .. code-block:: matlab
 
-   doc qb.QuIDBBIDS
+   >> doc qb.QuIDBBIDS
 
 Graphical User Interface
 ------------------------
 In the future, QuIDBBIDS will also provide a graphical user interface (GUI) for users who prefer an interactive
 approach to workflow configuration and execution. The GUI will allow users to easily select input data, specify
 desired outputs, and monitor workflow progress through a user-friendly interface.
+
+Processing settings and options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+All configuration settings and options for processing the data can be set per worker with a GUI, which can be 
+launched by either calling the ``editconfig()`` method from your ``QuIDBBIDS`` object, or by directly calling the 
+``configeditor()`` function:
+
+.. code-block:: matlab
+
+   >> quidb.editconfig()   % Opens a GUI to edit the settings of your dataset
+   >> qb.configeditor()    % Opens a GUI to edit the settings of any dataset
+
+.. figure:: ./_static/configeditor.png
+
+   Left panel: The General QuIDBBIDS settings as well as the the settings for the individual workers. In this
+   example the user navigated to the ``MP2RAGEWorker`` and selected the ``NumerShots`` parameter. Right panel:
+   The description of the selected parameter (top) with a box to edit its current value of ``176`` (bottom).

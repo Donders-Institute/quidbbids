@@ -13,6 +13,15 @@ QuIDBBIDS architecture
    ``2``, and ``4`` into a team and directs them to process the input data (“anat” and “fmap”), collaboratively
    producing workitems ``1–6``. Finally, the manager initiates a controller to verify successful completion.
 
+Configuration editor
+~~~~~~~~~~~~~~~~~~~~
+
+.. figure:: ./_static/configeditor.png
+
+   Left panel: The General QuIDBBIDS settings as well as the the settings for the individual workers. In this
+   example the user navigated to the ``MP2RAGEWorker`` and selected the ``NumerShots`` parameter. Right panel:
+   The description of the selected parameter (top) with a box to edit its value (bottom).
+
 QuIDBBIDS data
 ~~~~~~~~~~~~~~
 

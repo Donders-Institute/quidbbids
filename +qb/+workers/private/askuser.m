@@ -32,7 +32,7 @@ function chosen = askuser(workers, workitem)
     maxTableHeight = 250;       % Maximum table height
 
     % Create figure
-    fig = uifigure('Name', "Choose Worker for """ + workitem + """", 'Position', [100 100 figWidth figHeight]);
+    fig = uifigure('Name', "Choose the Worker that should make your """ + workitem + """", 'Position', [100 100 figWidth figHeight]);
 
     % --- Worker radiobutton group (left)
     rbHeight = figHeight - 2*margin - 2*spacing - 2*btnHeight;
@@ -48,9 +48,9 @@ function chosen = askuser(workers, workitem)
     end
 
     % --- Add Cancel and Done buttons
-    uibutton(fig, 'push', 'Text', 'Cancel', 'FontWeight', 'bold', 'Position', [margin, margin + btnHeight + spacing/2, rbWidth, btnHeight], ...
+    uibutton(fig, 'push', 'Text', '✗ Cancel', 'FontWeight', 'bold', 'Position', [margin, margin + btnHeight + spacing/2, rbWidth, btnHeight], ...
              'ButtonPushedFcn', @(src,event) doCancel());
-    uibutton(fig, 'push', 'Text', 'Done', 'FontWeight', 'bold', 'Position', [margin, margin, rbWidth, btnHeight], ...
+    uibutton(fig, 'push', 'Text', '✓ Done', 'FontWeight', 'bold', 'Position', [margin, margin, rbWidth, btnHeight], ...
              'ButtonPushedFcn', @(src,event) doSelect());
 
     % --- Add resume box (right) - start with placeholder height = 100
@@ -80,30 +80,26 @@ function chosen = askuser(workers, workitem)
     function updateInfo(workerName)
         w = workers(strcmp(workerName, names));
 
-        % --- Info box content
-        infoText = sprintf('Name: %s\nVersion: %s\nPreferred: %d\nUses GPU: %d\n\nDescription:\n%s', ...
-                           w.name, w.version, w.preferred, w.usesGPU, join(w.description, newline));
-        info.Value = splitlines(infoText);
+        % Info box content
+        info.Value = splitlines(sprintf('Name: %s\nVersion: %s\nPreferred: %d\nUses GPU: %d\n\nDescription:\n%s', ...
+                                w.name, w.version, w.preferred, w.usesGPU, join(w.description, newline)));
 
-        % --- Tables data
+        % Tables data
         tblNeeds.Data = makeTableData(w.needs());
         tblMakes.Data = makeTableData(w.makes());
 
-        % --- Recalculate infoWidth based on current figure width
+        % Recalculate infoWidth based on current figure width
         infoWidth = fig.Position(3) - 2*margin - rbWidth - spacing;
 
-        % --- Calculate table heights (header + rows * height)
-        neededHeight = min(headerHeight + size(tblNeeds.Data, 1) * rowHeight, maxTableHeight);
-        neededHeight = max(neededHeight, minTableHeight);
-        
-        makesHeight = min(headerHeight + size(tblMakes.Data, 1) * rowHeight, maxTableHeight);
-        makesHeight = max(makesHeight, minTableHeight);
+        % Calculate table heights (header + rows * height)
+        neededHeight = max(min(headerHeight + size(tblNeeds.Data, 1) * rowHeight, maxTableHeight), minTableHeight);
+        makesHeight  = max(min(headerHeight + size(tblMakes.Data, 1) * rowHeight, maxTableHeight), minTableHeight);
         
         % Position tables from bottom up
         tblMakes.Position = [margin + rbWidth + spacing, margin,                         infoWidth, makesHeight];
         tblNeeds.Position = [margin + rbWidth + spacing, margin + makesHeight + spacing, infoWidth, neededHeight];
         
-        % --- Calculate remaining space for info box using CURRENT figure height
+        % Calculate remaining space for info box using CURRENT figure height
         tablesTop  = tblNeeds.Position(2) + tblNeeds.Position(4);
         infoHeight = max(fig.Position(4) - margin - (tablesTop + spacing), 100);    % Ensure info box has minimum height = 100
         
@@ -112,28 +108,16 @@ function chosen = askuser(workers, workitem)
     end
 
     function T = makeTableData(items)
-        if isempty(items)
-            T = cell(0,2);
-            return
-        end
-        if isstring(items)
-            items = cellstr(items);
-        end
-        n = numel(items);
-        T = cell(n,2);
-        for k = 1:n
-            key = char(items{k});
-            T{k,1} = key;
-            if isfield(glossary, key)
-                T{k,2} = char(glossary.(key));
-            else
-                T{k,2} = '';
+        T = strings(numel(items), 2);
+        for k = 1:numel(items)
+            T(k, 1) = items(k);
+            if isfield(glossary, items(k))
+                T(k, 2) = glossary.(items(k));
             end
         end
     end
 
     function doCancel()
-        chosen = [];
         delete(fig)
     end
 

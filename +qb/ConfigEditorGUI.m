@@ -145,18 +145,18 @@ classdef ConfigEditorGUI < handle
 
             % Reset button
             btnY = 20; btnH = 30; btnW = 70; gap = 15;
-            obj.ResetLeafBtn = uibutton(obj.UIFig,'Text','Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
+            obj.ResetLeafBtn = uibutton(obj.UIFig,'Text','↺ Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
 
             % Bottom row buttons
-            obj.BtnResetAll = uibutton(obj.UIFig,'Text','Reset All','Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
-            obj.BtnCancel   = uibutton(obj.UIFig,'Text','Cancel',   'Position',[rpX+1*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.UIFig));
-            obj.BtnLoad     = uibutton(obj.UIFig,'Text','Load',     'Position',[rpX+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.loadJSON());
-            obj.BtnSave     = uibutton(obj.UIFig,'Text','Save',     'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveJSON());
+            obj.BtnResetAll = uibutton(obj.UIFig, 'Text','Reset All', 'Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
+            obj.BtnCancel   = uibutton(obj.UIFig, 'Text','✗ Cancel', 'Position',[rpX+1*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.UIFig));
+            obj.BtnLoad     = uibutton(obj.UIFig, 'Text','📂 Load',   'Position',[rpX+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.loadJSON());
+            obj.BtnSave     = uibutton(obj.UIFig, 'Text','💾 Save',   'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveJSON());
         end
 
         % populate tree directly with top-level keys (no single "config" root)
         function populateTree(obj)
-            delete(obj.Tree.Children); % clear existing nodes
+            delete(obj.Tree.Children)
 
             % Decide top-level keys to show
             if isempty(obj.Workers)

@@ -24,3 +24,5 @@
    tutorial
    screenshots
    CHANGELOG
+   glossary
+   

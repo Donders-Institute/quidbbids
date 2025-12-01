@@ -105,6 +105,9 @@ methods
             match = ~cellfun(@isempty, regexp(fieldnames(obj.team), "^" + workitem + "$"));
             if any(match)
                 workitem_ = obj.selectworker(workitem);     % Keep the preferred worker only (if multiple). NB: workitem_ is without regexp pattern
+                if length(obj.team.(workitem_)) > 1         % User cancelled the selection
+                    return
+                end
                 if ~isempty(obj.team.(workitem_).needs)     % Recursively add upstream workers to the team
                     obj.create_team(obj.team.(workitem_).needs, true)
                 end
@@ -207,8 +210,12 @@ methods (Access = private)
 
         % Check if any of the workers is preferred. If not ask the user and make the worker preferred
         if ~any([workers.preferred])
-            chosen = askuser(workers, workitem);    % TODO: implement askuser GUI to select the worker
-            obj.team.(items{chosen})(indices(chosen)).preferred = true;
+            chosen = askuser(workers, workitem);
+            if chosen
+                obj.team.(items{chosen})(indices(chosen)).preferred = true;
+            else
+                return
+            end
         end
 
         % Keep the preferred worker only

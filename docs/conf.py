@@ -13,7 +13,9 @@
 import json
 from pathlib import Path
 from datetime import date
-
+import os
+import sys
+sys.path.append(os.path.abspath("_ext"))
 
 # -- Project information -----------------------------------------------------
 
@@ -32,7 +34,7 @@ with open(Path(__file__).parents[1]/'resources'/'mpackage.json') as fid:
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 nitpicky      = True
-extensions    = ['myst_parser', 'sphinx_design']
+extensions    = ['myst_parser', 'sphinx_design', 'json_glossary']
 source_suffix = {'.rst': 'restructuredtext',
                  '.md': 'markdown'}
 

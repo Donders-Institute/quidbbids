@@ -12,7 +12,9 @@
    :hidden:
    :caption: Usage
 
-   workflow
+   architecture
+   GUI
+   CLI
    workers
    options
 

@@ -33,7 +33,6 @@ classdef Manager < handle
 
 
 properties
-    products    % The end productcs (workitems) requested by the user
     team        % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
     coord       % The coordinator that help the manager with administrative tasks
     force       % Force workers to start working, even if the subject is locked or existing results exist
@@ -42,25 +41,17 @@ end
 
 methods
 
-    function obj = Manager(coord, products)
+    function obj = Manager(coord)
         % Constructor for the Manager class
 
         arguments
             coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
-            products  {mustBeText} = ""         % The end productcs (workitems) requested by the user
         end
 
         obj.coord    = coord;                   % The coordinator that help the manager with administrative tasks
         obj.team     = struct();                % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
-        obj.products = products;                % The end productcs (workitems) requested by the user
         obj.force    = false;
         obj.create_team()
-    end
-
-    function set.products(obj, val)
-        % Force anything assigned to be stored as a string row
-        obj.products = string(val(:)');
-        obj.products(obj.products=="") = [];
     end
 
     function create_team(obj, workitems, recurse_)
@@ -73,7 +64,7 @@ methods
 
         arguments
             obj
-            workitems {mustBeText} = obj.products
+            workitems {mustBeText} = obj.coord.products
             recurse_ logical       = false
         end
 
@@ -84,41 +75,42 @@ methods
 
         % Find and select one capable worker per workitem
         for workitem = string(workitems(:)')                % The workitem with optional regexp pattern
+
+            % First put all capable workers in the team
             for name = fieldnames(obj.coord.resumes)'       % Iterate over all available workers
                 worker = obj.coord.resumes.(char(name));
                 makes = worker.makes();
                 match = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
-                if any(match)                               % Add to the team if the worker is capable
-                    if sum(match) ~= 1
-                        error('QuIDBBIDS:WorkItem:Ambiguous', 'Could not uniquely identify a "%s" workitem from what %s makes:%s', workitem, worker.name, sprintf(' %s', makes))
-                    end
-                    workitem_ = makes(match);               % The workitem without optional regexp pattern
-                    if isfield(obj.team, workitem_)
+                % Add to the team if the worker is capable
+                for workitem_ = makes(match)                % Loop over the actual workitems (without optional regexp pattern)
+                    if isfield(obj.team, workitem_)         % Append the worker to the list
                         if ~ismember(func2str(worker.handle), cellfun(@func2str, {obj.team.(workitem_).handle}, 'UniformOutput', false))    % Check if we haven't already added this worker
                             obj.team.(workitem_)(end+1) = worker;
                         end
-                    else
+                    else                                    % Or create a new list
                         obj.team.(workitem_) = worker;
                     end
                 end
             end
-            match = ~cellfun(@isempty, regexp(fieldnames(obj.team), "^" + workitem + "$"));
-            if any(match)
-                workitem_ = obj.selectworker(workitem);     % Keep the preferred worker only (if multiple). NB: workitem_ is without regexp pattern
-                if length(obj.team.(workitem_)) > 1         % User cancelled the selection
-                    return
-                end
-                if ~isempty(obj.team.(workitem_).needs)     % Recursively add upstream workers to the team
-                    obj.create_team(obj.team.(workitem_).needs, true)
-                end
-            elseif strlength(workitem)
+            if all(cellfun(@isempty, regexp(fieldnames(obj.team), "^" + workitem + "$")))
                 error('QuIDBBIDS:WorkItem:NotFound', 'Could not find a worker that can make: %s', workitem)
             end
-        end
-    end
 
-    function choose_products(obj)
-        obj.products = qb.ChooseProducts(obj.coord.resumes);
+            % Then select one worker per workitem and recursively add the workers needed to make the workitem
+            for item = fieldnames(obj.team)'                % NB: workitem_ is without regexp pattern
+                if regexp(char(item), workitem)
+                    workitem_ = char(item);
+                    obj.selectworker(workitem_)             % Keep the preferred worker only (if multiple)
+                    if length(obj.team.(workitem_)) > 1     % User cancelled the selection
+                        return
+                    end
+                    if ~isempty(obj.team.(workitem_).needs) % Recursively add upstream workers to the team
+                        obj.create_team(obj.team.(workitem_).needs, true)
+                    end
+                end
+            end
+
+        end
     end
 
     function load_workflow(obj)
@@ -137,7 +129,7 @@ methods
         end
 
         % Block the start button in the GUI (if any) and initialize the workers
-        for product = obj.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
+        for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
             worker = obj.team.(product).handle;
             for subject = subjects
 
@@ -189,50 +181,31 @@ end
 
 methods (Access = private)
 
-    function workitem = selectworker(obj, workitem)
-        % Select a worker for this workitem and make him/her the "preferred worker"
+    function selectworker(obj, workitem)
+        % Helper function for CREATE_TEAM to select a worker for this (non-regexp) workitem and make him/her the "preferred worker"
 
-        workitems = fieldnames(obj.team)';
-        matches   = ~cellfun(@isempty, regexp(workitems, "^" + workitem + "$"));
-
-        % Make records of matching workers, their indices and their workitems (for when the user has to chose)
-        workers = []; indices = []; items = [];
-        for workitem_ = workitems(matches)
-            workrs  = obj.team.(char(workitem_));   % NB: obj.team.(workitem_) is copied by value
-            workers = [workers, workrs];            %#ok<AGROW>
-            indices = [indices, 1:length(workrs)];
-            items   = [items, repmat(workitem_, size(workrs))];
-        end
-        if isscalar(workers)                        % Only a single worker found
-            workitem = workitems{matches};          % This resolves the regexp pattern
+        workers = obj.team.(workitem);
+        if isscalar(workers)
             return
         end
 
         % Check if any of the workers is preferred. If not ask the user and make the worker preferred
         if ~any([workers.preferred])
+            uiwait(helpdlg({"There are multiple workers that can produce: " + workitem, "Please select the one you want to use"}, "Create team"))
             chosen = askuser(workers, workitem);
             if chosen
-                obj.team.(items{chosen})(indices(chosen)).preferred = true;
+                workers(chosen).preferred = true;
             else
                 return
             end
         end
 
         % Keep the preferred worker only
-        for workitem_ = workitems(matches)
-            item      = char(workitem_);
-            preferred = [obj.team.(item).preferred];
-            if any(preferred)
-                obj.team.(item) = obj.team.(item)(preferred);
-                workitem        = item;             % Resolve the regexp pattern
-            else
-                obj.team = rmfield(obj.team, item);
-            end
-        end
+        obj.team.(workitem) = workers([workers.preferred]);
+        
         if length(obj.team.(workitem)) ~= 1
             error('QuIDBBIDS:WorkItem:InvalidCount', "Expected only a single workitem, but got %d", length(obj.team.(workitem)))
         end
-
     end
 
 end

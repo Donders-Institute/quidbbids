@@ -8,6 +8,7 @@ properties
     BIDS            % BIDS layout object from bids-matlab
     outputdir       % BIDSApp derivatives subdirectory where the output is stored
     workdir         % Working directory for intermediate results
+    products        % The end productcs (workitems) requested by the user
     resumes         % The resumes of all available workers
     configfile      % Path to the active configuration file
     config          % Configuration struct loaded from the config file
@@ -54,6 +55,23 @@ methods
         obj.configfile = configfile;
         obj.config     = obj.get_config();
         obj.resumes    = obj.get_resumes();
+        obj.products   = "";
+    end
+
+    function set.products(obj, val)
+        % Check if the product exist and force anything assigned to be stored as a string row
+        for product = string(val(:)')
+            if product~="" && all(cellfun(@isempty, regexp(obj.workitems, "^" + product + "$")))
+                warning("QuIDBBIDS:Products:Ambiguous", "The '%s' product was not found, it must match any of:%s", product, sprintf(' "%s"', obj.workitems()))
+                return
+            end
+        end
+        obj.products = string(val(:)');
+        obj.products(obj.products=="") = [];
+    end
+
+    function choose_products(obj)
+        obj.products = qb.ChooseProducts(obj.coord.resumes);
     end
 
     function items = workitems(obj)

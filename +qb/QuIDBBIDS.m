@@ -91,17 +91,16 @@ methods
         [obj.config, obj.configfile] = qb.configeditor(obj.configfile);    % TODO: Add team workers
     end
 
-    function manager = manager(obj, products)
-        %GET_MANAGER Gets a workflow manager to get work
+    function manager = manager(obj)
+        %GET_MANAGER Gets a workflow manager to get work done
         %
         % See also: qb.workers.Manager
 
         arguments
             obj
-            products {mustBeText} = ""
         end
 
-        manager = qb.workers.Manager(obj, products);
+        manager = qb.workers.Manager(obj);
     end
 
     function config = get_config(obj, config)

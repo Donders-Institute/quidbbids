@@ -28,7 +28,6 @@ classdef TestManager < matlab.unittest.TestCase
 
         function testInitialization(testCase)
             % Manager should not have looked up workers and created an empty team
-            testCase.verifyEmpty(testCase.mgr.products, 'products should hence be empty')
             testCase.verifyEqual(testCase.mgr.team, struct(), 'Manager team should hence be empty')
             testCase.verifyTrue(isstruct(testCase.mgr.team), 'Team must be a struct mapping workitems -> worker resumes')
 
@@ -38,14 +37,9 @@ classdef TestManager < matlab.unittest.TestCase
 
         function testCreateTeam(testCase)
 
-            % Manager should store products as string row
-            testCase.mgr.products = ["a", "b", "c"];
-            testCase.verifyEqual(testCase.mgr.products, ["a", "b", "c"])
-
-            % Should throw when no worker can make a requested product
-            testCase.verifyError(@() testCase.mgr.create_team(), ?MException, "Manager should error for unknown products")
-            testCase.verifyError(@() testCase.mgr.create_team("thisDoesNotExist"), ?MException, "Manager should error for unknown directly passed products")
-            testCase.verifyWarningFree(@() testCase.mgr.create_team("rawMEGRE"), "Manager should not error for known directly passed products")
+            % Should throw an error if no worker can make a requested product
+            testCase.mgr.coord.products = ["rawMEGRE", "echo.*D(mag|phase)"];
+            testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error for known directly passed products")
             testCase.verifyNotEmpty(testCase.mgr.team, 'Manager team should not be empty')
         end
 

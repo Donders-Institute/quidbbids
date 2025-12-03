@@ -33,6 +33,16 @@ classdef TestCoordinator < matlab.unittest.TestCase
             testCase.verifyClass(testCase.coord.resumes, 'struct', "resumes should be a struct")
         end
 
+        function testProducts(testCase)
+            % Check that products is a valid string row
+            testCase.verifyEmpty(testCase.coord.products, 'products should be empty')
+            testCase.coord.products = ["a", "b", "c"];
+            testCase.verifyEmpty(testCase.coord.products, 'products should be empty')
+            testCase.verifyWarning(@() setfield(testCase.coord, 'products', ["a", "b", "c"]), 'QuIDBBIDS:Products:Ambiguous', 'Should throw ambiguous product warning')
+            testCase.coord.products = ["R1map"; "echo.*Dmag"];
+            testCase.verifyEqual(testCase.coord.products, ["R1map", "echo.*Dmag"])
+        end
+
         function testWorkitems(testCase)
             % Should return all unique workitems across resumes
             items = testCase.coord.workitems();

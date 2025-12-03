@@ -5,8 +5,8 @@ The QuIDBBIDS workflow can be executed directly from the MATLAB command line, sc
 below describe a minimal example of how to initialize and run a QuIDBBIDS workflow for all subjects in a BIDS dataset, 
 requesting R1, R2*, and MWF maps as output:
 
-Creating a team
-~~~~~~~~~~~~~~~
+Initializing QuIDBBIDS
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: matlab
 

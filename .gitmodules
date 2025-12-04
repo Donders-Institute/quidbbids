@@ -1,6 +1,3 @@
-[submodule "gacelle"]
-	path = dependencies/gacelle
-	url = https://github.com/kschan0214/gacelle.git
 [submodule "dependencies/bids-matlab"]
 	path = dependencies/bids-matlab
 	url = https://github.com/bids-standard/bids-matlab.git
@@ -34,4 +31,10 @@
 	url = https://github.com/Neurophysics-CFIN/MP-PCA-Denoising.git
 	branch = master
 [submodule "dependencies/gacelle"]
+	branch = main
+	path = dependencies/gacelle
+	url = https://github.com/kschan0214/gacelle.git
+[submodule "dependencies/MEDI_toolbox"]
+	path = dependencies/MEDI_toolbox
+	url = https://github.com/huawu02/MEDI_toolbox.git
 	branch = main

@@ -219,7 +219,7 @@ methods
                 end
 
                 % Coregister the VFA_e1 image to the synthetic target image using Normalized Cross-Correlation (NCC)
-                obj.logger.info("--> Coregistering echo images for FA: " + flip)
+                obj.logger.info("--> Coregistering VFA images using: " + VFA_e1)
                 Vref = spm_vol(char(VFAref));
                 Vin  = spm_vol(char(VFA_e1));
                 x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));

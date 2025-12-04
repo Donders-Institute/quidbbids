@@ -324,7 +324,7 @@ methods
         end
     end
 
-    function result = query_ses(obj, layout, query, varargin)
+    function [result, bfiles] = query_ses(obj, layout, query, varargin)
         %QUERY_SES A thin wrapper around bids.query that adds an additional filter for the current subject and session
         %
         % Inputs:
@@ -335,6 +335,7 @@ methods
         %
         % Output:
         %   RESULT - The result of the bids.query with the subject/session filter applied. NB: always a row cell array
+        %   BFILES - The associated bids.File objects. NB: For this to work, QUERY must be 'data'
         %
         % Usage:
         %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, [FILTER])
@@ -366,6 +367,17 @@ methods
         end
         if size(result,2)==0 || size(result,1)>1
             result = result';           % Always return a row array
+        end
+
+        if nargout > 1
+            bfiles = cell(size(result));
+            if strcmp(query, 'data')
+                for n = 1:numel(result)
+                    bfiles{n} = bids.File(result{n});
+                end
+            else
+                obj.logger.warning("QuIDBBIDS:QuerySes:Exception", "The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
+            end
         end
     end
 

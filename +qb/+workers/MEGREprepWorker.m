@@ -289,7 +289,7 @@ methods
 
             % Combine all (echo-1) masks to create a minimal brain mask (using mri_synthstrip)
             mask = true;
-            for echo1 = obj.query_ses(BIDS, 'data', bfilter, 'echo',1, 'run',char(run))     % This will loop over flips (NB: and possibly more)
+            for echo1 = obj.query_ses(BIDS, 'data', bfilter, 'echo',1, 'run',char(run), 'part','mag')     % This will loop over flips (NB: and possibly more)
                 bfile = bids.File(char(echo1));
                 specs = setfield(obj.bidsfilter.brainmask, 'desc', sprintf('VFA%02d', bfile.metadata.FlipAngle));   % Add desc -> (flip)mask is a temporary file
                 bfile = obj.bfile_set(bfile, specs);
@@ -328,14 +328,12 @@ methods
                 bfilter.flip = char(flip);
 
                 % Get the mag/phase echo images for this flip angle & run
-                magfiles   = obj.query_ses(BIDSW, 'data',  bfilter, 'part','mag');
-                phasefiles = obj.query_ses(BIDSW, 'data',  bfilter, 'part','phase');
+                [magfiles,   magbfiles]   = obj.query_ses(BIDSW, 'data',  bfilter, 'part','mag');
+                [phasefiles, phasebfiles] = obj.query_ses(BIDSW, 'data',  bfilter, 'part','phase');
 
                 % Sort the mag/phase files by their echo index
-                phaseechos    = obj.query_ses(BIDSW, 'echos', bfilter, 'part','phase');
-                magechos      = obj.query_ses(BIDSW, 'echos', bfilter, 'part','mag');
-                [~, magidx]   = sort(double(string(magechos)));
-                [~, phaseidx] = sort(double(string(phaseechos)));
+                [~, magidx]   = sort(cellfun(@(s) s.metadata.EchoNumber, magbfiles));
+                [~, phaseidx] = sort(cellfun(@(s) s.metadata.EchoNumber, phasebfiles));
                 
                 % Create the 4D mag and phase QSM/MCR input data
                 bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);

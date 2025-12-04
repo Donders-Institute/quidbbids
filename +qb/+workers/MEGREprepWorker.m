@@ -363,14 +363,12 @@ methods
                 bfilter.run = char(run);
 
                 % Get the mag/phase echo images for this flip angle & run
-                magfiles   = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','mag');
-                phasefiles = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','phase');
+                [magfiles,   magbfiles]   = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','mag');
+                [phasefiles, phasebfiles] = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','phase');
 
                 % Sort the mag/phase files by their echo index
-                phaseechos    = obj.query_ses(obj.BIDS, 'echos', bfilter, 'part','phase');
-                magechos      = obj.query_ses(obj.BIDS, 'echos', bfilter, 'part','mag');
-                [~, magidx]   = sort(double(string(magechos)));
-                [~, phaseidx] = sort(double(string(phaseechos)));
+                [~, magidx]   = sort(cellfun(@(s) s.metadata.EchoNumber, magbfiles));
+                [~, phaseidx] = sort(cellfun(@(s) s.metadata.EchoNumber, phasebfiles));
 
                 % Create the 4D mag and phase QSM/MCR input data
                 bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);

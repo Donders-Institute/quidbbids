@@ -28,35 +28,35 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
 
 1. Set up a clone of the repository on your local machine and connect it to both the “official” and your copy of the repository on GitHub:
 
-.. code-block:: console
+   .. code-block:: console
 
-    $ git clone --recurse-submodules -b dev https://github.com/Donders-Institute/quidbbids.git
-    $ cd quidbbids
-    $ git remote rename origin official
-    $ git remote add origin git://github.com/[YOUR_GITHUB_USERNAME]/quidbbids
+      $ git clone --recurse-submodules -b dev https://github.com/Donders-Institute/quidbbids.git
+      $ cd quidbbids
+      $ git remote rename origin official
+      $ git remote add origin git://github.com/[YOUR_GITHUB_USERNAME]/quidbbids
 
 2. In case you want to contribute to the RTD documentation, set up a Python virtual environment and install the built dependencies:
 
-.. code-block:: console
+   .. code-block:: console
 
-    $ python -m venv docs/venv        # Or use any other tool (such as conda)
-    $ source docs/venv/bin/activate   # On Linux, see the documentation for other operating systems
-    $ pip install -r docs/requirements.txt
+      $ python -m venv docs/venv        # Or use any other tool (such as conda)
+      $ source docs/venv/bin/activate   # On Linux, see the documentation for other operating systems
+      $ pip install -r docs/requirements.txt
 
 3. When you wish to start working on your contribution, create a new branch:
 
-.. code-block:: console
+   .. code-block:: console
 
-    $ git checkout -b [topic_of_your_contribution]
+      $ git checkout -b [topic_of_your_contribution]
 
 4. When you are done with coding, you should then test, commit and push your work to GitHub:
 
-.. code-block:: console
+   .. code-block:: console
 
-    >> runtests('tests')                                   # Run this from the quidbbids directory or use MATLAB's `Test Browser App <https://nl.mathworks.com/help/matlab/ref/testbrowser-app.html>`__.
-    $ docs/make html                                       # For the docs, run this to generate the files on your local machine (on Windows use ``docs/make.bat html``) and open ``docs/_build/html/index.html``
-    $ git commit -am "A SHORT DESCRIPTION OF THE CHANGES"  # Run this every time you have made a set of changes that belong together
-    $ git push -u origin topic_of_your_contribution        # Run this when you are done and the tox tests are passing
+      >> runtests('tests')                                   # Run this from the quidbbids directory or use MATLAB's `Test Browser App <https://nl.mathworks.com/help/matlab/ref/testbrowser-app.html>`__.
+      $ docs/make html                                       # For the docs, run this to generate the files on your local machine (on Windows use ``docs/make.bat html``) and open ``docs/_build/html/index.html``
+      $ git commit -am "A SHORT DESCRIPTION OF THE CHANGES"  # Run this every time you have made a set of changes that belong together
+      $ git push -u origin topic_of_your_contribution        # Run this when you are done and the tox tests are passing
 
 Git will provide you with a link which you can click to initiate a pull request (if any of the above seems overwhelming, you can look up the `Git <http://git-scm.com/documentation>`__ 
 or `GitHub <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request>`__ documentation on the web)

@@ -1,4 +1,4 @@
-classdef TestConfigEditorGUI < matlab.unittest.TestCase
+classdef TestConfigEditorGUI < BaseTest
     % TestConfigEditorGUI  Comprehensive tests for qb.ConfigEditorGUI
     % Uses a temporary copy of qb.config_default.json to avoid modifying the repo file.
 

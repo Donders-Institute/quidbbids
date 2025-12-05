@@ -37,8 +37,9 @@ Then, in MATLAB, add the cloned ``QuIDBBIDS`` folder (without subfolders) to you
    QuIDBBIDS depends on several external MATLAB toolboxes (see *Requirements* above).
    Make sure these dependencies are installed and accessible from your MATLAB path.
 
-Installing QuIDBBIDS dependencies
----------------------------------
+Installing dependencies
+-----------------------
+
 If you have cloned QuIDBBIDS with ``--recurse-submodules`` you already have `SEPIA <https://github.com/kschan0214/sepia>`__ 
 in your QuIDBBIDS ``dependencies`` folder. However, it is required that you install SEPIA's [..] dependencies yourself 
 and edit ``./dependencies/sepia/SpecifyToolboxesDirectory.m`` accordingly. See 

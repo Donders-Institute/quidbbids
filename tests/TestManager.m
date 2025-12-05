@@ -1,4 +1,4 @@
-classdef TestManager < matlab.unittest.TestCase
+classdef TestManager < BaseTest
 
     properties
         TmpDir  % Temporary directory path

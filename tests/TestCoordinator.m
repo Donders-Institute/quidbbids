@@ -1,4 +1,4 @@
-classdef TestCoordinator < matlab.unittest.TestCase
+classdef TestCoordinator < BaseTest
     % Unit tests for the abstract Coordinator class
 
     properties

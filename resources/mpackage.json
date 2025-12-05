@@ -12,7 +12,7 @@
         "email": "",
         "url": "https://www.ru.nl/en/donders-institute"
     },
-    "folders": [],
+    "folders": [{"path": ".", "languages": ["matlab"]}],
     "dependencies": [
         { "name": "bids-matlab",      "id": "" },
         { "name": "despot1",          "id": "" },
@@ -23,6 +23,6 @@
         { "name": "sepia",            "id": "" },
         { "name": "spm",              "id": "" }
     ],
-    "releaseCompatibility": "",
+    "releaseCompatibility": ">R2025a",
     "schemaVersion": "1.1.0"
 }

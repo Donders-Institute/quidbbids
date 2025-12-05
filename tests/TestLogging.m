@@ -1,4 +1,4 @@
-classdef TestLogging < matlab.unittest.TestCase
+classdef TestLogging < BaseTest
     % Unit tests for the Logging class
 
     properties

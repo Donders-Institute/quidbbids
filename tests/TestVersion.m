@@ -1,4 +1,4 @@
-classdef TestVersion < matlab.unittest.TestCase
+classdef TestVersion < BaseTest
     
     methods(TestClassSetup)
         % Shared setup for the entire test class

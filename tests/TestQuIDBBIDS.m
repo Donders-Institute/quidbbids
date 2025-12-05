@@ -1,4 +1,4 @@
-classdef TestQuIDBBIDS < matlab.unittest.TestCase
+classdef TestQuIDBBIDS < BaseTest
 
     properties
         TmpDir  % Temporary directory path

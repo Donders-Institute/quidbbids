@@ -1,4 +1,4 @@
-classdef TestSpmFileMerge < matlab.unittest.TestCase
+classdef TestSpmFileMerge < BaseTest
     % TestSpmFileMerge - Unit tests for spm_file_merge_gz function
 
     properties

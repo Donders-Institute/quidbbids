@@ -1,4 +1,4 @@
-classdef TestGetConfig < matlab.unittest.TestCase
+classdef TestGetConfig < BaseTest
     % Unit tests for private/get_config function
 
     properties

@@ -28,7 +28,7 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
 
 1. Set up a clone of the repository on your local machine and connect it to both the “official” and your copy of the repository on GitHub:
 
-   .. code-block:: console
+   .. code-block:: bash
 
       $ git clone --recurse-submodules -b dev https://github.com/Donders-Institute/quidbbids.git
       $ cd quidbbids
@@ -37,7 +37,7 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
 
 2. In case you want to contribute to the RTD documentation, set up a Python virtual environment and install the built dependencies:
 
-   .. code-block:: console
+   .. code-block:: bash
 
       $ python -m venv docs/venv        # Or use any other tool (such as conda)
       $ source docs/venv/bin/activate   # On Linux, see the documentation for other operating systems
@@ -45,16 +45,16 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
 
 3. When you wish to start working on your contribution, create a new branch:
 
-   .. code-block:: console
+   .. code-block:: bash
 
       $ git checkout -b [topic_of_your_contribution]
 
 4. When you are done with coding, you should then test, commit and push your work to GitHub:
 
-   .. code-block:: console
+   .. code-block:: bash
 
-      >> runtests('tests')                                   # Run this from the quidbbids directory or use MATLAB's `Test Browser App <https://nl.mathworks.com/help/matlab/ref/testbrowser-app.html>`__.
-      $ docs/make html                                       # For the docs, run this to generate the files on your local machine (on Windows use ``docs/make.bat html``) and open ``docs/_build/html/index.html``
+      >> runtests('tests')                                   # Run this from the quidbbids directory or use MATLAB's built-in `Test Browser App``
+      $ docs/make html                                       # For the docs, run this to generate the files locally and open `docs/_build/html/index.html`
       $ git commit -am "A SHORT DESCRIPTION OF THE CHANGES"  # Run this every time you have made a set of changes that belong together
       $ git push -u origin topic_of_your_contribution        # Run this when you are done and the tox tests are passing
 
@@ -67,7 +67,7 @@ Coding guidelines
 Please check that your contribution complies with the following rules before submitting a pull request:
 
 * Workers (i.e. ``+qb/+workers/*Worker.m`` files that inherit from the ``Worker`` class) should have informative help texts and a clear resume with bidsfilters and description. Also, the worker must be described in the Sphinx RTD documentation
-* New methods added to the Coordinator, should be accompanied with new (matlab.unittest) tests
+* New methods added to the ``Coordinator``, ``Manager``, or to other classes in ``+worker`` should be accompanied with new (matlab.unittest) tests
 * To improve code readability, minor comments can (should) be appended at the end of the code lines they apply to (even if that means right scrolling)
 * Horizontal space is not limited, so multi-line readability is preferred, e.g. the vertical alignment of ``=`` operators (i.e. padded horizontally with whitespaces)
 * Vertical space should not be readily wasted to promote better overviews and minimize the need for vertical scrolling

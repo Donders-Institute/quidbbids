@@ -111,8 +111,8 @@ classdef ConfigEditorGUI < handle
             leftX = 20; leftW = 360;        % Tree area rectangle in pixels
             
             % Create search label and field
-            uilabel(obj.UIFig,'Text','Search:','Position',[leftX 607 45 22],'HorizontalAlignment','left');
-            obj.SearchField = uieditfield(obj.UIFig,'text','Position',[leftX+45 606 leftW-45 24], 'ValueChangingFcn',@(src,evt)obj.onSearchLive(evt), 'ValueChangedFcn',@(src,evt)obj.onSearchEnter(evt), 'Value','');
+            uilabel(obj.UIFig,'Text','Search:','Position',[leftX 607 50 22],'HorizontalAlignment','left');
+            obj.SearchField = uieditfield(obj.UIFig,'text','Position',[leftX+50 606 leftW-50 24], 'ValueChangingFcn',@(src,evt)obj.onSearchLive(evt), 'ValueChangedFcn',@(src,evt)obj.onSearchEnter(evt), 'Value','');
             
             % Prev/Next buttons
             obj.BtnSearchPrev = uibutton(obj.UIFig,'Text','◀','Position',[leftX 572 40 24],    'ButtonPushedFcn',@(~,~)obj.searchPrev());
@@ -122,7 +122,7 @@ classdef ConfigEditorGUI < handle
             obj.SearchResultsLabel = uilabel(obj.UIFig,'Text','','Position',[leftX+95 572 80 24], 'HorizontalAlignment','left');
 
             % Info label for search state
-            uilabel(obj.UIFig,'Text','(supports *, ? and regex wildcards)','Position',[leftX+130 572 200 24], 'FontAngle','italic', 'HorizontalAlignment','left');
+            uilabel(obj.UIFig,'Text','(supports *, ? and regex wildcards)','Position',[leftX+120 572 220 24], 'FontAngle','italic', 'HorizontalAlignment','left');
 
             % Tree (use uitree within uifigure)
             obj.Tree = uitree(obj.UIFig,'Position',[leftX 20 leftW 536], 'Multiselect','off', 'SelectionChangedFcn',@(src,evt)obj.nodeSelected(evt));

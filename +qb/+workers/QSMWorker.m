@@ -89,7 +89,7 @@ methods
             entmag = bids.File(magfiles{1}).entities;
             for mask_ = mask
                 entmask = bids.File(char(mask_)).entities;
-                if ( isfield(entmag, 'space') &&  isfield(entmask, 'space') && entmag.space == entmask.space) || ...
+                if  ( isfield(entmag, 'space') &&  isfield(entmask, 'space') && entmag.space == entmask.space) || ...
                     (~isfield(entmag, 'space') && ~isfield(entmask, 'space'))
                     obj.logger.info("Selecting mask: " + mask_)
                     mask = mask_;
@@ -122,7 +122,7 @@ methods
                     param = obj.config.QSMWorker.R2starmap;
                 case {"Chimap", "unwrapped", "localfmask"}
                     param = obj.config.QSMWorker.QSM;
-                    param.bfr.radius = param.bfr.radius';   % JSON format is always columns
+                    param.bfr.radius = param.bfr.radius';   % JSON format is always columns. TODO: do this for other parameters as well?
                 otherwise
                     obj.logger.exception("%s cannot find the SEPIA parameters for: %s", obj.name, workitem)
             end

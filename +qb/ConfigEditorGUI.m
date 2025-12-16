@@ -688,7 +688,7 @@ classdef ConfigEditorGUI < handle
                 else
                     displayPath = obj.ConfigFile;
                 end
-                windowTitle = ['QuIDBBIDS Config Editor - ' displayPath];
+                windowTitle = "QuIDBBIDS Config Editor - " + displayPath;
             end
             
             if ~isempty(obj.Fig) && isvalid(obj.Fig)

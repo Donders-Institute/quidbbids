@@ -76,8 +76,8 @@ classdef TestConfigEditorGUI < BaseTest
             gui.SearchField.Value = 'nonexistent123';
             
             % Temporarily make figure visible to avoid uialert error
-            originalVisibility = gui.UIFig.Visible;
-            gui.UIFig.Visible = 'on';            
+            originalVisibility = gui.Fig.Visible;
+            gui.Fig.Visible = 'on';            
             try
                 gui.onSearchEnter(struct('Value', 'nonexistent123'));
             catch ME
@@ -85,7 +85,7 @@ classdef TestConfigEditorGUI < BaseTest
                     rethrow(ME);
                 end
             end
-            gui.UIFig.Visible = originalVisibility;            % Restore visibility
+            gui.Fig.Visible = originalVisibility;            % Restore visibility
             
             % Verify no matches were found and search state is reset
             testCase.verifyEmpty(gui.SearchMatches);
@@ -96,7 +96,7 @@ classdef TestConfigEditorGUI < BaseTest
         
         function testLeafEdit(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'General'});
-            set(gui.UIFig,'Visible','off');
+            set(gui.Fig,'Visible','off');
         
             % Select leaf: General -> gyro
             generalNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General'));
@@ -127,7 +127,7 @@ classdef TestConfigEditorGUI < BaseTest
 
         function testNestedLeafEdit(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'QSMWorker'});
-            set(gui.UIFig,'Visible','off');
+            set(gui.Fig,'Visible','off');
         
             % Navigate to nested leaf
             qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
@@ -239,7 +239,7 @@ classdef TestConfigEditorGUI < BaseTest
 
         function testLeafEditVariousDataTypes(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
-            set(gui.UIFig,'Visible','off');
+            set(gui.Fig,'Visible','off');
 
             % Test 1: Numeric scalar (gyro)
             generalNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General'));

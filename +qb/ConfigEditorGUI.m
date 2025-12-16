@@ -21,7 +21,6 @@ classdef ConfigEditorGUI < handle
     properties (Access = ?TestConfigEditorGUI)
         OrigConfig
         Workers
-        UIFig
         Tree
         RootNodes           % array of top-level nodes (children of tree)
 
@@ -103,29 +102,28 @@ classdef ConfigEditorGUI < handle
         function buildGUI(obj)
 
             % Create main uifigure
-            obj.UIFig = uifigure('Position',[300 100 745 650]);
-            obj.Fig = obj.UIFig;
+            obj.Fig = uifigure('Position',[300 100 745 650]);
             obj.updateWindowTitle()
 
             % Left panel (tree + search)
             leftX = 20; leftW = 360;        % Tree area rectangle in pixels
             
             % Create search label and field
-            uilabel(obj.UIFig,'Text','Search:','Position',[leftX 607 50 22],'HorizontalAlignment','left');
-            obj.SearchField = uieditfield(obj.UIFig,'text','Position',[leftX+50 606 leftW-50 24], 'ValueChangingFcn',@(src,evt)obj.onSearchLive(evt), 'ValueChangedFcn',@(src,evt)obj.onSearchEnter(evt), 'Value','');
+            uilabel(obj.Fig,'Text','Search:','Position',[leftX 607 50 22],'HorizontalAlignment','left');
+            obj.SearchField = uieditfield(obj.Fig,'text','Position',[leftX+50 606 leftW-50 24], 'ValueChangingFcn',@(src,evt)obj.onSearchLive(evt), 'ValueChangedFcn',@(src,evt)obj.onSearchEnter(evt), 'Value','');
             
             % Prev/Next buttons
-            obj.BtnSearchPrev = uibutton(obj.UIFig,'Text','◀','Position',[leftX 572 40 24],    'ButtonPushedFcn',@(~,~)obj.searchPrev());
-            obj.BtnSearchNext = uibutton(obj.UIFig,'Text','▶','Position',[leftX+45 572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchNext());
+            obj.BtnSearchPrev = uibutton(obj.Fig,'Text','◀','Position',[leftX 572 40 24],    'ButtonPushedFcn',@(~,~)obj.searchPrev());
+            obj.BtnSearchNext = uibutton(obj.Fig,'Text','▶','Position',[leftX+45 572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchNext());
 
             % Search results counter
-            obj.SearchResultsLabel = uilabel(obj.UIFig,'Text','','Position',[leftX+95 572 80 24], 'HorizontalAlignment','left');
+            obj.SearchResultsLabel = uilabel(obj.Fig,'Text','','Position',[leftX+95 572 80 24], 'HorizontalAlignment','left');
 
             % Info label for search state
-            uilabel(obj.UIFig,'Text','(supports *, ? and regex wildcards)','Position',[leftX+120 572 220 24], 'FontAngle','italic', 'HorizontalAlignment','left');
+            uilabel(obj.Fig,'Text','(supports *, ? and regex wildcards)','Position',[leftX+120 572 220 24], 'FontAngle','italic', 'HorizontalAlignment','left');
 
             % Tree (use uitree within uifigure)
-            obj.Tree = uitree(obj.UIFig,'Position',[leftX 20 leftW 536], 'Multiselect','off', 'SelectionChangedFcn',@(src,evt)obj.nodeSelected(evt));
+            obj.Tree = uitree(obj.Fig,'Position',[leftX 20 leftW 536], 'Multiselect','off', 'SelectionChangedFcn',@(src,evt)obj.nodeSelected(evt));
 
             % Right panel (Description and edit area)
             rpX = leftX + leftW + 20;
@@ -134,24 +132,24 @@ classdef ConfigEditorGUI < handle
             txtAreaH = 175;
 
             % Description box
-            obj.DescArea = uitextarea(obj.UIFig, 'Position',[rpX, topY - txtAreaH, rpW, txtAreaH], 'Editable','off');
+            obj.DescArea = uitextarea(obj.Fig, 'Position',[rpX, topY - txtAreaH, rpW, txtAreaH], 'Editable','off');
 
             % Value label (10 px below textarea)
             valueLabelY = topY - txtAreaH - 10 - 22;
-            obj.ValLabel = uilabel(obj.UIFig,'Text','Value:', 'Position',[rpX valueLabelY 200 22], 'HorizontalAlignment','left');
+            obj.ValLabel = uilabel(obj.Fig,'Text','Value:', 'Position',[rpX valueLabelY 200 22], 'HorizontalAlignment','left');
 
             % Value edit field
-            obj.ValField = uieditfield(obj.UIFig,'text', 'Position',[rpX valueLabelY - 40 rpW 40], 'ValueChangedFcn',@(src,~)obj.updateLeafFromField());
+            obj.ValField = uieditfield(obj.Fig,'text', 'Position',[rpX valueLabelY - 40 rpW 40], 'ValueChangedFcn',@(src,~)obj.updateLeafFromField());
 
             % Reset button
             btnY = 20; btnH = 30; btnW = 70; gap = 15;
-            obj.ResetLeafBtn = uibutton(obj.UIFig,'Text','↺ Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
+            obj.ResetLeafBtn = uibutton(obj.Fig,'Text','↺ Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
 
             % Bottom row buttons
-            obj.BtnResetAll = uibutton(obj.UIFig, 'Text','Reset All', 'Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
-            obj.BtnCancel   = uibutton(obj.UIFig, 'Text','✗ Cancel', 'Position',[rpX+1*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.UIFig));
-            obj.BtnLoad     = uibutton(obj.UIFig, 'Text','📂 Load',   'Position',[rpX+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.loadJSON());
-            obj.BtnSave     = uibutton(obj.UIFig, 'Text','💾 Save',   'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveJSON());
+            obj.BtnResetAll = uibutton(obj.Fig, 'Text','Reset All', 'Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
+            obj.BtnCancel   = uibutton(obj.Fig, 'Text','✗ Cancel', 'Position',[rpX+1*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.Fig));
+            obj.BtnLoad     = uibutton(obj.Fig, 'Text','📂 Load',   'Position',[rpX+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.loadJSON());
+            obj.BtnSave     = uibutton(obj.Fig, 'Text','💾 Save',   'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveJSON());
         end
 
         % populate tree directly with top-level keys (no single "config" root)
@@ -601,7 +599,7 @@ classdef ConfigEditorGUI < handle
                 obj.SearchIndex = 1;
                 obj.selectMatch(1);
             else
-                uialert(obj.UIFig,'No matches found.','Search');
+                uialert(obj.Fig,'No matches found.','Search');
             end
         end
 
@@ -693,8 +691,8 @@ classdef ConfigEditorGUI < handle
                 windowTitle = ['QuIDBBIDS Config Editor - ' displayPath];
             end
             
-            if ~isempty(obj.UIFig) && isvalid(obj.UIFig)
-                obj.UIFig.Name = windowTitle;
+            if ~isempty(obj.Fig) && isvalid(obj.Fig)
+                obj.Fig.Name = windowTitle;
             end
         end
 

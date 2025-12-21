@@ -147,7 +147,7 @@ classdef ConfigEditorGUI < handle
 
             % Bottom row buttons
             obj.BtnResetAll = uibutton(obj.Fig, 'Text','Reset All', 'Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
-            obj.BtnCancel   = uibutton(obj.Fig, 'Text','✗ Cancel', 'Position',[rpX+1*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.Fig));
+            obj.BtnCancel   = uibutton(obj.Fig, 'Text','✗ Cancel',  'Position',[rpX+1*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.Fig));
             obj.BtnLoad     = uibutton(obj.Fig, 'Text','📂 Load',   'Position',[rpX+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.loadJSON());
             obj.BtnSave     = uibutton(obj.Fig, 'Text','💾 Save',   'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveJSON());
         end
@@ -204,7 +204,7 @@ classdef ConfigEditorGUI < handle
             if isempty(nodes)
                 obj.DescArea.Value = '';
                 obj.ValField.Value = '';
-                obj.ValLabel.Text = 'Value:'; % Reset to default
+                obj.ValLabel.Text  = 'Value:'; % Reset to default
                 return
             end
             node = nodes(1);
@@ -248,13 +248,24 @@ classdef ConfigEditorGUI < handle
             end
         end
 
-        % Attempt to update current selected leaf value from the ValField contents
+        % Attempt to update current selected leaf value from the ValField contents, with QSM/R2starmap as a special case
         function updateLeafFromField(obj)
-            sel = obj.Tree.SelectedNodes;
-            if isempty(sel)
+            node = obj.Tree.SelectedNodes;
+            if isempty(node)
                 return
             end
-            node = sel(1);
+            
+            % Check if this leaf belongs to QSM or R2starmap
+            path = obj.nodePath(node);
+            if numel(path) >= 2
+                workerName  = path{1};  % Top-level key (e.g., 'QSMWorker')
+                subtreeName = path{2};  % Second-level key (e.g., 'QSM' or 'R2starmap')
+                if ischar(node.NodeData.value) && strcmp(workerName, 'QSMWorker') && (strcmp(subtreeName, 'QSM') || strcmp(subtreeName, 'R2starmap'))
+                    obj.openSepiaGUI(workerName, subtreeName)
+                    return
+                end
+            end
+            
             data = node.NodeData;
             oldVal = data.value;
             txt = strtrim(obj.ValField.Value);
@@ -353,11 +364,99 @@ classdef ConfigEditorGUI < handle
             obj.Config = obj.setValueInStruct(obj.Config, path, data);
         end
 
+        function openSepiaGUI(obj, workerName, subtreeName)
+            % Get the current subtree data
+            currentData = obj.Config.(workerName).(subtreeName);
+            
+            try
+                w = helpdlg({'Opening SEPIA GUI for configuring parameters';'';'(this may take a few seconds)'; ''},'SEPIA Config Editor');
+                pause(0.1);     % Give time to render dialog
+                h = sepia();    % Opens the full SEPIA GUI
+            catch ME
+                errordlg(['Failed to open SEPIA GUI: ' ME.message], 'Editor Error');
+            end
+                
+            % Show only the subtree tab
+            eventdata.OldValue = h.TabGroup.SelectedTab;
+            for tab = fieldnames(h.Tabs)'
+                if ~((strcmp(tab,'qsm')    && strcmp(subtreeName, 'QSM')) || ...
+                     (strcmp(tab,'r2star') && strcmp(subtreeName, 'R2starmap')))
+                    h.Tabs.(char(tab)).Parent = [];
+                    continue
+                end
+                eventdata.NewValue     = h.Tabs.(char(tab));
+                h.TabGroup.SelectedTab = h.Tabs.(char(tab));
+                h.TabGroup.SelectionChangedFcn(h.TabGroup, eventdata);
+                % h.load_config(currentData)                % Too complex, use SEPIA defaults
+                h.pushbutton_loadConfig.Visible = 'off';    % Too complex, use SEPIA defaults
+                h.pushbutton_start.String       = 'Done';
+                h.dataIO.edit.output.String     = tempname;
+                h.StepsPanel.dataIO.Visible     = 'off';
+            end
+
+            % Wait for user to finish
+            if isvalid(w), close(w), end
+            uiwait(h.fig)
+            disp('SEPIA configuration editing done')
+
+            % Update the config with the new parameters
+            if isfield(h.fig.UserData, 'algorParam') && ~isempty(h.fig.UserData.algorParam)
+                obj.Config.(workerName).(subtreeName) = obj.make_leaves(h.fig.UserData.algorParam);
+                obj.refreshSubtree(workerName, subtreeName);
+                uialert(obj.Fig, sprintf('%s configuration updated via SEPIA.', subtreeName), 'Updated');
+            end
+            delete([h.dataIO.edit.output.String '*'])   % Cleanup SEPIA's temp configfiles
+            if isvalid(h.fig), close(h.fig), end
+        end
+
+        function param = make_leaves(obj, S)
+            % Recursively convert a struct S into a struct with leaves having 'value' and 'description' fields
+            param = struct();
+            for key = fieldnames(S)'
+                val = S.(char(key));
+                if isstruct(val)
+                    param.(char(key)) = obj.make_leaves(val);
+                else
+                    param.(char(key)) = struct('value', val, 'description', '');
+                end
+            end
+        end
+
+        function refreshSubtree(obj, workerName, subtreeName)
+            % Find the worker node in RootNodes
+            workerNode = [];
+            for i = 1:numel(obj.RootNodes)
+                if strcmp(obj.RootNodes(i).Text, workerName)
+                    workerNode = obj.RootNodes(i);
+                    break
+                end
+            end
+            
+            % Find the subtree node (QSM or R2starmap)
+            subtreeNode = [];
+            for i = 1:numel(workerNode.Children)
+                if strcmp(workerNode.Children(i).Text, subtreeName)
+                    subtreeNode = workerNode.Children(i);
+                    break
+                end
+            end
+            
+            % Delete old children and rebuild
+            delete(subtreeNode.Children)
+            
+            % Update node data and rebuild subtree
+            subtreeNode.NodeData = obj.Config.(workerName).(subtreeName);
+            obj.buildSubtree(subtreeNode, obj.Config.(workerName).(subtreeName))
+            
+            % Clear selection and update display
+            obj.Tree.SelectedNodes = [];
+            obj.nodeSelected(struct('SelectedNodes', []));
+        end
+
         % Reset selected leaf to original value
         function resetLeaf(obj)
-            sel = obj.Tree.SelectedNodes;
-            if isempty(sel), return; end
-            node = sel(1);
+            node = obj.Tree.SelectedNodes;
+            if isempty(node), return; end
             origLeaf = obj.getOriginalLeaf(node);
             node.NodeData.value = origLeaf.value;
             % Update display

@@ -26,7 +26,9 @@ arguments
 end
 
 app = qb.ConfigEditorGUI(configfile, config, workers);
-uiwait(app.Fig);   % Pause until window closes
 
-configfile = app.ConfigFile;
-config = app.Config;
+if nargout
+    uiwait(app.Fig);   % Pause until window closes
+    configfile = app.ConfigFile;
+    config = app.Config;
+end

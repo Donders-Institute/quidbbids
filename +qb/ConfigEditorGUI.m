@@ -68,7 +68,7 @@ classdef ConfigEditorGUI < handle
                     txt = fileread(configfile);
                     config = jsondecode(txt);
                 catch ME
-                    errordlg(['Unable to read/parse JSON: ' ME.message],'File Error');
+                    errordlg(['Unable to read/parse JSON: ' ME.message],'File Error')
                     return
                 end
             end
@@ -82,10 +82,10 @@ classdef ConfigEditorGUI < handle
             obj.Workers = workers;
 
             % Build GUI
-            obj.buildGUI();
+            obj.buildGUI()
 
             % Populate tree
-            obj.populateTree();
+            obj.populateTree()
         end
 
         function delete(obj)
@@ -98,8 +98,8 @@ classdef ConfigEditorGUI < handle
 
     methods (Access = ?TestConfigEditorGUI)
 
-        % build GUI layout with uifigure
         function buildGUI(obj)
+            % build GUI layout with uifigure
 
             % Create main uifigure
             obj.Fig = uifigure('Position',[300 100 745 650]);
@@ -109,11 +109,11 @@ classdef ConfigEditorGUI < handle
             leftX = 20; leftW = 360;        % Tree area rectangle in pixels
             
             % Create search label and field
-            uilabel(obj.Fig,'Text','Search:','Position',[leftX 607 50 22],'HorizontalAlignment','left');
+            uilabel(obj.Fig,'Text','Search:', 'Position',[leftX 607 50 22], 'HorizontalAlignment','left');
             obj.SearchField = uieditfield(obj.Fig,'text','Position',[leftX+50 606 leftW-50 24], 'ValueChangingFcn',@(src,evt)obj.onSearchLive(evt), 'ValueChangedFcn',@(src,evt)obj.onSearchEnter(evt), 'Value','');
             
             % Prev/Next buttons
-            obj.BtnSearchPrev = uibutton(obj.Fig,'Text','◀','Position',[leftX 572 40 24],    'ButtonPushedFcn',@(~,~)obj.searchPrev());
+            obj.BtnSearchPrev = uibutton(obj.Fig,'Text','◀','Position',[leftX    572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchPrev());
             obj.BtnSearchNext = uibutton(obj.Fig,'Text','▶','Position',[leftX+45 572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchNext());
 
             % Search results counter
@@ -123,7 +123,7 @@ classdef ConfigEditorGUI < handle
             uilabel(obj.Fig,'Text','(supports *, ? and regex wildcards)','Position',[leftX+120 572 220 24], 'FontAngle','italic', 'HorizontalAlignment','left');
 
             % Tree (use uitree within uifigure)
-            obj.Tree = uitree(obj.Fig,'Position',[leftX 20 leftW 536], 'Multiselect','off', 'SelectionChangedFcn',@(src,evt)obj.nodeSelected(evt));
+            obj.Tree = uitree(obj.Fig, 'Position',[leftX 20 leftW 536], 'Multiselect','off', 'SelectionChangedFcn',@(src,evt)obj.nodeSelected(evt));
 
             % Right panel (Description and edit area)
             rpX = leftX + leftW + 20;
@@ -143,7 +143,7 @@ classdef ConfigEditorGUI < handle
 
             % Reset button
             btnY = 20; btnH = 30; btnW = 70; gap = 15;
-            obj.ResetLeafBtn = uibutton(obj.Fig,'Text','↺ Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
+            obj.ResetLeafBtn = uibutton(obj.Fig, 'Text','↺ Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
 
             % Bottom row buttons
             obj.BtnResetAll = uibutton(obj.Fig, 'Text','Reset All', 'Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
@@ -152,8 +152,9 @@ classdef ConfigEditorGUI < handle
             obj.BtnSave     = uibutton(obj.Fig, 'Text','💾 Save',   'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveJSON());
         end
 
-        % populate tree directly with top-level keys (no single "config" root)
         function populateTree(obj)
+            % populate tree directly with top-level keys (no single "config" root)
+
             delete(obj.Tree.Children)
 
             % Decide top-level keys to show
@@ -170,8 +171,8 @@ classdef ConfigEditorGUI < handle
                     continue
                 end
                 node = uitreenode(obj.Tree,'Text',key,'NodeData',obj.Config.(key));
-                obj.buildSubtree(node, obj.Config.(key));
-                obj.RootNodes(end+1) = node; 
+                obj.buildSubtree(node, obj.Config.(key))
+                obj.RootNodes(end+1) = node;
             end
 
             % Clear search state
@@ -180,15 +181,39 @@ classdef ConfigEditorGUI < handle
             obj.SearchResultsLabel.Text = '';
         end
 
-        % recursively add children to the tree up to leaves
         function buildSubtree(obj, parentNode, value)
+            % recursively add children to the tree up to leaves
+
             for nm = fieldnames(value)'
                 child = value.(nm{1});
-                if obj.isLeaf(child)
-                    uitreenode(parentNode,'Text',nm{1},'NodeData',child);
-                else
-                    node = uitreenode(parentNode,'Text',nm{1},'NodeData',child);
-                    obj.buildSubtree(node, child);
+                node  = uitreenode(parentNode,'Text',nm{1},'NodeData',child);
+                if ~obj.isLeaf(child)
+                    obj.buildSubtree(node, child)
+                end
+            end
+        end
+
+        function refreshSubtree(obj, path)
+            % Refresh the subtree in the tree corresponding to path (3 levels: worker/tree/subtree)
+
+            subtreeNode = findNodeByPath(path);
+            delete(subtreeNode.Children)
+
+            newData = obj.Config;
+            for p = path
+                newData = newData.(p{1});
+            end
+            subtreeNode.NodeData = newData;
+            obj.buildSubtree(subtreeNode, newData)
+
+            obj.Tree.SelectedNodes = subtreeNode;
+            obj.nodeSelected(struct('SelectedNodes', subtreeNode))
+
+            function node = findNodeByPath(path)
+                node = obj.Tree;
+                for i = 1:numel(path)
+                    idx  = find(strcmp({node.Children.Text}, path{i}), 1);
+                    node = node.Children(idx);
                 end
             end
         end
@@ -198,22 +223,22 @@ classdef ConfigEditorGUI < handle
             tf = ismember('value', fields) && ismember('description', fields) && numel(fields) == 2;
         end
 
-        % callback when a tree node is selected
         function nodeSelected(obj, evt)
-            nodes = evt.SelectedNodes;
-            if isempty(nodes)
+            % callback when a tree node is selected
+
+            node = evt.SelectedNodes;
+            if isempty(node)
                 obj.DescArea.Value = '';
                 obj.ValField.Value = '';
-                obj.ValLabel.Text  = 'Value:'; % Reset to default
+                obj.ValLabel.Text  = 'Value:';  % Reset to default
                 return
             end
-            node = nodes(1);
-            data = node.NodeData;
 
             % Update the value label to show the selected node's name
             obj.ValLabel.Text = [node.Text ':'];
             
             % Show description and the current value
+            data = node.NodeData;
             if obj.isLeaf(data)
                 if isstring(data.description)
                     obj.DescArea.Value = cellstr(data.description);
@@ -229,8 +254,9 @@ classdef ConfigEditorGUI < handle
             end
         end
 
-        % Format various MATLAB types to a string representation suitable for editing
         function s = valueToStringForDisplay(~, val)
+            % Format various MATLAB types to a string representation suitable for editing
+
             if isnumeric(val) && isscalar(val)
                 s = num2str(val);
             else
@@ -248,34 +274,35 @@ classdef ConfigEditorGUI < handle
             end
         end
 
-        % Attempt to update current selected leaf value from the ValField contents, with QSM/R2starmap as a special case
         function updateLeafFromField(obj)
+            % Attempt to update current selected leaf value from the ValField contents, with qsm/r2s as a special case
+
             node = obj.Tree.SelectedNodes;
             if isempty(node)
                 return
             end
             
-            % Check if this leaf belongs to QSM or R2starmap
+            % Check if this leaf belongs to qsm or r2s subtree
             path = obj.nodePath(node);
-            if numel(path) >= 2
+            if numel(path) >= 3
                 workerName  = path{1};  % Top-level key (e.g., 'QSMWorker')
-                subtreeName = path{2};  % Second-level key (e.g., 'QSM' or 'R2starmap')
-                if ischar(node.NodeData.value) && strcmp(workerName, 'QSMWorker') && (strcmp(subtreeName, 'QSM') || strcmp(subtreeName, 'R2starmap'))
-                    obj.openSepiaGUI(workerName, subtreeName)
+                treeName    = path{2};  % Second-level key (e.g., 'QSM' or 'R2starmap')
+                subtreeName = path{3};  % Third-level key (e.g., 'qsm' or 'r2s')
+                if ischar(node.NodeData.value) && strcmp(workerName, 'QSMWorker') && ismember(subtreeName, {'unwrap','bfr','qsm'})
+                    obj.openSepiaGUI(path)
                     return
                 end
             end
             
-            data = node.NodeData;
-            oldVal = data.value;
-            txt = strtrim(obj.ValField.Value);
-
             % Try robust parsing:
             % - If oldVal numeric: try JSON decode or str2num
             % - If oldVal logical: accept true/false/1/0
             % - If oldVal is char/string: accept as string (if user provided JSON string decode if quoted)
             % - For cell/struct/array: prefer jsondecode
-            newVal = [];
+            data     = node.NodeData;
+            oldVal   = data.value;
+            newVal   = [];
+            txt      = strtrim(obj.ValField.Value);
             parsedOK = false;
             try
                 if isnumeric(oldVal)
@@ -351,7 +378,7 @@ classdef ConfigEditorGUI < handle
             end
 
             if ~parsedOK
-                warndlg('Could not parse the value into the required type. Try JSON format for arrays/objects (e.g. [1,2,3] or {"a":1}).','Parse error');
+                warndlg('Could not parse the value into the required type. Try JSON format for arrays/objects (e.g. [1,2,3] or {"a":1}).','Parse error')
                 return
             end
 
@@ -360,33 +387,35 @@ classdef ConfigEditorGUI < handle
             node.NodeData = data;
 
             % Update underlying obj.Config: find path and set there too
-            path = obj.nodePath(node);
             obj.Config = obj.setValueInStruct(obj.Config, path, data);
         end
 
-        function openSepiaGUI(obj, workerName, subtreeName)
-            % Get the current subtree data
-            currentData = obj.Config.(workerName).(subtreeName);
+        function openSepiaGUI(obj, path)
+            % Open SEPIA GUI to edit QSM or R2starmap (menu) parameters
             
+            obj.Fig.Visible = 'off';   % Hide main GUI while SEPIA is open
+            cleanup = onCleanup(@() set(obj.Fig, 'Visible', 'on'));  % Ensure main GUI is shown again on function exit
             try
-                w = helpdlg({'Opening SEPIA GUI for configuring parameters';'';'(this may take a few seconds)'; ''},'SEPIA Config Editor');
-                pause(0.1);     % Give time to render dialog
+                w = helpdlg({sprintf('Opening SEPIA GUI for configuring "%s.%s.%s" settings', path{1:3});'(please wait a few seconds)';'';'NB: This resets the current settings';''}, 'SEPIA Config Editor');
+                pause(0.1)      % Give time to render dialog
                 h = sepia();    % Opens the full SEPIA GUI
             catch ME
-                errordlg(['Failed to open SEPIA GUI: ' ME.message], 'Editor Error');
+                errordlg(['Failed to open SEPIA GUI: ' ME.message], 'Editor Error')
             end
-                
+            
             % Show only the subtree tab
             eventdata.OldValue = h.TabGroup.SelectedTab;
             for tab = fieldnames(h.Tabs)'
-                if ~((strcmp(tab,'qsm')    && strcmp(subtreeName, 'QSM')) || ...
-                     (strcmp(tab,'r2star') && strcmp(subtreeName, 'R2starmap')))
+                if ~( strcmp(tab, path{3}) || ...
+                     (strcmp(tab,'phaseUnwrap') && strcmp(path{3}, 'unwrap')) || ...
+                     (strcmp(tab,'bkgRemoval')  && strcmp(path{3}, 'bfr')))
                     h.Tabs.(char(tab)).Parent = [];
                     continue
                 end
                 eventdata.NewValue     = h.Tabs.(char(tab));
                 h.TabGroup.SelectedTab = h.Tabs.(char(tab));
-                h.TabGroup.SelectionChangedFcn(h.TabGroup, eventdata);
+                h.TabGroup.SelectionChangedFcn(h.TabGroup, eventdata)
+                % currentData = obj.Config.(path{1}).(path{2}).(path{3});
                 % h.load_config(currentData)                % Too complex, use SEPIA defaults
                 h.pushbutton_loadConfig.Visible = 'off';    % Too complex, use SEPIA defaults
                 h.pushbutton_start.String       = 'Done';
@@ -401,12 +430,14 @@ classdef ConfigEditorGUI < handle
 
             % Update the config with the new parameters
             if isfield(h.fig.UserData, 'algorParam') && ~isempty(h.fig.UserData.algorParam)
-                obj.Config.(workerName).(subtreeName) = obj.make_leaves(h.fig.UserData.algorParam);
-                obj.refreshSubtree(workerName, subtreeName);
-                uialert(obj.Fig, sprintf('%s configuration updated via SEPIA.', subtreeName), 'Updated');
+                obj.Config.(path{1}).(path{2}).(path{3}) = obj.make_leaves(h.fig.UserData.algorParam.(path{3}));
+                obj.refreshSubtree(path(1:3))
+                w = helpdlg(sprintf('%s.%s.%s configuration updated\n\nClosing SEPIA...', path{1:3}), 'SEPIA Config Editor');
+                pause(0.1)      % Give time to render dialog
             end
             delete([h.dataIO.edit.output.String '*'])   % Cleanup SEPIA's temp configfiles
             if isvalid(h.fig), close(h.fig), end
+            % if isvalid(w), close(w), end  % The helpdlg is closed prematurely (before the h.fig teardown is ready)
         end
 
         function param = make_leaves(obj, S)
@@ -422,61 +453,40 @@ classdef ConfigEditorGUI < handle
             end
         end
 
-        function refreshSubtree(obj, workerName, subtreeName)
-            % Find the worker node in RootNodes
-            workerNode = [];
-            for i = 1:numel(obj.RootNodes)
-                if strcmp(obj.RootNodes(i).Text, workerName)
-                    workerNode = obj.RootNodes(i);
-                    break
-                end
-            end
-            
-            % Find the subtree node (QSM or R2starmap)
-            subtreeNode = [];
-            for i = 1:numel(workerNode.Children)
-                if strcmp(workerNode.Children(i).Text, subtreeName)
-                    subtreeNode = workerNode.Children(i);
-                    break
-                end
-            end
-            
-            % Delete old children and rebuild
-            delete(subtreeNode.Children)
-            
-            % Update node data and rebuild subtree
-            subtreeNode.NodeData = obj.Config.(workerName).(subtreeName);
-            obj.buildSubtree(subtreeNode, obj.Config.(workerName).(subtreeName))
-            
-            % Clear selection and update display
-            obj.Tree.SelectedNodes = [];
-            obj.nodeSelected(struct('SelectedNodes', []));
-        end
-
-        % Reset selected leaf to original value
         function resetLeaf(obj)
+            % Reset selected leaf to original value
             node = obj.Tree.SelectedNodes;
             if isempty(node), return; end
+                
             origLeaf = obj.getOriginalLeaf(node);
             node.NodeData.value = origLeaf.value;
             % Update display
-            obj.nodeSelected(struct('SelectedNodes',node));
+            obj.nodeSelected(struct('SelectedNodes',node))
             % Update main config too
-            path = obj.nodePath(node);
-            obj.Config = obj.setValueInStruct(obj.Config, path, node.NodeData);
+            obj.Config = obj.setValueInStruct(obj.Config, obj.nodePath(node), node.NodeData);
         end
 
-        % Reset all to original config
+        function leaf = getOriginalLeaf(obj, node)
+            % Get original leaf from OrigConfig by node path
+            path = obj.nodePath(node);
+            cur = obj.OrigConfig;
+            for i = 1:numel(path)
+                cur = cur.(path{i});
+            end
+            leaf = cur;
+        end
+
         function resetAll(obj)
+            % Reset all to original config
             obj.Config = obj.OrigConfig;
-            obj.populateTree();
-            obj.nodeSelected(struct('SelectedNodes',[]));
+            obj.populateTree()
+            obj.nodeSelected(struct('SelectedNodes',[]))
             obj.SearchField.Value = '';
             obj.SearchResultsLabel.Text = '';
         end
 
-        % Load JSON from a new file selected via file dialog and repopulate the tree
         function loadJSON(obj)
+            % Load JSON from a new file selected via file dialog and repopulate the tree
             
             % Open file dialog to select JSON file
             if strcmp(obj.Fig.Visible, 'on')
@@ -497,17 +507,17 @@ classdef ConfigEditorGUI < handle
                 obj.updateWindowTitle()
                 
                 % Refresh the tree, search state and clear right panel
-                obj.populateTree();
-                obj.nodeSelected(struct('SelectedNodes',[]));
+                obj.populateTree()
+                obj.nodeSelected(struct('SelectedNodes',[]))
                 obj.SearchField.Value = '';
                 obj.SearchResultsLabel.Text = '';
             catch ME
-                errordlg(['Unable to load/parse JSON: ' ME.message],'Load error');
+                errordlg(['Unable to load/parse JSON: ' ME.message],'Load error')
             end
         end
 
-        % Save current tree -> JSON file selected via file dialog
         function saveJSON(obj)
+            % Save current tree -> JSON file selected via file dialog
 
             % Open file dialog to select save location
             if strcmp(obj.Fig.Visible, 'on')
@@ -526,12 +536,12 @@ classdef ConfigEditorGUI < handle
                 txt = jsonencode(obj.Config, 'PrettyPrint', true);
                 fid = fopen(obj.ConfigFile,'w');
                 if fid < 0
-                    error('QuIDBBIDS:ConfigEditor:IOError', 'Cannot open file for writing: %s', obj.ConfigFile);
+                    error('QuIDBBIDS:ConfigEditor:IOError', 'Cannot open file for writing: %s', obj.ConfigFile)
                 end
                 fwrite(fid, txt, 'char');
                 fclose(fid);
             catch ME
-                errordlg(['Failed to save: ' ME.message],'Save error');
+                errordlg(['Failed to save: ' ME.message],'Save error')
             end
         end
 
@@ -550,32 +560,33 @@ classdef ConfigEditorGUI < handle
             end
         end
 
-        % Reconstruct struct from tree nodes
         function S = treeToStruct(obj)
+            % Reconstruct struct from tree nodes
             S = struct();
             for i = 1:numel(obj.RootNodes)
                 key = obj.RootNodes(i).Text;
-                S.(key) = obj.nodeToStruct(obj.RootNodes(i));
+                S.(key) = nodeToStruct(obj.RootNodes(i));
+            end
+
+            function s = nodeToStruct(node)
+                children = node.Children;
+                if isempty(children)
+                    % leaf node's NodeData is itself a struct with fields value & description
+                    s = node.NodeData;
+                    return
+                end
+                s = struct();
+                for j = 1:numel(children)
+                    nm = children(j).Text;
+                    s.(nm) = nodeToStruct(children(j));
+                end
             end
         end
 
-        function s = nodeToStruct(obj, node)
-            children = node.Children;
-            if isempty(children)
-                % leaf node's NodeData is itself a struct with fields value & description
-                s = node.NodeData;
-                return
-            end
-            s = struct();
-            for i = 1:numel(children)
-                nm = children(i).Text;
-                s.(nm) = obj.nodeToStruct(children(i));
-            end
-        end
-
-        % Helper: set value in nested struct given path cell array
         function S = setValueInStruct(~, S, path, leafStruct)
+            % Helper function to set value in nested struct given path cell array
             % path: e.g. {'MCRWorker','fixed_params','x_i'}
+            
             if isempty(path)
                 return
             end
@@ -605,41 +616,31 @@ classdef ConfigEditorGUI < handle
             end
         end
 
-        % Get original leaf from OrigConfig by node path
-        function leaf = getOriginalLeaf(obj, node)
-            path = obj.nodePath(node);
-            cur = obj.OrigConfig;
-            for i = 1:numel(path)
-                cur = cur.(path{i});
-            end
-            leaf = cur;
-        end
-
-        % Build path (cell array of keys) from a node up to top-level
         function path = nodePath(~, node)
+            % Build path (cell array of keys) from a node up to top-level
+
             path = {};
-            cur = node;
             
             % Traverse up the tree until we hit the root tree object
-            while ~isempty(cur) && ~isa(cur, 'matlab.ui.container.Tree')
+            while ~isempty(node) && ~isa(node, 'matlab.ui.container.Tree')
                 % Only add nodes that have Text property (uitreenode objects)
-                if isprop(cur, 'Text')
-                    path = [{cur.Text}, path]; %#ok<AGROW>
+                if isprop(node, 'Text')
+                    path = [{node.Text}, path]; %#ok<AGROW>
                 end
-                cur = cur.Parent;
+                node = node.Parent;
             end
         end
 
         %% SEARCH: Find any node matching pattern
-        function updateSearchMatches(obj, q)
+        function updateSearchMatches(obj, pattern)
             obj.SearchMatches = {};
             obj.SearchIndex = 0;            
-            if isempty(q)
+            if isempty(pattern)
                 return
             end
             
             % Convert search query to regex pattern with smart wildcard handling
-            pattern = lower(strtrim(q));
+            pattern = lower(strtrim(pattern));
             pattern = strrep(pattern, '*', '.*'); % Convert * to .* for regex
             pattern = strrep(pattern, '?', '.');  % Convert ? to . for regex
             if ~startsWith(pattern, '^')
@@ -677,41 +678,39 @@ classdef ConfigEditorGUI < handle
         end
 
         function onSearchLive(obj, evt)
-            q = strtrim(evt.Value);
-            obj.updateSearchMatches(q);
+
+            obj.updateSearchMatches(strtrim(evt.Value))
 
             if ~isempty(obj.SearchMatches)
                 obj.SearchIndex = 1;
                 obj.selectMatch(1);
             else
                 obj.SearchIndex = 0;
-                obj.updateSearchResultsLabel();
+                obj.updateSearchResultsLabel()
             end
         end
 
         function onSearchEnter(obj, evt)
-            q = strtrim(evt.Value);
 
-            obj.updateSearchMatches(q);
+            obj.updateSearchMatches(strtrim(evt.Value));
 
             if ~isempty(obj.SearchMatches)
                 obj.SearchIndex = 1;
-                obj.selectMatch(1);
+                obj.selectMatch(1)
             else
-                uialert(obj.Fig,'No matches found.','Search');
+                uialert(obj.Fig,'No matches found','Search')
             end
         end
 
         function collectMatchingNodes(obj, node, pattern)
             % Check if this node's text matches the pattern
-            nodeText = lower(node.Text);
-            if ~isempty(regexp(nodeText, pattern, 'once'))
+            if ~isempty(regexp(lower(node.Text), pattern, 'once'))
                 obj.SearchMatches{end+1} = node; 
             end
             
             % Continue searching in all children
             for i = 1:numel(node.Children)
-                obj.collectMatchingNodes(node.Children(i), pattern);
+                obj.collectMatchingNodes(node.Children(i), pattern)
             end
         end
 
@@ -720,11 +719,11 @@ classdef ConfigEditorGUI < handle
                 return
             end
             node = obj.SearchMatches{idx};
-            obj.expandParents(node);                        % Make node visible (expand parents)
+            obj.expandParents(node)                         % Make node visible (expand parents)
             obj.Tree.SelectedNodes = node;                  % Select node
-            obj.nodeSelected(struct('SelectedNodes',node)); % Update UI display manually
+            obj.nodeSelected(struct('SelectedNodes',node))  % Update UI display manually
             obj.SearchIndex = idx;
-            obj.updateSearchResultsLabel();                 % Update SearchIndex and results label
+            obj.updateSearchResultsLabel()                  % Update SearchIndex and results label
             drawnow                                         % Force UI update to ensure tree renders expanded state
         end
 
@@ -762,7 +761,7 @@ classdef ConfigEditorGUI < handle
             if obj.SearchIndex > numel(obj.SearchMatches)
                 obj.SearchIndex = 1; % Wrap around to first
             end
-            obj.selectMatch(obj.SearchIndex);
+            obj.selectMatch(obj.SearchIndex)
         end
 
         function searchPrev(obj)
@@ -771,13 +770,14 @@ classdef ConfigEditorGUI < handle
             end
             obj.SearchIndex = obj.SearchIndex - 1;
             if obj.SearchIndex < 1
-                obj.SearchIndex = numel(obj.SearchMatches); % Wrap around to last
+                obj.SearchIndex = numel(obj.SearchMatches);     % Wrap around to last
             end
-            obj.selectMatch(obj.SearchIndex);
+            obj.selectMatch(obj.SearchIndex)
         end
 
-        % Update window title with current config file path
         function updateWindowTitle(obj)
+            % Update window title with current config file path
+
             if isempty(obj.ConfigFile)
                 windowTitle = 'QuIDBBIDS Config Editor - No file loaded';
             else

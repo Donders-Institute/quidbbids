@@ -32,17 +32,9 @@ classdef ConfigEditorGUI < handle
 
         % Search controls
         SearchField
-        BtnSearchNext
-        BtnSearchPrev
         SearchMatches       % cell array of nodes that match
         SearchIndex = 0
         SearchResultsLabel  % uilabel for search results counter
-
-        % Bottom buttons
-        BtnLoad
-        BtnSave
-        BtnResetAll
-        BtnCancel
     end
 
     methods
@@ -54,10 +46,7 @@ classdef ConfigEditorGUI < handle
             % Get the configfile
             if nargin < 1 || isempty(configfile)
                 [f,p] = uigetfile({'*.json','JSON Files (*.json)'}, 'Select configuration file');
-                if isequal(f,0)
-                    obj.ConfigFile = [];
-                    return
-                end
+                if isequal(f,0), return, end
                 configfile = fullfile(p,f);
             end
             obj.ConfigFile = configfile;
@@ -65,8 +54,7 @@ classdef ConfigEditorGUI < handle
             % Get the config
             if nargin < 2 || isempty(config) || isempty(fieldnames(config))
                 try
-                    txt = fileread(configfile);
-                    config = jsondecode(txt);
+                    config = jsondecode(fileread(configfile));
                 catch ME
                     errordlg(['Unable to read/parse JSON: ' ME.message],'File Error')
                     return
@@ -81,10 +69,8 @@ classdef ConfigEditorGUI < handle
             end
             obj.Workers = workers;
 
-            % Build GUI
+            % Build the GUI
             obj.buildGUI()
-
-            % Populate tree
             obj.populateTree()
         end
 
@@ -113,8 +99,8 @@ classdef ConfigEditorGUI < handle
             obj.SearchField = uieditfield(obj.Fig,'text','Position',[leftX+50 606 leftW-50 24], 'ValueChangingFcn',@(src,evt)obj.onSearchLive(evt), 'ValueChangedFcn',@(src,evt)obj.onSearchEnter(evt), 'Value','');
             
             % Prev/Next buttons
-            obj.BtnSearchPrev = uibutton(obj.Fig,'Text','◀','Position',[leftX    572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchPrev());
-            obj.BtnSearchNext = uibutton(obj.Fig,'Text','▶','Position',[leftX+45 572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchNext());
+            uibutton(obj.Fig,'Text','◀','Position',[leftX    572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchPrev());
+            uibutton(obj.Fig,'Text','▶','Position',[leftX+45 572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchNext());
 
             % Search results counter
             obj.SearchResultsLabel = uilabel(obj.Fig,'Text','','Position',[leftX+95 572 80 24], 'HorizontalAlignment','left');
@@ -135,7 +121,7 @@ classdef ConfigEditorGUI < handle
             obj.DescArea = uitextarea(obj.Fig, 'Position',[rpX, topY - txtAreaH, rpW, txtAreaH], 'Editable','off');
 
             % Value label (10 px below textarea)
-            valueLabelY = topY - txtAreaH - 10 - 22;
+            valueLabelY  = topY - txtAreaH - 10 - 22;
             obj.ValLabel = uilabel(obj.Fig,'Text','Value:', 'Position',[rpX valueLabelY 200 22], 'HorizontalAlignment','left');
 
             % Value edit field
@@ -146,10 +132,10 @@ classdef ConfigEditorGUI < handle
             obj.ResetLeafBtn = uibutton(obj.Fig, 'Text','↺ Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
 
             % Bottom row buttons
-            obj.BtnResetAll = uibutton(obj.Fig, 'Text','Reset All', 'Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
-            obj.BtnCancel   = uibutton(obj.Fig, 'Text','✗ Cancel',  'Position',[rpX+1*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.Fig));
-            obj.BtnLoad     = uibutton(obj.Fig, 'Text','📂 Load',   'Position',[rpX+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.loadJSON());
-            obj.BtnSave     = uibutton(obj.Fig, 'Text','💾 Save',   'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveJSON());
+            uibutton(obj.Fig, 'Text','Reset All', 'Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
+            uibutton(obj.Fig, 'Text','✗ Cancel',  'Position',[rpX+1*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.Fig));
+            uibutton(obj.Fig, 'Text','📂 Load',   'Position',[rpX+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.loadConfig());
+            uibutton(obj.Fig, 'Text','💾 Save',   'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveConfig());
         end
 
         function populateTree(obj)
@@ -388,7 +374,7 @@ classdef ConfigEditorGUI < handle
             node.NodeData = data;
 
             % Update underlying obj.Config: find path and set there too
-            obj.Config = obj.setValueInStruct(obj.Config, path, data);
+            obj.Config = obj.setValueInConfig(obj.Config, path, data);
         end
 
         function openSepiaGUI(obj, path)
@@ -457,23 +443,19 @@ classdef ConfigEditorGUI < handle
             % Reset selected leaf to original value
             node = obj.Tree.SelectedNodes;
             if isempty(node), return; end
-                
-            origLeaf = obj.getOriginalLeaf(node);
-            node.NodeData.value = origLeaf.value;
+            
+            % Find original value
+            leaf = obj.OrigConfig;
+            path = obj.nodePath(node);
+            for i = 1:numel(path)
+                leaf = leaf.(path{i});
+            end
+            node.NodeData.value = leaf.value;
+
             % Update display
             obj.nodeSelected(struct('SelectedNodes',node))
             % Update main config too
-            obj.Config = obj.setValueInStruct(obj.Config, obj.nodePath(node), node.NodeData);
-        end
-
-        function leaf = getOriginalLeaf(obj, node)
-            % Get original leaf from OrigConfig by node path
-            path = obj.nodePath(node);
-            cur = obj.OrigConfig;
-            for i = 1:numel(path)
-                cur = cur.(path{i});
-            end
-            leaf = cur;
+            obj.Config = obj.setValueInConfig(obj.Config, path, node.NodeData);
         end
 
         function resetAll(obj)
@@ -484,18 +466,13 @@ classdef ConfigEditorGUI < handle
             obj.updateSearchResultsLabel(true)
         end
 
-        function loadJSON(obj)
+        function loadConfig(obj)
             % Load JSON from a new file selected via file dialog and repopulate the tree
             
             % Open file dialog to select JSON file
-            if strcmp(obj.Fig.Visible, 'on')
-                [f, p] = fileparts(obj.ConfigFile);
-                [f, p] = uigetfile({'*.json','JSON Files (*.json)'}, 'Select configuration file to load', fullfile(f,p));
-                if isequal(f, 0)
-                    return
-                end
-                obj.ConfigFile = fullfile(p, f);
-            end
+            [f, p] = uigetfile({'*.json','JSON Files (*.json)'}, 'Select configuration file to load', obj.ConfigFile);
+            if isequal(f, 0), return, end
+            obj.ConfigFile = fullfile(p, f);
 
             try
                 % Read and parse the new JSON file
@@ -511,75 +488,30 @@ classdef ConfigEditorGUI < handle
             end
         end
 
-        function saveJSON(obj)
-            % Save current tree -> JSON file selected via file dialog
+        function saveConfig(obj)
+            % Save current config to a JSON file selected via file dialog
 
             % Open file dialog to select save location
-            if strcmp(obj.Fig.Visible, 'on')
-                [f, p] = uiputfile({'*.json','JSON Files (*.json)'}, 'Save configuration as...', obj.ConfigFile);
-                if isequal(f, 0)
-                    return
-                end
-                obj.ConfigFile = fullfile(p, f);
-            end
-            obj.updateWindowTitle()
-            
-            % Reconstruct config struct from tree and save it
-            partial = obj.treeToStruct();
-            obj.Config = obj.mergeIntoOriginal(obj.OrigConfig, partial);
+            [f, p] = uiputfile('*.json', 'Save configuration as...', obj.ConfigFile);
+            if isequal(f,0), return, end
+            obj.ConfigFile = fullfile(p,f);
+
             try
-                txt = jsonencode(obj.Config, 'PrettyPrint', true);
+                txt = jsonencode(obj.Config,'PrettyPrint',true);
                 fid = fopen(obj.ConfigFile,'w');
-                if fid < 0
-                    error('QuIDBBIDS:ConfigEditor:IOError', 'Cannot open file for writing: %s', obj.ConfigFile)
-                end
-                fwrite(fid, txt, 'char');
+                if fid < 0, error('Cannot open file'); end
+                fprintf(fid,'%s',txt);
                 fclose(fid);
             catch ME
-                errordlg(['Failed to save: ' ME.message],'Save error')
+                errordlg(['Failed to save: ' ME.message],'Save error');
+                return
             end
+
+            obj.updateWindowTitle();
         end
 
-        function out = mergeIntoOriginal(obj, orig, partial)
-            out = orig;
-            fields = fieldnames(partial);
-            for i = 1:numel(fields)
-                f = fields{i};
-                if isfield(orig, f) && isstruct(partial.(f)) && isstruct(orig.(f))
-                    % Recursive merge
-                    out.(f) = obj.mergeIntoOriginal(orig.(f), partial.(f));
-                else
-                    % Overwrite or add
-                    out.(f) = partial.(f);
-                end
-            end
-        end
-
-        function S = treeToStruct(obj)
-            % Reconstruct struct from tree nodes
-            S = struct();
-            for i = 1:numel(obj.RootNodes)
-                key = obj.RootNodes(i).Text;
-                S.(key) = nodeToStruct(obj.RootNodes(i));
-            end
-
-            function s = nodeToStruct(node)
-                children = node.Children;
-                if isempty(children)
-                    % leaf node's NodeData is itself a struct with fields value & description
-                    s = node.NodeData;
-                    return
-                end
-                s = struct();
-                for j = 1:numel(children)
-                    nm = children(j).Text;
-                    s.(nm) = nodeToStruct(children(j));
-                end
-            end
-        end
-
-        function S = setValueInStruct(~, S, path, leafStruct)
-            % Helper function to set value in nested struct given path cell array
+        function S = setValueInConfig(~, S, path, leafStruct)
+            % Helper function to set value in nested Config struct for a given path
             % path: e.g. {'MCRWorker','fixed_params','x_i'}
             
             if isempty(path)

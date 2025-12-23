@@ -492,9 +492,11 @@ classdef ConfigEditorGUI < handle
             % Save current config to a JSON file selected via file dialog
 
             % Open file dialog to select save location
-            [f, p] = uiputfile('*.json', 'Save configuration as...', obj.ConfigFile);
-            if isequal(f,0), return, end
-            obj.ConfigFile = fullfile(p,f);
+            if obj.Fig.Visible              % Allows silent save during tests
+                [f, p] = uiputfile('*.json', 'Save configuration as...', obj.ConfigFile);
+                if isequal(f,0), return, end
+                obj.ConfigFile = fullfile(p,f);
+            end
 
             try
                 txt = jsonencode(obj.Config,'PrettyPrint',true);
@@ -618,7 +620,7 @@ classdef ConfigEditorGUI < handle
 
         function onSearchEnter(obj, evt)
 
-            obj.updateSearchMatches(strtrim(evt.Value));
+            obj.updateSearchMatches(strtrim(evt.Value))
 
             if ~isempty(obj.SearchMatches)
                 obj.SearchIndex = 1;

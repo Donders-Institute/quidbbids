@@ -33,17 +33,17 @@ classdef TestConfigEditorGUI < BaseTest
     methods(Test)
         function testConstructorLoadsConfig(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'General','QSMWorker'});
-            set(gui.Fig,'Visible','off');
+            gui.Fig.Visible = 'off';
 
             % Root nodes contain requested workers
             testCase.verifyTrue(all(ismember({'General','QSMWorker'}, {gui.RootNodes.Text})));
 
-            delete(gui);
+            delete(gui)
         end
 
-        function testSearchFunctionality(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
-            set(gui.Fig,'Visible','off');
+        function testSearch(testCase)
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, testCase.Config);
+            gui.Fig.Visible = 'off';
 
             % Test incremental search (ValueChangingFcn)
             gui.SearchField.Value = 'gyro';
@@ -61,8 +61,8 @@ classdef TestConfigEditorGUI < BaseTest
         end
 
         function testSearchEnterKeyAlert(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
-            set(gui.Fig,'Visible','off');
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, testCase.Config);
+            gui.Fig.Visible = 'off';
 
             % Test that Enter key behavior - we can't test the uialert directly
             % since it requires visible figure, but we can verify the search logic
@@ -76,27 +76,43 @@ classdef TestConfigEditorGUI < BaseTest
             gui.SearchField.Value = 'nonexistent123';
             
             % Temporarily make figure visible to avoid uialert error
-            originalVisibility = gui.Fig.Visible;
             gui.Fig.Visible = 'on';            
-            try
-                gui.onSearchEnter(struct('Value', 'nonexistent123'));
-            catch ME
-                if ~strcmp(ME.identifier, 'MATLAB:uitools:uidialogs:InvisibleFigure')
-                    rethrow(ME);
-                end
-            end
-            gui.Fig.Visible = originalVisibility;            % Restore visibility
+            gui.onSearchEnter(struct('Value', 'nonexistent123'))
+            gui.Fig.Visible = 'off';
             
             % Verify no matches were found and search state is reset
-            testCase.verifyEmpty(gui.SearchMatches);
-            testCase.verifyEqual(gui.SearchIndex, 0);
+            testCase.verifyEmpty(gui.SearchMatches)
+            testCase.verifyEqual(gui.SearchIndex, 0)
 
             delete(gui);
         end
         
+        function testIncrementalSearchUpdates(testCase)
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
+            gui.Fig.Visible = 'off';
+
+            % Test that incremental search updates with each character
+            gui.onSearchLive(struct('Value', 'g'))   % Type 'g'
+            initialMatches = numel(gui.SearchMatches);
+            
+            gui.onSearchLive(struct('Value', 'gy'))   % Type 'y' - more specific
+            refinedMatches = numel(gui.SearchMatches);
+            
+            % The matches should become more specific (fewer or equal matches)
+            testCase.verifyTrue(refinedMatches <= initialMatches)
+            
+            % Should find 'gyro' specifically
+            if refinedMatches > 0
+                matchTexts = {gui.SearchMatches{:}.Text};
+                testCase.verifyTrue(any(contains(matchTexts, 'gyro')))
+            end
+
+            delete(gui)
+        end
+
         function testLeafEdit(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'General'});
-            set(gui.Fig,'Visible','off');
+            gui.Fig.Visible = 'off';
         
             % Select leaf: General -> gyro
             generalNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General'));
@@ -104,144 +120,99 @@ classdef TestConfigEditorGUI < BaseTest
             gui.Tree.SelectedNodes = gyroNode;
         
             % Verify initial state
-            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892);
-            testCase.verifyEqual(gui.Config.General.gyro.value, 42.57747892);
+            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892)
+            testCase.verifyEqual(gui.Config.General.gyro.value, 42.57747892)
         
             % Update value
             gui.ValField.Value = '50';
-            gui.updateLeafFromField();
+            gui.updateLeafFromField()
         
             % Verify BOTH tree node and config are updated
-            testCase.verifyEqual(gyroNode.NodeData.value, 50);
-            testCase.verifyEqual(gui.Config.General.gyro.value, 50);
+            testCase.verifyEqual(gyroNode.NodeData.value, 50)
+            testCase.verifyEqual(gui.Config.General.gyro.value, 50)
         
             % Reset leaf
-            gui.resetLeaf();
+            gui.resetLeaf()
             
             % Verify BOTH are reset
-            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892);
-            testCase.verifyEqual(gui.Config.General.gyro.value, 42.57747892);
+            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892)
+            testCase.verifyEqual(gui.Config.General.gyro.value, 42.57747892)
         
-            delete(gui);
+            delete(gui)
         end
 
         function testNestedLeafEdit(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'QSMWorker'});
-            set(gui.Fig,'Visible','off');
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'MCRWorker'});
+            gui.Fig.Visible = 'off';
         
             % Navigate to nested leaf
-            qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
-            qsmSubNode = qsmNode.Children(strcmp({qsmNode.Children.Text}, 'QSM'));
-            unwrapNode = qsmSubNode.Children(strcmp({qsmSubNode.Children.Text}, 'unwrap'));
-            leafNode = unwrapNode.Children(strcmp({unwrapNode.Children.Text}, 'echoCombMethod'));
+            mcrNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'MCRWorker'));
+            mcrSubNode = mcrNode.Children(strcmp({mcrNode.Children.Text}, 'fitting'));
+            gpuNode    = mcrSubNode.Children(strcmp({mcrSubNode.Children.Text}, 'GPU'));
+            leafNode   = gpuNode.Children(strcmp({gpuNode.Children.Text}, 'start'));
         
             % Verify initial state
-            testCase.verifyEqual(leafNode.NodeData.value, 'Optimum weights');
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Optimum weights');
+            testCase.verifyEqual(leafNode.NodeData.value, 'prior');
+            testCase.verifyEqual(gui.Config.MCRWorker.fitting.GPU.start.value, 'prior');
         
             % METHOD 1: Test direct update and manual reset using existing methods
             % Update the value
             nodeData = leafNode.NodeData;
             nodeData.value = 'Test';
             leafNode.NodeData = nodeData;
-            path = {'QSMWorker', 'QSM', 'unwrap', 'echoCombMethod'};
-            gui.Config = gui.setValueInStruct(gui.Config, path, nodeData);
+            path = {'MCRWorker', 'fitting', 'GPU', 'start'};
+            gui.Config = gui.setValueInConfig(gui.Config, path, nodeData);
             
-            testCase.verifyEqual(leafNode.NodeData.value, 'Test');
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Test');
+            testCase.verifyEqual(leafNode.NodeData.value, 'Test')
+            testCase.verifyEqual(gui.Config.MCRWorker.fitting.GPU.start.value, 'Test')
         
-            % Manual reset using the existing getOriginalLeaf method
-            originalLeaf = gui.getOriginalLeaf(leafNode);  % This method exists!
-            leafNode.NodeData = originalLeaf;
-            gui.Config = gui.setValueInStruct(gui.Config, path, originalLeaf);
-            
-            testCase.verifyEqual(leafNode.NodeData.value, 'Optimum weights');
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'Optimum weights');
+            % Reset using GUI logic
+            gui.Tree.SelectedNodes = leafNode;
+            gui.resetLeaf()
+
+            testCase.verifyEqual(leafNode.NodeData.value, 'prior')
+            testCase.verifyEqual(gui.Config.MCRWorker.fitting.GPU.start.value, 'prior')
         
-            delete(gui);
+            delete(gui)
         end
 
         function testSaveNestedConfig(testCase)
             gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'QSMWorker'});
-            set(gui.Fig,'Visible','off');
+            gui.Fig.Visible = 'off';
 
             % Find the specific leaf node in the tree
-            qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
-
-            % Find QSM -> unwrap -> echoCombMethod path
-            foundLeaf = false;
-            for i = 1:numel(qsmNode.Children)
-                if strcmp(qsmNode.Children(i).Text, 'QSM')
-                    qsmSubNode = qsmNode.Children(i);
-                    for j = 1:numel(qsmSubNode.Children)
-                        if strcmp(qsmSubNode.Children(j).Text, 'unwrap')
-                            unwrapNode = qsmSubNode.Children(j);
-                            for k = 1:numel(unwrapNode.Children)
-                                if strcmp(unwrapNode.Children(k).Text, 'echoCombMethod')
-                                    leafNode = unwrapNode.Children(k);
-                                    foundLeaf = true;
-                                    break;
-                                end
-                            end
-                            if foundLeaf, break; end
-                        end
-                    end
-                    if foundLeaf, break; end
-                end
-            end
-
-            testCase.verifyTrue(foundLeaf, 'Should find echoCombMethod leaf node');
+            qsmNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
+            qsmSubNode = qsmNode.Children(strcmp({qsmNode.Children.Text}, 'QSM'));
+            bfrNode    = qsmSubNode.Children(strcmp({qsmSubNode.Children.Text}, 'bfr'));
+            leafNode   = bfrNode.Children(strcmp({bfrNode.Children.Text}, 'refine_order'));
 
             % Update the tree node directly (this is what the UI would do)
-            nodeData = leafNode.NodeData;
-            nodeData.value = 'TestNested';
+            nodeData          = leafNode.NodeData;
+            nodeData.value    = 999;
             leafNode.NodeData = nodeData;
 
             % Also update the main config to keep them in sync
-            path = {'QSMWorker', 'QSM', 'unwrap', 'echoCombMethod'};
-            gui.Config = gui.setValueInStruct(gui.Config, path, nodeData);
+            path = {'QSMWorker', 'QSM', 'bfr', 'refine_order'};
+            gui.Config = gui.setValueInConfig(gui.Config, path, nodeData);
 
             % Verify both tree and config are updated
-            testCase.verifyEqual(leafNode.NodeData.value, 'TestNested');
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.unwrap.echoCombMethod.value, 'TestNested');
+            testCase.verifyEqual(leafNode.NodeData.value, 999)
+            testCase.verifyEqual(gui.Config.QSMWorker.QSM.bfr.refine_order.value, 999)
 
             % Save and load back and verify the change persisted
-            gui.saveJSON()
+            gui.saveConfig()
             savedConfig = jsondecode(fileread(testCase.TempJSONFile));
-            testCase.verifyEqual(savedConfig.QSMWorker.QSM.unwrap.echoCombMethod.value, 'TestNested');
-            testCase.verifyEqual(savedConfig.QSMWorker.QSM.qsm.lambda.value, 0.05); % unchanged
-
-            delete(gui)
-        end
-
-        function testIncrementalSearchUpdates(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
-            set(gui.Fig,'Visible','off');
-
-            % Test that incremental search updates with each character
-            gui.onSearchLive(struct('Value', 'g'));  % Type 'g'
-            initialMatches = numel(gui.SearchMatches);
-            
-            gui.onSearchLive(struct('Value', 'gy'));  % Type 'y' - more specific
-            refinedMatches = numel(gui.SearchMatches);
-            
-            % The matches should become more specific (fewer or equal matches)
-            testCase.verifyTrue(refinedMatches <= initialMatches);
-            
-            % Should find 'gyro' specifically
-            if refinedMatches > 0
-                matchTexts = {gui.SearchMatches{:}.Text};
-                testCase.verifyTrue(any(contains(matchTexts, 'gyro')));
-            end
+            testCase.verifyEqual(savedConfig.QSMWorker.QSM.bfr.refine_order.value, 999)
+            testCase.verifyEqual(savedConfig.QSMWorker.QSM.qsm.lambda.value, 0.05)  % unchanged
 
             delete(gui)
         end
 
         function testLeafEditVariousDataTypes(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
-            set(gui.Fig,'Visible','off');
+            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, testCase.Config);
+            gui.Fig.Visible = 'off';
 
-            % Test 1: Numeric scalar (gyro)
+            %--- Test 1: Numeric scalar (gyro)
             generalNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General'));
             gyroNode = generalNode.Children(strcmp({generalNode.Children.Text}, 'gyro'));
             gui.Tree.SelectedNodes = gyroNode;
@@ -251,146 +222,81 @@ classdef TestConfigEditorGUI < BaseTest
             
             % Update to different numeric value
             gui.ValField.Value = '99.5';
-            gui.updateLeafFromField();
-            testCase.verifyEqual(gyroNode.NodeData.value, 99.5);
-            gui.resetLeaf();
-            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892);
+            gui.updateLeafFromField()
+            testCase.verifyEqual(gyroNode.NodeData.value, 99.5)
+            gui.resetLeaf()
+            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892)
 
-            % Test 2: String value 
-            % Find a string parameter - look for echoCombMethod
-            qsmNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
+            %--- Test 2: String value
+            mcrNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'MCRWorker'));
+            mcrSubNode = mcrNode.Children(strcmp({mcrNode.Children.Text}, 'fitting'));
+            unwrapNode = mcrSubNode.Children(strcmp({mcrSubNode.Children.Text}, 'GPU'));
+            stringNode = unwrapNode.Children(strcmp({unwrapNode.Children.Text}, 'start'));
+            
+            gui.Tree.SelectedNodes = stringNode;
+            originalValue = stringNode.NodeData.value;
+            
+            % Test string update
+            gui.ValField.Value = '"New String Value"';
+            gui.updateLeafFromField()
+            testCase.verifyEqual(stringNode.NodeData.value, "New String Value")
+            
+            % Test without quotes (should still work)
+            gui.ValField.Value = 'Another String';
+            gui.updateLeafFromField()
+            testCase.verifyEqual(stringNode.NodeData.value, "Another String")
+            
+            gui.resetLeaf()
+            testCase.verifyEqual(stringNode.NodeData.value, originalValue)
+            
+            %--- Test 3: Numeric array
+            qsmNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
             qsmSubNode = qsmNode.Children(strcmp({qsmNode.Children.Text}, 'QSM'));
-            unwrapNode = qsmSubNode.Children(strcmp({qsmSubNode.Children.Text}, 'unwrap'));
-            stringNode = unwrapNode.Children(strcmp({unwrapNode.Children.Text}, 'echoCombMethod'));
+            bfrNode    = qsmSubNode.Children(strcmp({qsmSubNode.Children.Text}, 'bfr'));
+            arrayNode  = bfrNode.Children(strcmp({bfrNode.Children.Text}, 'radius'));
+            gui.Tree.SelectedNodes = arrayNode;
+            originalArrayValue     = arrayNode.NodeData.value;
             
-            if ~isempty(stringNode)
-                gui.Tree.SelectedNodes = stringNode;
-                originalValue = stringNode.NodeData.value;
-                
-                % Test string update
-                gui.ValField.Value = '"New String Value"';
-                gui.updateLeafFromField();
-                testCase.verifyEqual(stringNode.NodeData.value, "New String Value");
-                
-                % Test without quotes (should still work)
-                gui.ValField.Value = 'Another String';
-                gui.updateLeafFromField();
-                testCase.verifyEqual(stringNode.NodeData.value, "Another String");
-                
-                gui.resetLeaf();
-                testCase.verifyEqual(stringNode.NodeData.value, originalValue);
-            end
+            % Test array input in JSON format
+            gui.ValField.Value = '[1, 2, 3, 4]';    % JSON style -> column vector
+            gui.updateLeafFromField()
+            testCase.verifyEqual(arrayNode.NodeData.value, [1, 2, 3, 4]')
             
-            % Test 3: Numeric array
-            % Look for array parameters - check if any exist in the config
-            arrayNodes = testCase.findArrayLeaves(gui.RootNodes);
+            % Test MATLAB array format
+            gui.ValField.Value = '[5 6 7]';         % Not valid JSON, but MATLAB style
+            gui.updateLeafFromField()
+            testCase.verifyEqual(arrayNode.NodeData.value, [5, 6, 7])
             
-            if ~isempty(arrayNodes)
-                arrayNode = arrayNodes{1};
-                gui.Tree.SelectedNodes = arrayNode;
-                originalArrayValue = arrayNode.NodeData.value;
-                
-                % Test array input in JSON format
-                gui.ValField.Value = '[1, 2, 3, 4]';
-                gui.updateLeafFromField();
-                testCase.verifyEqual(arrayNode.NodeData.value, [1, 2, 3, 4]);
-                
-                % Test MATLAB array format
-                gui.ValField.Value = '[5 6 7]';
-                gui.updateLeafFromField();
-                testCase.verifyEqual(arrayNode.NodeData.value, [5, 6, 7]);
-                
-                gui.resetLeaf();
-                testCase.verifyEqual(arrayNode.NodeData.value, originalArrayValue);
-            else
-                fprintf('No array leaf found for testing\n');
-            end
+            gui.resetLeaf()
+            testCase.verifyEqual(arrayNode.NodeData.value, originalArrayValue)
             
-            % Test 4: Logical values
-            % Look for logical parameters - check if any exist in the config
-            logicalNodes = testCase.findLogicalLeaves(gui.RootNodes);
+            %--- Test 4: Logical values
+            unwrapNode  = qsmSubNode.Children(strcmp({qsmSubNode.Children.Text}, 'unwrap'));
+            logicalNode = unwrapNode.Children(strcmp({unwrapNode.Children.Text}, 'isEddyCorrect'));
+            gui.Tree.SelectedNodes = logicalNode;
+            originalLogicalValue   = logicalNode.NodeData.value;
             
-            if ~isempty(logicalNodes)
-                logicalNode = logicalNodes{1};
-                gui.Tree.SelectedNodes = logicalNode;
-                originalLogicalValue = logicalNode.NodeData.value;
-                
-                % Test different boolean representations
-                gui.ValField.Value = 'true';
-                gui.updateLeafFromField();
-                testCase.verifyEqual(logicalNode.NodeData.value, true);
-                
-                gui.ValField.Value = 'false';
-                gui.updateLeafFromField();
-                testCase.verifyEqual(logicalNode.NodeData.value, false);
-                
-                gui.ValField.Value = '1';
-                gui.updateLeafFromField();
-                testCase.verifyEqual(logicalNode.NodeData.value, true);
-                
-                gui.ValField.Value = '0';
-                gui.updateLeafFromField();
-                testCase.verifyEqual(logicalNode.NodeData.value, false);
-                
-                gui.resetLeaf();
-                testCase.verifyEqual(logicalNode.NodeData.value, originalLogicalValue);
-            else
-                fprintf('No logical leaf found for testing\n');
-            end
+            % Test different boolean representations
+            gui.ValField.Value = 'true';
+            gui.updateLeafFromField()
+            testCase.verifyEqual(logicalNode.NodeData.value, true)
+            
+            gui.ValField.Value = 'false';
+            gui.updateLeafFromField()
+            testCase.verifyEqual(logicalNode.NodeData.value, false)
+            
+            gui.ValField.Value = '0';
+            gui.updateLeafFromField()
+            testCase.verifyEqual(logicalNode.NodeData.value, false)
+            
+            gui.ValField.Value = '1';
+            gui.updateLeafFromField()
+            testCase.verifyEqual(logicalNode.NodeData.value, true)
+            
+            gui.resetLeaf()
+            testCase.verifyEqual(logicalNode.NodeData.value, originalLogicalValue)
             
             delete(gui)
-        end
-
-    end
-
-    methods (Access = private)
-        function arrayNodes = findArrayLeaves(testCase, rootNodes)
-            arrayNodes = {};
-            for i = 1:numel(rootNodes)
-                testCase.traverseForArrays(rootNodes(i), arrayNodes);
-            end
-        end
-        
-        function traverseForArrays(testCase, node, arrayNodes)
-            if isprop(node, 'Children') && ~isempty(node.Children)
-                for i = 1:numel(node.Children)
-                    child = node.Children(i);
-                    if isprop(child, 'NodeData') && isfield(child.NodeData, 'value')
-                        val = child.NodeData.value;
-                        if isnumeric(val) && numel(val) > 1
-                            arrayNodes{end+1} = child; %#ok<AGROW>
-                        end
-                    end
-                    % Recursively check children
-                    if isprop(child, 'Children') && ~isempty(child.Children)
-                        testCase.traverseForArrays(child, arrayNodes);
-                    end
-                end
-            end
-        end
-        
-        function logicalNodes = findLogicalLeaves(testCase, rootNodes)
-            logicalNodes = {};
-            for i = 1:numel(rootNodes)
-                testCase.traverseForLogicals(rootNodes(i), logicalNodes);
-            end
-        end
-        
-        function traverseForLogicals(testCase, node, logicalNodes)
-            if isprop(node, 'Children') && ~isempty(node.Children)
-                for i = 1:numel(node.Children)
-                    child = node.Children(i);
-                    if isprop(child, 'NodeData') && isfield(child.NodeData, 'value')
-                        if islogical(child.NodeData.value)
-                            logicalNodes{end+1} = child; %#ok<AGROW>
-                        end
-                    end
-                    % Recursively check children
-                    if isprop(child, 'Children') && ~isempty(child.Children)
-                        testCase.traverseForLogicals(child, logicalNodes);
-                    end
-                end
-            end
         end
 
     end

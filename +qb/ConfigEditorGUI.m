@@ -28,7 +28,6 @@ classdef ConfigEditorGUI < handle
         DescArea            % uitextarea (non-editable)
         ValField            % uieditfield (or uieditfield('text'))
         ValLabel            % uilabel for the value field that we can update
-        ResetLeafBtn
 
         % Search controls
         SearchField
@@ -106,7 +105,7 @@ classdef ConfigEditorGUI < handle
             obj.SearchResultsLabel = uilabel(obj.Fig,'Text','','Position',[leftX+95 572 80 24], 'HorizontalAlignment','left');
 
             % Info label for search state
-            uilabel(obj.Fig,'Text','(supports *, ? and regex wildcards)','Position',[leftX+120 572 220 24], 'FontAngle','italic', 'HorizontalAlignment','left');
+            uilabel(obj.Fig,'Text','(supports *, ? and regex wildcards)','Position',[leftX+130 572 220 24], 'FontAngle','italic', 'HorizontalAlignment','left');
 
             % Tree (use uitree within uifigure)
             obj.Tree = uitree(obj.Fig, 'Position',[leftX 20 leftW 536], 'Multiselect','off', 'SelectionChangedFcn',@(src,evt)obj.nodeSelected(evt));
@@ -129,7 +128,7 @@ classdef ConfigEditorGUI < handle
 
             % Reset button
             btnY = 20; btnH = 30; btnW = 70; gap = 15;
-            obj.ResetLeafBtn = uibutton(obj.Fig, 'Text','↺ Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
+            uibutton(obj.Fig, 'Text','↺ Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
 
             % Bottom row buttons
             uibutton(obj.Fig, 'Text','Reset All', 'Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
@@ -418,12 +417,16 @@ classdef ConfigEditorGUI < handle
             disp('SEPIA configuration editing done')
 
             % Update the config with the new parameters
-            if isfield(h.fig.UserData, 'algorParam') && ~isempty(h.fig.UserData.algorParam)
-                obj.Config.(path{1}).(path{2}).(path{3}) = obj.make_leaves(h.fig.UserData.algorParam.(path{3}));
-                obj.refreshSubtree(path(1:3))
+            if isvalid(h.fig)
+                if isfield(h.fig.UserData, 'algorParam') && ~isempty(h.fig.UserData.algorParam)
+                    obj.Config.(path{1}).(path{2}).(path{3}) = obj.make_leaves(h.fig.UserData.algorParam.(path{3}));
+                    obj.refreshSubtree(path(1:3))
+                end
+                delete([h.dataIO.edit.output.String '*'])   % Cleanup SEPIA's temp configfiles
+                close(h.fig)
+            else
+                obj.resetLeaf()    % SEPIA GUI was closed without saving
             end
-            delete([h.dataIO.edit.output.String '*'])   % Cleanup SEPIA's temp configfiles
-            if isvalid(h.fig), close(h.fig), end
         end
 
         function param = make_leaves(obj, S)

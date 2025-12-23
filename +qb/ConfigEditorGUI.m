@@ -176,9 +176,7 @@ classdef ConfigEditorGUI < handle
             end
 
             % Clear search state
-            obj.SearchMatches = {};
-            obj.SearchIndex = 0;
-            obj.SearchResultsLabel.Text = '';
+            obj.updateSearchResultsLabel(true)
         end
 
         function buildSubtree(obj, parentNode, value)
@@ -199,15 +197,18 @@ classdef ConfigEditorGUI < handle
             subtreeNode = findNodeByPath(path);
             delete(subtreeNode.Children)
 
+            % Get the new data for this subtree
             newData = obj.Config;
             for p = path
                 newData = newData.(p{1});
             end
             subtreeNode.NodeData = newData;
-            obj.buildSubtree(subtreeNode, newData)
 
+            % Refresh and select the subtree
+            obj.buildSubtree(subtreeNode, newData)
             obj.Tree.SelectedNodes = subtreeNode;
             obj.nodeSelected(struct('SelectedNodes', subtreeNode))
+            obj.updateSearchResultsLabel(true)
 
             function node = findNodeByPath(path)
                 node = obj.Tree;
@@ -396,14 +397,16 @@ classdef ConfigEditorGUI < handle
             obj.Fig.Visible = 'off';   % Hide main GUI while SEPIA is open
             cleanup = onCleanup(@() set(obj.Fig, 'Visible', 'on'));  % Ensure main GUI is shown again on function exit
             try
-                w = helpdlg({sprintf('Opening SEPIA GUI for configuring "%s.%s.%s" settings', path{1:3});'(please wait a few seconds)';'';'NB: This resets the current settings';''}, 'SEPIA Config Editor');
-                pause(0.1)      % Give time to render dialog
+                w = helpdlg({sprintf('Opening SEPIA GUI for configuring "%s.%s.%s" settings', path{1:3}); ...
+                            '(Initialization can be slow, please wait a few seconds)';''; ... 
+                            sprintf('NB: This resets the current "%s.%s.%s" settings', path{1:3});''}, 'SEPIA Config Editor');
+                pause(0.1)      % Give time to render the dialog
                 h = sepia();    % Opens the full SEPIA GUI
             catch ME
                 errordlg(['Failed to open SEPIA GUI: ' ME.message], 'Editor Error')
             end
             
-            % Show only the subtree tab
+            % Show only the subtree (path{3}) tab of the SEPIA GUI
             eventdata.OldValue = h.TabGroup.SelectedTab;
             for tab = fieldnames(h.Tabs)'
                 if ~( strcmp(tab, path{3}) || ...
@@ -415,9 +418,9 @@ classdef ConfigEditorGUI < handle
                 eventdata.NewValue     = h.Tabs.(char(tab));
                 h.TabGroup.SelectedTab = h.Tabs.(char(tab));
                 h.TabGroup.SelectionChangedFcn(h.TabGroup, eventdata)
-                % currentData = obj.Config.(path{1}).(path{2}).(path{3});
-                % h.load_config(currentData)                % Too complex, use SEPIA defaults
-                h.pushbutton_loadConfig.Visible = 'off';    % Too complex, use SEPIA defaults
+                % currentData = obj.Config.(path{1}).(path{2}).(path{3});   % Too complex, use SEPIA defaults
+                % h.load_config(currentData)                                % Too complex, use SEPIA defaults
+                h.pushbutton_loadConfig.Visible = 'off';                    % Too complex, use SEPIA defaults
                 h.pushbutton_start.String       = 'Done';
                 h.dataIO.edit.output.String     = tempname;
                 h.StepsPanel.dataIO.Visible     = 'off';
@@ -432,12 +435,9 @@ classdef ConfigEditorGUI < handle
             if isfield(h.fig.UserData, 'algorParam') && ~isempty(h.fig.UserData.algorParam)
                 obj.Config.(path{1}).(path{2}).(path{3}) = obj.make_leaves(h.fig.UserData.algorParam.(path{3}));
                 obj.refreshSubtree(path(1:3))
-                w = helpdlg(sprintf('%s.%s.%s configuration updated\n\nClosing SEPIA...', path{1:3}), 'SEPIA Config Editor');
-                pause(0.1)      % Give time to render dialog
             end
             delete([h.dataIO.edit.output.String '*'])   % Cleanup SEPIA's temp configfiles
             if isvalid(h.fig), close(h.fig), end
-            % if isvalid(w), close(w), end  % The helpdlg is closed prematurely (before the h.fig teardown is ready)
         end
 
         function param = make_leaves(obj, S)
@@ -481,8 +481,7 @@ classdef ConfigEditorGUI < handle
             obj.Config = obj.OrigConfig;
             obj.populateTree()
             obj.nodeSelected(struct('SelectedNodes',[]))
-            obj.SearchField.Value = '';
-            obj.SearchResultsLabel.Text = '';
+            obj.updateSearchResultsLabel(true)
         end
 
         function loadJSON(obj)
@@ -502,15 +501,11 @@ classdef ConfigEditorGUI < handle
                 % Read and parse the new JSON file
                 obj.Config = jsondecode(fileread(obj.ConfigFile));
                 
-                % Update the application state and window title
+                % Update the application state, window title and tree
                 obj.OrigConfig = obj.Config;
                 obj.updateWindowTitle()
-                
-                % Refresh the tree, search state and clear right panel
                 obj.populateTree()
                 obj.nodeSelected(struct('SelectedNodes',[]))
-                obj.SearchField.Value = '';
-                obj.SearchResultsLabel.Text = '';
             catch ME
                 errordlg(['Unable to load/parse JSON: ' ME.message],'Load error')
             end
@@ -685,8 +680,7 @@ classdef ConfigEditorGUI < handle
                 obj.SearchIndex = 1;
                 obj.selectMatch(1);
             else
-                obj.SearchIndex = 0;
-                obj.updateSearchResultsLabel()
+                obj.updateSearchResultsLabel(true)
             end
         end
 
@@ -727,8 +721,16 @@ classdef ConfigEditorGUI < handle
             drawnow                                         % Force UI update to ensure tree renders expanded state
         end
 
-        function updateSearchResultsLabel(obj)
+        function updateSearchResultsLabel(obj, reset)
             % Simple search results counter
+            
+            if nargin > 1 && reset
+                % Clear the search bar and matches
+                obj.SearchField.Value   = '';
+                obj.SearchMatches       = {};
+                obj.SearchIndex         = 0;
+            end
+            
             if isempty(obj.SearchMatches)
                 obj.SearchResultsLabel.Text = '';
             else

@@ -118,7 +118,6 @@ methods
                     param = obj.config.QSMWorker.R2starmap;
                 case {"Chimap", "unwrapped", "localfmask"}
                     param = obj.config.QSMWorker.QSM;
-                    param.bfr.radius = param.bfr.radius';   % JSON format is always columns. TODO: do this for other parameters as well?
                 otherwise
                     obj.logger.exception("%s cannot find the SEPIA parameters for: %s", obj.name, workitem)
             end

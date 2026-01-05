@@ -18,6 +18,8 @@ function config = get_config(configfile, config)
 % The function ensures that a default config exists in:
 %   <HOME>/.quidbbids/<version>/config_default.json
 %
+% Vectors are converted to row vectors (JSON format is always columns).
+%
 % Usage:
 %   config = get_config("myconfig.json");
 %   get_config("myconfig.json", config);
@@ -52,7 +54,7 @@ else                                            % Read JSON
         [~,~] = mkdir(fileparts(configfile));
         copyfile(config_default, configfile)
     end
-    config = jsondecode(fileread(configfile));
+    config = make_rows(jsondecode(fileread(configfile)));
 
     % Check for version conflicts
     try
@@ -61,5 +63,21 @@ else                                            % Read JSON
         end
     catch exception
         error("QuIDBBIDS:Config:ParseError", "Could not parse version: %s\n%s", configfile, exception)
+    end
+end
+
+
+function param = make_rows(S)
+% Recursively convert vectors to rows
+
+param = struct();
+for key = fieldnames(S)'
+    val = S.(char(key));
+    if isstruct(val)
+        param.(char(key)) = make_rows(val);
+    elseif iscolumn(val)
+        param.(char(key)) = val';
+    else
+        param.(char(key)) = val;
     end
 end

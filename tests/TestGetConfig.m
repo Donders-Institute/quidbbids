@@ -47,10 +47,10 @@ classdef TestGetConfig < BaseTest
             % Read it back
             newconfig = get_config(testCase.ConfigFile, struct());
 
-            testCase.verifyEqual(newconfig.param1, config.param1)
-            testCase.verifyEqual(newconfig.param2, config.param2')
+            testCase.verifyEqual(newconfig.param1, config.param1')
+            testCase.verifyEqual(newconfig.param2, config.param2)
             testCase.verifyEqual(newconfig.param3, config.param3)
-            testCase.verifyEqual(newconfig.param4, config.param4')
+            testCase.verifyEqual(newconfig.param4, config.param4)
             testCase.verifyEqual(newconfig.param5, config.param5)
         end
 

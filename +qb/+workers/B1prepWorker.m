@@ -5,10 +5,10 @@ classdef B1prepWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        % Name of the worker
-    description % Description of the work that is done
-    version     % The version of B1prepWorker
-    needs       % List of workitems the worker needs. Workitems can contain regexp patterns
+    name        = "Yoda"        % Name of the worker
+    description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"] % Description of the work that is done
+    version     = "0.1.0"       % The version of B1prepWorker
+    needs       = []            % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
 properties
@@ -37,10 +37,6 @@ methods
         obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
 
         % Make the abstract properties concrete
-        obj.name        = "Yoda";
-        obj.description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"];
-        obj.version     = "0.1.0";
-        obj.needs       = [];
         obj.bidsfilter.rawTB1map_famp = struct('modality','fmap', 'acq','famp', 'suffix','TB1(TFL|RFM).*');
         obj.bidsfilter.rawTB1map_anat = setfields(obj.bidsfilter.rawTB1map_famp, 'acq','anat');
         obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawTB1map_famp, 'desc','corrected', 'space','raw', 'suffix','TB1map');

@@ -5,10 +5,10 @@ classdef MP2RAGEWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        % Name of the worker
-    description % Description of the work that is done
-    version     % The version of MP2RAGEWorker
-    needs       % List of workitems the worker needs. Workitems can contain regexp patterns
+    name        = "Anakin"                          % Name of the worker
+    description = ["I am a working class hero that will happily do the following pre-processing work for you:"]
+    version     = "0.1.0"                           % The version of MP2RAGEWorker
+    needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
 
@@ -36,10 +36,6 @@ methods
         obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
 
         % Make the abstract properties concrete
-        obj.name        = "Anakin";
-        obj.description = ["I am a working class hero that will happily do the following pre-processing work for you:"];
-        obj.version     = "0.1.0";
-        obj.needs       = ["TB1map_anat", "TB1map_angle"];
         obj.bidsfilter.rawUNIT1    = struct('modality', 'anat', ...
                                             'suffix', 'UNIT1');
         obj.bidsfilter.rawINV1     = struct('modality', 'anat', ...

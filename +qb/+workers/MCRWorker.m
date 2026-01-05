@@ -5,10 +5,13 @@ classdef MCRWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        % Name of the worker
-    description % Description of the work that is done
-    version     % The version of MCRWorker
-    needs       % List of workitems the worker needs. Workitems can contain regexp patterns
+    name        = "Jose"        % Name of the worker
+    description = ["If you don't want to stay single, I am sure I can fit you a Multi-Compartment Model";
+                    "";
+                    "Methods:"
+                    "- "]       % Description of the work that is done
+    version     = "0.1.0"       % The version of MCRWorker
+    needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"] % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
 
@@ -36,13 +39,6 @@ methods
         obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
 
         % Make the abstract properties concrete
-        obj.name        = "Jose";
-        obj.description = ["If you don't want to stay single, I am sure I can fit you a Multi-Compartment Model";
-                           "";
-                           "Methods:"
-                           "- "];
-        obj.version     = "0.1.0";
-        obj.needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"];
         obj.bidsfilter.MWFmap       = struct('modality', 'anat', ...
                                              'echo', [], ...
                                              'part', '', ...

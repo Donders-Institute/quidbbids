@@ -33,9 +33,9 @@ classdef Manager < handle
 
 
 properties
-    team        % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
-    coord       % The coordinator that help the manager with administrative tasks
-    force       % Force workers to start working, even if the subject is locked or existing results exist
+    team = struct()     % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+    coord               % The coordinator that help the manager with administrative tasks
+    force = false       % Force workers to start working, even if the subject is locked or existing results exist
 end
 
 
@@ -48,9 +48,7 @@ methods
             coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
         end
 
-        obj.coord    = coord;                   % The coordinator that help the manager with administrative tasks
-        obj.team     = struct();                % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
-        obj.force    = false;
+        obj.coord = coord;                      % The coordinator that help the manager with administrative tasks
         obj.create_team()
     end
 

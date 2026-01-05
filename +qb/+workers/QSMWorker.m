@@ -5,10 +5,10 @@ classdef QSMWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        % Name of the worker
-    description % Description of the work that is done
-    version     % The version of QSMWorker
-    needs       % List of workitems the worker needs. Workitems can contain regexp patterns
+    name        = "Kwok"                            % Name of the worker
+    description = ["I am your SEPIA expert that can make shiny QSM and R2-star images for you"] % Description of the work that is done
+    version     = "0.1.0"                           % The version of QSMWorker
+    needs       = ["echos4Dmag", "echos4Dphase", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
 
@@ -42,10 +42,6 @@ methods
         obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
 
         % Make the abstract properties concrete
-        obj.name        = "Kwok";
-        obj.description = ["I am your SEPIA expert that can make shiny QSM and R2-star images for you"];
-        obj.version     = "0.1.0";
-        obj.needs       = ["echos4Dmag", "echos4Dphase", "brainmask"];
         obj.bidsfilter.R2starmap  = struct('modality', 'anat', ...
                                            'echo', [], ...
                                            'part', '', ...          % SEPIA outputs images with an appended "part-phase" substring

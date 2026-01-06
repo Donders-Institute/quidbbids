@@ -209,6 +209,19 @@ classdef ConfigEditorGUI < handle
             tf = ismember('value', fields) && ismember('description', fields) && numel(fields) == 2;
         end
 
+        function tf = isSepiaMenu(obj, path)
+            tf = false;
+            if numel(path) >= 3
+                node        = obj.Tree.SelectedNodes;
+                workerName  = path{1};  % Top-level key (e.g., 'QSMWorker')
+                treeName    = path{2};  % Second-level key (e.g., 'QSM' or 'R2starmap')
+                subtreeName = path{3};  % Third-level key (e.g., 'qsm' or 'r2s')
+                if ischar(node.NodeData.value) && strcmp(workerName, 'QSMWorker') && ismember(subtreeName, {'unwrap','bfr','qsm'})
+                    tf = true;
+                end
+            end
+        end
+
         function nodeSelected(obj, evt)
             % callback when a tree node is selected
 
@@ -246,11 +259,9 @@ classdef ConfigEditorGUI < handle
             if isnumeric(val) && isscalar(val)
                 s = num2str(val);
             else
-                % For arrays, objects, cells, use JSON representation for clarity
-                try
+                try     % For arrays, objects, cells, use JSON representation for clarity
                     s = jsonencode(val);
-                catch
-                    % fallback: use mat2str for numeric arrays
+                catch   % fallback: use mat2str for numeric arrays
                     if isnumeric(val)
                         s = mat2str(val);
                     else
@@ -268,16 +279,11 @@ classdef ConfigEditorGUI < handle
                 return
             end
             
-            % Check if this leaf belongs to qsm or r2s subtree
+            % Check if this leaf is SEPIA menu (which changes the whole subtree)
             path = obj.nodePath(node);
-            if numel(path) >= 3
-                workerName  = path{1};  % Top-level key (e.g., 'QSMWorker')
-                treeName    = path{2};  % Second-level key (e.g., 'QSM' or 'R2starmap')
-                subtreeName = path{3};  % Third-level key (e.g., 'qsm' or 'r2s')
-                if ischar(node.NodeData.value) && strcmp(workerName, 'QSMWorker') && ismember(subtreeName, {'unwrap','bfr','qsm'})
-                    obj.openSepiaGUI(path)
-                    return
-                end
+            if obj.isSepiaMenu(path)
+                obj.openSepiaGUI(path)
+                return
             end
             
             % Try robust parsing:
@@ -372,7 +378,7 @@ classdef ConfigEditorGUI < handle
             data.value = newVal;
             node.NodeData = data;
 
-            % Update underlying obj.Config: find path and set there too
+            % Update obj.Config
             obj.Config = obj.setValueInConfig(obj.Config, path, data);
         end
 
@@ -382,9 +388,9 @@ classdef ConfigEditorGUI < handle
             obj.Fig.Visible = 'off';   % Hide main GUI while SEPIA is open
             cleanup = onCleanup(@() set(obj.Fig, 'Visible', 'on'));  % Ensure main GUI is shown again on function exit
             try
-                w = helpdlg({sprintf('Opening SEPIA GUI for configuring "%s.%s.%s" settings', path{1:3}); ...
-                            '(Initialization can be slow, please wait a few seconds)';''; ... 
-                            sprintf('NB: This resets the current "%s.%s.%s" settings', path{1:3});''}, 'SEPIA Config Editor');
+                w = helpdlg({sprintf('Opening SEPIA GUI for configuring "%s.%s.%s" settings', path{1:3});''; ...
+                            'Initialization can be slow, please wait a few seconds...';''; ... 
+                            sprintf('NB: This overwrites all current "%s.%s.%s" settings', path{1:3});''}, 'SEPIA Config Editor');
                 pause(0.1)      % Give time to render the dialog
                 h = sepia();    % Opens the full SEPIA GUI
             catch ME
@@ -444,21 +450,34 @@ classdef ConfigEditorGUI < handle
 
         function resetLeaf(obj)
             % Reset selected leaf to original value
-            node = obj.Tree.SelectedNodes;
-            if isempty(node), return; end
             
-            % Find original value
-            leaf = obj.OrigConfig;
+            node = obj.Tree.SelectedNodes;
             path = obj.nodePath(node);
-            for i = 1:numel(path)
-                leaf = leaf.(path{i});
-            end
-            node.NodeData.value = leaf.value;
 
-            % Update display
-            obj.nodeSelected(struct('SelectedNodes',node))
-            % Update main config too
-            obj.Config = obj.setValueInConfig(obj.Config, path, node.NodeData);
+            % Return if the data was not changed
+            origData = obj.OrigConfig;
+            for p = path
+                origData = origData.(p{1});
+            end
+            if isequal(node.NodeData, origData)
+                return
+            end
+
+            % For SEPIA menu, reset the parent subtree, else just the leaf
+            if obj.isSepiaMenu(path)
+                obj.Config = obj.setValueInConfig(obj.Config, path(1:3), obj.OrigConfig.(path{1}).(path{2}).(path{3}));
+                obj.refreshSubtree(path(1:3))
+            else
+                leaf = obj.OrigConfig;
+                for i = 1:numel(path)
+                    leaf = leaf.(path{i});
+                end
+                node.NodeData.value = leaf.value;
+
+                % Update display and main config
+                obj.nodeSelected(struct('SelectedNodes', node))
+                obj.Config = obj.setValueInConfig(obj.Config, path, node.NodeData);
+            end
         end
 
         function resetAll(obj)
@@ -504,7 +523,7 @@ classdef ConfigEditorGUI < handle
             try
                 txt = jsonencode(obj.Config,'PrettyPrint',true);
                 fid = fopen(obj.ConfigFile,'w');
-                if fid < 0, error('Cannot open file'); end
+                if fid < 0, error('Cannot open file'), end
                 fprintf(fid,'%s',txt);
                 fclose(fid);
             catch ME
@@ -515,36 +534,19 @@ classdef ConfigEditorGUI < handle
             obj.updateWindowTitle();
         end
 
-        function S = setValueInConfig(~, S, path, leafStruct)
-            % Helper function to set value in nested Config struct for a given path
-            % path: e.g. {'MCRWorker','fixed_params','x_i'}
-            
-            if isempty(path)
-                return
-            end
-            if isscalar(path)
-                S.(path{1}) = leafStruct;
-                return
-            end
-            key = path{1};
-            if ~isfield(S,key)
-                S.(key) = struct();
-            end
-            S.(key) = setfield_recursive(S.(key), path(2:end), leafStruct);
+        function S = setValueInConfig(obj, S, path, val)
+            %SETVALUEINCONFIG Sets a value in a nested Config struct using a path cell array
+            %
+            % S = obj.setValueInConfig(S, {'a','b','c'}, val)
+            %
+            % Example:
+            %   path = {'MCRWorker','fixed_params','x_i'}
+            %   S.MCRWorker.fixed_params.x_i = val
 
-            function out = setfield_recursive(subS, remainingPath, leafStruct)
-                if isscalar(remainingPath)
-                    subS.(remainingPath{1}) = leafStruct;
-                    out = subS;
-                    return
-                else
-                    k2 = remainingPath{1};
-                    if ~isfield(subS,k2)
-                        subS.(k2) = struct();
-                    end
-                    subS.(k2) = setfield_recursive(subS.(k2), remainingPath(2:end), leafStruct);
-                    out = subS;
-                end
+            if isscalar(path)
+                S.(path{1}) = val;
+            else
+                S.(path{1}) = obj.setValueInConfig(S.(path{1}), path(2:end), val);
             end
         end
 
@@ -552,11 +554,8 @@ classdef ConfigEditorGUI < handle
             % Build path (cell array of keys) from a node up to top-level
 
             path = {};
-            
-            % Traverse up the tree until we hit the root tree object
-            while ~isempty(node) && ~isa(node, 'matlab.ui.container.Tree')
-                % Only add nodes that have Text property (uitreenode objects)
-                if isprop(node, 'Text')
+            while ~isempty(node) && ~isa(node, 'matlab.ui.container.Tree')      % Traverse up the tree until we hit the root tree object
+                if isprop(node, 'Text')                                         % Only add nodes that have Text property (uitreenode objects)
                     path = [{node.Text}, path]; %#ok<AGROW>
                 end
                 node = node.Parent;

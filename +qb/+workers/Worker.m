@@ -276,13 +276,16 @@ methods
     end
 
     function BIDSW = BIDSW_ses(obj, workdir)
-        %LAYOUT_WORKDIR Gets a tolerant bids.layout() for the WORKDIR sub/ses (default: obj.workdir)
+        %BIDSW_SES Gets a tolerant bids.layout() for the WORKDIR sub/ses data only (default: WORKDIR = obj.workdir)
 
         if nargin < 2 || isempty(workdir)
             workdir = obj.workdir;
         end
-        BIDSW = bids.layout(char(workdir), 'filter', struct('sub',obj.sub(), 'ses',obj.ses()), ...
-                            'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+        filter.sub = {obj.sub()};
+        if obj.ses()
+            filter.ses = {obj.ses()};
+        end
+        BIDSW = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
     end
 
     function [status, output] = run_command(obj, command, silent)

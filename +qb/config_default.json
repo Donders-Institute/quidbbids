@@ -7,7 +7,7 @@
     "kappa_iew": {"value": 0.86, "description": "Jung, NI., intra-/extra-axonal water density"},
 
     "BIDS": {
-      "select": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "TB1TFL"]}, "description": "BIDS data to include"}
+      "include": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "VFA", "UNIT1", "MP2RAGE", "TB1(TFL|RFM).*"]}, "description": "Raw BIDS data to include"}
     }
   },
 

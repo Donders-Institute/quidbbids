@@ -37,7 +37,12 @@ methods
         obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
 
         % Make the abstract properties concrete
-        obj.bidsfilter.rawTB1map_famp = struct('modality','fmap', 'acq','famp', 'suffix','TB1(TFL|RFM).*');
+        try
+            include = config.General.BIDS.include;
+        catch
+            include = struct();
+        end
+        obj.bidsfilter.rawTB1map_famp = setfields(include, 'modality','fmap', 'acq','famp');
         obj.bidsfilter.rawTB1map_anat = setfields(obj.bidsfilter.rawTB1map_famp, 'acq','anat');
         obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawTB1map_famp, 'desc','corrected', 'space','raw', 'suffix','TB1map');
         obj.bidsfilter.TB1map_anat    = setfields(obj.bidsfilter.TB1map_angle, 'acq','anat');

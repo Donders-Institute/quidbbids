@@ -37,7 +37,8 @@ methods
         %   DERIVDIR   - Path to the QuIDBBIDS derivatives directory where output will be written.
         %                Default: [BIDSDIR]/derivatives/QuIDBBIDS
         %   WORKDIR    - Working directory for intermediate results. Default: outputdir/QuIDBBIDS_work.
-        %   CONFIGFILE - Path to the configuration file with workflow settings.
+        %   CONFIGFILE - Path to the configuration file with workflow settings. Passing 'force' uses the
+        %                default config from the QuIDBBIDS folder in your HOME directory as default.
         %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.json
         %
         % Usage:
@@ -57,8 +58,13 @@ methods
         if strlength(bidsdir) == 0
             bidsdir = uigetdir(pwd, "Select the root BIDS directory");
         end
-        if strlength(configfile) == 0
+        force = strcmp(configfile, "force");
+        if strlength(configfile) == 0 || force
             configfile = fullfile(bidsdir, "derivatives", "QuIDBBIDS", "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
+            if force && isfile(configfile)
+                display("Deleting existing config file: " + configfile)
+                delete(configfile)
+            end
         elseif isfolder(configfile)
             error("QuIDBBIDS:Nifti:InvalidInputArgument", "The configfile must be a file, not a folder: %s", configfile)
         end

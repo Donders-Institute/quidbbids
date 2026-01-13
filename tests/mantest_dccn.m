@@ -9,7 +9,7 @@ end
 addpath(fileparts(fileparts(mfilename('fullpath'))))
 
 %% MCR-MWI
-quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'))
+quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "force")
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 quidb.resumes.R2D2.preferred = true;    % Optional, else GUI usage
 mgr = quidb.manager();
@@ -24,7 +24,7 @@ if isunix
 end
 
 %% ABRIM
-quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM'))
+quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM'), "", "", "force")
 quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
 quidb.products = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
 quidb.resumes.Kwok.preferred = true;    % Optional, else GUI usage

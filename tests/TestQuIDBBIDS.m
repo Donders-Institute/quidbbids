@@ -38,6 +38,16 @@ classdef TestQuIDBBIDS < BaseTest
             obj = qb.QuIDBBIDS(testCase.TmpDir);
             testCase.assertTrue(isfile(configfile), sprintf('Configfile "%s" not found', configfile));
             testCase.assertClass(obj.get_config(struct('configfile',configfile)), 'struct', 'Settings should be a struct')
+
+            % Test if default settings are used correctly
+            config = jsondecode(fileread(configfile));
+            config.Testing.value = true;
+            fid = fopen(configfile, 'w');
+            fwrite(fid, jsonencode(config));
+            fclose(fid);
+            obj = qb.QuIDBBIDS(testCase.TmpDir, "", "", "force");
+            testCase.assertFalse(isfield(obj.config, "Testing"), '"Testing" field does not exist in default config')
+
         end
     end
 

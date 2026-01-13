@@ -94,7 +94,7 @@ methods
         %
         % See also: qb.QuIDBBIDS (for overview) and qb.editconfig
 
-        obj.config.General.BIDS.include.value = qb.BIDSIncludeGUI(obj.config.General.BIDS.include.value, obj.BIDS).waitForResult();
+        obj.config.General.BIDS.include.value = qb.GUI.EditInclude(obj.config.General.BIDS.include.value, obj.BIDS).waitForResult();
     end
 
     function editconfig(obj)

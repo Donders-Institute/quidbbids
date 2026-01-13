@@ -30,7 +30,14 @@ To install a specific **versioned release**, list available tags and check out t
    git tag                        # List available release versions (e.g., v1.0.0, v1.0.1, v1.1.0)
    git checkout v1.0.1            # Check out a specific (stable) release version
    git switch -c dev origin/dev   # Check out the latest (unstable) development code
-   git submodule update --init --recursive
+
+And to update the dev branch:
+
+.. code-block:: console
+
+   git switch dev                 # Check out your dev branch
+   git pull                       # Get the latest code
+   qb.reset()                     # Reset QuIDBBIDS settings to latest value (may be required after updates)
 
 Then, in MATLAB, add the cloned ``QuIDBBIDS`` folder (without subfolders) to your MATLAB path.
 

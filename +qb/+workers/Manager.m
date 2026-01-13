@@ -190,7 +190,7 @@ methods (Access = private)
         % Check if any of the workers is preferred. If not ask the user and make the worker preferred
         if ~any([workers.preferred])
             uiwait(helpdlg({"There are multiple workers that can produce: " + workitem, "Please select the one you want to use"}, "Create team"))
-            chosen = askuser(workers, workitem);
+            chosen = qb.GUI.askuser(workers, workitem);
             if chosen
                 workers(chosen).preferred = true;
             else

@@ -1,10 +1,10 @@
-classdef BIDSIncludeGUI < handle
-    % BIDSIncludeGUI - GUI for filtering and displaying file trees
+classdef EditInclude < handle
+    % EditInclude - GUI for filtering and displaying file trees
     %
     % Usage:
     %   include = struct('modality', {{'anat','fmap'}}, 'suffix', {{'MEGRE','VFA'}});
     %   BIDS    = bids.layout('/path/to/directory');
-    %   include = BIDSIncludeGUI(include, BIDS).waitForResult();
+    %   include = qb.GUI.EditInclude(include, BIDS).waitForResult();
     
     properties
         Fig
@@ -19,7 +19,7 @@ classdef BIDSIncludeGUI < handle
     end
     
     methods
-        function obj = BIDSIncludeGUI(include, BIDS)
+        function obj = EditInclude(include, BIDS)
             % Constructor
             arguments
                 include struct

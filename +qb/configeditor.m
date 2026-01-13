@@ -25,7 +25,7 @@ arguments
     workers    cell               = {}
 end
 
-app = qb.ConfigEditorGUI(configfile, config, workers);
+app = qb.GUI.ConfigEditor(configfile, config, workers);
 
 if nargout
     uiwait(app.Fig);   % Pause until window closes

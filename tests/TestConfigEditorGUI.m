@@ -1,5 +1,5 @@
 classdef TestConfigEditorGUI < BaseTest
-    % TestConfigEditorGUI  Comprehensive tests for qb.ConfigEditorGUI
+    % TestConfigEditorGUI  Comprehensive tests for qb.GUI.ConfigEditor
     % Uses a temporary copy of qb.config_default.json to avoid modifying the repo file.
 
     properties
@@ -11,7 +11,7 @@ classdef TestConfigEditorGUI < BaseTest
     methods(TestMethodSetup)
         function setupDefaultConfig(testCase)
             % Path to default config in the repo
-            testCase.DefaultJSONPath = fullfile(fileparts(mfilename('fullpath')), fullfile('..','+qb','config_default.json'));
+            testCase.DefaultJSONPath = fullfile(fileparts(mfilename('fullpath')), fullfile('..','+qb','private','config_default.json'));
 
             % Copy to temp file for safe testing
             testCase.TempJSONFile = [tempname, '.json'];
@@ -32,7 +32,7 @@ classdef TestConfigEditorGUI < BaseTest
 
     methods(Test)
         function testConstructorLoadsConfig(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'General','QSMWorker'});
+            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, [], {'General','QSMWorker'});
             gui.Fig.Visible = 'off';
 
             % Root nodes contain requested workers
@@ -42,7 +42,7 @@ classdef TestConfigEditorGUI < BaseTest
         end
 
         function testSearch(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, testCase.Config);
+            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, testCase.Config);
             gui.Fig.Visible = 'off';
 
             % Test incremental search (ValueChangingFcn)
@@ -61,7 +61,7 @@ classdef TestConfigEditorGUI < BaseTest
         end
 
         function testSearchEnterKeyAlert(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, testCase.Config);
+            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, testCase.Config);
             gui.Fig.Visible = 'off';
 
             % Test that Enter key behavior - we can't test the uialert directly
@@ -88,7 +88,7 @@ classdef TestConfigEditorGUI < BaseTest
         end
         
         function testIncrementalSearchUpdates(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {});
+            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, [], {});
             gui.Fig.Visible = 'off';
 
             % Test that incremental search updates with each character
@@ -111,7 +111,7 @@ classdef TestConfigEditorGUI < BaseTest
         end
 
         function testLeafEdit(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'General'});
+            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, [], {'General'});
             gui.Fig.Visible = 'off';
         
             % Select leaf: General -> gyro
@@ -142,7 +142,7 @@ classdef TestConfigEditorGUI < BaseTest
         end
 
         function testNestedLeafEdit(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'MCRWorker'});
+            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, [], {'MCRWorker'});
             gui.Fig.Visible = 'off';
         
             % Navigate to nested leaf
@@ -177,7 +177,7 @@ classdef TestConfigEditorGUI < BaseTest
         end
 
         function testSaveNestedConfig(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, [], {'QSMWorker'});
+            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, [], {'QSMWorker'});
             gui.Fig.Visible = 'off';
 
             % Find the specific leaf node in the tree
@@ -209,7 +209,7 @@ classdef TestConfigEditorGUI < BaseTest
         end
 
         function testLeafEditVariousDataTypes(testCase)
-            gui = qb.ConfigEditorGUI(testCase.TempJSONFile, testCase.Config);
+            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, testCase.Config);
             gui.Fig.Visible = 'off';
 
             %--- Test 1: Numeric scalar (gyro)

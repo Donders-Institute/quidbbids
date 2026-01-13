@@ -1,5 +1,5 @@
-classdef ConfigEditorGUI < handle
-% ConfigEditorGUI is a GUI-based JSON config editor
+classdef ConfigEditor < handle
+% ConfigEditor is a GUI-based JSON config editor
 %
 % Input:
 %  CONFIGFILE - If empty or not provided, a file dialog is opened.
@@ -7,7 +7,7 @@ classdef ConfigEditorGUI < handle
 %  WORKERS    - Optional cell array of top-level keys to show (empty => all)
 %
 % Usage:
-%  app = qb.ConfigEditorGUI(configfile, config, workers);
+%  app = qb.GUI.ConfigEditor(configfile, config, workers);
 %  uiwait(app.Fig);
 %
 % See also: qb.configeditor
@@ -38,7 +38,7 @@ classdef ConfigEditorGUI < handle
     end
 
     methods
-        function obj = ConfigEditorGUI(configfile, config, workers)
+        function obj = ConfigEditor(configfile, config, workers)
             % CONFIGEDITORGUI Constructor to validate input and ask for file if needed
             %
             % See the QB.CONFIGEDITOR wrapper for usage
@@ -289,7 +289,7 @@ classdef ConfigEditorGUI < handle
                 return
             end
             
-            % Check if this leaf is a BIDS include filter and use the separate BIDSIncludeGUI to edit it, else parse robustly
+            % Check if this leaf is a BIDS include filter and use the separate EditInclude to edit it, else parse robustly
             data     = node.NodeData;
             oldVal   = data.value;
             newVal   = oldVal;
@@ -307,7 +307,7 @@ classdef ConfigEditorGUI < handle
                                            'verbose', false);
                 end
                 if ~isempty(fieldnames(obj.BIDS))
-                    newVal   = qb.BIDSIncludeGUI(obj.Config.General.BIDS.include.value, obj.BIDS).waitForResult();
+                    newVal   = qb.GUI.EditInclude(obj.Config.General.BIDS.include.value, obj.BIDS).waitForResult();
                     parsedOK = ~isempty(fieldnames(newVal));
                     if ~isequal(obj.Config.General.BIDS.include.value.modality, newVal.modality) || isfield(newVal, 'sub') || isfield(newVal, 'ses')
                         obj.BIDS = bids.layout(bidsdir, ...

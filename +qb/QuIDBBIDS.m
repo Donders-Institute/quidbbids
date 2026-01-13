@@ -80,6 +80,17 @@ methods
     function startGUI(obj)
     end
 
+    function editinclusion(obj)
+        % Opens a GUI to edit the BIDS inclusion filters for the dataset
+        %
+        % Usage:
+        %   obj = obj.editinclusion();
+        %
+        % See also: qb.QuIDBBIDS (for overview) and qb.editconfig
+
+        obj.config.General.BIDS.include.value = qb.BIDSIncludeGUI(obj.config.General.BIDS.include.value, obj.BIDS).waitForResult();
+    end
+
     function editconfig(obj)
         % Opens a GUI to edit the processing options in the dataset configuration file
         %

@@ -16,6 +16,7 @@ classdef ConfigEditorGUI < handle
         Fig
         ConfigFile
         Config
+        BIDS
     end
 
     properties (Access = ?TestConfigEditorGUI)
@@ -61,6 +62,8 @@ classdef ConfigEditorGUI < handle
             end
             obj.Config     = config;
             obj.OrigConfig = config;
+
+            obj.BIDS       = struct();  % To be used only for config.General.BIDS.include editing
 
             % Set the workers that are to be edited
             if nargin < 3
@@ -279,103 +282,122 @@ classdef ConfigEditorGUI < handle
                 return
             end
             
-            % Check if this leaf is SEPIA menu (which changes the whole subtree)
+            % Check if this leaf is a SEPIA menu and use the SEPIA GUI to edit this leaf (which may change the whole subtree)
             path = obj.nodePath(node);
             if obj.isSepiaMenu(path)
                 obj.openSepiaGUI(path)
                 return
             end
             
-            % Try robust parsing:
-            % - If oldVal numeric: try JSON decode or str2num
-            % - If oldVal logical: accept true/false/1/0
-            % - If oldVal is char/string: accept as string (if user provided JSON string decode if quoted)
-            % - For cell/struct/array: prefer jsondecode
+            % Check if this leaf is a BIDS include filter and use the separate BIDSIncludeGUI to edit it, else parse robustly
             data     = node.NodeData;
             oldVal   = data.value;
-            newVal   = [];
-            txt      = strtrim(obj.ValField.Value);
+            newVal   = oldVal;
             parsedOK = false;
-            try
-                if isnumeric(oldVal)
-                    % If user typed JSON array like [1,2,3], jsondecode will work
-                    if startsWith(txt,'[') && endsWith(txt,']') && contains(txt,',')
-                        try
-                            newVal = jsondecode(txt);
-                            parsedOK = isnumeric(newVal) || islogical(newVal);
-                        catch                   % fallback to str2num
-                            tmp = str2num(txt); %#ok<ST2NM>
-                            if ~isempty(tmp)
-                                newVal = tmp;
-                                parsedOK = true;
-                            end
-                        end
-                    else
-                        tmp = str2num(txt); %#ok<ST2NM>
-                        if ~isempty(tmp)
-                            newVal = tmp;
-                            parsedOK = true;
-                        end
-                    end
+            if numel(path)==3 && all(strcmp(path, {'General','BIDS','include'}))
 
-                elseif islogical(oldVal)
-                    if any(strcmpi(txt,{'true','1'}))
-                        newVal = true; parsedOK = true;
-                    elseif any(strcmpi(txt,{'false','0'}))
-                        newVal = false; parsedOK = true;
-                    else
-                        try
-                            tmp = jsondecode(txt);
-                            if islogical(tmp)
-                                newVal = tmp; parsedOK = true;
-                            end
-                        catch
-                        end
-                    end
-
-                elseif ischar(oldVal) || isstring(oldVal)
-                    % If user provided JSON string with quotes, decode it:
-                    try
-                        decoded = jsondecode(txt);
-                    catch
-                        decoded = [];
-                    end
-                    if ~isempty(decoded) && ischar(decoded)
-                        newVal = string(decoded);
-                        parsedOK = true;
-                    else
-                        % plain text: keep as string
-                        newVal = string(txt);
-                        parsedOK = true;
-                    end
-
-                else
-                    % struct/cell/other: attempt jsondecode
-                    try
-                        newVal = jsondecode(txt);
-                        parsedOK = true;
-                    catch
-                        % as a last resort, attempt eval (risky) only for numeric arrays
-                        try
-                            tmp = str2num(txt); %#ok<ST2NM>
-                            if ~isempty(tmp)
-                                newVal = tmp; parsedOK = true;
-                            end
-                        catch
-                        end
+                bidsdir = fileparts(fileparts(fileparts(fileparts(obj.ConfigFile))));   % ConfigFile is normally in bidsdir/derivatives/QuIDBBIDS/code/config.json
+                if isempty(fieldnames(obj.BIDS)) && isfolder(bidsdir)
+                    obj.BIDS = bids.layout(bidsdir, ...
+                                           'use_schema', true, ...
+                                           'index_derivatives', false, ...
+                                           'index_dependencies', false, ...
+                                           'filter', obj.Config.General.BIDS.include.value, ...
+                                           'tolerant', true, ...
+                                           'verbose', false);
+                end
+                if ~isempty(fieldnames(obj.BIDS))
+                    newVal   = qb.BIDSIncludeGUI(obj.Config.General.BIDS.include.value, obj.BIDS).waitForResult();
+                    parsedOK = ~isempty(fieldnames(newVal));
+                    if ~isequal(obj.Config.General.BIDS.include.value.modality, newVal.modality) || isfield(newVal, 'sub') || isfield(newVal, 'ses')
+                        obj.BIDS = bids.layout(bidsdir, ...
+                                               'use_schema', true, ...
+                                               'index_derivatives', false, ...
+                                               'index_dependencies', false, ...
+                                               'filter', newVal, ...
+                                               'tolerant', true, ...
+                                               'verbose', false);
                     end
                 end
-            catch
-                parsedOK = false;
+
+            else
+
+                % Try robust parsing:
+                % - If oldVal numeric: try JSON decode or str2num
+                % - If oldVal logical: accept true/false/1/0
+                % - If oldVal is char/string: accept as string (if user provided JSON string decode if quoted)
+                % - For cell/struct/array: prefer jsondecode
+                try
+                    txt = strtrim(obj.ValField.Value);
+                    if isnumeric(oldVal)
+                        % If user typed JSON array like [1,2,3], jsondecode will work
+                        if startsWith(txt,'[') && endsWith(txt,']') && contains(txt,',')
+                            try
+                                newVal   = jsondecode(txt);
+                                parsedOK = isnumeric(newVal) || islogical(newVal);
+                            catch                   % fallback to str2num
+                                newVal   = str2num(txt); %#ok<ST2NM>
+                                parsedOK = ~isempty(newVal);
+                            end
+                        else
+                            newVal   = str2num(txt); %#ok<ST2NM>
+                            parsedOK = ~isempty(newVal);
+                        end
+
+                    elseif islogical(oldVal)
+                        if any(strcmpi(txt,{'true','1'}))
+                            newVal   = true;
+                            parsedOK = true;
+                        elseif any(strcmpi(txt,{'false','0'}))
+                            newVal   = false;
+                            parsedOK = true;
+                        else
+                            try
+                                newVal = jsondecode(txt);
+                                if islogical(newVal)
+                                    parsedOK = true;
+                                end
+                            catch
+                            end
+                        end
+
+                    elseif ischar(oldVal) || isstring(oldVal)
+                        try         % If user provided JSON string with quotes, decode it
+                            decoded = jsondecode(txt);
+                        catch
+                            decoded = [];
+                        end
+                        if ~isempty(decoded) && ischar(decoded)
+                            newVal = string(decoded);
+                        else        % plain text: keep as string
+                            newVal = string(txt);
+                        end
+                        parsedOK = true;
+
+                    else            % struct/cell/other: attempt jsondecode
+                        try
+                            newVal   = jsondecode(txt);
+                            parsedOK = true;
+                        catch       % as a last resort, attempt eval (risky) only for numeric arrays
+                            try
+                                newVal   = str2num(txt); %#ok<ST2NM>
+                                parsedOK = ~isempty(newVal);
+                            catch
+                            end
+                        end
+                    end
+                catch
+                    parsedOK = false;
+                end
             end
 
             if ~parsedOK
                 warndlg('Could not parse the value into the required type. Try JSON format for arrays/objects (e.g. [1,2,3] or {"a":1}).','Parse error')
-                return
+                newVal = oldVal;
             end
 
             % Accept new value
-            data.value = newVal;
+            data.value    = newVal;
             node.NodeData = data;
 
             % Update obj.Config

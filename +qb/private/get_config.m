@@ -36,10 +36,7 @@ end
 % Create a default configfile if it does not exist
 config_default = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), "config_default.json");
 if ~isfile(config_default)
-    disp("Creating default configuration: " + config_default)
-    [pth, name, ext] = fileparts(config_default);
-    [~,~] = mkdir(pth);
-    copyfile(fullfile(fileparts(mfilename("fullpath")), name + ext), config_default)
+    qb.resetconfig()
 end
 
 % Write or read the study configuration data (create if needed)

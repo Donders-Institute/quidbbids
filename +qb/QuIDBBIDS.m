@@ -37,7 +37,7 @@ methods
         %   DERIVDIR   - Path to the QuIDBBIDS derivatives directory where output will be written.
         %                Default: [BIDSDIR]/derivatives/QuIDBBIDS
         %   WORKDIR    - Working directory for intermediate results. Default: outputdir/QuIDBBIDS_work.
-        %   CONFIGFILE - Path to the configuration file with workflow settings. Passing 'force' uses the
+        %   CONFIGFILE - Path to the configuration file with workflow settings. Passing 'default' uses the
         %                default config from the QuIDBBIDS folder in your HOME directory as default.
         %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.json
         %
@@ -58,10 +58,10 @@ methods
         if strlength(bidsdir) == 0
             bidsdir = uigetdir(pwd, "Select the root BIDS directory");
         end
-        force = strcmp(configfile, "force");
-        if strlength(configfile) == 0 || force
+        default = strcmp(configfile, "default");
+        if strlength(configfile) == 0 || default
             configfile = fullfile(bidsdir, "derivatives", "QuIDBBIDS", "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
-            if force && isfile(configfile)
+            if default && isfile(configfile)
                 display("Deleting existing config file: " + configfile)
                 delete(configfile)
             end
@@ -94,7 +94,12 @@ methods
         %
         % See also: qb.QuIDBBIDS (for overview) and qb.editconfig
 
-        obj.config.General.BIDS.include.value = qb.GUI.EditInclude(obj.config.General.BIDS.include.value, obj.BIDS).waitForResult();
+        oldVal = obj.config.General.BIDS.include.value;
+        newVal = qb.GUI.EditInclude(oldVal, obj.BIDS).waitForResult();
+        if ~isequal(newVal.modality, oldVal.modality) || isfield(newVal, 'sub') || isfield(newVal, 'ses')
+            warning("QuIDBBIDS:Config:InclusionChanged", "The root of the BIDS inclusion filter has been changed. Please re-index the BIDS dataset")
+        end
+        obj.config.General.BIDS.include.value = newVal;
     end
 
     function editconfig(obj)

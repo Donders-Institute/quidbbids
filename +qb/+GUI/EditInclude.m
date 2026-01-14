@@ -93,11 +93,10 @@ classdef EditInclude < handle
             obj.query(obj.IncludeCurrent)
         end
         
-        function addNodeToTree(obj, fullPath, root)
+        function addNodeToTree(obj, fullPath, parentNode)
             % Add a file or directory node to the tree using a path->node map
             
             currentPath = obj.BIDS.pth;
-            parentNode  = root;
             for part = strsplit(extractAfter(fullPath, [obj.BIDS.pth filesep]), filesep)                
                 currentPath = fullfile(currentPath, part{1});
                 if isKey(obj.NodeMap, currentPath)
@@ -123,18 +122,11 @@ classdef EditInclude < handle
             path = node.UserData;
             
             % Check if this path or any child matches
-            if isfile(path)
-                if any(strcmp(included, path))
-                    node.Icon = obj.Arrow;
-                else
-                    node.Icon = '';
-                end
-            elseif isfolder(path)
-                if obj.directoryHasMatch(path, included)
-                    node.Icon = obj.Arrow;
-                else
-                    node.Icon = '';
-                end
+            tag = (isfile(path) && any(strcmp(included, path))) || (isfolder(path) && obj.pathIncluded(path, included));
+            if tag && ~strcmp(node.Icon, obj.Arrow)
+                node.Icon = obj.Arrow;
+            elseif ~tag && ~isempty(node.Icon)
+                node.Icon = '';
             end
             
             % Recursively tag children
@@ -143,12 +135,12 @@ classdef EditInclude < handle
             end
         end
         
-        function hasMatch = directoryHasMatch(~, dirPath, included)
+        function hasIncluded = pathIncluded(~, dirPath, included)
             % Check if directory contains any included files
-            hasMatch = false;
+            hasIncluded = false;
             for i = 1:length(included)
                 if startsWith(included{i}, dirPath)
-                    hasMatch = true;
+                    hasIncluded = true;
                     return
                 end
             end

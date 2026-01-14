@@ -96,15 +96,15 @@ classdef EditInclude < handle
         function addNodeToTree(obj, fullPath, parentNode)
             % Add a file or directory node to the tree using a path->node map
             
-            subpath = obj.BIDS.pth;
+            subPath = obj.BIDS.pth;
             for part = strsplit(extractAfter(fullPath, [obj.BIDS.pth filesep]), filesep)                
-                subpath = fullfile(subpath, part{1});
-                if isKey(obj.NodeMap, subpath)
-                    parentNode = obj.NodeMap(subpath);
+                subPath = fullfile(subPath, part{1});
+                if isKey(obj.NodeMap, subPath)
+                    parentNode = obj.NodeMap(subPath);
                 else
                     newNode              = uitreenode(parentNode, 'Text', part{1});
-                    newNode.UserData     = struct('path', subpath, 'isdir', isfolder(subpath));
-                    obj.NodeMap(subpath) = newNode;
+                    newNode.UserData     = subPath;
+                    obj.NodeMap(subPath) = newNode;
                     parentNode           = newNode;
                 end
             end
@@ -121,9 +121,7 @@ classdef EditInclude < handle
             % Recursively tag a node and its children
             
             % Check if this node or any node in its subtree is included
-            path  = node.UserData.path;
-            isdir = node.UserData.isdir;
-            tag   = (~isdir && any(included == path)) || (isdir && any(startsWith(included, path)));
+            tag = any(startsWith(included, node.UserData));
             if tag && ~strcmp(node.Icon, obj.Arrow)
                 node.Icon = obj.Arrow;
             elseif ~tag && ~isempty(node.Icon)

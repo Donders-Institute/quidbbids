@@ -72,8 +72,8 @@ end
 % function V = spm_vol_hdr(p)
 %==========================================================================
 function V = spm_vol_hdr(p)
-[pth,nam,ext,n] = spm_fileparts(p);
-p = fullfile(pth,[nam ext]);
+[pth,name,ext,n] = spm_fileparts(p);
+p = fullfile(pth,[name ext]);
 n = str2num(n);
 if ~spm_existfile(p)
     error('File "%s" does not exist.', p);
@@ -83,14 +83,14 @@ switch ext
         % Do nothing
 
     case {'.img','.IMG'}
-        if ~spm_existfile(fullfile(pth,[nam '.hdr'])) && ...
-           ~spm_existfile(fullfile(pth,[nam '.HDR']))
-            error('File "%s" does not exist.', fullfile(pth,[nam '.hdr']));
+        if ~spm_existfile(fullfile(pth,[name '.hdr'])) && ...
+           ~spm_existfile(fullfile(pth,[name '.HDR']))
+            error('File "%s" does not exist.', fullfile(pth,[name '.hdr']));
         end
 
     case {'.hdr','.HDR'}
         ext = '.img';
-        p   = fullfile(pth,[nam ext]);
+        p   = fullfile(pth,[name ext]);
         if ~spm_existfile(p)
             error('File "%s" does not exist.', p);
         end

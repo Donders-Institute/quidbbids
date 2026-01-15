@@ -45,7 +45,7 @@ classdef TestQuIDBBIDS < BaseTest
             fid = fopen(configfile, 'w');
             fwrite(fid, jsonencode(config));
             fclose(fid);
-            obj = qb.QuIDBBIDS(testCase.TmpDir, "", "", "force");
+            obj = qb.QuIDBBIDS(testCase.TmpDir, "", "", "default");
             testCase.assertFalse(isfield(obj.config, "Testing"), '"Testing" field does not exist in default config')
 
         end

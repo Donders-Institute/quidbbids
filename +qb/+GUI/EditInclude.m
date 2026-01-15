@@ -137,13 +137,13 @@ classdef EditInclude < handle
         function onInputChanged(obj)
             % Callback when input field changes
             try
-                obj.IncludeCurrent = jsondecode(strjoin(obj.InputField.Value, newline));
+                obj.IncludeCurrent = qb.utils.jsondecode(strjoin(obj.InputField.Value, newline));
                 obj.query(obj.IncludeCurrent)
             catch ME
                 uialert(obj.Fig, sprintf('Invalid JSON format: %s', ME.message), 'Parse Error')
             end
         end
-        
+
         function query(obj, include)
             % Queries the BIDS folder and tags the tree based on the include filter
             obj.tagTree(string(bids.query(obj.BIDS, 'data', include)))

@@ -260,7 +260,7 @@ classdef TestConfigEditorGUI < BaseTest
             % Test array input in JSON format
             gui.ValField.Value = '[1, 2, 3, 4]';    % JSON style -> column vector
             gui.updateLeafFromField()
-            testCase.verifyEqual(arrayNode.NodeData.value, [1, 2, 3, 4]')
+            testCase.verifyEqual(arrayNode.NodeData.value, [1, 2, 3, 4])
             
             % Test MATLAB array format
             gui.ValField.Value = '[5 6 7]';         % Not valid JSON, but MATLAB style

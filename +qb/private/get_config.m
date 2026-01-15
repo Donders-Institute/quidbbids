@@ -51,7 +51,7 @@ else                                            % Read JSON
         [~,~] = mkdir(fileparts(configfile));
         copyfile(config_default, configfile)
     end
-    config = make_rows(jsondecode(fileread(configfile)));
+    config = qb.utils.jsondecode(fileread(configfile));
 
     % Check for version conflicts
     try
@@ -60,21 +60,5 @@ else                                            % Read JSON
         end
     catch exception
         error("QuIDBBIDS:Config:ParseError", "Could not parse version: %s\n%s", configfile, exception)
-    end
-end
-
-
-function param = make_rows(S)
-% Recursively convert vectors to rows
-
-param = struct();
-for key = fieldnames(S)'
-    val = S.(char(key));
-    if isstruct(val)
-        param.(char(key)) = make_rows(val);
-    elseif iscolumn(val)
-        param.(char(key)) = val';
-    else
-        param.(char(key)) = val;
     end
 end

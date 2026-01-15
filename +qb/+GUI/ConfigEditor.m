@@ -38,7 +38,7 @@ classdef ConfigEditor < handle
     end
 
     methods
-        function obj = ConfigEditor(configfile, config, workers)
+        function obj = ConfigEditor(configfile, config, workers, BIDS)
             % CONFIGEDITORGUI Constructor to validate input and ask for file if needed
             %
             % See the QB.CONFIGEDITOR wrapper for usage
@@ -54,7 +54,7 @@ classdef ConfigEditor < handle
             % Get the config
             if nargin < 2 || isempty(config) || isempty(fieldnames(config))
                 try
-                    config = jsondecode(fileread(configfile));
+                    config = qb.utils.jsondecode(fileread(configfile));
                 catch ME
                     errordlg(['Unable to read/parse JSON: ' ME.message],'File Error')
                     return
@@ -63,7 +63,12 @@ classdef ConfigEditor < handle
             obj.Config     = config;
             obj.OrigConfig = config;
 
-            obj.BIDS       = struct();  % To be used only for config.General.BIDS.include editing
+            % To be used only for config.General.BIDS.include editing
+            if nargin < 4 || isempty(BIDS)
+                obj.BIDS = struct();
+            else
+                obj.BIDS = BIDS;
+            end
 
             % Set the workers that are to be edited
             if nargin < 3
@@ -298,25 +303,26 @@ classdef ConfigEditor < handle
 
                 bidsdir = fileparts(fileparts(fileparts(fileparts(obj.ConfigFile))));   % ConfigFile is normally in bidsdir/derivatives/QuIDBBIDS/code/config.json
                 if isempty(fieldnames(obj.BIDS)) && isfolder(bidsdir)
-                    obj.BIDS = bids.layout(bidsdir, ...
+                    obj.BIDS = bids.layout(char(bidsdir), ...
                                            'use_schema', true, ...
                                            'index_derivatives', false, ...
                                            'index_dependencies', false, ...
                                            'filter', obj.Config.General.BIDS.include.value, ...
                                            'tolerant', true, ...
-                                           'verbose', false);
+                                           'verbose', true);
                 end
                 if ~isempty(fieldnames(obj.BIDS))
-                    newVal   = qb.GUI.EditInclude(obj.Config.General.BIDS.include.value, obj.BIDS).waitForResult();
-                    parsedOK = ~isempty(fieldnames(newVal));
+                    newVal             = qb.GUI.EditInclude(obj.Config.General.BIDS.include.value, obj.BIDS).waitForResult();
+                    parsedOK           = ~isempty(fieldnames(newVal));
+                    obj.ValField.Value = jsonencode(newVal);
                     if ~isequal(obj.Config.General.BIDS.include.value.modality, newVal.modality) || isfield(newVal, 'sub') || isfield(newVal, 'ses')
-                        obj.BIDS = bids.layout(bidsdir, ...
+                        obj.BIDS = bids.layout(char(bidsdir), ...
                                                'use_schema', true, ...
                                                'index_derivatives', false, ...
                                                'index_dependencies', false, ...
                                                'filter', newVal, ...
                                                'tolerant', true, ...
-                                               'verbose', false);
+                                               'verbose', true);
                     end
                 end
 
@@ -394,6 +400,11 @@ classdef ConfigEditor < handle
             if ~parsedOK
                 warndlg('Could not parse the value into the required type. Try JSON format for arrays/objects (e.g. [1,2,3] or {"a":1}).','Parse error')
                 newVal = oldVal;
+            end
+
+            % Convert column vectors to row vectors for consistency 
+            if iscolumn(newVal)
+                newVal = newVal';
             end
 
             % Accept new value
@@ -520,7 +531,7 @@ classdef ConfigEditor < handle
 
             try
                 % Read and parse the new JSON file
-                obj.Config = jsondecode(fileread(obj.ConfigFile));
+                obj.Config = qb.utils.jsondecode(fileread(obj.ConfigFile));
                 
                 % Update the application state, window title and tree
                 obj.OrigConfig = obj.Config;

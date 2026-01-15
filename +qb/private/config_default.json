@@ -22,7 +22,7 @@
     "InvEff": {"value": 0.96, "description": "Inversion efficiency, Siemens default value"},
     "EchoSpacing": {"value": "", "description": "RepetitionTimeExcitation value in secs, default twice echo time when missing in JSON"},
     "NumberShots": {"value": 176, "description": "Number of shots (NZslices) in inversion segment, also referred to as turbo factor; not usually in JSON. See: https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#numbershots-metadata-field"},
-    "Fingerprint": {"value": true, "description": "Enable MP2RAGE-based fingerprinting (prefered option for mapping R1 of long/CSF and short/fat T1 values), if false a look-up table approach is used"},
+    "Fingerprint": {"value": true, "description": "Enable MP2RAGE-based fingerprinting (preferred option for mapping R1 of long/CSF and short/fat T1 values), if false a look-up table approach is used"},
     "B1correctM0": {"value": 0, "description": "0 = no correction; 1/2/3 applies a left-right, front-back or up-down flipped transmit field as an approximation of the receive field. Only use this option if the anatomical data is well centered in the field of view (as provided by auto-align) and if the bias Field correction was enabled on the scanner"}
   },
 

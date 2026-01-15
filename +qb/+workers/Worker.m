@@ -285,7 +285,7 @@ methods
         if obj.ses()
             filter.ses = {obj.ses()};
         end
-        BIDSW = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+        BIDSW = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_derivatives',false, 'tolerant',true, 'verbose',false);
     end
 
     function [status, output] = run_command(obj, command, silent)

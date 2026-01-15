@@ -57,7 +57,7 @@ Run the workflow
 .. code-block:: matlab
 
    >> mgr       = quidb.manager();  % Initialize the manager to get work done
-   >> mgr.force = false;            % Tell the manager to re-use existing workitems (= default)
+   >> mgr.force = false;            % Tell the manager to reuse existing workitems (= default)
    >> mgr.start_workflow()          % Start the workflow
 
 For getting more help on the various classes, methods and properties, you can use MATLAB's built-in documentation

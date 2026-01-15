@@ -15,7 +15,7 @@ function V = spm_write_vol_gz(V, Y, fname, dt)
 %   dt    - (Optional) Desired data type as a string. If not specified, an appropriate
 %           type is automatically chosen based on Y.
 %
-% Ooutput:
+% Output:
 %   V     - Updated volume structure after writing, with the correct filename
 %           and data type.
 %__________________________________________________________________________

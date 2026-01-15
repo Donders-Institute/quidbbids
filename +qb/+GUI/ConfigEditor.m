@@ -38,7 +38,7 @@ classdef ConfigEditor < handle
     end
 
     methods
-        function obj = ConfigEditor(configfile, config, workers)
+        function obj = ConfigEditor(configfile, config, workers, BIDS)
             % CONFIGEDITORGUI Constructor to validate input and ask for file if needed
             %
             % See the QB.CONFIGEDITOR wrapper for usage
@@ -54,7 +54,7 @@ classdef ConfigEditor < handle
             % Get the config
             if nargin < 2 || isempty(config) || isempty(fieldnames(config))
                 try
-                    config = jsondecode(fileread(configfile));
+                    config = qb.utils.jsondecode(fileread(configfile));
                 catch ME
                     errordlg(['Unable to read/parse JSON: ' ME.message],'File Error')
                     return
@@ -63,7 +63,12 @@ classdef ConfigEditor < handle
             obj.Config     = config;
             obj.OrigConfig = config;
 
-            obj.BIDS       = struct();  % To be used only for config.General.BIDS.include editing
+            % To be used only for config.General.BIDS.include editing
+            if nargin < 4 || isempty(BIDS)
+                obj.BIDS = struct();
+            else
+                obj.BIDS = BIDS;
+            end
 
             % Set the workers that are to be edited
             if nargin < 3
@@ -298,25 +303,28 @@ classdef ConfigEditor < handle
 
                 bidsdir = fileparts(fileparts(fileparts(fileparts(obj.ConfigFile))));   % ConfigFile is normally in bidsdir/derivatives/QuIDBBIDS/code/config.json
                 if isempty(fieldnames(obj.BIDS)) && isfolder(bidsdir)
-                    obj.BIDS = bids.layout(bidsdir, ...
-                                           'use_schema', true, ...
-                                           'index_derivatives', false, ...
-                                           'index_dependencies', false, ...
-                                           'filter', obj.Config.General.BIDS.include.value, ...
-                                           'tolerant', true, ...
-                                           'verbose', false);
+                    w = helpdlg('Scanning BIDS dataset with the inclusion filter...', 'Please wait'); pause(0.1)    % Give time to render the dialog
+                    obj.BIDS = bids.layout(char(bidsdir), 'use_schema', true, ...
+                                                          'index_derivatives', false, ...
+                                                          'filter', obj.Config.General.BIDS.include.value, ...
+                                                          'tolerant', true, ...
+                                                          'verbose', true);
+                    if isvalid(w), close(w), end
                 end
                 if ~isempty(fieldnames(obj.BIDS))
-                    newVal   = qb.GUI.EditInclude(obj.Config.General.BIDS.include.value, obj.BIDS).waitForResult();
-                    parsedOK = ~isempty(fieldnames(newVal));
+                    obj.Fig.Visible = 'off';                                    % Hide main GUI while EditInclude is open
+                    cleanup = onCleanup(@() set(obj.Fig, 'Visible', 'on'));     % Ensure main GUI is shown again on function exit
+                    newVal             = qb.GUI.EditInclude(obj.Config.General.BIDS.include.value, obj.BIDS).waitForResult();
+                    parsedOK           = ~isempty(fieldnames(newVal));
+                    obj.ValField.Value = jsonencode(newVal);
                     if ~isequal(obj.Config.General.BIDS.include.value.modality, newVal.modality) || isfield(newVal, 'sub') || isfield(newVal, 'ses')
-                        obj.BIDS = bids.layout(bidsdir, ...
-                                               'use_schema', true, ...
-                                               'index_derivatives', false, ...
-                                               'index_dependencies', false, ...
-                                               'filter', newVal, ...
-                                               'tolerant', true, ...
-                                               'verbose', false);
+                        w = helpdlg('Re-scanning BIDS dataset with the new inclusion filter...', 'Please wait'); pause(0.1) % Give time to render the dialog
+                        obj.BIDS = bids.layout(char(bidsdir), 'use_schema', true, ...
+                                                              'index_derivatives', false, ...
+                                                              'filter', newVal, ...
+                                                              'tolerant', true, ...
+                                                              'verbose', true);
+                        if isvalid(w), close(w), end
                     end
                 end
 
@@ -396,6 +404,11 @@ classdef ConfigEditor < handle
                 newVal = oldVal;
             end
 
+            % Convert column vectors to row vectors for consistency 
+            if iscolumn(newVal)
+                newVal = newVal';
+            end
+
             % Accept new value
             data.value    = newVal;
             node.NodeData = data;
@@ -407,8 +420,8 @@ classdef ConfigEditor < handle
         function openSepiaGUI(obj, path)
             % Open SEPIA GUI to edit QSM or R2starmap (menu) parameters
             
-            obj.Fig.Visible = 'off';   % Hide main GUI while SEPIA is open
-            cleanup = onCleanup(@() set(obj.Fig, 'Visible', 'on'));  % Ensure main GUI is shown again on function exit
+            obj.Fig.Visible = 'off';                                    % Hide main GUI while SEPIA is open
+            cleanup = onCleanup(@() set(obj.Fig, 'Visible', 'on'));     % Ensure main GUI is shown again on function exit
             try
                 w = helpdlg({sprintf('Opening SEPIA GUI for configuring "%s.%s.%s" settings', path{1:3});''; ...
                             'Initialization can be slow, please wait a few seconds...';''; ... 
@@ -520,7 +533,7 @@ classdef ConfigEditor < handle
 
             try
                 % Read and parse the new JSON file
-                obj.Config = jsondecode(fileread(obj.ConfigFile));
+                obj.Config = qb.utils.jsondecode(fileread(obj.ConfigFile));
                 
                 % Update the application state, window title and tree
                 obj.OrigConfig = obj.Config;
@@ -650,7 +663,7 @@ classdef ConfigEditor < handle
                 obj.SearchIndex = 1;
                 obj.selectMatch(1)
             else
-                uialert(obj.Fig,'No matches found','Search')
+                uialert(obj.Fig,'No matches found','Search', 'Icon','warning');
             end
         end
 

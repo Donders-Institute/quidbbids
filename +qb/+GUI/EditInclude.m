@@ -96,16 +96,16 @@ classdef EditInclude < handle
         function addNodeToTree(obj, fullPath, parentNode)
             % Add a file or directory node to the tree using a path->node map
             
-            currentPath = obj.BIDS.pth;
+            subPath = obj.BIDS.pth;
             for part = strsplit(extractAfter(fullPath, [obj.BIDS.pth filesep]), filesep)                
-                currentPath = fullfile(currentPath, part{1});
-                if isKey(obj.NodeMap, currentPath)
-                    parentNode = obj.NodeMap(currentPath);
+                subPath = fullfile(subPath, part{1});
+                if isKey(obj.NodeMap, subPath)
+                    parentNode = obj.NodeMap(subPath);
                 else
-                    newNode                  = uitreenode(parentNode, 'Text', part{1});
-                    newNode.UserData         = currentPath;
-                    obj.NodeMap(currentPath) = newNode;
-                    parentNode               = newNode;
+                    newNode              = uitreenode(parentNode, 'Text', part{1});
+                    newNode.UserData     = subPath;
+                    obj.NodeMap(subPath) = newNode;
+                    parentNode           = newNode;
                 end
             end
         end
@@ -119,10 +119,9 @@ classdef EditInclude < handle
 
         function tagNode(obj, node, included)
             % Recursively tag a node and its children
-            path = node.UserData;
             
-            % Check if this path or any child matches
-            tag = (isfile(path) && any(strcmp(included, path))) || (isfolder(path) && obj.pathIncluded(path, included));
+            % Check if this node or any node in its subtree is included
+            tag = any(startsWith(included, node.UserData));
             if tag && ~strcmp(node.Icon, obj.Arrow)
                 node.Icon = obj.Arrow;
             elseif ~tag && ~isempty(node.Icon)
@@ -135,30 +134,19 @@ classdef EditInclude < handle
             end
         end
         
-        function hasIncluded = pathIncluded(~, dirPath, included)
-            % Check if directory contains any included files
-            hasIncluded = false;
-            for i = 1:length(included)
-                if startsWith(included{i}, dirPath)
-                    hasIncluded = true;
-                    return
-                end
-            end
-        end
-        
         function onInputChanged(obj)
             % Callback when input field changes
             try
-                obj.IncludeCurrent = jsondecode(strjoin(obj.InputField.Value, newline));
+                obj.IncludeCurrent = qb.utils.jsondecode(strjoin(obj.InputField.Value, newline));
                 obj.query(obj.IncludeCurrent)
             catch ME
                 uialert(obj.Fig, sprintf('Invalid JSON format: %s', ME.message), 'Parse Error')
             end
         end
-        
+
         function query(obj, include)
             % Queries the BIDS folder and tags the tree based on the include filter
-            obj.tagTree(bids.query(obj.BIDS, 'data', include))
+            obj.tagTree(string(bids.query(obj.BIDS, 'data', include)))
         end
         
         function onCancel(obj)

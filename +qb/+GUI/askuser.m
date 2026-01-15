@@ -27,7 +27,7 @@ function chosen = askuser(workers, workitem)
     
     % Sizing parameters
     minTableHeight = 50;        % Minimum table height (empty table)
-    rowHeight      = 24*0.972;  % Height per row (emperical value that works best)
+    rowHeight      = 24*0.972;  % Height per row (empirical value that works best)
     headerHeight   = 28;        % Table header height
     maxTableHeight = 250;       % Maximum table height
 

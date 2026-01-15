@@ -75,7 +75,6 @@ methods
         config = get_config(configfile);    % Cannot call obj.get_config directly because obj is not yet fully constructed / the superclass has not yet been called
         BIDS   = bids.layout(char(bidsdir), 'use_schema', true, ...
                                             'index_derivatives', false, ...
-                                            'index_dependencies', false, ...
                                             'filter', config.General.BIDS.include.value, ...
                                             'tolerant', true, ...
                                             'verbose', true);
@@ -110,7 +109,7 @@ methods
         %
         % See also: qb.QuIDBBIDS (for overview)
 
-        [obj.configfile, obj.config] = qb.configeditor(obj.configfile, obj.config);    % TODO: Add team workers
+        [obj.configfile, obj.config] = qb.configeditor(obj.configfile, obj.config, '', obj.BIDS);    % TODO: Add team workers
     end
 
     function manager = manager(obj)

@@ -39,7 +39,7 @@ methods
 
         % Make the abstract properties concrete
         try
-            include = config.General.BIDS.include;
+            include = obj.config.General.BIDS.include;
         catch
             include = struct();
         end

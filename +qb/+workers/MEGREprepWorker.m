@@ -238,21 +238,39 @@ methods
                 x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
                 % Save all resliced echo images for this flip angle (they will be merged to a 4D-file later)
-                for part = {'mag', 'phase'}
-                    VFA_flip_filter = setfields(obj.bidsfilter.rawMEVFA, 'flip',char(flip), 'run',char(run), 'part',part);
-                    for echo = obj.query_ses(obj.BIDS, 'echos', VFA_flip_filter)
-                        VFA_fe = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo));
-                        Vfe    = spm_vol(char(VFA_fe));
-                        img    = NaN(Vref.dim);
-                        T      = Vfe.mat \ spm_matrix(x) * Vref.mat;     % Transformation from voxels in Vref to voxels in Vfe
-                        for z = 1:Vref.dim(3)
-                            img(:,:,z) = spm_slice_vol(Vfe, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);    % Using trilinear interpolation
-                        end
-                        bfile = obj.bfile_set(Vfe.fname, struct('space',obj.bidsfilter.syntheticT1.space, 'desc','temp3D'));  % Will be merged to desc=ME4D
-                        bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
-                        spm_write_vol_gz(Vref, img, bfile.path);
-                        bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+                VFA_flip_filter = setfields(obj.bidsfilter.rawMEVFA, 'flip',char(flip), 'run',char(run));
+                for echo = obj.query_ses(obj.BIDS, 'echos', VFA_flip_filter)
+
+                    % Load the magnitude and phase data -> convert to complex data (to correctly resample phase-wraps)
+                    VFA_fe_m = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo), 'part','mag');
+                    VFA_fe_p = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo), 'part','phase');
+                    Vfe_m    = spm_vol(char(VFA_fe_m));         % Magnitude volume
+                    Vfe_p    = spm_vol(char(VFA_fe_p));         % Phase volume
+                    img_m    = spm_read_vols(Vfe_m);            % Read mag data in the memory map
+                    img_p    = spm_read_vols(Vfe_p);            % Read phase data in the memory map
+                    img      = img_m .* exp(1i * img_p);        % Combine mag/phase to complex data
+                    
+                    % Avoid disk IO by temporarily replacing the memory mapped mag data with complex data
+                    Vfe_m.private     = struct();               % Clear private nifti object to allow overriding the memory map
+                    Vfe_m.private.dat = img;                    % Override the memory map with complex data
+                    Vfe_m.dat         = img;                    % Make sure that for gz-files ".dat" is also overridden
+                    T = Vfe_m.mat \ spm_matrix(x) * Vref.mat;   % T = Transformation from voxels in Vref to voxels in Vfe
+                    for z = 1:Vref.dim(3)
+                        img(:,:,z) = spm_slice_vol(Vfe_m, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);    % Using trilinear interpolation (NB: the memory map of Vfe_m is used here)
                     end
+
+                    % Save the magnitude image
+                    bfile = obj.bfile_set(Vfe_m.fname, struct('space',obj.bidsfilter.syntheticT1.space, 'desc','temp3D'));  % Will be merged to desc=ME4D
+                    bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
+                    spm_write_vol_gz(Vref, abs(img), bfile.path);
+                    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+
+                    % Save the phase image
+                    bfile = obj.bfile_set(Vfe_p.fname, struct('space',obj.bidsfilter.syntheticT1.space, 'desc','temp3D'));  % Will be merged to desc=ME4D
+                    bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
+                    spm_write_vol_gz(Vref, angle(img), bfile.path);
+                    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+
                 end
 
             end

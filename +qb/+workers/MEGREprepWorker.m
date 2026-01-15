@@ -255,6 +255,7 @@ methods
                     Vfe_m.private.dat = img;                    % Override the memory map with complex data
                     Vfe_m.dat         = img;                    % Make sure that for gz-files ".dat" is also overridden
                     T = Vfe_m.mat \ spm_matrix(x) * Vref.mat;   % T = Transformation from voxels in Vref to voxels in Vfe
+                    img = NaN(Vref.dim);                        % Preallocate resliced image
                     for z = 1:Vref.dim(3)
                         img(:,:,z) = spm_slice_vol(Vfe_m, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);    % Using trilinear interpolation (NB: the memory map of Vfe_m is used here)
                     end

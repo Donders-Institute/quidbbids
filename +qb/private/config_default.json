@@ -14,7 +14,7 @@
   "B1prepWorker": {
     "FWHM": {"value": 10, "description": "in mm, smoothing kernel for regularizing the B1 map"},
     "FAscaling": {
-      "Siemens": {"value": 800, "description": "800 is what SIEMENS seems to use on TFL B1-mapping"}
+      "Siemens": {"value": 800, "description": "Factor to scale the data to radians (800 is what SIEMENS seems to use on TFL B1-mapping)"}
     }
   },
 

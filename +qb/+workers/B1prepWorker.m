@@ -79,7 +79,7 @@ methods
             FAVol = spm_vol(B1famp{n});
             FA    = spm_read_vols(FAVol);
             if isfield(obj.config.B1prepWorker.FAscaling, bfile.metadata.Manufacturer)
-                FA = FA / obj.config.B1prepWorker.FAscaling.(bfile.metadata.Manufacturer);  % Scale to degrees
+                FA = FA / obj.config.B1prepWorker.FAscaling.(bfile.metadata.Manufacturer);  % Scale to radians
             end
 
             % Regularize the FA-map in order to avoid influence of salt & pepper border noise

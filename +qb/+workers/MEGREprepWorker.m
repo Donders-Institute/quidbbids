@@ -183,7 +183,7 @@ methods
                 T1w(~isfinite(T1w))    = 0;
                 bfile                  = obj.bfile_set(VFA_e1{n}, obj.bidsfilter.syntheticT1);
                 bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};
-                obj.logger.info("Saving T1like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
+                obj.logger.info("Saving T1-like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
                 spm_write_vol_gz(Ve1, T1w, bfile.path);
                 bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
             end
@@ -254,6 +254,8 @@ methods
                     Vfe_m.private     = struct();               % Clear private nifti object to allow overriding the memory map
                     Vfe_m.private.dat = img;                    % Override the memory map with complex data
                     Vfe_m.dat         = img;                    % Make sure that for gz-files ".dat" is also overridden
+
+                    % Reslice the complex data to the synthetic target space
                     T = Vfe_m.mat \ spm_matrix(x) * Vref.mat;   % T = Transformation from voxels in Vref to voxels in Vfe
                     img = NaN(Vref.dim);                        % Preallocate resliced image
                     for z = 1:Vref.dim(3)
@@ -282,23 +284,26 @@ methods
                 obj.logger.error("Unexpected M0map images found: %s", sprintf("\n%s", M0ref{:}))
             end
 
-            % Coregister the B1-anat fmap to the M0 target image using Normalized Mutual Information (NMI)
+            % Coregister the FA-map to the M0/synthetic T1 space
             if ~isempty(B1famp)
                 if length(B1famp) ~= 1 || length(B1anat) ~= 1
                     obj.logger.error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}))
                 end
 
+                % Coregister the B1-anat image to the M0 target image using Normalized Mutual Information (NMI)
                 Vref = spm_vol(char(M0ref));                    % Same space as synthetic T1
                 Vin  = spm_vol(char(B1anat));
                 x    = spm_coreg(Vref, Vin, struct('cost_fun', 'nmi'));
 
-                % Save the resliced FA-map
+                % Reslice the FA-map to the M0/synthetic T1 space
                 VB1 = spm_vol(char(B1famp));
                 B1  = NaN(Vref.dim);
                 T   = VB1.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxels in Vref to voxels in VB1
                 for z = 1:Vref.dim(3)
                     B1(:,:,z) = spm_slice_vol(VB1, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                 end
+
+                % Save the resliced FA-map
                 bfile = obj.bfile_set(B1famp, obj.bidsfilter.TB1map_GRE);
                 obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
                 spm_write_vol_gz(Vref, B1, bfile.path);

@@ -247,7 +247,7 @@ methods
                     Vfe_m    = spm_vol(char(VFA_fe_m));         % Magnitude volume
                     Vfe_p    = spm_vol(char(VFA_fe_p));         % Phase volume
                     img_m    = spm_read_vols(Vfe_m);            % Read mag data in the memory map
-                    img_p    = spm_read_vols(Vfe_p);            % Read phase data in the memory map
+                    img_p    = qb.utils.load_nii_phase(Vfe_p);  % Read phase data in the memory map (in radians)
                     img      = img_m .* exp(1i * img_p);        % Combine mag/phase to complex data
                     
                     % Avoid disk IO by temporarily replacing the memory mapped mag data with complex data

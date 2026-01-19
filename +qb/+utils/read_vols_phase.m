@@ -1,5 +1,5 @@
-function Phase = load_nii_phase(V)
-% function Phase = load_nii_phase(V)
+function Phase = read_vols_phase(V)
+% function Phase = read_vols_phase(V)
 %
 % Load phase data from nifti file. Accounts for Siemens phase scaling if
 % necessary (i.e. when phase values are in range 0-4096 or -4096 to 4096).

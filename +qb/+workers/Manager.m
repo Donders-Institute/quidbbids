@@ -119,14 +119,19 @@ methods
     end
 
     function start_workflow(obj, subjects)
-        %START_WORKFLOW For each end product, asks the responsible team worker to fetch it
+        %START_WORKFLOW For each end product, asks the responsible team worker to fetch it. Log the screen output in a diary.
 
         arguments
             obj
             subjects struct = obj.coord.BIDS.subjects;
         end
 
+        % Start a diary to log the screen output
+        diary(fullfile(obj.coord.outputdir, 'logs', 'workflow_diary.txt'))
+        cleanup = onCleanup(@() diary('off'));
+
         % Block the start button in the GUI (if any) and initialize the workers
+        disp("============= Starting workflow at " + string(datetime('now')) + " =============")
         for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
             worker = obj.team.(product).handle;
             for subject = subjects
@@ -150,7 +155,9 @@ methods
                 obj.monitor_progress(product)
             end
         end
+
         % Unblock the start button in the GUI (if any)
+        disp("============= Finished workflow at " + string(datetime('now')) + " =============")
     end
 
     function monitor_progress(obj, workitem)

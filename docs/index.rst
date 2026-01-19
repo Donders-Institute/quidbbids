@@ -13,6 +13,7 @@
    :caption: Usage
 
    architecture
+   structure
    GUI
    CLI
    workers

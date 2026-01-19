@@ -2,7 +2,7 @@ Graphical User Interface
 ========================
 
 The main window
-~~~~~~~~~~~~~~~
+---------------
 In a later release, QuIDBBIDS will provide a main graphical user interface (GUI) for users that prefer an interactive
 approach to workflow configuration and execution. The main GUI will allow users to easily select input data, specify
 desired outputs, and monitor workflow progress.
@@ -18,7 +18,7 @@ MATLAB's command window:
 After that, as described below, two GUIs can be used.
 
 Processing settings and options
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------
 All configuration settings and options for processing the data can be set per worker with a GUI, which can be 
 launched by either calling the ``editconfig()`` method from your ``QuIDBBIDS`` object, or by directly calling the 
 ``configeditor()`` function:
@@ -33,3 +33,13 @@ launched by either calling the ``editconfig()`` method from your ``QuIDBBIDS`` o
    Left panel: The General QuIDBBIDS settings as well as the the settings for the individual workers. In this
    example the user navigated to the ``MP2RAGEWorker`` and selected the ``NumerShots`` parameter. Right panel:
    The description of the selected parameter (top) with a box to edit its current value of ``176`` (bottom).
+
+SEPIA toolbox settings
+~~~~~~~~~~~~~~~~~~~~~~~~
+Some workers in QuIDBBIDS use the SEPIA toolbox for QSM and relaxometry processing. SEPIA has its own settings
+that can be edited with a separate GUI, which can be launched by simply editing menu items (strings) in the SEPIA
+settings structure. Non-menu items can be edited by directly modifying the settings structure.
+
+BIDS input selection settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The BIDS input selection GUI allows users to select which BIDS entities (subjects, sessions, tasks,

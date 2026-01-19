@@ -37,23 +37,31 @@ And to update the dev branch:
 
    git switch dev                 # Check out your dev branch
    git pull                       # Get the latest code
-   qb.reset()                     # Reset QuIDBBIDS settings to latest value (may be required after updates)
+   qb.resetconfig()               # Update the QuIDBBIDS settings to latest format (may be required after updates)
 
 Then, in MATLAB, add the cloned ``QuIDBBIDS`` folder (without subfolders) to your MATLAB path.
 
 .. note::
-   QuIDBBIDS depends on several external MATLAB toolboxes (see *Requirements* above).
-   Make sure these dependencies are installed and accessible from your MATLAB path.
+   If not present, running QuIDBBIDS will install a default configuration file in your home directory, named 
+   ``~/.quidbbids/v#.#.#/config_default.json``. You can modify this file to change default settings or reset them back to 
+   factory defaults by running ``qb.resetconfig()`` in MATLAB.
 
 Installing dependencies
 -----------------------
 
 If you have cloned QuIDBBIDS with ``--recurse-submodules`` you already have `SEPIA <https://github.com/kschan0214/sepia>`__ 
-in your QuIDBBIDS ``dependencies`` folder. However, it is required that you install SEPIA's 
-`CompileMRI <https://github.com/korbinian90/CompileMRI.jl>`__, `SEGUE <https://xip.uclb.com/product/SEGUE>`__ and the 
-`TKD/iterTik/dirTik <https://xip.uclb.com/product/mri_qsm_tkd>`__ dependencies yourself, and edit 
-``sepia/SpecifyToolboxesDirectory.m`` accordingly. See 
-`here <https://sepia-documentation.readthedocs.io/en/latest/getting_started/Installation.html>`__ for more info.
+in your QuIDBBIDS ``dependencies`` subfolder. Alternatively, you can install the QuIDBBIDS dependencies manually, as listed 
+`here <https://github.com/Donders-Institute/quidbbids/blob/main/.gitmodules>`__.
+
+Unfortunately, not all (sub)dependencies are available on as git repositories, which makes that you still need to install some 
+of SEPIA's dependencies manually:
+
+1. `CompileMRI <https://github.com/korbinian90/CompileMRI.jl>`__
+2. `SEGUE <https://xip.uclb.com/product/SEGUE>`__ 
+3. `TKD/iterTik/dirTik <https://xip.uclb.com/product/mri_qsm_tkd>`__ 
+
+As a follow up, edit ``sepia/SpecifyToolboxesDirectory.m`` accordingly. More detailed information on installing SEPIA and its 
+dependencies can be found `here <https://sepia-documentation.readthedocs.io/en/latest/getting_started/Installation.html>`__.
 
 Updating QuIDBBIDS
 ------------------
@@ -71,3 +79,4 @@ To update to a specific release tag instead, use:
 
    git tag                        # List available versions (e.g., v1.0.0, v1.0.1, v1.1.0)
    git checkout v1.1.0            # Check out a specific version
+   git submodule update --init --recursive

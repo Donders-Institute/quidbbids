@@ -6,7 +6,9 @@ below describe a minimal example of how to initialize and run a QuIDBBIDS workfl
 requesting R1, R2*, and MWF maps as output:
 
 Initializing QuIDBBIDS
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
+
+To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by providing the path to your BIDS dataset.
 
 .. code-block:: matlab
 
@@ -28,7 +30,8 @@ Initializing QuIDBBIDS
    >> quidb.resumes.R2D2.preferred = true;                 % Specify the worker that makes the R1/R2starmap
 
 Edit settings and options
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
+
 All configuration settings and options for processing the data of your dataset can be set per worker by 
 modifying the ``config`` properties of your ``QuIDBBIDS`` object. For instance, to inspect the ``NumberShots`` 
 parameter of the MP2RAGEWorker and modify it from ``176`` to ``192``, and use your HPC you can do:
@@ -52,7 +55,9 @@ parameter of the MP2RAGEWorker and modify it from ``176`` to ``192``, and use yo
    >> quidb.config.General.useHPC.value = true;
 
 Run the workflow
-~~~~~~~~~~~~~~~~
+----------------
+
+Finally, to run the workflow, initialize the manager from your ``QuIDBBIDS`` object and start the workflow:
 
 .. code-block:: matlab
 

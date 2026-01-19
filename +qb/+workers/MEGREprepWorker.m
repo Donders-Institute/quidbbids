@@ -248,17 +248,17 @@ methods
                     Vfe_p        = spm_vol(char(VFA_fe_p));         % Phase volume
                     img_m        = spm_read_vols(Vfe_m);
                     img_p        = qb.utils.read_vols_phase(Vfe_p); % Read phase data in radians
-                    img(:,:,:,2) = img_m .* sin(img_p);             % Imag image part
-                    img(:,:,:,1) = img_m .* cos(img_p);             % Real image part
+                    img          = cat(4, img_m .* cos(img_p), ...  % Real image part
+                                          img_m .* sin(img_p));     % Imag image part
                     
                     % Reslice the real and imag data to the synthetic target space (spm_slice_vol doesn't support complex data directly)
                     T     = Vfe_m.mat \ spm_matrix(x) * Vref.mat;   % T = Transformation from voxels in Vref to voxels in Vfe
                     img_r = NaN([Vref.dim 2]);                      % Preallocate resliced images
                     for n = 1:size(img,4)
 
-                        % Avoid disk IO by temporarily replacing the memory mapped mag data with real data
+                        % Avoid disk IO by temporarily replacing the memory mapped mag data with real/imag data
                         Vfe_m.private     = struct();               % Clear private nifti object to allow overriding the memory map
-                        Vfe_m.private.dat = img(:,:,:,n);           % Override the memory map with real data
+                        Vfe_m.private.dat = img(:,:,:,n);           % Override the memory map with real/imag data
                         Vfe_m.dat         = img(:,:,:,n);           % Make sure that for gz-files ".dat" is also overridden
 
                         for z = 1:Vref.dim(3)
@@ -301,8 +301,8 @@ methods
 
                 % Reslice the FA-map to the M0/synthetic T1 space
                 VB1 = spm_vol(char(B1famp));
-                B1  = NaN(Vref.dim);
                 T   = VB1.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxels in Vref to voxels in VB1
+                B1  = NaN(Vref.dim);
                 for z = 1:Vref.dim(3)
                     B1(:,:,z) = spm_slice_vol(VB1, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                 end

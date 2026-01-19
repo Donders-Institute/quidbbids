@@ -242,36 +242,40 @@ methods
                 for echo = obj.query_ses(obj.BIDS, 'echos', VFA_flip_filter)
 
                     % Load the magnitude and phase data -> convert to complex data (to correctly resample phase-wraps)
-                    VFA_fe_m = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo), 'part','mag');
-                    VFA_fe_p = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo), 'part','phase');
-                    Vfe_m    = spm_vol(char(VFA_fe_m));         % Magnitude volume
-                    Vfe_p    = spm_vol(char(VFA_fe_p));         % Phase volume
-                    img_m    = spm_read_vols(Vfe_m);
-                    img_p    = qb.utils.read_vols_phase(Vfe_p); % Read phase data in radians
-                    img      = img_m .* exp(1i * img_p);        % Combine mag/phase to complex data
+                    VFA_fe_m     = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo), 'part','mag');
+                    VFA_fe_p     = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo), 'part','phase');
+                    Vfe_m        = spm_vol(char(VFA_fe_m));         % Magnitude volume
+                    Vfe_p        = spm_vol(char(VFA_fe_p));         % Phase volume
+                    img_m        = spm_read_vols(Vfe_m);
+                    img_p        = qb.utils.read_vols_phase(Vfe_p); % Read phase data in radians
+                    img(:,:,:,2) = img_m .* sin(img_p);             % Imag image part
+                    img(:,:,:,1) = img_m .* cos(img_p);             % Real image part
                     
-                    % Avoid disk IO by temporarily replacing the memory mapped mag data with complex data
-                    Vfe_m.private     = struct();               % Clear private nifti object to allow overriding the memory map
-                    Vfe_m.private.dat = img;                    % Override the memory map with complex data
-                    Vfe_m.dat         = img;                    % Make sure that for gz-files ".dat" is also overridden
+                    % Reslice the real and imag data to the synthetic target space (spm_slice_vol doesn't support complex data directly)
+                    T     = Vfe_m.mat \ spm_matrix(x) * Vref.mat;   % T = Transformation from voxels in Vref to voxels in Vfe
+                    img_r = NaN([Vref.dim 2]);                      % Preallocate resliced images
+                    for n = 1:size(img,4)
 
-                    % Reslice the complex data to the synthetic target space
-                    T = Vfe_m.mat \ spm_matrix(x) * Vref.mat;   % T = Transformation from voxels in Vref to voxels in Vfe
-                    img = NaN(Vref.dim);                        % Preallocate resliced image
-                    for z = 1:Vref.dim(3)
-                        img(:,:,z) = spm_slice_vol(Vfe_m, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);    % Using trilinear interpolation (NB: the memory map of Vfe_m is used here)
+                        % Avoid disk IO by temporarily replacing the memory mapped mag data with real data
+                        Vfe_m.private     = struct();               % Clear private nifti object to allow overriding the memory map
+                        Vfe_m.private.dat = img(:,:,:,n);           % Override the memory map with real data
+                        Vfe_m.dat         = img(:,:,:,n);           % Make sure that for gz-files ".dat" is also overridden
+
+                        for z = 1:Vref.dim(3)
+                            img_r(:,:,z,n) = spm_slice_vol(Vfe_m, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);    % Using trilinear interpolation (NB: the memory map of Vfe_m is used here)
+                        end
                     end
 
                     % Save the magnitude image
                     bfile = obj.bfile_set(Vfe_m.fname, struct('space',obj.bidsfilter.syntheticT1.space, 'desc','temp3D'));  % Will be merged to desc=ME4D
                     bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
-                    spm_write_vol_gz(Vref, abs(img), bfile.path);
+                    spm_write_vol_gz(Vref, hypot(img_r(:,:,:,1), img_r(:,:,:,2)), bfile.path);  % Numerically stable sqrt(Re.^2 + Im.^2)
                     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
 
                     % Save the phase image
                     bfile = obj.bfile_set(Vfe_p.fname, struct('space',obj.bidsfilter.syntheticT1.space, 'desc','temp3D'));  % Will be merged to desc=ME4D
                     bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
-                    spm_write_vol_gz(Vref, angle(img), bfile.path);
+                    spm_write_vol_gz(Vref, atan2(img_r(:,:,:,2), img_r(:,:,:,1)), bfile.path);  % Quadrant-correct phase in radians, range [-pi, pi]
                     bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
 
                 end

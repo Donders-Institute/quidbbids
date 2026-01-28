@@ -122,7 +122,7 @@ methods
         %START_WORKFLOW For each end product, asks the responsible team worker to fetch it. Logs the screen output in a diary.
         %
         % Inputs:
-        %   SUBJECTS - String array with subjects names for which the workflow should be executed. Default is all subjects in the BIDS layout
+        %   SUBJECTS - String array with subject names for which the workflow should be executed. Default is all subjects in the BIDS layout
         %
         % Examples:
         %   mgr.start_workflow()                      % Starts the workflow for all subjects
@@ -157,10 +157,15 @@ methods
             jobIDs = containers.Map('KeyType','char', 'ValueType','char');
             for subject = subjects
 
+                % Skip if we are not at the modality level, i.e. at the subject level while sessions are present
+                if ~ismember("anat", fieldnames(subject)) || isempty(subject.anat)
+                    continue
+                end
+
                 % Ask the worker to fetch the product for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
                 if obj.coord.config.General.useHPC.value
-                    jobIDs(subject.name) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:});  % NB: products are passed directly instead of calling fetch()
+                    jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:});  % NB: products are passed directly instead of calling fetch()
                 else
                     worker(args{:}).fetch(product, obj.force);      % TODO: Catch the work done (at some point)
                 end
@@ -168,7 +173,7 @@ methods
             end
 
             % Monitor the progress of the workers until all work is done and report any errors or warnings
-            obj.monitor_progress(product, string({subjects.name}), jobIDs)
+            obj.monitor_progress(product, subjects, jobIDs)
         end
 
         % Unblock the start button in the GUI (if any)
@@ -181,7 +186,7 @@ methods
         arguments
             obj
             workitem {mustBeTextScalar}
-            subjects string
+            subjects struct
             jobIDs   containers.Map
         end
 
@@ -200,7 +205,7 @@ methods
 
         % Close the dashboard
         if isvalid(dashboard.fig)
-            dashboard.fig.close()
+            close(dashboard.fig)
         end
     end
 
@@ -208,6 +213,11 @@ end
 
 
 methods (Access = private)
+
+    function subses = sub_ses(obj, subject)
+        % Parses the sub-#_ses-# prefix from a BIDS.subjects item
+        subses = replace(erase(subject.path, [obj.coord.BIDS.pth filesep]), filesep,'_');
+    end
 
     function selectworker(obj, workitem)
         % Helper function for CREATE_TEAM to select a worker for this (non-regexp) workitem and make him/her the "preferred worker"

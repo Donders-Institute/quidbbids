@@ -44,6 +44,12 @@ methods
         completed = string.empty;
         ws = warning('off', 'FieldTrip:qsub:jobNotAvailable');
         for subject = obj.subjects
+
+            % Skip if we are not at the modality level, i.e. at the subject level while sessions are present
+            if ~ismember("anat", fieldnames(subject)) || isempty(subject.anat)
+                continue
+            end
+            
             subses = obj.sub_ses(subject);
             [~, options] = qsubget(obj.jobIDs(subses), 'output', 'cell', 'StopOnError', false);
             if ~isempty(options)
@@ -74,6 +80,12 @@ methods
         subjects = [];
         for worker = dir(fullfile(obj.coord.outputdir, 'logs', '*Worker'))'
             for subject = obj.subjects
+
+                % Skip if we are not at the modality level, i.e. at the subject level while sessions are present
+                if ~ismember("anat", fieldnames(subject)) || isempty(subject.anat)
+                    continue
+                end
+
                 subses = obj.sub_ses(subject);
                 logfile = fullfile(obj.coord.outputdir, 'logs', worker.name, sprintf('%s_%s.log', subses, level_));
                 if isfile(logfile) && dir(logfile).bytes > 0

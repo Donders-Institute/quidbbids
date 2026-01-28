@@ -26,7 +26,7 @@ methods
         % Constructor for the abstract Coordinator class
         %
         % Inputs:
-        %   BIDSDIR    - BIDS layout object from bids-matlab
+        %   BIDS       - BIDS layout object from bids-matlab
         %   OUTPUTDIR  - Path to the derivatives bidsapp subdirectory where output will be written
         %   WORKDIR    - Working directory for intermediate results. Default: outputdir/[APPNAME]_work
         %   CONFIGFILE - Path to a configuration file with workflow settings
@@ -106,7 +106,7 @@ methods
         end
         for wfile = wfiles
             if ~strcmp(wfile.name, 'Worker.m')   % Exclude the abstract Worker class
-                worker = qb.workers.(erase(wfile.name, '.m'))(struct(),struct('name','','session',''));
+                worker = qb.workers.(erase(wfile.name, '.m'))(obj.BIDS, struct('name','','session',''), obj.config);
                 resumes.(worker.name).handle      = str2func(class(worker));
                 resumes.(worker.name).name        = worker.name;
                 resumes.(worker.name).description = worker.description;

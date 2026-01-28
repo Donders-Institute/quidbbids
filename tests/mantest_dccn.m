@@ -12,6 +12,7 @@ addpath(fileparts(fileparts(mfilename('fullpath'))))
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "default")
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 quidb.resumes.R2D2.preferred = true;    % Optional, else GUI usage
+quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
 mgr.start_workflow()
 if isunix

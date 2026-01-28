@@ -36,9 +36,10 @@ launched by either calling the ``editconfig()`` method from your ``QuIDBBIDS`` o
 
 SEPIA toolbox settings
 ~~~~~~~~~~~~~~~~~~~~~~~~
-Some workers in QuIDBBIDS use the SEPIA toolbox for QSM and relaxometry processing. SEPIA has its own settings
-that can be edited with a separate GUI, which can be launched by simply editing menu items (strings) in the SEPIA
-settings structure. Non-menu items can be edited by directly modifying the settings structure.
+Some workers in QuIDBBIDS use the SEPIA toolbox for QSM and relaxometry processing. SEPIA's string settings represent
+menu items that define a set of processing options rather than a just single setting. When such a menu item is edited, 
+a minimal native SEPIA GUI is launched, allowing the available options to be adjusted (see figure below). Settings that 
+are not menu items can be edited directly in the standard way.
 
 BIDS input selection settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

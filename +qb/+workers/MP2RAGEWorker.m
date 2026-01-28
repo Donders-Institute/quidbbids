@@ -38,12 +38,7 @@ methods
         obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
 
         % Make the abstract properties concrete
-        try
-            include = obj.config.General.BIDS.include;
-        catch
-            include = struct();
-        end
-        obj.bidsfilter.rawUNIT1    = setfields(include, 'modality', 'anat', 'suffix', 'UNIT1');
+        obj.bidsfilter.rawUNIT1    = setfields(obj.config.General.BIDS.include, 'modality', 'anat', 'suffix', 'UNIT1');
         obj.bidsfilter.rawINV1     = setfields(obj.bidsfilter.rawUNIT1, 'inv', 1, 'suffix', 'MP2RAGE');
         obj.bidsfilter.rawINV2     = setfield(obj.bidsfilter.rawINV1, 'inv', 2);
         obj.bidsfilter.R1map       = struct('modality', 'anat', ...

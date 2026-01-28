@@ -7,63 +7,81 @@ classdef Dashboard < handle
 properties
     coord       % The BIDS layout that the workers are working on
     workitem    % The workitem of interest
-    jobs        % The status of the jobs
+    subjects    % The subjects being processed
+    jobIDs      % A subject map with qsubfeval job identifiers
+    fig         % The dashboard figure (if any)
 end
 
 
 methods
 
-    function obj = Dashboard(coord)
+    function obj = Dashboard(coord, workitem, subjects, jobIDs)
+        %DASHBOARD Constructs a Dashboard GUI object
 
         arguments
-            coord  qb.workers.Coordinator
+            coord    struct
+            workitem {mustBeTextScalar}
+            subjects string
+            jobIDs   containers.Map
         end
 
-        obj.coord = coord;
+        obj.coord    = coord;
+        obj.workitem = workitem;
+        obj.subjects = subjects;
+        obj.jobIDs   = jobIDs;
+        if obj.coord.config.General.useHPC.value
+            obj.fig = qb.GUI.DashboardHPC(obj.coord, obj.workitem, obj.jobIDs); % TODO: implement
+        else
+            obj.fig = timer;    % Lightweight dummy handle object
+            delete(obj.fig)
+        end
     end
 
-    function busy = working_on(obj)
-        %WORKING_ON Returns the list of subjects currently being processed
-        busy = [];
-        for subject = obj.coord.BIDS.subjects
-            lock_file = fullfile(subject.path, [class(obj) '_worker.lock']);
-            if isfile(lock_file)
-                busy(end+1) = subject;
+    function completed = work_done(obj)
+        %WORK_DONE Returns a list of jobID keys (subject names) that have completed
+
+        completed = string.empty;
+        ws = warning('off', 'FieldTrip:qsub:jobNotAvailable');
+        for subject = obj.subjects
+            [~, options] = qsubget(obj.jobIDs(subject), 'output', 'cell', 'StopOnError', StopOnError);
+            if ~isempty(options)
+                completed(end+1) = subject;                 %#ok<AGROW>
+                writelines(options.diary, fullfile(obj.coord.outputdir, 'logs', sprintf('diary_%s.txt',subject)), WriteMode='append');
             end
         end
+        warning(ws)
     end
 
-    function done = work_done(obj)
-        %WORK_DONE Returns the list of subjects that have completed processing
-        done = [];
-        for subject = obj.coord.BIDS.subjects
-            done_file = fullfile(subject.path, [class(obj) '_worker.done']);
-            if isfile(done_file)
-                done(end+1) = subject;
-            end
+    function update(obj)
+        %UPDATE Updates the dashboard figure (if any)
+        if isvalid(obj.fig)
+            % TODO: implement
         end
     end
 
-    function subjects = has_warnings(obj, verbose)
+    function subjects = has_warnings(obj, verbose, level_)
         %HAS_WARNINGS Returns the list of subjects that encountered warnings
         
         arguments
             obj      qb.QuIDBBIDS
             verbose  (1,1) logical = false
+            level_   string {mustBeMember(level_, ["warnings", "errors"])} = "warnings"
         end
 
         subjects = [];
-        for subject = obj.coord.BIDS.subjects
-            warning_file = fullfile(obj.coord.logdir, [obj.sub_ses(subject) '_warnings.log']);
-            if isfile(warning_file)
-                subjects(end+1) = subject;
-                if verbose
-                    fprintf("Warnings in %s:\n", subject.path);
-                    lines = strtrim(strsplit(fileread(warning_file), '\n'));
-                    fprintf('| %s\n', lines{:});
+        for worker = dir(fullfile(obj.coord.outputdir, 'logs', '*Worker'))'
+            for subject = obj.subjects
+                logfile = fullfile(obj.coord.outputdir, 'logs', worker.name, sprintf('%s_%s.log', subject, level_));
+                if isfile(logfile) && dir(logfile).bytes > 0
+                    subjects(end+1) = subject;                  %#ok<AGROW>
+                    if verbose
+                        fprintf("QuIDBBIDS %s found for %s:\n", level_, subject)
+                        fprintf('| %s\n', readlines(logfile))
+                    end
                 end
             end
         end
+        subjects = unique(subjects);
     end
 
     function subjects = has_errors(obj, verbose)
@@ -74,18 +92,7 @@ methods
             verbose  (1,1) logical = false
         end
         
-        subjects = [];
-        for subject = obj.coord.BIDS.subjects
-            error_file = fullfile(obj.coord.logdir, [obj.sub_ses(subject) '_errors.log']);
-            if isfile(error_file)
-                subjects(end+1) = subject;
-                if verbose
-                    fprintf("Errors in %s:\n", subject.path);
-                    lines = strtrim(strsplit(fileread(error_file), '\n'));
-                    fprintf('| %s\n', lines{:});
-                end
-            end
-        end
+        subjects = obj.has_warnings(verbose, "errors");
     end
 
 end

@@ -77,7 +77,7 @@ methods
     function workitems = makes(obj)
         workitems = string(fieldnames(obj.bidsfilter)');
         if isempty(workitems)
-            obj.logger.warning('%s does not seem to make anything!', obj.name)
+            obj.logger.warning('QuIDBBIDS:Worker:TeamError', '%s does not seem to make anything!', obj.name)
         end
     end
 
@@ -115,10 +115,12 @@ methods
         if isempty(work) || force
 
             obj.logger.info("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path)
+
+            % Check if the subject is already being worked on
             locked = obj.is_locked();
             if locked
                 if force
-                    obj.logger.warning("Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked)
+                    obj.logger.warning("QuIDBBIDS:Worker:ConcurrencyError", "Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked)
                 else
                     obj.logger.error("%s was: %s", fileparts(obj.statusfile('.lock')), locked)
                     return
@@ -126,6 +128,11 @@ methods
             end
 
             % TODO: update the dashboard (non-HPC usage)
+
+            % Check if there is a GPU available
+            if obj.usesGPU && ~canUseGPU()
+                obj.logger.warning('QuIDBBIDS:Worker:GPUError', '%s was set to use a GPU but a supported GPU was not available, and/or the Parallel Computing Toolbox™ is not installed and licensed for use. Proceeding with CPU only.', obj.name)
+            end
 
             % Get the work done
             cleanup = onCleanup(@() obj.unlock());
@@ -213,7 +220,7 @@ methods
         [~,~]     = mkdir(fileparts(lock_file));
         fid = fopen(lock_file, 'w');
         if fid ~= -1
-            fprintf(fid, "Locked for %s by %s on %s", class(obj), getenv('USERNAME'), datetime('now'));
+            fprintf(fid, "Locked for %s by %s on %s", class(obj), char(java.lang.System.getProperty('user.name')), datetime('now'));
             fclose(fid);
         else
             obj.logger.exception("%s could not lock %s", obj.name, lock_file)
@@ -253,7 +260,7 @@ methods
         done_file = obj.statusfile('.done');
         fid = fopen(done_file, 'a');
         if fid ~= -1
-            fprintf(fid, "%s work was done by %s on %s\n", class(obj), getenv('USERNAME'), datetime('now'));
+            fprintf(fid, "%s work was done by %s on %s\n", class(obj), char(java.lang.System.getProperty('user.name')), datetime('now'));
             fclose(fid);
         else
             obj.logger.error("%s could not write a done-file in %s", obj.name, done_file)
@@ -265,7 +272,7 @@ methods
         label = strsplit(obj.subject.name, '-');
         label = label{end};
         if isempty(label)
-            obj.logger.warning('Subject label could not be determined from subject.name: %s', obj.subject.name)
+            obj.logger.warning('QuIDBBIDS:Worker:BIDSError', 'Subject label could not be determined from subject.name: %s', obj.subject.name)
         end
     end
 

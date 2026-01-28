@@ -60,11 +60,7 @@ methods
         obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
 
         % Make the abstract properties concrete
-        try
-            include = obj.config.General.BIDS.include;
-        catch
-            include = struct('suffix', {{''}});
-        end
+        include = obj.config.General.BIDS.include;
         if any(~cellfun('isempty', regexp(include.suffix, 'VFA')))
             obj.bidsfilter.rawMEVFA = setfields(include, ...
                                              'modality', 'anat', ...

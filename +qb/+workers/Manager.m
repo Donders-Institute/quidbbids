@@ -119,66 +119,89 @@ methods
     end
 
     function start_workflow(obj, subjects)
-        %START_WORKFLOW For each end product, asks the responsible team worker to fetch it. Log the screen output in a diary.
+        %START_WORKFLOW For each end product, asks the responsible team worker to fetch it. Logs the screen output in a diary.
+        %
+        % Inputs:
+        %   SUBJECTS - String array with subjects names for which the workflow should be executed. Default is all subjects in the BIDS layout
+        %
+        % Examples:
+        %   mgr.start_workflow()                      % Starts the workflow for all subjects
+        %   mgr.start_workflow(["sub-01", "sub-02"])  % Starts the workflow for subjects sub-01 and sub-02 only
 
         arguments
             obj
-            subjects struct = obj.coord.BIDS.subjects;
+            subjects string = "";
+        end
+
+        % Parse the subjects for which the workflow should be executed
+        if strlength(subjects) > 0
+            sel = false(size(obj.coord.BIDS.subjects));
+            for subject = subjects(:)'
+                sel(strcmp({obj.coord.BIDS.subjects.name}, subject)) = true;
+            end
+            subjects = obj.coord.BIDS.subjects(sel);
+        else
+            subjects = obj.coord.BIDS.subjects;
         end
 
         % Start a diary to log the screen output
-        diary(fullfile(obj.coord.outputdir, 'logs', 'workflow_diary.txt'))
+        logdir = fullfile(obj.coord.outputdir, 'logs');
+        [~,~]  = mkdir(logdir);
+        diary(fullfile(logdir, 'workflow_diary.txt'))
         cleanup = onCleanup(@() diary('off'));
 
         % Block the start button in the GUI (if any) and initialize the workers
         disp("============= Starting workflow at " + string(datetime('now')) + " =============")
         for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
             worker = obj.team.(product).handle;
+            jobIDs = containers.Map('KeyType','char', 'ValueType','char');
             for subject = subjects
-
-                % Make sure we have anat data for this subject
-                if ~ismember("anat", fieldnames(subject)) || isempty(subject.anat)
-                    continue
-                end
 
                 % Ask the worker to fetch the product for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
                 if obj.coord.config.General.useHPC.value
-                    qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:});   % NB: products are passed directly
+                    jobIDs(subject.name) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:});  % NB: products are passed directly instead of calling fetch()
                 else
-                    worker(args{:}).fetch(product, obj.force);     % TODO: Catch the work done (at some point)
+                    worker(args{:}).fetch(product, obj.force);      % TODO: Catch the work done (at some point)
                 end
 
             end
 
-            if obj.coord.config.General.useHPC.value
-                obj.monitor_progress(product)
-            end
+            % Monitor the progress of the workers until all work is done and report any errors or warnings
+            obj.monitor_progress(product, string({subjects.name}), jobIDs)
         end
 
         % Unblock the start button in the GUI (if any)
         disp("============= Finished workflow at " + string(datetime('now')) + " =============")
     end
 
-    function monitor_progress(obj, workitem)
+    function monitor_progress(obj, workitem, subjects, jobIDs)
         %MONITOR_PROGRESS Watches over the progress of the workers until all work is done
 
+        arguments
+            obj
+            workitem {mustBeTextScalar}
+            subjects string
+            jobIDs   containers.Map
+        end
+
         % Launch a dashboard
-        logdir    = fullfile(obj.coord.outputdir, 'logs', class(obj));   % TODO: FIXME
-        dashboard = qb.workers.Dashboard(obj.coord.BIDS, logdir, workitem);
+        dashboard = qb.workers.Dashboard(obj.coord, workitem, subjects, jobIDs);
 
         % Wait until all work is done
-        while ~all([dashboard.jobs.finished])
-            pause(5)
+        while length(dashboard.work_done()) < length(jobIDs.keys)
+            pause(1)
             dashboard.update()
         end
 
         % Report any errors or warnings
-        dashboard.has_warnings(verbose)
-        dashboard.has_errors(verbose)
+        dashboard.has_warnings(true)
+        dashboard.has_errors(true)
 
         % Close the dashboard
-        dashboard.close()
+        if isvalid(dashboard.fig)
+            dashboard.fig.close()
+        end
     end
 
 end

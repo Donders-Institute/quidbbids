@@ -200,8 +200,8 @@ methods
         end
 
         % Report any errors or warnings
-        dashboard.has_warnings(true)
-        dashboard.has_errors(true)
+        dashboard.has_warnings(true);
+        dashboard.has_errors(true);
 
         % Close the dashboard
         if isvalid(dashboard.fig)

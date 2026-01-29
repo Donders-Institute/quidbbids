@@ -32,7 +32,7 @@ methods
         obj.jobIDs   = jobIDs;
         if obj.coord.config.General.useHPC.value
             % obj.fig = qb.GUI.DashboardHPC(obj.coord, obj.workitem, obj.jobIDs); % TODO: implement
-            obj.fig = timer;    % Lightweight dummy handle object
+            obj.fig = figure;   % WIP dummy handle object
         else
             obj.fig = timer;    % Lightweight dummy handle object
             delete(obj.fig)
@@ -85,7 +85,7 @@ methods
             level_   string {mustBeMember(level_, ["warnings", "errors"])} = "warnings"
         end
         
-        subjects = [];
+        subjects = string.empty;
         for worker = dir(fullfile(obj.coord.outputdir, 'logs', '*Worker'))'
             for subject = obj.subjects
 
@@ -99,7 +99,7 @@ methods
                 if isfile(logfile) && dir(logfile).bytes > 0
                     subjects(end+1) = subses;                   %#ok<AGROW>
                     if verbose
-                        fprintf("QuIDBBIDS %s found for %s:\n", level_, subses)
+                        fprintf("\n| QuIDBBIDS %s found for %s:\n", level_, subses)
                         fprintf('| %s\n', readlines(logfile))
                     end
                 end

@@ -9,6 +9,7 @@ properties
     workitem    % The workitem of interest
     subjects    % The subjects being processed
     jobIDs      % A subses map with qsubfeval job identifiers
+    completed = string.empty   % The list of subses keys of jobs that have completed
     fig         % The dashboard figure (if any)
 end
 
@@ -41,7 +42,7 @@ methods
     function completed = work_done(obj)
         %WORK_DONE Returns a list of jobID keys (subject_session names) that have completed and writes their diary to disk
         
-        completed = string.empty;
+        completed = obj.completed;
         ws = warning('off', 'FieldTrip:qsub:jobNotAvailable');
         for subject = obj.subjects
 
@@ -50,7 +51,13 @@ methods
                 continue
             end
             
+            % Skip if the job was already found as completed
             subses = obj.sub_ses(subject);
+            if ismember(subses, completed)
+                continue
+            end
+
+            % Collect the job output and write the diary to disk
             [~, options] = qsubget(obj.jobIDs(subses), 'output', 'cell', 'StopOnError', false);
             if ~isempty(options)
                 completed(end+1) = subses;                  %#ok<AGROW>
@@ -59,6 +66,7 @@ methods
             end
         end
         warning(ws)
+        obj.completed = completed;
     end
     
     function update(obj)

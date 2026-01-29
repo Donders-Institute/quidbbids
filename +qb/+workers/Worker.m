@@ -77,7 +77,7 @@ methods
     function workitems = makes(obj)
         workitems = string(fieldnames(obj.bidsfilter)');
         if isempty(workitems)
-            obj.logger.warning('QuIDBBIDS:Worker:TeamError', '%s does not seem to make anything!', obj.name)
+            obj.logger.warning('%s does not seem to make anything!', obj.name)
         end
     end
 
@@ -120,7 +120,7 @@ methods
             locked = obj.is_locked();
             if locked
                 if force
-                    obj.logger.warning("QuIDBBIDS:Worker:ConcurrencyError", "Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked)
+                    obj.logger.warning("Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked)
                 else
                     obj.logger.error("%s was: %s", fileparts(obj.statusfile('.lock')), locked)
                     return
@@ -131,7 +131,7 @@ methods
 
             % Check if there is a GPU available
             if obj.usesGPU && ~canUseGPU()
-                obj.logger.warning('QuIDBBIDS:Worker:GPUError', '%s was set to use a GPU but a supported GPU was not available, and/or the Parallel Computing Toolbox™ is not installed and licensed for use. Proceeding with CPU only.', obj.name)
+                obj.logger.warning('%s was set to use a GPU but a supported GPU was not available, and/or the Parallel Computing Toolbox™ is not installed and licensed for use. Proceeding with CPU only.', obj.name)
             end
 
             % Get the work done
@@ -272,7 +272,7 @@ methods
         label = strsplit(obj.subject.name, '-');
         label = label{end};
         if isempty(label)
-            obj.logger.warning('QuIDBBIDS:Worker:BIDSError', 'Subject label could not be determined from subject.name: %s', obj.subject.name)
+            obj.logger.warning('Subject label could not be determined from subject.name: %s', obj.subject.name)
         end
     end
 
@@ -386,7 +386,7 @@ methods
                     bfiles{n} = bids.File(result{n});
                 end
             else
-                obj.logger.warning("QuIDBBIDS:QuerySes:Exception", "The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
+                obj.logger.warning("The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
             end
         end
     end

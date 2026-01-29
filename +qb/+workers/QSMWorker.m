@@ -81,7 +81,7 @@ methods
             obj.logger.exception('%s got %d magnitude vs %d phase files', obj.name, length(magfiles), length(phasefiles))
         end
         if length(mask) ~= 1
-            obj.logger.warning('QuIDBBIDS:QSMWorker:TeamError', '%s expected one brainmask but got:%s', obj.name, sprintf(' %s', mask{:}))
+            obj.logger.warning('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', mask{:}))
             entmag = bids.File(magfiles{1}).entities;
             for mask_ = mask
                 entmask = bids.File(char(mask_)).entities;

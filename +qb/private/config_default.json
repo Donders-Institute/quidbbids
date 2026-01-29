@@ -2,7 +2,7 @@
   "General": {
     "version": {"value": "0.0.5", "description": "QuIDBBIDS version that should match the version in resources/mpackage.json"},
     "useHPC": {"value": false, "description": "Use HPC cluster (true/false)"},
-    "HPC": {"value": ["memreq",1e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu --gres=gpu:1\"]"},
+    "HPC": {"value": ["memreq",10e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu --gres=gpu:1\"]"},
     "gyro": {"value": 42.57747892, "description": "in ppm"},
     "kappa_mw": {"value": 0.36, "description": "Jung, NI., myelin water density"},
     "kappa_iew": {"value": 0.86, "description": "Jung, NI., intra-/extra-axonal water density"},

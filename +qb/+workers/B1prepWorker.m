@@ -64,7 +64,7 @@ methods
         B1famp = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawTB1map_famp);
         B1anat = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawTB1map_anat);    % NB: Assumes the order is the same as for B1famp
         if length(B1anat) ~= length(B1famp)
-            obj.logger.warning("QuIDBBIDS:B1prepWorker:BidsFilterError', 'Unexpected number of B1-files found: acq-anat=%d vs acq-famp=%d", length(B1anat), length(B1famp))
+            obj.logger.warning('Unexpected number of B1-files found: acq-anat=%d vs acq-famp=%d', length(B1anat), length(B1famp))
         end
 
         for n = 1:length(B1famp)

@@ -5,43 +5,25 @@ classdef QSMWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "Kwok"                            % Name of the worker
+    name        = "Kwok"                            % Display name of the worker
     description = ["I am your SEPIA expert that can make shiny QSM and R2-star images for you"] % Description of the work that is done
     version     = "0.1.0"                           % The version of QSMWorker
     needs       = ["echos4Dmag", "echos4Dphase", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
 
-properties
-    bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
-end
+methods (Access = protected)
 
-
-methods
-
-    function obj = QSMWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
-        % Constructor for this concrete Worker class
-
-        arguments
-            BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
-            subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-            config    (1,1) struct = struct()   % Configuration struct loaded from the config file
-            workdir   {mustBeTextScalar} = ''
-            outputdir {mustBeTextScalar} = ''
-            team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
-            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
-        end
+    function initialize(obj)
+        %INITIALIZE Performs any subclass-specific construction steps
 
         % SEPIA should have a directory of its own (we cannot control it's output very well)
-        workdir = replace(workdir, "QuIDBBIDS", "SEPIA");
-        if ~isempty(workdir) && ~isfolder(workdir)
-            bids.init(char(workdir), 'is_derivative', true)
+        obj.workdir = replace(obj.workdir, "QuIDBBIDS", "SEPIA");
+        if ~isempty(obj.workdir) && ~isfolder(obj.workdir)
+            bids.init(char(obj.workdir), 'is_derivative', true)
         end
 
-        % Call the abstract parent constructor
-        obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
-
-        % Make the abstract properties concrete
+        % Construct the bidsfilters
         obj.bidsfilter.R2starmap  = struct('modality', 'anat', ...
                                            'echo', [], ...
                                            'part', '', ...          % SEPIA outputs images with an appended "part-phase" substring
@@ -52,14 +34,12 @@ methods
         obj.bidsfilter.fieldmap   = setfield(obj.bidsfilter.R2starmap, 'suffix','fieldmap');
         obj.bidsfilter.unwrapped  = setfield(setfield(obj.bidsfilter.R2starmap, 'part','phase'), 'suffix','unwrapped');
         obj.bidsfilter.localfmask = setfield(setfield(obj.bidsfilter.R2starmap, 'label','localfield'), 'suffix','mask');
-
-        % Make the workitems (if requested)
-        if strlength(workitems)                             % isempty(string('')) -> false
-            for workitem = string(workitems)
-                obj.fetch(workitem);
-            end
-        end
     end
+
+end
+
+
+methods
 
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed

@@ -1,3 +1,4 @@
+clear all       %#ok<CLALL>
 if isunix
     restoredefaultpath
     addpath('/home/common/matlab/sepia/sepia_1.2.2.6')
@@ -13,7 +14,7 @@ quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "default")
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 quidb.resumes.R2D2.preferred = true;    % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
-quidb.config.General.HPC.value = {'memreq',1e9, 'timreq',36e3, 'options','--partition=gpu --gres=gpu:1'};
+quidb.config.General.HPC.value = {'memreq',10e9, 'timreq',36e3, 'options','--partition=gpu --gres=gpu:1'};
 mgr = quidb.manager();
 mgr.start_workflow()
 if isunix

@@ -5,7 +5,7 @@ classdef SCRWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "Samuel"                            % Name of the worker
+    name        = "Samuel"                            % Display name of the worker
     description = ["Your relaxed number cruncher that fits SCR models for breakfast";
                    "";
                    "Methods:"
@@ -16,30 +16,12 @@ properties (GetAccess = public, SetAccess = protected)
 end
 
 
-properties
-    bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
-end
+methods (Access = protected)
 
+    function initialize(obj)
+        %INITIALIZE Performs any subclass-specific construction steps
 
-methods
-
-    function obj = SCRWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
-        % Constructor for this concrete Worker class
-
-        arguments
-            BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
-            subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-            config    (1,1) struct = struct()   % Configuration struct loaded from the config file
-            workdir   {mustBeTextScalar} = ''
-            outputdir {mustBeTextScalar} = ''
-            team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
-            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
-        end
-
-        % Call the abstract parent constructor
-        obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
-
-        % Make the abstract properties concrete
+        % Construct the bidsfilters
         obj.bidsfilter.R1map_S0      = struct('modality', 'anat', ...
                                               'echo', [], ...
                                               'part', '', ...
@@ -52,14 +34,12 @@ methods
                                               'desc', 'mean', ...
                                               'suffix', 'R2starmap');
         obj.bidsfilter.meanChimap    = setfield(obj.bidsfilter.meanR2starmap, 'suffix', 'Chimap');
-
-        % Make the workitems (if requested)
-        if strlength(workitems)                             % isempty(string('')) -> false
-            for workitem = string(workitems)
-                obj.fetch(workitem);
-            end
-        end
     end
+
+end
+
+
+methods
 
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed

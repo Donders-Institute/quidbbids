@@ -147,7 +147,7 @@ methods
         % Start a diary to log the screen output
         logdir = fullfile(obj.coord.outputdir, 'logs');
         [~,~]  = mkdir(logdir);
-        diary(fullfile(logdir, 'workflow_diary.txt'))
+        diary(fullfile(logdir, 'diary_workflow.txt'))
         cleanup = onCleanup(@() diary('off'));
 
         % Block the start button in the GUI (if any) and initialize the workers
@@ -163,11 +163,12 @@ methods
                 end
 
                 % Ask the worker to fetch the product for this subject
-                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
+                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
+                fprintf("=> %s is ordered to make %s for %s/%s\n", func2str(worker), product, subject.name, subject.session);
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:});  % NB: products are passed directly instead of calling fetch()
                 else
-                    worker(args{:}).fetch(product, obj.force);      % TODO: Catch the work done (at some point)
+                    worker(args{:}).fetch(product);      % TODO: Catch the work done (at some point)
                 end
 
             end

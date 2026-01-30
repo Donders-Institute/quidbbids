@@ -5,50 +5,29 @@ classdef B1prepWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "Yoda"        % Name of the worker
+    name        = "Yoda"        % Display name of the worker
     description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"] % Description of the work that is done
     version     = "0.1.0"       % The version of B1prepWorker
     needs       = []            % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
-properties
-    bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
-end
 
+methods (Access = protected)
 
-methods
+    function initialize(obj)
+        %INITIALIZE Performs any subclass-specific construction steps
 
-    function obj = B1prepWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
-        % Constructor for this concrete Worker class
-
-        arguments
-            BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
-            subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-            config    (1,1) struct = struct()   % Configuration struct loaded from the config file
-            workdir   {mustBeTextScalar} = ''
-            outputdir {mustBeTextScalar} = ''
-            team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
-            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
-        end
-
-        import qb.utils.setfields
-
-        % Call the abstract parent constructor
-        obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
-
-        % Make the abstract properties concrete
+        % Construct the bidsfilters
         obj.bidsfilter.rawTB1map_famp = setfields(obj.config.General.BIDS.include, 'modality','fmap', 'acq','famp');
         obj.bidsfilter.rawTB1map_anat = setfields(obj.bidsfilter.rawTB1map_famp, 'acq','anat');
         obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawTB1map_famp, 'desc','corrected', 'space','raw', 'suffix','TB1map');
         obj.bidsfilter.TB1map_anat    = setfields(obj.bidsfilter.TB1map_angle, 'acq','anat');
-
-        % Make the workitems (if requested)
-        if strlength(workitems)                             % isempty(string('')) -> false
-            for workitem = string(workitems)
-                obj.fetch(workitem);
-            end
-        end
     end
+
+end
+
+
+methods
 
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed

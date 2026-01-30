@@ -43,6 +43,10 @@ methods
         %WORK_DONE Returns a list of jobID keys (subject_session names) that have completed and writes their diary to disk
         
         completed = obj.completed;
+        if isempty(obj.jobIDs.keys)
+            return
+        end
+        
         ws = warning('off', 'FieldTrip:qsub:jobNotAvailable');
         for subject = obj.subjects
 
@@ -66,7 +70,7 @@ methods
             end
         end
         warning(ws)
-        obj.completed = completed;
+        obj.completed = unique(completed);
     end
     
     function update(obj)

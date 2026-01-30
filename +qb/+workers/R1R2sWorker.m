@@ -5,7 +5,7 @@ classdef R1R2sWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "R2D2"                            % Name of the worker
+    name        = "R2D2"                            % Display name of the worker
     description = ["I'm R2-D2, an astromech droid that can fix starships and, yes, generate precise R1- and R2-starmaps for all your neuro-navigation needs!";
                    "";
                    "Methods:"
@@ -15,30 +15,12 @@ properties (GetAccess = public, SetAccess = protected)
 end
 
 
-properties
-    bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
-end
+methods (Access = protected)
 
+    function initialize(obj)
+        %INITIALIZE Performs any subclass-specific construction steps
 
-methods
-
-    function obj = R1R2sWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
-        % Constructor for this concrete Worker class
-
-        arguments
-            BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
-            subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-            config    (1,1) struct = struct()   % Configuration struct loaded from the config file
-            workdir   {mustBeTextScalar} = ''
-            outputdir {mustBeTextScalar} = ''
-            team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
-            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
-        end
-
-        % Call the abstract parent constructor
-        obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
-
-        % Make the abstract properties concrete
+        % Construct the bidsfilters
         obj.bidsfilter.R2starmap = struct('modality', 'anat', ...
                                           'echo', [], ...
                                           'part', '', ...
@@ -46,14 +28,12 @@ methods
                                           'suffix', 'R2starmap');
         obj.bidsfilter.M0map     = setfield(obj.bidsfilter.R2starmap, 'suffix','M0Map');
         obj.bidsfilter.R1map     = setfield(obj.bidsfilter.R2starmap, 'suffix','R1map');
-
-        % Make the workitems (if requested)
-        if strlength(workitems)                 % isempty(string('')) -> false
-            for workitem = string(workitems)
-                obj.fetch(workitem);
-            end
-        end
     end
+
+end
+
+
+methods
 
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
@@ -68,14 +48,14 @@ methods
 
         % Get the workitems we need from a colleague
         echos4Dmag = obj.ask_team('echos4Dmag');    % Multiple FA-images per run
-        TB1map_GRE = obj.ask_team('TB1map_GRE');     % Single image per run
+        TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
         brainmask  = obj.ask_team('brainmask');     % Multiple FA-images per run
 
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
         if length(echos4Dmag) < 2
             obj.logger.exception('%s received data for only %d flip angles', obj.name, length(echos4Dmag))
         end
-        if length(TB1map_GRE) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
+        if length(TB1map_GRE) ~= 1          % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
             obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', TB1map_GRE{:}))
         end
         if length(brainmask) ~= 1           % TODO: FIXME

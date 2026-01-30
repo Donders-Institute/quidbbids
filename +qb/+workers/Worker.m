@@ -12,31 +12,36 @@ classdef (Abstract) Worker < handle
 
 
 properties (Abstract, GetAccess = public, SetAccess = protected)
-    name        % Personal name of the worker
-    description % Description of the work that is done
-    version     % The semantic version of the worker
-    needs       % List of workitems the worker needs. Workitems can contain regexp patterns
-end
-
-
-properties (Abstract)
-    bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), 'run',1)`
+    name            % Personal name of the worker
+    description     % Description of the work that is done
+    version         % The semantic version of the worker
+    needs           % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
 
 properties (GetAccess = public, SetAccess = protected)
-    usesGPU     % Logical flag indicating if the worker can use GPU resources. Default = false
+    usesGPU = false % Logical flag indicating if the worker can use GPU resources. Default = false
 end
 
 
 properties
-    BIDS        % BIDS layout from bids-matlab (raw input data only)
-    subject     % The subject that will be worked on
-    config      % Configuration settings that are used to produce the work
-    workdir
-    outputdir
-    team        % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker resume
-    logger      % A logger object for keeping logs
+    BIDS            % BIDS layout from bids-matlab (raw input data only)
+    subject         % The subject that will be worked on
+    config          % Configuration settings that are used to produce the work
+    workdir         % Working directory for intermediate files
+    outputdir       % Output directory for final results
+    team            % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker resume
+    force           % Force to start working, even if the subject is locked or existing results exist
+    bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), 'run',1)`
+    logger          % A logger object for keeping logs
+end
+
+
+methods (Abstract, Access = protected)
+
+    initialize(obj)
+    %INITIALIZE Performs any subclass-specific construction steps
+
 end
 
 
@@ -50,16 +55,17 @@ end
 
 methods
 
-    function obj = Worker(BIDS, subject, config, workdir, outputdir, team, workitems)
+    function obj = Worker(BIDS, subject, config, workdir, outputdir, team, force, workitems)
         % Constructor for the abstract Worker class
 
         arguments
             BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
             subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
             config    (1,1) struct = struct()   % Configuration struct loaded from the config file
-            workdir   {mustBeTextScalar} = ''
-            outputdir {mustBeTextScalar} = ''
-            team      struct       = struct()   % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
+            workdir   {mustBeTextScalar} = ''   % Working directory for intermediate files
+            outputdir {mustBeTextScalar} = ''   % Output directory for final results
+            team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
+            force     (1,1) logical = false     % Force to start working, even if the subject is locked or existing results exist
             workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
         end
 
@@ -69,8 +75,18 @@ methods
         obj.workdir   = workdir;
         obj.outputdir = outputdir;
         obj.team      = team;
-        obj.usesGPU   = false;
+        obj.force     = force;
         obj.logger    = qb.workers.Logging(obj);
+
+        % Force subclass-specific construction step
+        obj.initialize()
+
+        % Make the workitems (if requested)
+        if strlength(workitems)                 % isempty(string('')) -> false
+            for workitem = string(workitems)
+                obj.fetch(workitem);
+            end
+        end
 
     end
 
@@ -81,7 +97,7 @@ methods
         end
     end
 
-    function work = fetch(obj, workitem, force)
+    function work = fetch(obj, workitem)
         %FETCH Gets the workitem.
         %
         % FETCH first tries to collect the workitem but if it doesn't exist then locks the work
@@ -91,7 +107,6 @@ methods
         %
         % Inputs:
         %   WORKITEM - Name of the work item that needs to be fetched
-        %   FORCE    - Force to start working, even if the subject is locked or existing results exist
         %
         % Output:
         %   WORK     - A cell array of paths to the produced data files. The produced work
@@ -100,7 +115,6 @@ methods
         arguments
             obj
             workitem {mustBeTextScalar, mustBeNonempty}
-            force    logical = false
         end
 
         % Check the input
@@ -112,14 +126,14 @@ methods
 
         % See if we can collect the requested workitem
         work = obj.query_ses(obj.BIDSW_ses(), 'data', obj.bidsfilter.(workitem));
-        if isempty(work) || force
+        if isempty(work) || obj.force
 
             obj.logger.info("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path)
 
             % Check if the subject is already being worked on
             locked = obj.is_locked();
             if locked
-                if force
+                if obj.force
                     obj.logger.warning("Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked)
                 else
                     obj.logger.error("%s was: %s", fileparts(obj.statusfile('.lock')), locked)
@@ -335,7 +349,8 @@ methods
     end
 
     function [result, bfiles] = query_ses(obj, layout, query, varargin)
-        %QUERY_SES A thin wrapper around bids.query that adds an additional filter for the current subject and session
+        %QUERY_SES A thin wrapper around bids.query that adds an additional filter for the current subject and session. It
+        % also ensures that the output is always formatted as a row.
         %
         % Inputs:
         %   LAYOUT - BIDS directory name or BIDS structure (from bids.layout) to query
@@ -365,8 +380,15 @@ methods
             obj.logger.exception('QUERY_SES expects the FILTER to be either a struct, or name-value pairs or a struct followed by name-value pairs')
         end
 
+        % Check if there is any data to query
+        if isempty(layout.subjects) || ~ismember(obj.subject.name, {layout.subjects.name})
+            result = {};
+            bfiles = {};
+            return
+        end
+
         % Do the query with the subject/session + any additional filters added
-        result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), 'ses',obj.ses(), varargin{:}));
+        result = bids.query(layout, query, setfields(bfilter, 'sub',obj.sub(), 'ses',obj.ses(), varargin{:}));
 
         % Postprocess the query result (i.e. fix the quirky bids.query behavior)
         switch query

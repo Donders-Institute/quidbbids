@@ -16,7 +16,7 @@ classdef MEGREprepWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "Marcel"                          % Name of the worker
+    name        = "Marcel"                          % Display name of the worker
     description = ["I am a working class hero that will happily do the following pre-processing work for you:";
                    "";
                    "1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
@@ -34,32 +34,12 @@ properties (GetAccess = public, SetAccess = protected)
 end
 
 
-properties
-    bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
-end
+methods (Access = protected)
 
+    function initialize(obj)
+        %INITIALIZE Performs any subclass-specific construction steps
 
-methods
-
-    function obj = MEGREprepWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
-        % Constructor for this concrete Worker class
-
-        arguments
-            BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
-            subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-            config    (1,1) struct = struct()   % Configuration struct loaded from the config file
-            workdir   {mustBeTextScalar} = ''
-            outputdir {mustBeTextScalar} = ''
-            team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
-            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
-        end
-
-        import qb.utils.setfields
-
-        % Call the abstract parent constructor
-        obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
-
-        % Make the abstract properties concrete
+        % Construct the bidsfilters
         include = obj.config.General.BIDS.include;
         if any(~cellfun('isempty', regexp(include.suffix, 'VFA')))
             obj.bidsfilter.rawMEVFA = setfields(include, ...
@@ -105,14 +85,12 @@ methods
                                              'space', obj.bidsfilter.syntheticT1.space, ...
                                              'acq', 'famp', ...
                                              'suffix', 'TB1map');
-
-        % Make the workitems (if requested)
-        if strlength(workitems)                             % isempty(string('')) -> false
-            for workitem = string(workitems)
-                obj.fetch(workitem);
-            end
-        end
     end
+
+end
+
+
+methods
 
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
@@ -144,7 +122,6 @@ methods
 
         import qb.utils.spm_write_vol_gz
         import qb.utils.spm_vol
-        import qb.utils.setfields
 
         GRESignal = @(FlipAngle, TR, T1) sind(FlipAngle) .* (1-exp(-TR./T1)) ./ (1-(exp(-TR./T1)) .* cosd(FlipAngle));
 
@@ -201,7 +178,6 @@ methods
 
         import qb.utils.spm_write_vol_gz
         import qb.utils.spm_vol
-        import qb.utils.setfields
 
         % Index the workdir layout (only for obj.subject)
         BIDSW = obj.BIDSW_ses();

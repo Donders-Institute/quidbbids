@@ -299,6 +299,8 @@ methods
 
     function BIDSW = BIDSW_ses(obj, workdir)
         %BIDSW_SES Gets a tolerant bids.layout() for the WORKDIR sub/ses data only (default: WORKDIR = obj.workdir)
+        %
+        % Waits up to 60 seconds for the workdir BIDS initializiation to be ready, allowing the HPC file system latency to settle
 
         if nargin < 2 || isempty(workdir)
             workdir = obj.workdir;
@@ -307,6 +309,16 @@ methods
         if obj.ses()
             filter.ses = {obj.ses()};
         end
+        
+        % Check for the BIDS layout to be ready (HPC file system latency workaround)
+        start = tic;
+        while ~isfile(fullfile(workdir, 'dataset_description.json')) && toc(start) < 60
+            pause(5);
+        end
+        if toc(start) >= 60
+            obj.logger.warning('BIDS layout in %s could not be initialized within %d seconds', workdir, max_wait)
+        end
+
         BIDSW = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_derivatives',false, 'tolerant',true, 'verbose',false);
     end
 

@@ -155,6 +155,7 @@ methods
         disp("============= Starting workflow at " + string(datetime('now')) + " =============")
         for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
             worker = obj.team.(product).handle;
+            name   = obj.team.(product).name;
             jobIDs = containers.Map('KeyType','char', 'ValueType','char');
             for subject = subjects
 
@@ -165,7 +166,7 @@ methods
 
                 % Ask the worker to fetch the product for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf("=> %s is ordered to make %s for %s/%s\n", worker.name, product, subject.name, subject.session);
+                fprintf("=> %s is ordered to make %s for %s/%s\n", name, product, subject.name, subject.session);
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:});  % NB: products are passed directly instead of calling fetch()
                 else

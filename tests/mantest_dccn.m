@@ -1,4 +1,6 @@
-munlock qsublist
+if mislocked('qsublist')
+    munlock('qsublist')
+end
 clear functions classes    %#ok<CLCLS,CLFUNC>
 
 if isunix

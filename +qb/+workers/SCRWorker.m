@@ -5,7 +5,7 @@ classdef SCRWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "SCR worker"                      % Display name of the worker
+    name        = "SCRWorker"                       % Display name of the worker
     description = ["Your relaxed number cruncher that fits SCR models for breakfast";
                    "";
                    "Methods:"

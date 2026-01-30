@@ -5,7 +5,7 @@ classdef MCRWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "MCR worker"  % Display name of the worker
+    name        = "MCRWorker"   % Display name of the worker
     description = ["If you don't want to stay single, I am sure I can fit you a Multi-Compartment Model";
                     "";
                     "Methods:"

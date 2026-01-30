@@ -5,7 +5,7 @@ classdef B1prepWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "B1prep worker"   % Display name of the worker
+    name        = "B1prepWorker"    % Display name of the worker
     description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"] % Description of the work that is done
     version     = "0.1.0"           % The version of B1prepWorker
     needs       = []                % List of workitems the worker needs. Workitems can contain regexp patterns

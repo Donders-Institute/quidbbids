@@ -5,7 +5,7 @@ classdef R1R2sWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "R1R2s worker"                    % Display name of the worker
+    name        = "R1R2sWorker"                     % Display name of the worker
     description = ["I'm R2-D2, an astromech droid that can fix starships and, yes, generate precise R1- and R2-starmaps for all your neuro-navigation needs!";
                    "";
                    "Methods:"

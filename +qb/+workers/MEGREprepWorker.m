@@ -16,7 +16,7 @@ classdef MEGREprepWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "MEGREprep worker"                % Display name of the worker
+    name        = "MEGREprepWorker"                 % Display name of the worker
     description = ["I am a working class hero that will happily do the following pre-processing work for you:";
                    "";
                    "1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";

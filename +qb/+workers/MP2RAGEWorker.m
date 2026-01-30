@@ -5,7 +5,7 @@ classdef MP2RAGEWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "MP2RAGE worker"                  % Display name of the worker
+    name        = "MP2RAGEWorker"                   % Display name of the worker
     description = ["I am a working class hero that will happily do the following pre-processing work for you:"]
     version     = "0.1.0"                           % The version of MP2RAGEWorker
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns

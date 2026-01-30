@@ -5,7 +5,7 @@ classdef QSMWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "QSM worker"                      % Display name of the worker
+    name        = "QSMWorker"                       % Display name of the worker
     description = ["I am your SEPIA expert that can make shiny QSM and R2-star images for you"] % Description of the work that is done
     version     = "0.1.0"                           % The version of QSMWorker
     needs       = ["echos4Dmag", "echos4Dphase", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns

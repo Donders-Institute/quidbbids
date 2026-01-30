@@ -16,7 +16,7 @@ classdef MEGREprepWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "Marcel"                          % Display name of the worker
+    name        = "MEGREprep worker"                % Display name of the worker
     description = ["I am a working class hero that will happily do the following pre-processing work for you:";
                    "";
                    "1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
@@ -37,7 +37,10 @@ end
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Performs any subclass-specific construction steps
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        % subclasses to perform additional setup after the common Worker properties have been initialized.
+
+        import qb.utils.setfields
 
         % Construct the bidsfilters
         include = obj.config.General.BIDS.include;
@@ -129,7 +132,7 @@ methods
         for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawMEVFA)
 
             % Get the echo-1 magnitude files and metadata for all flip angles of this run
-            VFA_e1_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','mag');
+            VFA_e1_filter = qb.utils.setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','mag');
             VFA_e1 = obj.query_ses(obj.BIDS,  'data', VFA_e1_filter);
             if length(VFA_e1) <= 1
                 obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
@@ -178,6 +181,7 @@ methods
 
         import qb.utils.spm_write_vol_gz
         import qb.utils.spm_vol
+        import qb.utils.setfields
 
         % Index the workdir layout (only for obj.subject)
         BIDSW = obj.BIDSW_ses();

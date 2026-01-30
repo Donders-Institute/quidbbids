@@ -5,7 +5,7 @@ classdef R1R2sWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "R2D2"                            % Display name of the worker
+    name        = "R1R2s worker"                    % Display name of the worker
     description = ["I'm R2-D2, an astromech droid that can fix starships and, yes, generate precise R1- and R2-starmaps for all your neuro-navigation needs!";
                    "";
                    "Methods:"
@@ -18,7 +18,8 @@ end
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Performs any subclass-specific construction steps
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % Construct the bidsfilters
         obj.bidsfilter.R2starmap = struct('modality', 'anat', ...

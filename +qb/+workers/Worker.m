@@ -40,7 +40,8 @@ end
 methods (Abstract, Access = protected)
 
     initialize(obj)
-    %INITIALIZE Performs any subclass-specific construction steps
+    %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        % subclasses to perform additional setup after the common Worker properties have been initialized.
 
 end
 
@@ -388,7 +389,7 @@ methods
         end
 
         % Do the query with the subject/session + any additional filters added
-        result = bids.query(layout, query, setfields(bfilter, 'sub',obj.sub(), 'ses',obj.ses(), varargin{:}));
+        result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), 'ses',obj.ses(), varargin{:}));
 
         % Postprocess the query result (i.e. fix the quirky bids.query behavior)
         switch query

@@ -5,7 +5,7 @@ classdef MCRWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "Jose"        % Display name of the worker
+    name        = "MCR worker"  % Display name of the worker
     description = ["If you don't want to stay single, I am sure I can fit you a Multi-Compartment Model";
                     "";
                     "Methods:"
@@ -18,7 +18,8 @@ end
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Performs any subclass-specific construction steps
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % Construct the bidsfilters
         obj.bidsfilter.MWFmap       = struct('modality', 'anat', ...

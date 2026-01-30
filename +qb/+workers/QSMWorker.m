@@ -5,7 +5,7 @@ classdef QSMWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "Kwok"                            % Display name of the worker
+    name        = "QSM worker"                      % Display name of the worker
     description = ["I am your SEPIA expert that can make shiny QSM and R2-star images for you"] % Description of the work that is done
     version     = "0.1.0"                           % The version of QSMWorker
     needs       = ["echos4Dmag", "echos4Dphase", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
@@ -15,7 +15,8 @@ end
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Performs any subclass-specific construction steps
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % SEPIA should have a directory of its own (we cannot control it's output very well)
         obj.workdir = replace(obj.workdir, "QuIDBBIDS", "SEPIA");

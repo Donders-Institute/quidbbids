@@ -5,7 +5,7 @@ classdef SCRWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "Samuel"                            % Display name of the worker
+    name        = "SCR worker"                      % Display name of the worker
     description = ["Your relaxed number cruncher that fits SCR models for breakfast";
                    "";
                    "Methods:"
@@ -19,7 +19,8 @@ end
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Performs any subclass-specific construction steps
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % Construct the bidsfilters
         obj.bidsfilter.R1map_S0      = struct('modality', 'anat', ...

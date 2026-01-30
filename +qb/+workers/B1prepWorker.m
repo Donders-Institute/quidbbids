@@ -5,17 +5,20 @@ classdef B1prepWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "Yoda"        % Display name of the worker
+    name        = "B1prep worker"   % Display name of the worker
     description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"] % Description of the work that is done
-    version     = "0.1.0"       % The version of B1prepWorker
-    needs       = []            % List of workitems the worker needs. Workitems can contain regexp patterns
+    version     = "0.1.0"           % The version of B1prepWorker
+    needs       = []                % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
 
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Performs any subclass-specific construction steps
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        % subclasses to perform additional setup after the common Worker properties have been initialized.
+
+        import qb.utils.setfields
 
         % Construct the bidsfilters
         obj.bidsfilter.rawTB1map_famp = setfields(obj.config.General.BIDS.include, 'modality','fmap', 'acq','famp');

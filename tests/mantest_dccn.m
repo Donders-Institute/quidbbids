@@ -1,4 +1,6 @@
-clear all classes       %#ok<CLALL>
+munlock qsublist
+clear functions classes    %#ok<CLCLS,CLFUNC>
+
 if isunix
     restoredefaultpath
     addpath('/home/common/matlab/sepia/sepia_1.2.2.6')
@@ -12,7 +14,7 @@ addpath(fileparts(fileparts(mfilename('fullpath'))))
 %% MCR-MWI
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "default")
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
-quidb.resumes.R2D2.preferred = true;    % Optional, else GUI usage
+quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
 quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',36e3, 'options','--partition=gpu --gres=gpu:1'};
 mgr = quidb.manager();
@@ -30,7 +32,7 @@ end
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM'), "", "", "default")
 quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
 quidb.products = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
-quidb.resumes.QSMWorker.preferred = true;    % Optional, else GUI usage
+quidb.resumes.QSMWorker.preferred = true;       % Optional, else GUI usage
 mgr = quidb.manager();
 mgr.start_workflow()
 if isunix

@@ -5,12 +5,10 @@ classdef MCRWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "MCRWorker"   % Display name of the worker
     description = ["If you don't want to stay single, I am sure I can fit you a Multi-Compartment Model";
                     "";
                     "Methods:"
                     "- "]       % Description of the work that is done
-    version     = "0.1.0"       % The version of MCRWorker
     needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"] % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 

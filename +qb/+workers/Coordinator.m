@@ -91,7 +91,6 @@ methods
         %   RESUME.NAME.HANDLE      - The function handle
         %              .NAME        - Their personal name
         %              .DESCRIPTION - The description of what they do
-        %              .VERSION     - Their semantic version number
         %              .MAKES       - The workitems they can make
         %              .NEEDS       - The workitems they need for work
         %              .USESGPU     - True if the worker can make use of the GPU
@@ -110,7 +109,6 @@ methods
                 resumes.(worker.name).handle      = str2func(class(worker));
                 resumes.(worker.name).name        = worker.name;
                 resumes.(worker.name).description = worker.description;
-                resumes.(worker.name).version     = worker.version;
                 resumes.(worker.name).makes       = worker.makes();
                 resumes.(worker.name).needs       = worker.needs(:)';
                 resumes.(worker.name).usesGPU     = worker.usesGPU;

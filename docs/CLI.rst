@@ -16,18 +16,17 @@ To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by provid
    >> quidb.workitems                                      % See e.g. what QuIDBBIDS can make
       "Chimap" "FMW_exrate" "FW_M0map" "FW_R1map" [...]
 
-   >> quidb.resumes.R2D2                                   % NB: Only ever edit the `preferred` field
+   >> quidb.resumes.R2R1R2sWorker                          % NB: Only ever edit the `preferred` field
            handle: @qb.workers.R1R2sWorker
-             name: "R2D2"
+             name: "R1R2sWorker"
       description: [24×1 string]
-          version: "0.1.0"
             makes: ["R2starmap" "M0map" "R1map"]
             needs: ["echos4Dmag" "TB1map_GRE" "brainmask"]
           usesGPU: 0
         preferred: 0
 
    >> quidb.products = ["R1map", "R2starmap", "MWFmap"];   % Specify the output items
-   >> quidb.resumes.R2D2.preferred = true;                 % Specify the worker that makes the R1/R2starmap
+   >> quidb.resumes.R2R1R2sWorker.preferred = true;        % Specify the worker that makes the R1/R2starmap
 
 Edit settings and options
 -------------------------

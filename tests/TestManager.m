@@ -15,6 +15,7 @@ classdef TestManager < BaseTest
             mkdir(fullfile(testCase.TmpDir))
             bids.init(testCase.TmpDir)
             testCase.mgr = qb.QuIDBBIDS(testCase.TmpDir).manager();
+            testCase.mgr.interactive = false;
         end
     end
 
@@ -40,6 +41,17 @@ classdef TestManager < BaseTest
             % Should throw an error if no worker can make a requested product
             testCase.mgr.coord.products = ["rawMEGRE", "echo.*D(mag|phase)"];
             testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error for known directly passed products")
+            testCase.verifyNotEmpty(testCase.mgr.team, 'Manager team should not be empty')
+
+            % Should not error if the preferred worker is set
+            testCase.mgr.coord.products = ["R1map", "R2starmap", "MWFmap"];
+            testCase.mgr.coord.resumes.R1R2sWorker.preferred = true;
+            testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error when preferred worker is set")
+            testCase.verifyNotEmpty(testCase.mgr.team, 'Manager team should not be empty')
+
+            % Should error if the preferred worker is not set
+            testCase.mgr.coord.resumes.R1R2sWorker.preferred = false;
+            testCase.verifyError(@() testCase.mgr.create_team(), "QuIDBBIDS:WorkItem:InvalidCount", "Manager should error when preferred worker is not set")
             testCase.verifyNotEmpty(testCase.mgr.team, 'Manager team should not be empty')
         end
 

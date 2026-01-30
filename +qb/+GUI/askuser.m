@@ -32,7 +32,7 @@ function chosen = askuser(workers, workitem)
     maxTableHeight = 250;       % Maximum table height
 
     % Create figure
-    fig = uifigure('Name', "Choose the Worker that should make your """ + workitem + """", 'Position', [100 100 figWidth figHeight]);
+    fig = uifigure('Name', "Choose the Worker that should make your """ + workitem + """", 'Position', [100 100 figWidth figHeight], 'Visible', 'off');
 
     % --- Worker radiobutton group (left)
     rbHeight = figHeight - 2*margin - 2*spacing - 2*btnHeight;
@@ -71,6 +71,8 @@ function chosen = askuser(workers, workitem)
     updateInfo(bg.SelectedObject.Text)
 
     % Wait for user
+    uiwait(helpdlg({"There are multiple workers that can produce: " + workitem, "Please select the one you want to use"}, "Create team"))
+    fig.Visible = 'on';
     uiwait(fig)
 
     % -----------------------
@@ -81,8 +83,8 @@ function chosen = askuser(workers, workitem)
         w = workers(strcmp(workerName, names));
 
         % Info box content
-        info.Value = splitlines(sprintf('Name: %s\nVersion: %s\nPreferred: %d\nUses GPU: %d\n\nDescription:\n%s', ...
-                                w.name, w.version, w.preferred, w.usesGPU, join(w.description, newline)));
+        info.Value = splitlines(sprintf('Name: %s\nPreferred: %d\nUses GPU: %d\n\nDescription:\n%s', ...
+                                w.name, w.preferred, w.usesGPU, join(w.description, newline)));
 
         % Tables data
         tblNeeds.Data = makeTableData(w.needs());

@@ -5,13 +5,11 @@ classdef SCRWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "SCRWorker"                       % Display name of the worker
     description = ["Your relaxed number cruncher that fits SCR models for breakfast";
                    "";
                    "Methods:"
                    "- Compute weighted means of the R2-star & Chi-maps over the different flip-angles";
                    "- Compute R1- & M0-maps based on despot1 with S0 estimates"]
-    version     = "0.0.1"                           % The version of SCRWorker
     needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "TB1map_GRE"]   % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 

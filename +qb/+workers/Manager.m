@@ -36,6 +36,7 @@ properties
     team = struct()     % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
     coord               % The coordinator that help the manager with administrative tasks
     force = false       % Force workers to start working, even if the subject is locked or existing results exist
+    interactive = true  % If true, the manager will ask the user for help when needed (false = useful for automated testing)
 end
 
 
@@ -82,7 +83,7 @@ methods
                 % Add to the team if the worker is capable
                 for workitem_ = makes(match)                % Loop over the actual workitems (without optional regexp pattern)
                     if isfield(obj.team, workitem_)         % Append the worker to the list
-                        if ~ismember(func2str(worker.handle), cellfun(@func2str, {obj.team.(workitem_).handle}, 'UniformOutput', false))    % Check if we haven't already added this worker
+                        if ~ismember(worker.name, obj.team.(workitem_).name)    % Check if we haven't already added this worker
                             obj.team.(workitem_)(end+1) = worker;
                         end
                     else                                    % Or create a new list
@@ -164,7 +165,7 @@ methods
 
                 % Ask the worker to fetch the product for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf("=> %s is ordered to make %s for %s/%s\n", func2str(worker), product, subject.name, subject.session);
+                fprintf("=> %s is ordered to make %s for %s/%s\n", worker.name, product, subject.name, subject.session);
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:});  % NB: products are passed directly instead of calling fetch()
                 else
@@ -229,8 +230,7 @@ methods (Access = private)
         end
 
         % Check if any of the workers is preferred. If not ask the user and make the worker preferred
-        if ~any([workers.preferred])
-            uiwait(helpdlg({"There are multiple workers that can produce: " + workitem, "Please select the one you want to use"}, "Create team"))
+        if obj.interactive && ~any([workers.preferred])
             chosen = qb.GUI.askuser(workers, workitem);
             if chosen
                 workers(chosen).preferred = true;

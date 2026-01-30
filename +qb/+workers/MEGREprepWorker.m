@@ -16,7 +16,6 @@ classdef MEGREprepWorker < qb.workers.Worker
 
 
 properties (GetAccess = public, SetAccess = protected)
-    name        = "MEGREprepWorker"                 % Display name of the worker
     description = ["I am a working class hero that will happily do the following pre-processing work for you:";
                    "";
                    "1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
@@ -29,7 +28,6 @@ properties (GetAccess = public, SetAccess = protected)
                    "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows"
                    "";
                    "If only MEGRE data is available, then steps 1 and 2 are skipped"] % Description of the work that is done
-    version     = "0.1.0"                           % The version of MEGREprepWorker
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 

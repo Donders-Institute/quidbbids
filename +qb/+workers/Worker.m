@@ -12,14 +12,13 @@ classdef (Abstract) Worker < handle
 
 
 properties (Abstract, GetAccess = public, SetAccess = protected)
-    name            % Personal name of the worker
     description     % Description of the work that is done
-    version         % The semantic version of the worker
     needs           % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
 
 properties (GetAccess = public, SetAccess = protected)
+    name            % Basename of the worker
     usesGPU = false % Logical flag indicating if the worker can use GPU resources. Default = false
 end
 
@@ -77,6 +76,7 @@ methods
         obj.outputdir = outputdir;
         obj.team      = team;
         obj.force     = force;
+        obj.name      = string(erase(class(obj), 'qb.workers.'));  % Get the class name without package prefix
         obj.logger    = qb.workers.Logging(obj);
 
         % Force subclass-specific construction step

@@ -1,6 +1,3 @@
-if mislocked('qsublist')
-    munlock('qsublist')
-end
 clear functions classes    %#ok<CLCLS,CLFUNC>
 
 if isunix
@@ -35,6 +32,7 @@ quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM'), "", "", "default")
 quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
 quidb.products = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
 quidb.resumes.QSMWorker.preferred = true;       % Optional, else GUI usage
+quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
 mgr.start_workflow()
 if isunix

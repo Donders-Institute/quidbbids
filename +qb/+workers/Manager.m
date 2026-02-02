@@ -134,6 +134,18 @@ methods
             subjects string = "";
         end
 
+        % Avoid issues with persistent memory locks of the qsublist function
+        if obj.coord.config.General.useHPC.value && mislocked('qsublist') && obj.interactive
+            answer = questdlg('You have old/unreturned qsub(feval) jobs in memory, probably caused by crahses. Can I cleanup the bookkeeping?', ...
+                'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Cancel');
+            if isempty(answer) || strcmp(answer, 'Cancel')
+                return
+            elseif strcmp(answer, 'Yes')
+                munlock('qsublist')
+                clear('qsublist')
+            end
+        end
+
         % Parse the subjects for which the workflow should be executed
         if strlength(subjects) > 0
             sel = false(size(obj.coord.BIDS.subjects));
@@ -166,7 +178,7 @@ methods
 
                 % Ask the worker to fetch the product for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf("=> %s is ordered to make %s for %s/%s\n", name, product, subject.name, subject.session);
+                fprintf("▶ %s is ordered to make %s for %s/%s\n", name, product, subject.name, subject.session);
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:});  % NB: products are passed directly instead of calling fetch()
                 else

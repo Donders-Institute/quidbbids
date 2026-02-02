@@ -316,49 +316,10 @@ methods
             pause(5);
         end
         if toc(start) >= 60
-            obj.logger.warning('BIDS layout in %s could not be initialized within %d seconds', workdir, max_wait)
+            obj.logger.warning('BIDS layout %s did not become available within 60 seconds', workdir)
         end
 
         BIDSW = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_derivatives',false, 'tolerant',true, 'verbose',false);
-    end
-
-    function [status, output] = run_command(obj, command, silent)
-        %RUN_COMMAND Executes a shell command and display its output.
-        %
-        %   [STATUS, OUTPUT] = RUN_COMMAND(COMMAND) prints the specified shell
-        %   COMMAND to the console, executes it using SYSTEM(), and returns the
-        %   STATUS and OUTPUT.
-        %
-        %   If the command fails (i.e., STATUS ~= 0), an error is raised with
-        %   a message containing the exit status and the command's output.
-        %
-        %   Inputs:
-        %       COMMAND - A string containing the shell command to execute.
-        %       SILENT  - If true, suppress output unless there is an error.
-        %                 Default = false.
-        %
-        %   Outputs:
-        %       STATUS  - Exit code returned by the SYSTEM command.
-        %       OUTPUT  - Command-line output returned by the SYSTEM command.
-
-        arguments
-            obj
-            command {mustBeTextScalar, mustBeNonempty}
-            silent  (1,1) logical = false
-        end
-
-        % Run the command
-        if ~silent
-            obj.logger.info("$ " + command)
-        end
-        [status, output] = system(command);
-
-        % Check for errors
-        if status ~= 0
-            obj.logger.error('Command failed with status %d\nOutput:\n%s', status, output)
-        elseif ~silent && ~isempty(output)
-            obj.logger.info(output)
-        end
     end
 
     function [result, bfiles] = query_ses(obj, layout, query, varargin)
@@ -394,7 +355,7 @@ methods
         end
 
         % Check if there is any data to query
-        if isempty(layout.subjects) || ~ismember(obj.subject.name, {layout.subjects.name})
+        if ~isfield(layout, 'subjects') || ~isfield(layout.subjects, 'name') || ~ismember(obj.subject.name, {layout.subjects.name})
             result = {};
             bfiles = {};
             return
@@ -493,6 +454,45 @@ methods
             oldroot              = extractBefore(bfile.path, bfile.bids_path);  % Ends with filesep
             bfile.path           = replace(bfile.path,           oldroot, fullfile(rootdir, filesep));
             bfile.metadata_files = replace(bfile.metadata_files, oldroot, fullfile(rootdir, filesep));
+        end
+    end
+
+    function [status, output] = run_command(obj, command, silent)
+        %RUN_COMMAND Executes a shell command and display its output.
+        %
+        %   [STATUS, OUTPUT] = RUN_COMMAND(COMMAND) prints the specified shell
+        %   COMMAND to the console, executes it using SYSTEM(), and returns the
+        %   STATUS and OUTPUT.
+        %
+        %   If the command fails (i.e., STATUS ~= 0), an error is raised with
+        %   a message containing the exit status and the command's output.
+        %
+        %   Inputs:
+        %       COMMAND - A string containing the shell command to execute.
+        %       SILENT  - If true, suppress output unless there is an error.
+        %                 Default = false.
+        %
+        %   Outputs:
+        %       STATUS  - Exit code returned by the SYSTEM command.
+        %       OUTPUT  - Command-line output returned by the SYSTEM command.
+
+        arguments
+            obj
+            command {mustBeTextScalar, mustBeNonempty}
+            silent  (1,1) logical = false
+        end
+
+        % Run the command
+        if ~silent
+            obj.logger.info("$ " + command)
+        end
+        [status, output] = system(command);
+
+        % Check for errors
+        if status ~= 0
+            obj.logger.error('Command failed with status %d\nOutput:\n%s', status, output)
+        elseif ~silent && ~isempty(output)
+            obj.logger.info(output)
         end
     end
 

@@ -305,10 +305,6 @@ methods
         if nargin < 2 || isempty(workdir)
             workdir = obj.workdir;
         end
-        filter.sub = {obj.sub()};
-        if obj.ses()
-            filter.ses = {obj.ses()};
-        end
         
         % Check for the BIDS layout to be ready (HPC file system latency workaround)
         start = tic;
@@ -318,6 +314,15 @@ methods
         if toc(start) >= 60
             obj.logger.warning('BIDS layout %s did not become available within 60 seconds', workdir)
         end
+
+        % Make sure the sub/ses dir exists or bids.layout will error
+        filter.sub = {obj.sub()};
+        subsesdir  = "sub-" + obj.sub();
+        if obj.ses()
+            filter.ses = {obj.ses()};
+            subsesdir  = fullfile(subsesdir, "ses-" + obj.ses());
+        end
+        [~,~] = mkdir(fullfile(workdir, subsesdir));        
 
         BIDSW = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_derivatives',false, 'tolerant',true, 'verbose',false);
     end

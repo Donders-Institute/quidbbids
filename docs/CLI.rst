@@ -22,7 +22,7 @@ To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by provid
       description: [24×1 string]
             makes: ["R2starmap" "M0map" "R1map"]
             needs: ["echos4Dmag" "TB1map_GRE" "brainmask"]
-          usesGPU: 0
+          usesGPU: 1
         preferred: 0
 
    >> quidb.products = ["R1map", "R2starmap", "MWFmap"];   % Specify the output items
@@ -70,3 +70,5 @@ browser:
 .. code-block:: matlab
 
    >> doc qb.QuIDBBIDS
+
+A more advanced example of a CLI workflow can be found in this `manual test script <https://github.com/Donders-Institute/quidbbids/blob/main/tests/mantest_dccn.m>`__.

@@ -103,7 +103,7 @@ methods
                 if isfile(logfile) && dir(logfile).bytes > 0
                     subjects(end+1) = subses;                   %#ok<AGROW>
                     if verbose
-                        fprintf("\n| QuIDBBIDS %s found for %s:\n", level_, subses)
+                        fprintf("\n⛔ QuIDBBIDS %s found for %s:\n", level_, subses)
                         fprintf('| %s\n', readlines(logfile))
                     end
                 end

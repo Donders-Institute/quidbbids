@@ -15,16 +15,16 @@ addpath(fileparts(fileparts(mfilename('fullpath'))))
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "default")
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
+quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
 mgr.force = false;
 
 % First run the non-GPU part of the pipeline
-quidb.products = [quidb.resumes.R1R2sWorker.needs, "R2starmap", "MWFmap"];
+quidb.products = [quidb.resumes.R1R2sWorker.needs, "MWFmap"];
 mgr.start_workflow()
 
 % Then run the GPU part of the pipeline
-quidb.config.General.useHPC.value = true;
-quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',36e3, 'options','--partition=gpu --gpus=tesla_p100-pcie-16gb:1'};
+quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',36e3, 'options','--partition=gpu --gres=gpu:1 --mem-per-gpu=20gb'};
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 mgr.start_workflow()
 

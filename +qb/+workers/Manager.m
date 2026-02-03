@@ -136,8 +136,8 @@ methods
 
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value && mislocked('qsublist') && obj.interactive
-            answer = questdlg('You have old/unreturned qsub(feval) jobs in memory, probably caused by previous crashes. Can I cleanup the bookkeeping?', ...
-                'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Cancel');
+            answer = questdlg('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes.\n\nCan I cleanup the bookkeeping?', ...
+                'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Yes');
             if isempty(answer) || strcmp(answer, 'Cancel')
                 return
             elseif strcmp(answer, 'Yes')
@@ -169,10 +169,11 @@ methods
             fprintf('Found %d existing lockfiles\n', length(lockfiles))
             if obj.interactive
                 sample = fullfile(lockfiles(1).folder, lockfiles(1).name);
-                answer = questdlg(sprintf('Found %d existing lockfiles, probably caused by previous crashes. Here is a sample (..%s):\n%s\n\nShall I clean them up or do you have other jobs running on the same data?', ...
-                length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Cancel', 'Cancel');
+                answer = questdlg(sprintf('Found %d existing lockfiles, probably caused by previous crashes. Here is a sample:\n\n..%s:\n%s\n\nShall I clean them up?', ...
+                length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Yes');
                 if strcmp(answer, 'Yes')
                     lockfiles = fullfile({lockfiles.folder}, {lockfiles.name});
+                    fprintf('Deleting %d existing lockfiles\n', length(lockfiles))
                     delete(lockfiles{:})
                 end
             end
@@ -195,7 +196,7 @@ methods
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
                 fprintf("▶ %s is ordered to make %s for %s/%s\n", name, product, subject.name, subject.session);
                 if obj.coord.config.General.useHPC.value
-                    jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:});  % NB: products are passed directly instead of calling fetch()
+                    jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', getbatch);  % NB: products are passed directly instead of calling fetch()
                 else
                     worker(args{:}).fetch(product);      % TODO: Catch the work done (at some point)
                 end

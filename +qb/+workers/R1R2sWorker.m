@@ -10,6 +10,7 @@ properties (GetAccess = public, SetAccess = protected)
                    "Methods:"
                    "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"]
     needs       = ["echos4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
+    usesGPU     = true
 end
 
 

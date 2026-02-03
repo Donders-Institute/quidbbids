@@ -135,15 +135,8 @@ methods
         end
 
         % Avoid issues with persistent memory locks of the qsublist function
-        if obj.coord.config.General.useHPC.value && mislocked('qsublist') && obj.interactive
-            answer = questdlg('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes.\n\nCan I cleanup the bookkeeping?', ...
-                'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Yes');
-            if isempty(answer) || strcmp(answer, 'Cancel')
-                return
-            elseif strcmp(answer, 'Yes')
-                munlock('qsublist')
-                clear('qsublist')
-            end
+        if obj.coord.config.General.useHPC.value
+            batch = obj.getbatch();
         end
 
         % Parse the subjects for which the workflow should be executed
@@ -196,7 +189,7 @@ methods
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
                 fprintf("▶ %s is ordered to make %s for %s/%s\n", name, product, subject.name, subject.session);
                 if obj.coord.config.General.useHPC.value
-                    jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', getbatch);  % NB: products are passed directly instead of calling fetch()
+                    jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
                 else
                     worker(args{:}).fetch(product);      % TODO: Catch the work done (at some point)
                 end
@@ -274,6 +267,18 @@ methods (Access = private)
         if length(obj.team.(workitem)) ~= 1
             error('QuIDBBIDS:WorkItem:InvalidCount', "Expected only a single workitem, but got %d", length(obj.team.(workitem)))
         end
+    end
+
+    function batch = getbatch(~)
+        % GETBATCH returns an incrementing number that can be used to distinguish subsequent QSUBFEVAL calls
+
+        persistent batch_
+
+        if isempty(batch_)
+            batch_ = 0;
+        end
+        batch_ = batch_ + 1;
+        batch = batch_;
     end
 
 end

@@ -19,6 +19,9 @@ methods (Access = protected)
         %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
+        % We can use the GPU
+        obj.usesGPU = true;
+
         % Construct the bidsfilters
         obj.bidsfilter.MWFmap       = struct('modality', 'anat', ...
                                              'echo', [], ...

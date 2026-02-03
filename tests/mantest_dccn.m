@@ -20,7 +20,7 @@ mgr = quidb.manager();
 mgr.force = false;
 
 % First run the non-GPU part of the pipeline
-quidb.products = [quidb.resumes.R1R2sWorker.needs, "MWFmap"];
+quidb.products = quidb.resumes.R1R2sWorker.needs;
 mgr.start_workflow()
 
 % Then run the GPU part of the pipeline

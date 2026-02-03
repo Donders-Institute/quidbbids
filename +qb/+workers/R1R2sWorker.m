@@ -10,7 +10,6 @@ properties (GetAccess = public, SetAccess = protected)
                    "Methods:"
                    "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"]
     needs       = ["echos4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
-    usesGPU     = true
 end
 
 
@@ -19,6 +18,9 @@ methods (Access = protected)
     function initialize(obj)
         %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
         % subclasses to perform additional setup after the common Worker properties have been initialized.
+
+        % We can use the GPU
+        obj.usesGPU = true;
 
         % Construct the bidsfilters
         obj.bidsfilter.R2starmap = struct('modality', 'anat', ...

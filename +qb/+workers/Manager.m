@@ -137,6 +137,16 @@ methods
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value
             batch = obj.getbatch();
+            if mislocked('qsublist') && obj.interactive
+                answer = questdlg('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes, that may cause issues.\n\nCan I cleanup the bookkeeping?', ...
+                    'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Yes');
+                if isempty(answer) || strcmp(answer, 'Cancel')
+                    return
+                elseif strcmp(answer, 'Yes')
+                    munlock('qsublist')
+                    clear('qsublist')
+                end
+            end
         end
 
         % Parse the subjects for which the workflow should be executed

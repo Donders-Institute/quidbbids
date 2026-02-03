@@ -136,7 +136,7 @@ methods
 
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value && mislocked('qsublist') && obj.interactive
-            answer = questdlg('You have old/unreturned qsub(feval) jobs in memory, probably caused by crahses. Can I cleanup the bookkeeping?', ...
+            answer = questdlg('You have old/unreturned qsub(feval) jobs in memory, probably caused by previous crashes. Can I cleanup the bookkeeping?', ...
                 'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Cancel');
             if isempty(answer) || strcmp(answer, 'Cancel')
                 return
@@ -162,6 +162,21 @@ methods
         [~,~]  = mkdir(logdir);
         diary(fullfile(logdir, 'diary_workflow.txt'))
         cleanup = onCleanup(@() diary('off'));
+
+        % Check if there are still lock-files around from previous crashes
+        lockfiles = dir(fullfile(obj.coord.workdir, '**', '*.lock'));
+        if ~isempty(lockfiles)
+            fprintf('Found %d existing lockfiles\n', length(lockfiles))
+            if obj.interactive
+                sample = fullfile(lockfiles(1).folder, lockfiles(1).name);
+                answer = questdlg(sprintf('Found %d existing lockfiles, probably caused by previous crashes. Here is a sample (..%s):\n%s\n\nShall I clean them up or do you have other jobs running on the same data?', ...
+                length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Cancel', 'Cancel');
+                if strcmp(answer, 'Yes')
+                    lockfiles = fullfile({lockfiles.folder}, {lockfiles.name});
+                    delete(lockfiles{:})
+                end
+            end
+        end
 
         % Block the start button in the GUI (if any) and initialize the workers
         disp("============= Starting workflow at " + string(datetime('now')) + " =============")

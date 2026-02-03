@@ -1,4 +1,5 @@
 clear functions classes    %#ok<CLCLS,CLFUNC>
+qb.resetconfig
 
 if isunix
     restoredefaultpath
@@ -17,9 +18,10 @@ quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
 quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',36e3, 'options','--partition=gpu --gres=gpu:1'};
 mgr = quidb.manager();
+mgr.force = false;
 mgr.start_workflow()
 if isunix
-    system(sprintf(['(module load bidscoin; cd %s' ...
+    system(sprintf(['(module load bidscoin; cd %s;' ...
         'slicereport.py %s anat/*R1R2s*R1map*     -r report_R1map_gacelle     --options i 0.2 1.5;' ...
         'slicereport.py %s anat/*R1R2s*R2starmap* -r report_R2starmap_gacelle --options i 5 50;' ...
         'slicereport.py %s anat/*MWFmap*          -r report_MWFmap            --options i 0 20;' ...
@@ -34,9 +36,10 @@ quidb.products = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
 quidb.resumes.QSMWorker.preferred = true;       % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
+mgr.force = false;
 mgr.start_workflow()
 if isunix
-    system(sprintf(['(module load bidscoin; cd %s' ...
+    system(sprintf(['(module load bidscoin; cd %s;' ...
         'slicereport.py %s anat/*R2starmap* -r report_R2starmap --options i 5 50;' ...
         'slicereport.py %s anat/*Chimap*    -r report_Chimap    --options i -0.15 0.3) < /dev/null > /dev/null 2>&1'], ...
         fileparts(quidb.workdir), repmat(replace(quidb.workdir,"QuIDBBIDS","SEPIA"),1,2)));

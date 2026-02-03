@@ -150,7 +150,7 @@ methods
             end
 
             % Get the work done
-            cleanup = onCleanup(@() obj.unlock());
+            cleanup = onCleanup(@obj.unlock);
             obj.lock()
             obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
 

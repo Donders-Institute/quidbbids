@@ -152,9 +152,14 @@ methods
             % Get the work done
             cleanup = onCleanup(@obj.unlock);
             obj.lock()
-            warnState = warning('off', 'MATLAB:RandStream:ActivatingLegacyGenerators');     % SPM triggers this warning all the time
+            [prevMsg, prevId] = lastwarn;
             obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
-            warning(warnState)
+
+            % Ignore the SPM setting 'state' warning
+            [msg, id] = lastwarn;
+            if strcmp(id, 'MATLAB:RandStream:ActivatingLegacyGenerators')
+                lastwarn(prevMsg, prevId)
+            end
 
             % TODO: update the dashboard (non-HPC usage)
 

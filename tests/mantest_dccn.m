@@ -1,5 +1,5 @@
-clear functions classes    %#ok<CLCLS,CLFUNC>
-qb.resetconfig
+clear functions classes     %#ok<CLCLS,CLFUNC>
+qb.resetconfig              % Useful when running the development version
 
 if isunix
     restoredefaultpath
@@ -13,7 +13,6 @@ addpath(fileparts(fileparts(mfilename('fullpath'))))
 
 %% MCR-MWI
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "default")
-quidb.products = ["R1map", "R2starmap", "MWFmap"];
 quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
@@ -28,6 +27,7 @@ quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',36e3, 'options','--par
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 mgr.start_workflow()
 
+% Make QC reports
 if isunix
     system(sprintf(['(module load bidscoin; cd %s;' ...
         'slicereport.py %s anat/*R1R2s*R1map*     -r report_R1map_gacelle     --options i 0.2 1.5;' ...
@@ -46,6 +46,8 @@ quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
 mgr.force = false;
 mgr.start_workflow()
+
+% Make QC reports
 if isunix
     system(sprintf(['(module load bidscoin; cd %s;' ...
         'slicereport.py %s anat/*R2starmap* -r report_R2starmap --options i 5 50;' ...

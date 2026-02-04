@@ -134,6 +134,17 @@ methods
             subjects string = "";
         end
 
+        % Start a diary to log the screen output
+        logdir = fullfile(obj.coord.outputdir, 'logs');
+        [~,~]  = mkdir(logdir);
+        diary(fullfile(logdir, 'diary_workflow.txt'))
+        cleanup = onCleanup(@() diary('off'));
+
+        if ~strlength(obj.coord.products)
+            disp('The list of products to make is empty, there is nothing to do')
+            return
+        end
+
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value
             batch = obj.getbatch();
@@ -160,12 +171,6 @@ methods
             subjects = obj.coord.BIDS.subjects;
         end
 
-        % Start a diary to log the screen output
-        logdir = fullfile(obj.coord.outputdir, 'logs');
-        [~,~]  = mkdir(logdir);
-        diary(fullfile(logdir, 'diary_workflow.txt'))
-        cleanup = onCleanup(@() diary('off'));
-
         % Check if there are still lock-files around from previous crashes
         lockfiles = dir(fullfile(obj.coord.workdir, '**', '*.lock'));
         if ~isempty(lockfiles)
@@ -182,8 +187,14 @@ methods
             end
         end
 
+        % Check if our team is up-to-date
+        if ~all(isfield(obj.team, obj.coord.products))
+            disp("▶ Manager updates the team")
+            obj.create_team()
+        end
+
         % Block the start button in the GUI (if any) and initialize the workers
-        disp("============= Starting workflow at " + string(datetime('now')) + " =============")
+        fprintf("\n============= Starting workflow at %s =============\n", datetime('now'))
         for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
             worker = obj.team.(product).handle;
             name   = obj.team.(product).name;
@@ -197,7 +208,7 @@ methods
 
                 % Ask the worker to fetch the product for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf("▶ Manager dispatched %s to make the '%s' product for %s/%s\n", name, product, subject.name, subject.session);
+                fprintf("▶ Manager dispatched %s to make the '%s' product for %s/%s\n", name, product, subject.name, subject.session)
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
                 else
@@ -211,7 +222,7 @@ methods
         end
 
         % Unblock the start button in the GUI (if any)
-        disp("============= Finished workflow at " + string(datetime('now')) + " =============")
+        fprintf("============= Finished workflow at %s =============\n\n", datetime('now'))
     end
 
     function monitor_progress(obj, workitem, subjects, jobIDs)

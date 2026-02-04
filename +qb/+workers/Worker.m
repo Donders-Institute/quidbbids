@@ -155,9 +155,9 @@ methods
             [prevMsg, prevId] = lastwarn;
             obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
 
-            % Ignore the SPM setting 'state' warning
-            [msg, id] = lastwarn;
-            if strcmp(id, 'MATLAB:RandStream:ActivatingLegacyGenerators')
+            % Ignore the SPM setting random 'state' and the SEPIA rmpath warnings (-> lastwarn is displayed by qsubget())
+            [~, id] = lastwarn;
+            if ismember(id, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound'})
                 lastwarn(prevMsg, prevId)
             end
 

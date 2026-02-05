@@ -5,8 +5,7 @@ classdef QuIDBBIDS < qb.workers.Coordinator
 %  \__\_\\_,_|___|___/|___/___/___|___/|___/
 %
 % Quantitative Imaging Derived Biomarkers in BIDS
-% ¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
-%
+% ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 % The QuIDBBIDS class provides a framework for pre-processing and estimation of
 % quantitative MRI-derived biomarkers in the BIDS (Brain Imaging Data Structure)
 % format. It integrates several toolboxes (such as SPM, SEPIA, MWI and more) and
@@ -55,6 +54,9 @@ methods
             configfile {mustBeTextScalar} = ""
         end
 
+        fprintf(['\n⏱ Starting up QuIDBBIDS...' ...
+                 '\n‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n'])
+
         if strlength(bidsdir) == 0
             bidsdir = uigetdir(pwd, "Select the root BIDS directory");
         end
@@ -62,7 +64,7 @@ methods
         if strlength(configfile) == 0 || default
             configfile = fullfile(bidsdir, "derivatives", "QuIDBBIDS", "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
             if default && isfile(configfile)
-                disp("Deleting existing config file: " + configfile)
+                disp("🔧 Deleting existing config file: " + configfile)
                 delete(configfile)
             end
         elseif isfolder(configfile)

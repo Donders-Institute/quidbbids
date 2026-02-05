@@ -455,7 +455,7 @@ classdef ConfigEditor < handle
             % Wait for user to finish
             if isvalid(w), close(w), end
             uiwait(h.fig)
-            disp('SEPIA configuration editing done')
+            disp('🔧 SEPIA configuration editing done')
 
             % Update the config with the new parameters
             if isvalid(h.fig)

@@ -38,7 +38,7 @@ methods
         %   WORKDIR    - Working directory for intermediate results. Default: outputdir/QuIDBBIDS_work.
         %   CONFIGFILE - Path to the configuration file with workflow settings. Passing 'default' uses the
         %                default config from the QuIDBBIDS folder in your HOME directory as default.
-        %                Default: [BIDSDIR]/derivatives/quidbbids/code/config.json
+        %                Default: [BIDSDIR]/code/QuIDBBIDS/config.json
         %
         % Usage:
         %   quidb = qb.QuIDBBIDS();             % Select BIDS root directory via GUI
@@ -62,7 +62,7 @@ methods
         end
         default = strcmp(configfile, "default");
         if strlength(configfile) == 0 || default
-            configfile = fullfile(bidsdir, "derivatives", "QuIDBBIDS", "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
+            configfile = fullfile(bidsdir, "code", "QuIDBBIDS", "config.json");  % A bit of a hack because obj is not yet fully constructed
             if default && isfile(configfile)
                 disp("🔧 Deleting existing config file: " + configfile)
                 delete(configfile)

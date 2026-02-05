@@ -33,10 +33,10 @@ classdef Manager < handle
 
 
 properties
-    team = struct()     % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
-    coord               % The coordinator that help the manager with administrative tasks
-    force = false       % Force workers to start working, even if the subject is locked or existing results exist
-    interactive = true  % If true, the manager will ask the user for help when needed (false = useful for automated testing)
+    team = struct.empty     % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+    coord                   % The coordinator that help the manager with administrative tasks
+    force = false           % Force workers to start working, even if the subject is locked or existing results exist
+    interactive = true      % If true, the manager will ask the user for help when needed (false = useful for automated testing)
 end
 
 
@@ -112,11 +112,48 @@ methods
         end
     end
 
-    function load_workflow(obj)
+    function load_mgr(obj, workflowfile)
+        %LOAD_WORKFLOW Loads all manager properties from the workflowfile
+
+        arguments
+            obj
+            workflowfile {mustBeTextScalar} = obj.coord.workflowfile
+        end
+
+        if ~isfile(workflowfile)
+            fprintf('🔧 No previous manager data found\n')
+            return
+        end
+
+        fprintf('🔧 Loading manager data from: %s\n', workflowfile)
+        load(workflowfile, 'mgr')
+        obj.coord.workflowfile = workflowfile;
+
+        % Set the manager data
+        for property = string(fieldnames(mgr)')
+            obj.(property) = mgr.(property);
+        end
     end
 
-    function save_workflow(obj)
-        %SAVE_WORKFLOW Saves the PRODUCT and TEAM properties to the output directory
+    function save_mgr(obj, workflowfile)
+        %SAVE_WORKFLOW Saves all manager properties to the workflowfile, except the COORD handle
+
+        arguments
+            obj
+            workflowfile {mustBeTextScalar} = obj.coord.workflowfile
+        end
+
+        % Get the manager data
+        for property = string(properties(obj)')
+            if ~ismember(property, {'coord'})
+                mgr.(property) = obj.(property);
+            end
+        end
+
+        fprintf('🔧 Saving manager data to: %s\n', workflowfile)
+        [~,~] = mkdir(fileparts(workflowfile));
+        save(workflowfile, 'mgr', '-append')
+        obj.coord.workflowfile = workflowfile;
     end
 
     function start_workflow(obj, subjects)
@@ -141,7 +178,7 @@ methods
         cleanup = onCleanup(@() diary('off'));
 
         if ~strlength(obj.coord.products)
-            disp('The list of products to make is empty, there is nothing to do')
+            disp('❌ The list of products is empty, there is nothing to do')
             return
         end
 
@@ -174,14 +211,14 @@ methods
         % Check if there are still lock-files around from previous crashes
         lockfiles = dir(fullfile(obj.coord.workdir, '**', '*.lock'));
         if ~isempty(lockfiles)
-            fprintf('Found %d existing lockfiles\n', length(lockfiles))
+            fprintf('🔒 Found %d existing lockfiles\n', length(lockfiles))
             if obj.interactive
                 sample = fullfile(lockfiles(1).folder, lockfiles(1).name);
                 answer = questdlg(sprintf('Found %d existing lockfiles, probably caused by previous crashes. Here is a sample:\n\n..%s:\n%s\n\nShall I clean them up?', ...
                 length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Yes');
                 if strcmp(answer, 'Yes')
                     lockfiles = fullfile({lockfiles.folder}, {lockfiles.name});
-                    fprintf('Deleting %d existing lockfiles\n', length(lockfiles))
+                    fprintf('🔓 Deleting %d existing lockfiles\n', length(lockfiles))
                     delete(lockfiles{:})
                 end
             end
@@ -189,7 +226,7 @@ methods
 
         % Check if our team is up-to-date
         if ~all(isfield(obj.team, obj.coord.products))
-            disp("▶ Manager updates the team")
+            disp("🔄 Manager updates the team")
             obj.create_team()
         end
 

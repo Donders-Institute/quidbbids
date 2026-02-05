@@ -11,6 +11,7 @@ properties
     products        % The end productcs (workitems) requested by the user
     resumes         % The resumes of all available workers
     configfile      % Path to the active configuration file
+    workflowfile    % Path to the active workflow file
     config          % Configuration struct loaded from the config file
 end
 
@@ -49,13 +50,14 @@ methods
         end
 
         % Set the properties
-        obj.BIDS       = BIDS;
-        obj.outputdir  = outputdir;
-        obj.workdir    = workdir;
-        obj.configfile = configfile;
-        obj.config     = obj.get_config();
-        obj.resumes    = obj.get_resumes();
-        obj.products   = "";
+        obj.BIDS         = BIDS;
+        obj.outputdir    = outputdir;
+        obj.workdir      = workdir;
+        obj.configfile   = configfile;
+        obj.workflowfile = regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat");
+        obj.config       = obj.get_config();
+        obj.resumes      = obj.get_resumes();
+        obj.products     = "";
     end
 
     function set.products(obj, val)
@@ -116,6 +118,50 @@ methods
             end
         end
 
+    end
+
+    function load_coord(obj, workflowfile)
+        %LOAD_WORKFLOW Loads all coordinator properties from the workflowfile
+
+        arguments
+            obj
+            workflowfile {mustBeTextScalar} = obj.workflowfile
+        end
+
+        if ~isfile(workflowfile)
+            fprintf('🔧 No previous coordinator data found\n')
+            return
+        end
+
+        fprintf('🔧 Loading coordinator data from: %s\n', workflowfile)
+        load(workflowfile, 'coord')
+        obj.workflowfile = workflowfile;
+
+        % Set the coordinator data
+        for property = string(fieldnames(coord)')
+            obj.(property) = coord.(property);
+        end
+    end
+
+    function save_coord(obj, workflowfile)
+        %SAVE_WORKFLOW Saves all coordinator properties to the workflowfile, except the BIDS and config data
+
+        arguments
+            obj
+            workflowfile {mustBeTextScalar} = obj.workflowfile
+        end
+
+        % Get the coordinator data
+        for property = string(properties(obj)')
+            if ~ismember(property, {'BIDS','config','configfile'})
+                coord.(property) = obj.(property);
+            end
+        end
+
+        fprintf('🔧 Saving coordinator data to: %s\n', workflowfile)
+        [~,~] = mkdir(fileparts(workflowfile));
+        save(workflowfile, 'coord', '-append')
+        obj.workflowfile = workflowfile;
     end
 
 end

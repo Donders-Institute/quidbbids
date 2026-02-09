@@ -341,8 +341,9 @@ methods
         % Inputs:
         %   LAYOUT - BIDS directory name or BIDS structure (from bids.layout) to query
         %   QUERY  - The type of query to perform (e.g., 'data', 'metadata', 'runs', etc.)
-        %   FILTER - (optional) Either a struct, or name-value pairs specifying additional filters for the query (i.e. as
-        %            in bids.query), or a struct followed by the name-value pairs
+        %   FILTER - (optional) Either a struct, or name-value pairs specifying additional filters for the query
+        %            (i.e. as in bids.query), or a struct followed by the name-value pairs. It's possible to use regular
+        %            as well as range expressions in the queried values. To exclude an entity, use '' or [].
         %
         % Output:
         %   RESULT - The result of the bids.query with the subject/session filter applied. NB: always a row cell array

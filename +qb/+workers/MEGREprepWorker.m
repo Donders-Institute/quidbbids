@@ -1,5 +1,5 @@
 classdef MEGREprepWorker < qb.workers.Worker
-%MEGREPREPWORKER Performs preprocessing to produce workitems that can be used by other workers
+%MEGREPREPWORKER Performs preprocessing on raw MEGRE/VFA/MPM data to produce workitems that can be used by other workers
 %
 % Processing steps:
 %
@@ -21,13 +21,13 @@ properties (GetAccess = public, SetAccess = protected)
                    "1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
                    "   The results are blurry but within the common GRE space, hence, iterate the computation";
                    "   with the input images that have been realigned to the target in the common space";
-                   "2. Coregister all ME-VFA images to each T1w-like target image (using echo-1_mag),";
+                   "2. Coregister all MEGRE/VFA/MPM images to each T1w-like target image (using echo-1_mag),";
                    "   coregister the B1 images as well to the M0 (which is also in the common GRE space)";
                    "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
                    "   to produce a minimal output mask (for SEPIA)";
                    "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows"
                    "";
-                   "If only MEGRE data is available, then steps 1 and 2 are skipped"] % Description of the work that is done
+                   "If only MEGRE data is available, then steps 1 and 2 are skipped"]
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
@@ -42,23 +42,16 @@ methods (Access = protected)
 
         % Construct the bidsfilters
         include = obj.config.General.BIDS.include;
-        if any(~cellfun('isempty', regexp(include.suffix, 'VFA')))
-            obj.bidsfilter.rawMEVFA = setfields(include, ...
-                                             'modality', 'anat', ...
-                                             'echo', 1:999, ...
-                                             'flip', 1:999, ...
-                                             'suffix', 'VFA');
-        else
-            obj.bidsfilter.rawMEVFA = setfields(include, 'suffix', '');  % No VFA data included
-        end
-        if any(~cellfun('isempty', regexp(include.suffix, 'MEGRE')))
-            obj.bidsfilter.rawMEGRE = setfields(include, ...
+        obj.bidsfilter.rawMEGRE     = setfields(include, ...
                                              'modality', 'anat', ...
                                              'echo', 1:999, ...
                                              'suffix', 'MEGRE');
-        else
-            obj.bidsfilter.rawMEGRE = setfields(include, 'suffix', '');  % No MEGRE data included
-        end
+        obj.bidsfilter.rawMEVFA     = setfields(obj.bidsfilter.rawMEGRE, ...
+                                             'flip', 1:999, ...
+                                             'suffix', 'VFA');
+        obj.bidsfilter.rawMEMPM     = setfields(obj.bidsfilter.rawMEVFA, ...
+                                             'mt', 'off', ...                       % NB: For now, only process mt-off images, in the future we could also include mt-on images
+                                             'suffix', 'MPM');
         obj.bidsfilter.syntheticT1  = struct('modality', 'anat', ...
                                              'part', '', ...
                                              'space', 'withinGRE', ...
@@ -86,6 +79,18 @@ methods (Access = protected)
                                              'space', obj.bidsfilter.syntheticT1.space, ...
                                              'acq', 'famp', ...
                                              'suffix', 'TB1map');
+
+        % Constrain the raw input filters based on the BIDS include config (e.g. to disable the use of VFA/MPM data if only MEGRE data is included)
+        if all(cellfun('isempty', regexp(include.suffix, 'MEGRE')))
+            obj.bidsfilter.rawMEGRE = setfields(include, 'suffix', '');     % MEGRE data is not to be included
+        end
+        if all(cellfun('isempty', regexp(include.suffix, 'VFA')))
+            obj.bidsfilter.rawMEVFA = setfields(include, 'suffix', '');     % VFA data is not to be included
+        end
+        if all(~cellfun('isempty', regexp(include.suffix, 'MPM')))
+            obj.bidsfilter.rawMEMPM = setfields(include, 'suffix', '');     % MPM data is not to be included
+        end
+
     end
 
 end
@@ -102,24 +107,27 @@ methods
         end
 
         % Get the work done
-        if ~isempty(obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawMEVFA))
-            obj.create_syntheticT1_M0()                                     % Processing step 1
-            obj.coreg_VFA_B1_2synthetic()                                   % Processing step 2
-            obj.create_brainmask(obj.BIDSW_ses(), obj.bidsfilter.rawMEVFA)  % Processing step 3
-            obj.merge_MEVFAfiles()                                          % Processing step 4
-        end
         if ~isempty(obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawMEGRE))
             obj.create_brainmask(obj.BIDS, obj.bidsfilter.rawMEGRE)         % Processing step 3
             obj.merge_MEfiles()                                             % Processing step 4
         end
+        for bfilter = [obj.bidsfilter.rawMEVFA, obj.bidsfilter.rawMEMPM]
+            if ~isempty(obj.query_ses(obj.BIDS, 'data', bfilter))
+                obj.create_syntheticT1_M0(bfilter)                          % Processing step 1
+                obj.coreg_VFA_B1_2synthetic(bfilter)                        % Processing step 2
+                obj.create_brainmask(obj.BIDSW_ses(), bfilter)              % Processing step 3
+                obj.merge_MEVFAfiles()                                      % Processing step 4
+            end
+        end
     end
 
-    function create_syntheticT1_M0(obj)
+    function create_syntheticT1_M0(obj, bfilter)
         %CREATE_SYNTHETICT1_M0 Implements processing step 1
         %
         % Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.
         % The results are blurry but within the common GRE space, hence, iterate the computation
-        % with the input images that have been realigned to the target in the common space
+        % with the input images that have been realigned to the target in the common space. The
+        % T1 contrast is somewhat off if MPM MT-on_flip-# images are included.
 
         import qb.utils.spm_write_vol_gz
         import qb.utils.spm_vol
@@ -127,16 +135,16 @@ methods
         GRESignal = @(FlipAngle, TR, T1) sind(FlipAngle) .* (1-exp(-TR./T1)) ./ (1-(exp(-TR./T1)) .* cosd(FlipAngle));
 
         % Process all runs independently
-        for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawMEVFA)
+        for run = obj.query_ses(obj.BIDS, 'runs', bfilter)
 
             % Get the echo-1 magnitude files and metadata for all flip angles of this run
-            VFA_e1_filter = qb.utils.setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','mag');
-            VFA_e1 = obj.query_ses(obj.BIDS,  'data', VFA_e1_filter);
+            VFA_e1_filter = qb.utils.setfields(bfilter, 'echo',1, 'run',char(run), 'part','mag');
+            VFA_e1 = obj.query_ses(obj.BIDS, 'data', VFA_e1_filter);
             if length(VFA_e1) <= 1
                 obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
             end
 
-            % Get metadata from the first FA file (assume TR and nii-header identical for all VFAs of the same run)
+            % Get metadata from the first FA file (assume TR and nii-header identical for all MPM/VFAs of the same run)
             Ve1 = spm_vol(VFA_e1{1});
 
             % Compute T1 and M0 maps
@@ -171,7 +179,7 @@ methods
         end
     end
 
-    function coreg_VFA_B1_2synthetic(obj)
+    function coreg_VFA_B1_2synthetic(obj, bfilter)
         %COREG_VFA_B1_2SYNTHETIC Implements processing step 2
         %
         % Coregister all MEGRE FA-images to each T1w-like target image (using echo-1_mag),
@@ -189,9 +197,9 @@ methods
         B1anat = obj.ask_team('TB1map_anat');
 
         % Process all runs independently
-        for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawMEVFA)
+        for run = obj.query_ses(obj.BIDS, 'runs', bfilter)
 
-            VFA_e1_filter = setfields(obj.bidsfilter.rawMEVFA, 'echo',1, 'run',char(run), 'part','mag');
+            VFA_e1_filter = setfields(bfilter, 'echo',1, 'run',char(run), 'part','mag');
 
             % Realign all FA images to their synthetic targets
             for flip = obj.query_ses(obj.BIDS, 'flips', VFA_e1_filter)
@@ -212,7 +220,7 @@ methods
                 x    = spm_coreg(Vref, Vin, struct('cost_fun', 'ncc'));
 
                 % Save all resliced echo images for this flip angle (they will be merged to a 4D-file later)
-                VFA_flip_filter = setfields(obj.bidsfilter.rawMEVFA, 'flip',char(flip), 'run',char(run));
+                VFA_flip_filter = setfields(bfilter, 'flip',char(flip), 'run',char(run));
                 for echo = obj.query_ses(obj.BIDS, 'echos', VFA_flip_filter)
 
                     % Load the magnitude and phase data -> convert to complex data (to correctly resample phase-wraps)

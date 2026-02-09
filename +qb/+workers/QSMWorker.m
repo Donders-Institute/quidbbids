@@ -84,10 +84,14 @@ methods
             % Create a SEPIA header file
             clear input
             input.nifti      = magfiles{n};                                         % For extracting B0 direction, voxel size, matrix size (only the first 3 dimensions)
-            input.TEFileList = {spm_file(spm_file(magfiles{n}, 'ext',''), 'ext','.json')};                   % Could just be left empty??
+            input.TEFileList = [];                                                  % {spm_file(spm_file(magfiles{n}, 'ext',''), 'ext','.json')};   % If given, then SEPIA requires non-BIDS "ConversionSoftware" field from dcm2niix
             bfile            = obj.bfile_set(magfiles{n}, setfield(obj.bidsfilter.R2starmap, 'suffix',''));  % Output basename; SEPIA adds suffixes of its own
             output           = extractBefore(bfile.path, bfile.extension);          % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
-            save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output) % Override SEPIA's TE values with what the bfile says (-> added by spm_file_merge_gz)
+            save_sepia_header(input, struct('TE', bfile.metadata.EchoTime, ...
+                                            'FA', bfile.metadata.FlipAngle, ...
+                                            'TR', bfile.metadata.RepetitionTime, ...
+                                            'B0', bfile.metadata.MagneticFieldStrength, ...
+                                            'CF', bfile.metadata.ImagingFrequency * 1e6), output) % Override SEPIA's TE values with what the bfile says (-> added by spm_file_merge_gz)
 
             % Get the SEPIA parameters
             switch workitem

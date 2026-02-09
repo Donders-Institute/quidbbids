@@ -111,11 +111,11 @@ methods
             obj.create_brainmask(obj.BIDS, obj.bidsfilter.rawMEGRE)         % Processing step 3
             obj.merge_MEfiles()                                             % Processing step 4
         end
-        for bfilter = [obj.bidsfilter.rawMEVFA, obj.bidsfilter.rawMEMPM]
-            if ~isempty(obj.query_ses(obj.BIDS, 'data', bfilter))
-                obj.create_syntheticT1_M0(bfilter)                          % Processing step 1
-                obj.coreg_VFA_B1_2synthetic(bfilter)                        % Processing step 2
-                obj.create_brainmask(obj.BIDSW_ses(), bfilter)              % Processing step 3
+        for bfilter = {obj.bidsfilter.rawMEVFA, obj.bidsfilter.rawMEMPM}
+            if ~isempty(obj.query_ses(obj.BIDS, 'data', bfilter{1}))
+                obj.create_syntheticT1_M0(bfilter{1})                       % Processing step 1
+                obj.coreg_VFA_B1_2synthetic(bfilter{1})                     % Processing step 2
+                obj.create_brainmask(obj.BIDSW_ses(), bfilter{1})           % Processing step 3
                 obj.merge_MEVFAfiles()                                      % Processing step 4
             end
         end

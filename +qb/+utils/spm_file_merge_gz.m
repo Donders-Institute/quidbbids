@@ -125,5 +125,8 @@ end
 
 % Write the output JSON sidecar (if there was at least one input sidecar)
 if ~isempty(fieldnames(metadata))
+    if ~isfield(metadata, 'ConversionSoftware')
+        metadata.ConversionSoftware = 'dcm2niix';  % SEPIA requires this field to be present (to read the TE values from the JSON sidecar), so we add it here as a workaround
+    end
     bids.util.jsonencode(spm_file(spm_file(fname, 'ext',''), 'ext','.json'), metadata)
 end

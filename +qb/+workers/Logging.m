@@ -27,6 +27,13 @@ methods
             [~,~] = mkdir(obj.outputdir);
         end
 
+        % Clear existing warning and error logfiles
+        for suffix = ["_warnings", "_errors"]
+            logfile = fullfile(obj.outputdir, [obj.sub_ses() suffix '.log']);
+            if exist(logfile, 'file')
+                delete(logfile)
+            end
+        end
     end
 
     function debug(obj, message, varargin)

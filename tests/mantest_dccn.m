@@ -25,7 +25,7 @@ quidb.products = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.n
 mgr.start_workflow()
 
 % Then run the GPU part of the pipeline
-quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',36e3, 'options','--partition=gpu40g --gres=gpu:1'};
+quidb.config.General.HPC.value = {'memreq',25e9, 'timreq',36e3, 'options','--partition=gpu40g --gres=gpu:1'};
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 mgr.start_workflow()
 

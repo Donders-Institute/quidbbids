@@ -30,7 +30,7 @@ methods
         % Clear existing warning and error logfiles
         for suffix = ["_warnings", "_errors"]
             logfile = fullfile(obj.outputdir, [obj.sub_ses() suffix '.log']);
-            if exist(logfile, 'file')
+            if isfile(logfile)
                 delete(logfile)
             end
         end
@@ -166,7 +166,13 @@ methods
             varargin
         end
 
-        obj.loghandler(message, '_warnings', varargin{:})    % Log on disk and normally
+        % Add the warning to the stack trace
+        ws = warning('off', 'all');
+        warning(sprintf("QuIDBBIDS:%s:Warning", obj.worker.name), message, varargin{:})
+        warning(ws)
+    
+        % Log on disk and in the terminal
+        obj.loghandler(message, '_warnings', varargin{:})
     end
 
     function error(obj, message, varargin)
@@ -190,7 +196,12 @@ methods
             varargin
         end
 
-        obj.loghandler(message, '_errors', varargin{:})      % Log on disk and normally
+        % Quietly add the error to the stack trace for easier debugging in the terminal, but also log it on disk and in the terminal
+        try
+            error(sprintf("QuIDBBIDS:%s:Error", obj.worker.name), message, varargin{:});
+        catch ME
+            obj.loghandler(message, '_errors', varargin{:})
+        end
     end
 
     function exception(obj, message, varargin)
@@ -224,7 +235,11 @@ methods (Access = ?TestLogging)
 
     function subses = sub_ses(obj)
         % Parses the sub-#_ses-# prefix from a BIDS.subjects item.
-        subses = replace(erase(obj.worker.subject.path, [obj.worker.BIDS.pth filesep]), filesep,'_');
+        if ~isfield(obj.worker.subject, 'path') || ~isfield(obj.worker.BIDS, 'pth')
+            subses = 'sub-unknown_ses-unknown';
+        else
+            subses = replace(erase(obj.worker.subject.path, [obj.worker.BIDS.pth filesep]), filesep,'_');
+        end
     end
 
     function loghandler(obj, message, suffix, varargin)

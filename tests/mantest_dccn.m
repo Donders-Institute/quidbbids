@@ -25,7 +25,7 @@ quidb.products = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.n
 mgr.start_workflow()
 
 % Then run the GPU part of the pipeline
-quidb.config.General.HPC.value = {'memreq',25e9, 'timreq',36e3, 'options','--partition=gpu40g --gres=gpu:1'};
+quidb.config.General.HPC.value = {'memreq',40e9, 'timreq',36e3, 'options','--partition=gpu40g --gres=gpu:1'};
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 mgr.start_workflow()
 
@@ -46,11 +46,11 @@ quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
 
 % First run the non-GPU part of the pipeline
-quidb.products = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCRWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.products = p;
+quidb.products = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.products = p;
 mgr.start_workflow()
 
 % Then run the GPU part of the pipeline
-quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',36e3, 'options','--partition=gpu40g --gres=gpu:1'};
+quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',36e3, 'options','--partition=gpu --gpus=tesla_p100-pcie-16gb:1'};
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 mgr.start_workflow()
 

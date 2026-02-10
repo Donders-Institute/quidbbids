@@ -146,7 +146,8 @@ methods
 
             % Check if there is a GPU available
             if obj.usesGPU && ~canUseGPU()
-                obj.logger.warning('%s was set to use a GPU but a supported GPU was not available, and/or the Parallel Computing Toolbox™ is not installed and licensed for use. Proceeding with CPU only.', obj.name)
+                obj.logger.warning('%s was set to use a GPU (%s) but a supported GPU was not available, and/or the Parallel Computing Toolbox™ is not installed and licensed for use. Proceeding with CPU only.', ...
+                    obj.name, getenv('SLURM_JOB_GPUS'))
             end
 
             % Get the work done

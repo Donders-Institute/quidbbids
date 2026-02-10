@@ -21,7 +21,7 @@ quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect = 1;
 mgr = quidb.manager();
 
 % First run the non-GPU part of the pipeline
-quidb.products = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCRWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.products = p;
+quidb.products = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.products = p;
 mgr.start_workflow()
 
 % Then run the GPU part of the pipeline

@@ -184,15 +184,16 @@ methods
 
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value
+            cleanup = onCleanup(@() qsublist('killall'));
             batch = obj.getbatch();
             if mislocked('qsublist') && obj.interactive
-                answer = questdlg('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes, that may cause issues.\n\nCan I cleanup the bookkeeping?', ...
+                answer = questdlg(sprintf('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes, that may cause issues.\n\nCan I cleanup the bookkeeping?'), ...
                     'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Yes');
                 if isempty(answer) || strcmp(answer, 'Cancel')
                     return
                 elseif strcmp(answer, 'Yes')
                     munlock('qsublist')
-                    clear('qsublist')
+                    clear('qsublist')   % TODO: make this less brutal by only clearing the submitted jobs
                 end
             end
         end

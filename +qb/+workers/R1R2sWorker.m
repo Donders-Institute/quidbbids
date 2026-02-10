@@ -1,5 +1,5 @@
 classdef R1R2sWorker < qb.workers.Worker
-%R1R2SWORKER Runs MCR workflow
+%R1R2SWORKER Runs MCR workflow on the GPU
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 

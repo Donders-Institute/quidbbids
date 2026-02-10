@@ -1,5 +1,5 @@
-classdef MCRWorker < qb.workers.Worker
-%MCRWORKER Runs MCR workflow
+classdef MCRWorkerGPU < qb.workers.Worker
+%MCRWORKER Runs MCR workflow on the GPU
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
@@ -7,9 +7,9 @@ classdef MCRWorker < qb.workers.Worker
 properties (GetAccess = public, SetAccess = protected)
     description = ["If you don't want to stay single, I am sure I can fit you a Multi-Compartment Model";
                     "";
-                    "Methods:"
-                    "- "]       % Description of the work that is done
-    needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"] % List of workitems the worker needs. Workitems can contain regexp patterns
+                   "Methods:"
+                   "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"]
+    needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
 

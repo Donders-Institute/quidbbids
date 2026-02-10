@@ -146,8 +146,13 @@ methods
 
             % Check if there is a GPU available
             if obj.usesGPU && ~canUseGPU()
-                obj.logger.warning('%s was set to use a GPU (%s) but a supported GPU was not available, and/or the Parallel Computing Toolbox™ is not installed and licensed for use. Proceeding with CPU only.', ...
-                    obj.name, getenv('SLURM_JOB_GPUS'))
+                [status, out] = system('nvidia-smi --query-gpu=name --format=csv,noheader');
+                reason = 'GPU acceleration is unavailable';
+                if status == 0 && ~isempty(strtrim(out))
+                    reason = ['GPU detected (' strtrim(out) ') but MATLAB cannot use it'];
+                end
+                obj.logger.warning(['%s was configured to use a GPU, but %s. Possible causes: no GPU allocated by the scheduler, incompatible ' ...
+                                    'CUDA/driver, or missing Parallel Computing Toolbox license. Falling back to CPU.'], obj.name, reason)
             end
 
             % Get the work done

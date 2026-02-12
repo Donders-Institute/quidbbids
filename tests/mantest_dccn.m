@@ -15,8 +15,9 @@ qb.resetconfig              % Useful when running the development version
 %% Hamburg_MPM
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_Hamburg_MPM'), "", "", "default")
 quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
+quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
-quidb.config.B1prepWorker.FAscaling.Siemens.value = 100;
+quidb.config.B1prepWorker.FAscaling.value = 100;
 quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect = 1;
 mgr = quidb.manager();
 
@@ -42,6 +43,7 @@ end
 %% MCR-MWI_VFA
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "default")
 quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
+quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
 

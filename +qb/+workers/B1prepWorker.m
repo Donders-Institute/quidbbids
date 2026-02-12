@@ -52,10 +52,7 @@ methods
             % Load the FA-map
             bfile = bids.File(B1famp{n});
             FAVol = spm_vol(B1famp{n});
-            FA    = spm_read_vols(FAVol);
-            if isfield(obj.config.B1prepWorker.FAscaling, bfile.metadata.Manufacturer)
-                FA = FA / obj.config.B1prepWorker.FAscaling.(bfile.metadata.Manufacturer);  % Scale to radians
-            end
+            FA    = spm_read_vols(FAVol) / obj.config.B1prepWorker.FAscaling;   % Scale to radians
 
             % Regularize the FA-map in order to avoid influence of salt & pepper border noise
             if ~isempty(B1anat) && obj.config.B1prepWorker.FWHM ~= 0

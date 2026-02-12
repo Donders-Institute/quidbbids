@@ -142,36 +142,35 @@ classdef TestConfigEditorGUI < BaseTest
         end
 
         function testNestedLeafEdit(testCase)
-            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, [], {'MCRWorker'});
+            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, [], {'MCR_GPUWorker'});
             gui.Fig.Visible = 'off';
         
             % Navigate to nested leaf
-            mcrNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'MCRWorker'));
+            mcrNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'MCR_GPUWorker'));
             mcrSubNode = mcrNode.Children(strcmp({mcrNode.Children.Text}, 'fitting'));
-            gpuNode    = mcrSubNode.Children(strcmp({mcrSubNode.Children.Text}, 'GPU'));
-            leafNode   = gpuNode.Children(strcmp({gpuNode.Children.Text}, 'start'));
+            leafNode   = mcrSubNode.Children(strcmp({mcrSubNode.Children.Text}, 'start'));
         
             % Verify initial state
             testCase.verifyEqual(leafNode.NodeData.value, 'prior');
-            testCase.verifyEqual(gui.Config.MCRWorker.fitting.GPU.start.value, 'prior');
+            testCase.verifyEqual(gui.Config.MCR_GPUWorker.fitting.start.value, 'prior');
         
             % METHOD 1: Test direct update and manual reset using existing methods
             % Update the value
             nodeData = leafNode.NodeData;
             nodeData.value = 'Test';
             leafNode.NodeData = nodeData;
-            path = {'MCRWorker', 'fitting', 'GPU', 'start'};
+            path = {'MCR_GPUWorker', 'fitting', 'start'};
             gui.Config = gui.setValueInConfig(gui.Config, path, nodeData);
             
             testCase.verifyEqual(leafNode.NodeData.value, 'Test')
-            testCase.verifyEqual(gui.Config.MCRWorker.fitting.GPU.start.value, 'Test')
+            testCase.verifyEqual(gui.Config.MCR_GPUWorker.fitting.start.value, 'Test')
         
             % Reset using GUI logic
             gui.Tree.SelectedNodes = leafNode;
             gui.resetLeaf()
 
             testCase.verifyEqual(leafNode.NodeData.value, 'prior')
-            testCase.verifyEqual(gui.Config.MCRWorker.fitting.GPU.start.value, 'prior')
+            testCase.verifyEqual(gui.Config.MCR_GPUWorker.fitting.start.value, 'prior')
         
             delete(gui)
         end
@@ -228,10 +227,9 @@ classdef TestConfigEditorGUI < BaseTest
             testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892)
 
             %--- Test 2: String value
-            mcrNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'MCRWorker'));
+            mcrNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'MCR_GPUWorker'));
             mcrSubNode = mcrNode.Children(strcmp({mcrNode.Children.Text}, 'fitting'));
-            unwrapNode = mcrSubNode.Children(strcmp({mcrSubNode.Children.Text}, 'GPU'));
-            stringNode = unwrapNode.Children(strcmp({unwrapNode.Children.Text}, 'start'));
+            stringNode = mcrSubNode.Children(strcmp({mcrSubNode.Children.Text}, 'start'));
             
             gui.Tree.SelectedNodes = stringNode;
             originalValue = stringNode.NodeData.value;

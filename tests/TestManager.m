@@ -46,6 +46,7 @@ classdef TestManager < BaseTest
             % Should not error if the preferred worker is set
             testCase.mgr.coord.products = ["R1map", "R2starmap", "MWFmap"];
             testCase.mgr.coord.resumes.R1R2sWorker.preferred = true;
+            testCase.mgr.coord.resumes.MCR_GPUWorker.preferred = true;
             testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error when preferred worker is set")
             testCase.verifyNotEmpty(testCase.mgr.team, 'Manager team should not be empty')
 

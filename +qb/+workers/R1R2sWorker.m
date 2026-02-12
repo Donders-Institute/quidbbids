@@ -82,7 +82,7 @@ methods
         extraData     = [];
         extraData.b1  = single(B1);
         objGPU        = gpuJointR1R2starMapping(TE, TR, FA);
-        askadam_R1R2s = objGPU.estimate(img, mask, extraData, obj.config.R1R2sWorker.fitting.GPU);  % TODO: Is single() needed/desired?
+        askadam_R1R2s = objGPU.estimate(img, mask, extraData, obj.config.R1R2sWorker.fitting);  % TODO: Is single() needed/desired?
 
         % Save the output data
         V(1).dim = dims(1:3);

@@ -14,9 +14,7 @@
 
   "B1prepWorker": {
     "FWHM": {"value": 10, "description": "in mm, smoothing kernel for regularizing the B1 map"},
-    "FAscaling": {
-      "Siemens": {"value": 800, "description": "Factor to scale the data to radians (800 is what SIEMENS seems to use on TFL B1-mapping)"}
-    }
+    "FAscaling": {"value": 800, "description": "Factor to scale the data to radians (800 is what SIEMENS seems to use on TFL B1-mapping)"}
   },
 
   "MP2RAGEWorker": {
@@ -29,19 +27,17 @@
 
   "R1R2sWorker": {
     "fitting": {
-      "GPU": {
-        "iteration": {"value": 4000, "description": "Maximum number of GPU fitting iterations"},
-        "convergenceWindow": {"value": 25, "description": "Window size for estimating convergence (> 100 iterations for more robust estimate)"},
-        "convergenceValue": {"value": 1e-8, "description": "Threshold for convergence"},
-        "initialLearnRate": {"value": 0.001, "description": "Initial learning rate for optimizer"},
-        "decayRate": {"value": 0, "description": "Learning rate decay factor"},
-        "tol": {"value": 1e-3, "description": "Tolerance for optimization termination"},
-        "isWeighted": {"value": false, "description": "Use weighted residuals"}
-      }
+      "iteration": {"value": 4000, "description": "Maximum number of GPU fitting iterations"},
+      "convergenceWindow": {"value": 25, "description": "Window size for estimating convergence (> 100 iterations for more robust estimate)"},
+      "convergenceValue": {"value": 1e-8, "description": "Threshold for convergence"},
+      "initialLearnRate": {"value": 0.001, "description": "Initial learning rate for optimizer"},
+      "decayRate": {"value": 0, "description": "Learning rate decay factor"},
+      "tol": {"value": 1e-3, "description": "Tolerance for optimization termination"},
+      "isWeighted": {"value": false, "description": "Use weighted residuals"}
     }
   },
 
-  "MCRWorker": {
+  "MCR_GPUWorker": {
     "fixed_params": {
       "x_i": {"value": -0.1, "description": "ppm"},
       "x_a": {"value": -0.1, "description": "ppm"},
@@ -54,19 +50,42 @@
       "thres_T1": {"value": 3.1, "description": "seconds, upper bound"}
     },
     "fitting": {
-      "GPU": {
-        "Nepoch": {"value": 4000, "description": "Number of training epochs"},
-        "initialLearnRate": {"value": 0.001, "description": "Initial learning rate"},
-        "decayRate": {"value": 0, "description": "Learning rate decay"},
-        "convergenceValue": {"value": -1e308, "description": "Convergence stopping value"},
-        "tol": {"value": 1e-8, "description": "Tolerance for stopping optimization"},
-        "display": {"value": false, "description": "Display fitting progress"},
-        "lossFunction": {"value": "l1", "description": "Loss function for optimization"},
-        "start": {"value": "prior", "description": "Initialization strategy"},
-        "patience": {"value": 20, "description": "Early stopping patience"},
-        "isFitExchange": {"value": true, "description": "Fit exchange parameters"},
-        "isEPG": {"value": false, "description": "Use EPG simulation model"}
-      }
+      "Nepoch": {"value": 4000, "description": "Number of training epochs"},
+      "initialLearnRate": {"value": 0.001, "description": "Initial learning rate"},
+      "decayRate": {"value": 0, "description": "Learning rate decay"},
+      "convergenceValue": {"value": -1e308, "description": "Convergence stopping value"},
+      "tol": {"value": 1e-8, "description": "Tolerance for stopping optimization"},
+      "display": {"value": false, "description": "Display fitting progress"},
+      "lossFunction": {"value": "l1", "description": "Loss function for optimization"},
+      "start": {"value": "prior", "description": "Initialization strategy"},
+      "patience": {"value": 20, "description": "Early stopping patience"},
+      "isFitExchange": {"value": true, "description": "Fit exchange parameters"},
+      "isEPG": {"value": false, "description": "Use EPG simulation model"}
+    }
+  },
+
+  "MCRWorker": {
+    "algoPara": {
+      "isInvivo": {"value": true, "description": "true = use initial starting points for in vivo study"},
+      "isFastEPG": {"value": false, "description": "true = speed up the fitting by running a non EPG fitting first and use the results as the initial guesses of EPG fitting"},
+      "isParallel": {"value": false, "description": "true = use parfor for parallel processing"},
+      "isNormData": {"value": false, "description": "true = normalise the data by a global constant so that absolute tolerance will be used for fitting; use false if the data is already normalisation"},
+      "maxIter": {"value": 500, "description": "Maximum number of iterations"},
+      "fcnTol": {"value": 1e-4, "description": "fitting tolerance, this value is used for normalised data"},
+      "stepTol": {"value": 1e-4, "description": "Step tolerance, this value is used for normalised data"},
+      "numMagn": {"value": 0, "description": "0 = fitting with complex-valued data; length(TE) = fitting with magnitude data"},
+      "isWeighted": {"value": true, "description": "true = use cost function weighted by echo intensity"},
+      "weightMethod": {"value": "quadratic_1stEcho", "description": "Weighting with respect to the first echo of each flip angle acquisition. Options: '1stEcho' = weighted by 1st echo magnitude; 'quadratic_1stEcho' = weighted by squared 1st echo magnitude"},
+      "isExchange": {"value": true, "description": "true = include BM equation to account for exchange effect; false = no magnetisation exchange"},
+      "isEPG": {"value": true, "description": "true = use EPG-X for signal simulation; false = standard steady-state equation"},
+      "npulse": {"value": 50, "description": "Number of RF pulses to reach steady-state in EPG"},
+      "rfphase": {"value": 50, "description": "RF phase increment for EPG (degrees). Philips = 150"},
+      "isT1mw": {"value": false, "description": "true = fit myelin water T1; false = use fixed value"},
+      "T1mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"},
+      "advancedStarting": {"value": "default", "description": "initial guesses for multi-comp S0. 'default' = estimated S0 and T2s IEW from data; 'robust' = estimated S0 from data only; otherwise fixed starting points for 3T"}
+    },
+    "imgPara": {
+      "Nepoch": {"value": [], "description": ""}
     }
   },
 

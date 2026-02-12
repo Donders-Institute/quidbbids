@@ -575,8 +575,8 @@ classdef ConfigEditor < handle
             % S = obj.setValueInConfig(S, {'a','b','c'}, val)
             %
             % Example:
-            %   path = {'MCRWorker','fixed_params','x_i'}
-            %   S.MCRWorker.fixed_params.x_i = val
+            %   path = {'MCR_GPUWorker','fixed_params','x_i'}
+            %   S.MCR_GPUWorker.fixed_params.x_i = val
 
             if isscalar(path)
                 S.(path{1}) = val;

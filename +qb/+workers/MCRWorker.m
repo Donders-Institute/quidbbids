@@ -1,14 +1,14 @@
-classdef MCR_GPUWorker < qb.workers.Worker
-%MCRWORKER Runs MCR workflow on the GPU
+classdef MCRWorker < qb.workers.Worker
+%MCRWORKER Runs MCR workflow on the CPU
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
 properties (GetAccess = public, SetAccess = protected)
-    description = ["If you don't want to stay single, I am sure I can fit you a Multi-Compartment Model";
-                    "";
+    description = ["Don’t worry, we don’t believe in single compartments here — I can model you something with a lot more interaction.";
+                   "";
                    "Methods:"
-                   "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"]
+                   "- "]
     needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
 end
 
@@ -21,31 +21,28 @@ methods (Access = protected)
 
         import qb.utils.setfields
 
-        % We can use the GPU
-        obj.usesGPU = true;
-
         % Construct the bidsfilters
         obj.bidsfilter.FMW_exrate    = struct('modality', 'anat', ...
                                               'echo', [], ...
                                               'part', '', ...
-                                              'desc', 'gacelle', ...
+                                              'desc', 'MWI', ...
                                               'label', 'free2myelinwater', ...
                                               'suffix', 'ExchRate');
         obj.bidsfilter.FitMask       = struct('modality', 'anat', ...
                                               'echo', [], ...
                                               'part', '', ...
-                                              'desc', 'gacelle', ...
+                                              'desc', 'MWI', ...
                                               'label', 'fitted', ...
                                               'suffix', 'mask');
         obj.bidsfilter.MWFmap        = struct('modality', 'anat', ...
                                               'echo', [], ...
                                               'part', '', ...
-                                              'desc', 'gacelle', ...
+                                              'desc', 'MWI', ...
                                               'suffix', 'MWFmap');
         obj.bidsfilter.MW_M0map      = struct('modality', 'anat', ...
                                               'echo', [], ...
                                               'part', '', ...
-                                              'desc', 'gacelle', ...
+                                              'desc', 'MWI', ...
                                               'label', 'myelinwater', ...
                                               'suffix', 'M0Map');
         obj.bidsfilter.MW_R2starmap  = setfield(obj.bidsfilter.MW_M0map, 'suffix','R2starmap');
@@ -53,6 +50,11 @@ methods (Access = protected)
         obj.bidsfilter.FW_T1map      = setfield(obj.bidsfilter.MW_M0map, 'suffix','T1map');
         obj.bidsfilter.FW_R1map      = setfield(obj.bidsfilter.FW_M0map, 'suffix','R1map');
         obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.FW_M0map, 'label','axonalwater', 'suffix','R2starmap');
+        
+        % Create orthoslice variants of the bidsfilters
+        for fn = string(fieldnames(obj.bidsfilter)')
+            obj.bidsfilter.(fn + "_ortho") = setfield(obj.bidsfilter.(fn), 'desc', [obj.bidsfilter.(fn).desc 'ortho']);
+        end
     end
 
 end
@@ -103,7 +105,7 @@ methods
         dims           = [V(1).dim length(V) length(echos4Dmag)];   % Dimensions: [x,y,z,TE,FA]
         img            = NaN(dims);
         unwrappedPhase = NaN(dims);
-        totalField     = NaN(dims([1:3 5]));
+        totalField     = NaN(dims([1:3 5]));                        % Dimensions: [x,y,z,FA]
         mask           = true;
         for n = 1:dims(5)
             bfile                     = bids.File(echos4Dmag{n});   % For reading metadata, parsing entities, etc
@@ -123,25 +125,99 @@ methods
         pini = squeeze(unwrappedPhase(:,:,:,1,:)) - 2*pi*totalField .* TE(1);
         pini = polyfit3D_NthOrder(mean(pini(:,:,:,1:(end-1)), 4), mask, 6);
 
-        % Estimate the MCR model
-        extraData         = [];
-        extraData.freqBKG = single(totalField / (obj.config.General.gyro * obj.config.MCR_GPUWorker.fixed_params.B0));  % in ppm
-        extraData.pini    = single(pini);
-        extraData.b1      = single(B1);
-        objGPU            = gpuMCRMWI(TE, TR, FA, obj.config.MCR_GPUWorker.fixed_params);
-        askadam_mcr       = objGPU.estimate(img, mask, extraData, obj.config.MCR_GPUWorker.fitting);  % TODO: Is single() really needed/desired?
+        % Get the algoPara struct for the MCR fit function
+        algoPara = obj.config.MCRWorker.algoPara;
+        algoPara.DIMWI.isVic    = false;    % We do not use DIMWI (yet)
+        algoPara.DIMWI.isR2sEW  = false;
+        algoPara.DIMWI.isFreqMW = false;
+        algoPara.DIMWI.isFreqIW = false;
+
+        % Perform data normalisation if needed
+        if ~algoPara.isNormData
+            [~, img] = mwi_image_normalisation(img, mask);
+        end
+
+        % Construct orthoview montages (e.g. for QC) as indicated by the workitem (bidsfilter) name
+        ortho = '';
+        if endsWith(workitem, 'ortho')
+            ortho = '_ortho';
+            B1    = obj.OrthoSlice(B1);
+            mask  = obj.OrthoSlice(mask);
+            pini  = obj.OrthoSlice(pini);
+            for n = 1:dims(5)
+                totalField(:,:,:,n) = obj.OrthoSlice(totalField(:,:,:,n));
+                for m = 1:dims(4)
+                    img(:,:,:,m,n) = obj.OrthoSlice(img(:,:,:,m,n));
+                end
+            end
+        end
+
+        % Construct the imgPara struct for the MCR fit function
+        imgPara = struct('img',img, 'mask',mask, 'fieldmap',totalField, 'pini',pini, 'b1map',B1, ...
+                         'te',TE, 'tr',TR, 'fa',FA, 'autosave',false, 'output_dir',obj.logger.outputdir, 'identifier',obj.subject.name);
+        if obj.subject.session
+            imgPara.identifier = [imgPara.identifier '_' obj.subject.session];
+        end
+
+        % Estimate the MWI MCR model
+        ws = warning('off', 'MATLAB:nearlySingularMatrix');     % Supress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
+        fitRes = mwi_3cx_2R1R2s_dimwi(algoPara, imgPara);
+        warning(ws)
 
         % Extract and save the output data
-        V(1).dim = dims(1:3);
-        spm_write_vol_gz(V(1), askadam_mcr.final.MWF * 100,                       obj.bfile_set(bfile, obj.bidsfilter.MWFmap       ).path);  % TODO: Ask Jose: Multiply by 100 to get percentage?
-        spm_write_vol_gz(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.bfile_set(bfile, obj.bidsfilter.MW_M0map     ).path);
-        spm_write_vol_gz(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.bfile_set(bfile, obj.bidsfilter.FW_M0map     ).path);
-        spm_write_vol_gz(V(1), askadam_mcr.final.R2sMW,                           obj.bfile_set(bfile, obj.bidsfilter.MW_R2starmap ).path);
-        spm_write_vol_gz(V(1), askadam_mcr.final.R2sIW,                           obj.bfile_set(bfile, obj.bidsfilter.IAW_R2starmap).path);
-        spm_write_vol_gz(V(1), 1 ./ askadam_mcr.final.R1IEW,                      obj.bfile_set(bfile, obj.bidsfilter.FW_T1map     ).path);
-        spm_write_vol_gz(V(1), askadam_mcr.final.R1IEW,                           obj.bfile_set(bfile, obj.bidsfilter.FW_R1map     ).path);
-        spm_write_vol_gz(V(1), askadam_mcr.final.kIEWM,                           obj.bfile_set(bfile, obj.bidsfilter.FMW_exrate   ).path);
-        spm_write_vol_gz(V(1), mask,                                              obj.bfile_set(bfile, obj.bidsfilter.FitMask      ).path); % Check if this is correct
+        V(1).dim = size(mask);
+        spm_write_vol_gz(V(1), fitRes.MWF*100,              obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])).path);  % TODO: Ask Jose: Multiply by 100 to get percentage?
+        spm_write_vol_gz(V(1), fitRes.S0_MW,                obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])).path);
+        spm_write_vol_gz(V(1), fitRes.S0_IW + fitRes.S0_EW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])).path);
+        spm_write_vol_gz(V(1), fitRes.R2s_MW,               obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])).path);
+        spm_write_vol_gz(V(1), fitRes.R2s_IW,               obj.bfile_set(bfile, obj.bidsfilter.(['IAW_R2starmap' ortho])).path);
+        spm_write_vol_gz(V(1), fitRes.T1_IEW,               obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])).path);
+        spm_write_vol_gz(V(1), 1 ./ fitRes.T1_IEW,          obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])).path);
+        spm_write_vol_gz(V(1), fitRes.kiewm,                obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])).path);
+        spm_write_vol_gz(V(1), fitRes.mask_fitted,          obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])).path);  % Check if this is correct
+    end
+
+end
+
+methods (Static, Access = private)
+
+    function montage = OrthoSlice(vol, xyz, showim)
+        % montage = OrthoSlice(vol, xyz, showim)
+        %
+        % Extract orthogonal slices from a 3D vol and return them as a row montage.
+        %
+        % Inputs:
+        %   vol    - 3D image volume
+        %   xyz    - kz positions (default: center of vol)
+        %   showim - display type: 'normal' or 'tight' (default)
+
+        % Defaults
+        if nargin < 3 || isempty(showim)
+            showim = 'tight';
+        end
+        if strcmp(showim, 'tight')
+            [x,y,z] = ind2sub(size(vol), find(vol));
+            vol     = vol(min(x):max(x), min(y):max(y), min(z):max(z));
+        end
+        dims = size(vol);
+        if nargin < 2 || isempty(xyz)
+            xyz = round(dims/2);
+        end
+
+        montage = zeros([max(dims(2:3)) 2*dims(1) + dims(2)]);
+        temp1   = zeros([size(montage,1), dims(2)]);
+        temp2   = zeros([size(montage,1), dims(1)]);
+        temp3   = zeros([size(montage,1), dims(1)]);
+        if ismember(showim, {'normal','tight'})
+            temp1a = permute(vol(xyz(1),:,:), [3,2,1]);
+            temp2a = permute(vol(:,xyz(2),:), [3,1,2]);
+            temp3a = permute(vol(:,:,xyz(3)), [2,1,3]);
+        end
+
+        temp1(round((size(temp1,1) - size(temp1a,1))/2) + (1:size(temp1a,1)), :) = temp1a;
+        temp2(round((size(temp2,1) - size(temp2a,1))/2) + (1:size(temp2a,1)), :) = temp2a;
+        temp3(round((size(temp3,1) - size(temp3a,1))/2) + (1:size(temp3a,1)), :) = temp3a;
+        montage = cat(2, temp1, temp2, temp3);
     end
 
 end

@@ -134,39 +134,46 @@ methods
 
         % Perform data normalisation if needed
         if ~algoPara.isNormData
+            obj.logger.info('Normalising the multi-echo data')
             [~, img] = mwi_image_normalisation(img, mask);
         end
 
         % Construct orthoview montages (e.g. for QC) as indicated by the workitem (bidsfilter) name
         ortho = '';
         if endsWith(workitem, 'ortho')
+            obj.logger.info('Constructing orthoview montages')
             ortho = '_ortho';
-            B1    = obj.OrthoSlice(B1);
-            mask  = obj.OrthoSlice(mask);
-            pini  = obj.OrthoSlice(pini);
-            for n = 1:dims(5)
-                totalField(:,:,:,n) = obj.OrthoSlice(totalField(:,:,:,n));
-                for m = 1:dims(4)
-                    img(:,:,:,m,n) = obj.OrthoSlice(img(:,:,:,m,n));
+            [mask, sel] = obj.OrthoSlice(mask, [], 'tight');
+            B1          = obj.OrthoSlice(B1(sel{:}));
+            pini        = obj.OrthoSlice(pini(sel{:}));
+            for n = dims(5):-1:1    % Loop backwards to preallocate the '_' variables
+                totalField_(:,:,:,n) = obj.OrthoSlice(totalField(sel{:},n));
+                for m = dims(4):-1:1
+                    img_(:,:,:,m,n) = obj.OrthoSlice(img(sel{:},m,n));
                 end
             end
+            totalField = totalField_;
+            img = img_;
         end
 
         % Construct the imgPara struct for the MCR fit function
         imgPara = struct('img',img, 'mask',mask, 'fieldmap',totalField, 'pini',pini, 'b1map',B1, ...
-                         'te',TE, 'tr',TR, 'fa',FA, 'autosave',false, 'output_dir',obj.logger.outputdir, 'identifier',obj.subject.name);
-        if obj.subject.session
-            imgPara.identifier = [imgPara.identifier '_' obj.subject.session];
-        end
+                         'te',TE, 'tr',TR, 'fa',FA, 'autosave',false, 'output_dir',char(obj.logger.outputdir));     % Add 'identifier' when the MWI PR is accepted and released: 'identifier',obj.subject.name);
+        % if obj.subject.session
+        %     imgPara.identifier = [imgPara.identifier '_' obj.subject.session];
+        % end
 
         % Estimate the MWI MCR model
         ws = warning('off', 'MATLAB:nearlySingularMatrix');     % Supress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
+        warning('off', 'MWI:IdentifierFile:NotFound')
+        obj.logger.info('Estimating the MWI MCR model')
         fitRes = mwi_3cx_2R1R2s_dimwi(algoPara, imgPara);
         warning(ws)
 
         % Extract and save the output data
-        V(1).dim = size(mask);
-        spm_write_vol_gz(V(1), fitRes.MWF*100,              obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])).path);  % TODO: Ask Jose: Multiply by 100 to get percentage?
+        V(1).dim = [size(mask,1) size(mask,2) size(mask,3)];
+        MWF = fitRes.S0_MW ./ (fitRes.S0_MW + fitRes.S0_EW + fitRes.S0_IW);
+        spm_write_vol_gz(V(1), MWF,                         obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])).path);
         spm_write_vol_gz(V(1), fitRes.S0_MW,                obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])).path);
         spm_write_vol_gz(V(1), fitRes.S0_IW + fitRes.S0_EW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])).path);
         spm_write_vol_gz(V(1), fitRes.R2s_MW,               obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])).path);
@@ -181,8 +188,8 @@ end
 
 methods (Static, Access = private)
 
-    function montage = OrthoSlice(vol, xyz, showim)
-        % montage = OrthoSlice(vol, xyz, showim)
+    function [montage, sel] = OrthoSlice(vol, xyz, showim)
+        % [montage, sel] = OrthoSlice(vol, xyz, showim)
         %
         % Extract orthogonal slices from a 3D vol and return them as a row montage.
         %
@@ -190,34 +197,44 @@ methods (Static, Access = private)
         %   vol    - 3D image volume
         %   xyz    - kz positions (default: center of vol)
         %   showim - display type: 'normal' or 'tight' (default)
+        %
+        % Outputs:
+        %   montage - 2D image of the orthogonal slices
+        %   sel     - cell array of the selected indices in each dimension (useful for applying the same selection to other volumes)
 
         % Defaults
         if nargin < 3 || isempty(showim)
-            showim = 'tight';
+            showim = 'normal';
         end
+
+        % Crop the volume to the non-zero part if 'tight' display is requested
+        sel = {1:size(vol,1), 1:size(vol,2), 1:size(vol,3)};
         if strcmp(showim, 'tight')
             [x,y,z] = ind2sub(size(vol), find(vol));
-            vol     = vol(min(x):max(x), min(y):max(y), min(z):max(z));
+            sel     = {min(x):max(x), min(y):max(y), min(z):max(z)};
+            vol     = vol(sel{:});
         end
+
+        % Set the slice positions to the center of the volume if not provided
         dims = size(vol);
         if nargin < 2 || isempty(xyz)
             xyz = round(dims/2);
         end
 
+        % Construct the montage: Create three blank images and 1) a sagittal, 2) a coron_l and 3) an axial slice
         montage = zeros([max(dims(2:3)) 2*dims(1) + dims(2)]);
-        temp1   = zeros([size(montage,1), dims(2)]);
-        temp2   = zeros([size(montage,1), dims(1)]);
-        temp3   = zeros([size(montage,1), dims(1)]);
-        if ismember(showim, {'normal','tight'})
-            temp1a = permute(vol(xyz(1),:,:), [3,2,1]);
-            temp2a = permute(vol(:,xyz(2),:), [3,1,2]);
-            temp3a = permute(vol(:,:,xyz(3)), [2,1,3]);
-        end
+        sagit   = zeros([size(montage,1), dims(2)]);
+        coron   = zeros([size(montage,1), dims(1)]);
+        axial   = zeros([size(montage,1), dims(1)]);
+        sagit_  = permute(vol(xyz(1),:,:), [3,2,1]);    % Permute to get a ZY sagittal slice
+        coron_  = permute(vol(:,xyz(2),:), [3,1,2]);    % Permute to get a ZX coron_l slice
+        axial_  = permute(vol(:,:,xyz(3)), [2,1,3]);    % Permute to get a YX axial slice
 
-        temp1(round((size(temp1,1) - size(temp1a,1))/2) + (1:size(temp1a,1)), :) = temp1a;
-        temp2(round((size(temp2,1) - size(temp2a,1))/2) + (1:size(temp2a,1)), :) = temp2a;
-        temp3(round((size(temp3,1) - size(temp3a,1))/2) + (1:size(temp3a,1)), :) = temp3a;
-        montage = cat(2, temp1, temp2, temp3);
+        % Center the three slices in their respective blank images and concatenate them to a row montage
+        sagit(round((size(sagit,1) - size(sagit_,1))/2) + (1:size(sagit_,1)), :) = sagit_;
+        coron(round((size(coron,1) - size(coron_,1))/2) + (1:size(coron_,1)), :) = coron_;
+        axial(round((size(axial,1) - size(axial_,1))/2) + (1:size(axial_,1)), :) = axial_;
+        montage = cat(2, sagit, coron, axial)';         % Transpose to get a (Y|X)Z orientation
     end
 
 end

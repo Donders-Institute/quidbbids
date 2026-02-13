@@ -221,14 +221,13 @@ methods (Static, Access = private)
             xyz = round(dims/2);
         end
 
-        % Construct the montage: Create three blank images and 1) a sagittal, 2) a coronal and 3) an axial slice
-        montage = zeros([2*dims(1) + dims(2) max(dims(2:3))]);
-        sagit   = zeros([dims(2) size(montage,2)]);
-        coron   = zeros([dims(1) size(montage,2)]);
-        axial   = zeros([dims(1) size(montage,2)]);
-        sagit_  = squeeze(vol(xyz(1),:,:));
-        coron_  = squeeze(vol(:,xyz(2),:));
-        axial_  = squeeze(vol(:,:,xyz(3)));
+        % Create three blank images and 1) a sagittal, 2) a coronal and 3) an axial slice
+        sagit  = zeros([dims(2) max(dims(2:3))]);
+        coron  = zeros([dims(1) max(dims(2:3))]);
+        axial  = zeros([dims(1) max(dims(2:3))]);
+        sagit_ = squeeze(vol(xyz(1),:,:));
+        coron_ = squeeze(vol(:,xyz(2),:));
+        axial_ = squeeze(vol(:,:,xyz(3)));
 
         % Center the three slices in their respective blank images and concatenate them to a row montage
         sagit(:, round((size(sagit,2) - size(sagit_,2))/2) + (1:size(sagit_,2))) = sagit_;

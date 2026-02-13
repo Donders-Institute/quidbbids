@@ -221,20 +221,20 @@ methods (Static, Access = private)
             xyz = round(dims/2);
         end
 
-        % Construct the montage: Create three blank images and 1) a sagittal, 2) a coron_l and 3) an axial slice
-        montage = zeros([max(dims(2:3)) 2*dims(1) + dims(2)]);
-        sagit   = zeros([size(montage,1), dims(2)]);
-        coron   = zeros([size(montage,1), dims(1)]);
-        axial   = zeros([size(montage,1), dims(1)]);
-        sagit_  = permute(vol(xyz(1),:,:), [3,2,1]);    % Permute to get a ZY sagittal slice
-        coron_  = permute(vol(:,xyz(2),:), [3,1,2]);    % Permute to get a ZX coron_l slice
-        axial_  = permute(vol(:,:,xyz(3)), [2,1,3]);    % Permute to get a YX axial slice
+        % Construct the montage: Create three blank images and 1) a sagittal, 2) a coronal and 3) an axial slice
+        montage = zeros([2*dims(1) + dims(2) max(dims(2:3))]);
+        sagit   = zeros([dims(2) size(montage,2)]);
+        coron   = zeros([dims(1) size(montage,2)]);
+        axial   = zeros([dims(1) size(montage,2)]);
+        sagit_  = squeeze(vol(xyz(1),:,:));
+        coron_  = squeeze(vol(:,xyz(2),:));
+        axial_  = squeeze(vol(:,:,xyz(3)));
 
         % Center the three slices in their respective blank images and concatenate them to a row montage
-        sagit(round((size(sagit,1) - size(sagit_,1))/2) + (1:size(sagit_,1)), :) = sagit_;
-        coron(round((size(coron,1) - size(coron_,1))/2) + (1:size(coron_,1)), :) = coron_;
-        axial(round((size(axial,1) - size(axial_,1))/2) + (1:size(axial_,1)), :) = axial_;
-        montage = cat(2, sagit, coron, axial)';         % Transpose to get a (Y|X)Z orientation
+        sagit(:, round((size(sagit,2) - size(sagit_,2))/2) + (1:size(sagit_,2))) = sagit_;
+        coron(:, round((size(coron,2) - size(coron_,2))/2) + (1:size(coron_,2))) = coron_;
+        axial(:, round((size(axial,2) - size(axial_,2))/2) + (1:size(axial_,2))) = axial_;
+        montage = cat(1, sagit, coron, axial);
     end
 
 end

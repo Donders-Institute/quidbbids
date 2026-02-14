@@ -123,13 +123,23 @@ methods
         pini = squeeze(unwrappedPhase(:,:,:,1,:)) - 2*pi*totalField .* TE(1);
         pini = polyfit3D_NthOrder(mean(pini(:,:,:,1:(end-1)), 4), mask, 6);
 
+        % Construct the fixed parameters and extra data for the MCR model
+        fixed_params        = obj.config.MCR_GPUWorker.fixed_params;
+        fixed_params.x_i    = obj.config.General.x_i;
+        fixed_params.x_a    = obj.config.General.x_a;
+        fixed_params.E      = obj.config.General.E;
+        fixed_params.rho_mw = obj.config.General.kappa_mw / obj.config.General.kappa_iew;
+        fixed_params.t1_mw  = obj.config.General.t1_mw;
+        fixed_params.B0dir  = obj.config.General.B0dir;
+        fixed_params.b0     = bfile.metadata.MagneticFieldStrength;
+        extraData           = [];
+        extraData.freqBKG   = single(totalField / (obj.config.General.gyro * fixed_params.B0));  % in ppm. TODO: Is single() really needed/desired?
+        extraData.pini      = single(pini);
+        extraData.b1        = single(B1);
+
         % Estimate the MCR model
-        extraData         = [];
-        extraData.freqBKG = single(totalField / (obj.config.General.gyro * obj.config.MCR_GPUWorker.fixed_params.B0));  % in ppm
-        extraData.pini    = single(pini);
-        extraData.b1      = single(B1);
-        objGPU            = gpuMCRMWI(TE, TR, FA, obj.config.MCR_GPUWorker.fixed_params);
-        askadam_mcr       = objGPU.estimate(img, mask, extraData, obj.config.MCR_GPUWorker.fitting);  % TODO: Is single() really needed/desired?
+        objGPU      = gpuMCRMWI(TE, TR, FA, fixed_params);
+        askadam_mcr = objGPU.estimate(img, mask, extraData, obj.config.MCR_GPUWorker.fitting);
 
         % Extract and save the output data
         V(1).dim = dims(1:3);

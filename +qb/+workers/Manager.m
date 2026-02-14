@@ -212,14 +212,14 @@ methods
         % Check if there are still lock-files around from previous crashes
         lockfiles = dir(fullfile(obj.coord.workdir, '**', '*.lock'));
         if ~isempty(lockfiles)
-            fprintf('🔒 Found %d existing lockfiles\n', length(lockfiles))
+            fprintf('🔒 Found %d existing lockfile(s)\n', length(lockfiles))
             if obj.interactive
                 sample = fullfile(lockfiles(1).folder, lockfiles(1).name);
-                answer = questdlg(sprintf('Found %d existing lockfiles, probably caused by previous crashes. Here is a sample:\n\n..%s:\n%s\n\nShall I clean them up?', ...
+                answer = questdlg(sprintf('Found %d existing lockfile(s), probably caused by previous crashes. Here is a sample:\n\n..%s:\n%s\n\nShall I clean them up?', ...
                 length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Yes');
                 if strcmp(answer, 'Yes')
                     lockfiles = fullfile({lockfiles.folder}, {lockfiles.name});
-                    fprintf('🔓 Deleting %d existing lockfiles\n', length(lockfiles))
+                    fprintf('🔓 Deleting %d existing lockfile(s)\n', length(lockfiles))
                     delete(lockfiles{:})
                 end
             end

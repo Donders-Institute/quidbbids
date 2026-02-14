@@ -3,10 +3,14 @@
     "version": {"value": "0.0.5", "description": "QuIDBBIDS version that should match the version in resources/mpackage.json"},
     "useHPC": {"value": false, "description": "Use HPC cluster (true/false)"},
     "HPC": {"value": ["memreq",10e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu --gres=gpu:1\"]"},
-    "gyro": {"value": 42.57747892, "description": "in ppm"},
-    "kappa_mw": {"value": 0.36, "description": "Jung, NI., myelin water density"},
-    "kappa_iew": {"value": 0.86, "description": "Jung, NI., intra-/extra-axonal water density"},
-
+    "gyro": {"value": 42.57747892, "description": "Gyromagnetic ratio in ppm"},
+    "B0dir": {"value": [0, 0, 1], "description": "Main magnetic field direction with respect to FOV"},
+    "t1_mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"},
+    "kappa_mw": {"value": 0.36, "description": "Jung, NI., myelin water density. Used to compute: rho_mw = kappa_mw/kappa_iew"},
+    "kappa_iew": {"value": 0.86, "description": "Jung, NI., intra-/extra-axonal water density. Used to compute: rho_mw = kappa_mw/kappa_iew"},
+    "x_i": {"value": -0.1, "description": "Myelin isotropic susceptibility, in ppm"},
+    "x_a": {"value": -0.1, "description": "Myelin anisotropic susceptibility, in ppm"},
+    "E": {"value": 0.02, "description": "Exchange effect in signal phase, in ppm"},
     "BIDS": {
       "include": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "VFA", "UNIT1", "MP2RAGE", "TB1TFL", "TB1RFM"]}, "description": "Raw BIDS data to include"}
     }
@@ -39,13 +43,6 @@
 
   "MCR_GPUWorker": {
     "fixed_params": {
-      "x_i": {"value": -0.1, "description": "ppm"},
-      "x_a": {"value": -0.1, "description": "ppm"},
-      "E": {"value": 0.02, "description": "ppm"},
-      "rho_mw": {"value": 0.4186, "description": "Computed as kappa_mw/kappa_iew, i.e. 0.36/0.86"},
-      "t1_mw": {"value": 0.234, "description": "seconds"},
-      "B0": {"value": 3.0, "description": "Field strength, in tesla"},
-      "B0dir": {"value": [0.0, 0.0, 1.0], "description": "Main magnetic field direction with respect to FOV -- Replace with actual sepia_header{end}.B0_dir"},
       "thres_R2star": {"value": 150, "description": "1/seconds, upper bound"},
       "thres_T1": {"value": 3.1, "description": "seconds, upper bound"}
     },
@@ -81,11 +78,13 @@
       "npulse": {"value": 50, "description": "Number of RF pulses to reach steady-state in EPG"},
       "rfphase": {"value": 50, "description": "RF phase increment for EPG (degrees). Philips = 150"},
       "isT1mw": {"value": false, "description": "true = fit myelin water T1; false = use fixed value"},
-      "T1mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"},
-      "advancedStarting": {"value": "default", "description": "initial guesses for multi-comp S0. 'default' = estimated S0 and T2s IEW from data; 'robust' = estimated S0 from data only; otherwise fixed starting points for 3T"}
-    },
-    "imgPara": {
-      "Nepoch": {"value": [], "description": ""}
+      "advancedStarting": {"value": "default", "description": "initial guesses for multi-comp S0. 'default' = estimated S0 and T2s IEW from data; 'robust' = estimated S0 from data only; otherwise fixed starting points for 3T"},
+      "DIMWI": {
+        "isVic":    {"value": false, "description": "true = use DIMWI to account for intra-axonal volume fraction; false = no DIMWI"},
+        "isR2sEW":  {"value": false, "description": "true = use DIMWI to account for extra-axonal R2*; false = no DIMWI"},
+        "isFreqMW": {"value": false, "description": "true = use DIMWI to account for myelin water frequency shift; false = no DIMWI"},
+        "isFreqIW": {"value": false, "description": "true = use DIMWI to account for intra-axonal frequency shift; false = no DIMWI"}
+      }
     }
   },
 

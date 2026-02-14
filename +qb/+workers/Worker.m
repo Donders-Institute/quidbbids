@@ -179,7 +179,7 @@ methods
             end
 
         else
-            obj.logger.info("%s fetched %d requested %s items (%s/%s)", obj.name, length(work), workitem, obj.subject.name, obj.subject.session)
+            obj.logger.info("%s fetched %d requested %s item(s) (%s/%s)", obj.name, length(work), workitem, obj.subject.name, obj.subject.session)
         end
 
         % Make sure that the work exists
@@ -308,6 +308,11 @@ methods
         %SES Gets the ses-label from the subject data-structure
         label = strsplit(obj.subject.session, '-');
         label = label{end};
+    end
+
+    function subses = sub_ses(obj)
+        % Parses the sub-#_ses-# prefix from a BIDS.subjects item
+        subses = replace(erase(obj.subject.path, [obj.BIDS.pth filesep]), filesep,'_');
     end
 
     function BIDSW = BIDSW_ses(obj, workdir)

@@ -126,11 +126,8 @@ methods
         pini = polyfit3D_NthOrder(mean(pini(:,:,:,1:(end-1)), 4), mask, 6);
 
         % Get the algoPara struct for the MCR fit function
-        algoPara = obj.config.MCRWorker.algoPara;
-        algoPara.DIMWI.isVic    = false;    % We do not use DIMWI (yet)
-        algoPara.DIMWI.isR2sEW  = false;
-        algoPara.DIMWI.isFreqMW = false;
-        algoPara.DIMWI.isFreqIW = false;
+        algoPara      = obj.config.MCRWorker.algoPara;
+        algoPara.T1mw = obj.config.General.t1_mw;
 
         % Perform data normalisation if needed
         if ~algoPara.isNormData
@@ -143,13 +140,13 @@ methods
         if endsWith(workitem, 'ortho')
             obj.logger.info('Constructing orthoview montages')
             ortho = '_ortho';
-            [mask, sel] = obj.OrthoSlice(mask, [], 'tight');
-            B1          = obj.OrthoSlice(B1(sel{:}));
-            pini        = obj.OrthoSlice(pini(sel{:}));
+            [mask, sel] = obj.orthoslice(mask, 'tight');
+            B1          = obj.orthoslice(B1(sel{:}));
+            pini        = obj.orthoslice(pini(sel{:}));
             for n = dims(5):-1:1    % Loop backwards to preallocate the '_' variables
-                totalField_(:,:,:,n) = obj.OrthoSlice(totalField(sel{:},n));
+                totalField_(:,:,:,n) = obj.orthoslice(totalField(sel{:},n));
                 for m = dims(4):-1:1
-                    img_(:,:,:,m,n) = obj.OrthoSlice(img(sel{:},m,n));
+                    img_(:,:,:,m,n) = obj.orthoslice(img(sel{:},m,n));
                 end
             end
             totalField = totalField_;
@@ -157,8 +154,24 @@ methods
         end
 
         % Construct the imgPara struct for the MCR fit function
-        imgPara = struct('img',img, 'mask',mask, 'fieldmap',totalField, 'pini',pini, 'b1map',B1, ...
-                         'te',TE, 'tr',TR, 'fa',FA, 'autosave',false, 'output_dir',char(obj.logger.outputdir));     % Add 'identifier' when the MWI PR is accepted and released: 'identifier',obj.subject.name);
+        imgPara            = obj.config.MCRWorker.imgPara;
+        imgPara.img        = img;
+        imgPara.mask       = mask;
+        imgPara.fieldmap   = totalField;
+        imgPara.pini       = pini;
+        imgPara.b1map      = B1;
+        imgPara.te         = TE;
+        imgPara.tr         = TR;
+        imgPara.fa         = FA;
+        imgPara.b0         = bfile.metadata.MagneticFieldStrength;
+        imgPara.b0dir      = obj.config.General.B0dir;
+        imgPara.rho_mw     = obj.config.General.kappa_mw / obj.config.General.kappa_iew;
+        imgPara.E          = obj.config.General.E;
+        imgPara.x_i        = obj.config.General.x_i;
+        imgPara.x_a        = obj.config.General.x_a;
+        imgPara.autosave   = false;
+        imgPara.output_dir = char(obj.logger.outputdir);
+        % imgPara.identifier  = obj.subject.name;     % Add when the MWI PR is accepted and released
         % if obj.subject.session
         %     imgPara.identifier = [imgPara.identifier '_' obj.subject.session];
         % end
@@ -188,28 +201,28 @@ end
 
 methods (Static, Access = private)
 
-    function [montage, sel] = OrthoSlice(vol, xyz, showim)
-        % [montage, sel] = OrthoSlice(vol, xyz, showim)
+    function [montage, sel] = orthoslice(vol, crop, xyz)
+        % [montage, sel] = orthoslice(vol, crop, xyz)
         %
-        % Extract orthogonal slices from a 3D vol and return them as a row montage.
+        % Extract orthogonal slices from a 3D vol and return them as a concatenated row montage.
         %
         % Inputs:
-        %   vol    - 3D image volume
-        %   xyz    - kz positions (default: center of vol)
-        %   showim - display type: 'normal' or 'tight' (default)
+        %   vol     - 3D image volume
+        %   crop    - If 'tight' then the volume is cropped to the non-zero part of the image
+        %   xyz     - kz positions (default: center of vol)
         %
         % Outputs:
-        %   montage - 2D image of the orthogonal slices
-        %   sel     - cell array of the selected indices in each dimension (useful for applying the same selection to other volumes)
+        %   montage - 2D image of the orthogonal slices (axial, coronal, sagittal)
+        %   sel     - cell array of the selection indices in each dimension (useful for applying the same cropping to other volumes)
 
         % Defaults
-        if nargin < 3 || isempty(showim)
-            showim = 'normal';
+        if nargin < 2 || isempty(crop)
+            crop = 'normal';
         end
 
         % Crop the volume to the non-zero part if 'tight' display is requested
         sel = {1:size(vol,1), 1:size(vol,2), 1:size(vol,3)};
-        if strcmp(showim, 'tight')
+        if strcmp(crop, 'tight')
             [x,y,z] = ind2sub(size(vol), find(vol));
             sel     = {min(x):max(x), min(y):max(y), min(z):max(z)};
             vol     = vol(sel{:});
@@ -217,23 +230,23 @@ methods (Static, Access = private)
 
         % Set the slice positions to the center of the volume if not provided
         dims = size(vol);
-        if nargin < 2 || isempty(xyz)
+        if nargin < 3 || isempty(xyz)
             xyz = round(dims/2);
         end
 
-        % Create three blank images and 1) a sagittal, 2) a coronal and 3) an axial slice
-        sagit  = zeros([dims(2) max(dims(2:3))]);
-        coron  = zeros([dims(1) max(dims(2:3))]);
+        % Create three blank images and 1) an axial, 2) a coronal and 3) a sagittal slice
         axial  = zeros([dims(1) max(dims(2:3))]);
-        sagit_ = squeeze(vol(xyz(1),:,:));
-        coron_ = squeeze(vol(:,xyz(2),:));
+        coron  = zeros([dims(1) max(dims(2:3))]);
+        sagit  = zeros([dims(2) max(dims(2:3))]);
         axial_ = squeeze(vol(:,:,xyz(3)));
+        coron_ = squeeze(vol(:,xyz(2),:));
+        sagit_ = squeeze(vol(xyz(1),:,:));
 
         % Center the three slices in their respective blank images and concatenate them to a row montage
-        sagit(:, round((size(sagit,2) - size(sagit_,2))/2) + (1:size(sagit_,2))) = sagit_;
-        coron(:, round((size(coron,2) - size(coron_,2))/2) + (1:size(coron_,2))) = coron_;
         axial(:, round((size(axial,2) - size(axial_,2))/2) + (1:size(axial_,2))) = axial_;
-        montage = cat(1, sagit, coron, axial);
+        coron(:, round((size(coron,2) - size(coron_,2))/2) + (1:size(coron_,2))) = coron_;
+        sagit(:, round((size(sagit,2) - size(sagit_,2))/2) + (1:size(sagit_,2))) = sagit_;
+        montage = cat(1, axial, coron, sagit);
     end
 
 end

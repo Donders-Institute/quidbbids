@@ -40,7 +40,7 @@ methods (Abstract, Access = protected)
 
     initialize(obj)
     %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
-        % subclasses to perform additional setup after the common Worker properties have been initialized.
+    % subclasses to perform additional setup after the common Worker properties have been initialized.
 
 end
 

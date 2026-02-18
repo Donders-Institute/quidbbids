@@ -2,15 +2,7 @@
   "General": {
     "version": {"value": "0.0.5", "description": "QuIDBBIDS version that should match the version in resources/mpackage.json"},
     "useHPC": {"value": false, "description": "Use HPC cluster (true/false)"},
-    "HPC": {"value": ["memreq",10e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu --gres=gpu:1\"]"},
-    "gyro": {"value": 42.57747892, "description": "Gyromagnetic ratio in ppm"},
-    "B0dir": {"value": [0, 0, 1], "description": "Main magnetic field direction with respect to FOV"},
-    "t1_mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"},
-    "kappa_mw": {"value": 0.36, "description": "Jung, NI., myelin water density. Used to compute: rho_mw = kappa_mw/kappa_iew"},
-    "kappa_iew": {"value": 0.86, "description": "Jung, NI., intra-/extra-axonal water density. Used to compute: rho_mw = kappa_mw/kappa_iew"},
-    "x_i": {"value": -0.1, "description": "Myelin isotropic susceptibility, in ppm"},
-    "x_a": {"value": -0.1, "description": "Myelin anisotropic susceptibility, in ppm"},
-    "E": {"value": 0.02, "description": "Exchange effect in signal phase, in ppm"},
+    "HPC": {"value": ["memreq",10e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu40g --gres=gpu:1\"]"},
     "BIDS": {
       "include": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "VFA", "UNIT1", "MP2RAGE", "TB1TFL", "TB1RFM"]}, "description": "Raw BIDS data to include"}
     }
@@ -43,17 +35,24 @@
 
   "MCR_GPUWorker": {
     "fixed_params": {
+      "t1_mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"},
+      "rho_mw": {"value": 0.4186, "description": "Relative myelin water density (can be computed as kappa_mw/kappa_iew)"},
+      "x_i": {"value": -0.1, "description": "Myelin isotropic susceptibility, in ppm"},
+      "x_a": {"value": -0.1, "description": "Myelin anisotropic susceptibility, in ppm"},
+      "E": {"value": 0.02, "description": "Exchange effect in signal phase, in ppm"},
       "thres_R2star": {"value": 150, "description": "1/seconds, upper bound"},
       "thres_T1": {"value": 3.1, "description": "seconds, upper bound"}
     },
     "fitting": {
-      "Nepoch": {"value": 4000, "description": "Number of training epochs"},
+      "iteration": {"value": 4000, "description": "Maximum number of GPU fitting iterations"},
       "initialLearnRate": {"value": 0.001, "description": "Initial learning rate"},
       "decayRate": {"value": 0, "description": "Learning rate decay"},
       "convergenceValue": {"value": -1e308, "description": "Convergence stopping value"},
       "tol": {"value": 1e-8, "description": "Tolerance for stopping optimization"},
+      "lambda": {"value": 0, "description": "Regularization parameter for the cost function (0 = no regularisation)"},
+      "TVmode": {"value": "2D", "description": "Total variation regularization mode. Options: '2D' or '3D'"},
       "display": {"value": false, "description": "Display fitting progress"},
-      "lossFunction": {"value": "l1", "description": "Loss function for optimization"},
+      "lossFunction": {"value": "L1", "description": "Loss function for optimization ('L1'|'L2'|'MSE')"},
       "start": {"value": "prior", "description": "Initialization strategy"},
       "patience": {"value": 20, "description": "Early stopping patience"},
       "isFitExchange": {"value": true, "description": "Fit exchange parameters"},
@@ -64,10 +63,12 @@
   "MCRWorker": {
     "algoPara": {
       "isInvivo": {"value": true, "description": "true = use initial starting points for in vivo study"},
+      "isSelfBoundary": {"value": false, "description": "true = ???; false = ???"},
       "isFastEPG": {"value": false, "description": "true = speed up the fitting by running a non EPG fitting first and use the results as the initial guesses of EPG fitting"},
       "isParallel": {"value": false, "description": "true = use parfor for parallel processing"},
       "isNormData": {"value": false, "description": "true = normalise the data by a global constant so that absolute tolerance will be used for fitting; use false if the data is already normalisation"},
       "maxIter": {"value": 500, "description": "Maximum number of iterations"},
+      "numBatch": {"value": 100, "description": "Number of processing batches"},
       "fcnTol": {"value": 1e-4, "description": "fitting tolerance, this value is used for normalised data"},
       "stepTol": {"value": 1e-4, "description": "Step tolerance, this value is used for normalised data"},
       "numMagn": {"value": 0, "description": "0 = fitting with complex-valued data; length(TE) = fitting with magnitude data"},
@@ -78,6 +79,7 @@
       "npulse": {"value": 50, "description": "Number of RF pulses to reach steady-state in EPG"},
       "rfphase": {"value": 50, "description": "RF phase increment for EPG (degrees). Philips = 150"},
       "isT1mw": {"value": false, "description": "true = fit myelin water T1; false = use fixed value"},
+      "T1mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"},
       "advancedStarting": {"value": "default", "description": "initial guesses for multi-comp S0. 'default' = estimated S0 and T2s IEW from data; 'robust' = estimated S0 from data only; otherwise fixed starting points for 3T"},
       "DIMWI": {
         "isVic":    {"value": false, "description": "true = use DIMWI to account for intra-axonal volume fraction; false = no DIMWI"},
@@ -85,6 +87,12 @@
         "isFreqMW": {"value": false, "description": "true = use DIMWI to account for myelin water frequency shift; false = no DIMWI"},
         "isFreqIW": {"value": false, "description": "true = use DIMWI to account for intra-axonal frequency shift; false = no DIMWI"}
       }
+    },
+    "imgPara": {
+      "rho_mw": {"value": 0.4186, "description": "Relative myelin water density (can be computed as kappa_mw/kappa_iew)"},
+      "x_i": {"value": -0.1, "description": "Myelin isotropic susceptibility, in ppm"},
+      "x_a": {"value": -0.1, "description": "Myelin anisotropic susceptibility, in ppm"},
+      "E": {"value": 0.02, "description": "Exchange effect in signal phase, in ppm"}
     }
   },
 

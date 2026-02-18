@@ -46,10 +46,10 @@ classdef TestConfigEditorGUI < BaseTest
             gui.Fig.Visible = 'off';
 
             % Test incremental search (ValueChangingFcn)
-            gui.SearchField.Value = 'gyro';
-            gui.onSearchLive(struct('Value', 'gyro'));  % Use onSearchLive for incremental search
+            gui.SearchField.Value = 'InvEff';
+            gui.onSearchLive(struct('Value', 'InvEff'));  % Use onSearchLive for incremental search
             testCase.verifyGreaterThanOrEqual(numel(gui.SearchMatches), 1);
-            testCase.verifyEqual(gui.SearchMatches{1}.Text, 'gyro');
+            testCase.verifyEqual(gui.SearchMatches{1}.Text, 'InvEff');
 
             % Test search with wildcard using incremental search
             gui.SearchField.Value = '*WH*';
@@ -68,8 +68,8 @@ classdef TestConfigEditorGUI < BaseTest
             % since it requires visible figure, but we can verify the search logic
             
             % First test with a valid search to ensure matches work
-            gui.SearchField.Value = 'gyro';
-            gui.onSearchEnter(struct('Value', 'gyro'));
+            gui.SearchField.Value = 'InvEff';
+            gui.onSearchEnter(struct('Value', 'InvEff'));
             testCase.verifyGreaterThanOrEqual(numel(gui.SearchMatches), 1);
             
             % Now test with nonexistent search - verify search state is cleared
@@ -101,42 +101,42 @@ classdef TestConfigEditorGUI < BaseTest
             % The matches should become more specific (fewer or equal matches)
             testCase.verifyTrue(refinedMatches <= initialMatches)
             
-            % Should find 'gyro' specifically
+            % Should find 'InvEff' specifically
             if refinedMatches > 0
                 matchTexts = {gui.SearchMatches{:}.Text};
-                testCase.verifyTrue(any(contains(matchTexts, 'gyro')))
+                testCase.verifyTrue(any(contains(matchTexts, 'InvEff')))
             end
 
             delete(gui)
         end
 
         function testLeafEdit(testCase)
-            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, [], {'General'});
+            gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, [], {'MP2RAGEWorker'});
             gui.Fig.Visible = 'off';
         
-            % Select leaf: General -> gyro
-            generalNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General'));
-            gyroNode = generalNode.Children(strcmp({generalNode.Children.Text}, 'gyro'));
-            gui.Tree.SelectedNodes = gyroNode;
+            % Select leaf: MP2RAGEWorker -> InvEff
+            MP2RAGENode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'MP2RAGEWorker'));
+            InvEffNode = MP2RAGENode.Children(strcmp({MP2RAGENode.Children.Text}, 'InvEff'));
+            gui.Tree.SelectedNodes = InvEffNode;
         
             % Verify initial state
-            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892)
-            testCase.verifyEqual(gui.Config.General.gyro.value, 42.57747892)
+            testCase.verifyEqual(InvEffNode.NodeData.value, 0.96)
+            testCase.verifyEqual(gui.Config.MP2RAGEWorker.InvEff.value, 0.96)
         
             % Update value
             gui.ValField.Value = '50';
             gui.updateLeafFromField()
         
             % Verify BOTH tree node and config are updated
-            testCase.verifyEqual(gyroNode.NodeData.value, 50)
-            testCase.verifyEqual(gui.Config.General.gyro.value, 50)
+            testCase.verifyEqual(InvEffNode.NodeData.value, 50)
+            testCase.verifyEqual(gui.Config.MP2RAGEWorker.InvEff.value, 50)
         
             % Reset leaf
             gui.resetLeaf()
             
             % Verify BOTH are reset
-            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892)
-            testCase.verifyEqual(gui.Config.General.gyro.value, 42.57747892)
+            testCase.verifyEqual(InvEffNode.NodeData.value, 0.96)
+            testCase.verifyEqual(gui.Config.MP2RAGEWorker.InvEff.value, 0.96)
         
             delete(gui)
         end
@@ -211,20 +211,20 @@ classdef TestConfigEditorGUI < BaseTest
             gui = qb.GUI.ConfigEditor(testCase.TempJSONFile, testCase.Config);
             gui.Fig.Visible = 'off';
 
-            %--- Test 1: Numeric scalar (gyro)
-            generalNode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'General'));
-            gyroNode = generalNode.Children(strcmp({generalNode.Children.Text}, 'gyro'));
-            gui.Tree.SelectedNodes = gyroNode;
+            %--- Test 1: Numeric scalar (InvEff)
+            MP2RAGENode = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'MP2RAGEWorker'));
+            InvEffNode = MP2RAGENode.Children(strcmp({MP2RAGENode.Children.Text}, 'InvEff'));
+            gui.Tree.SelectedNodes = InvEffNode;
             
             % Verify initial state
-            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892);
+            testCase.verifyEqual(InvEffNode.NodeData.value, 0.96);
             
             % Update to different numeric value
             gui.ValField.Value = '99.5';
             gui.updateLeafFromField()
-            testCase.verifyEqual(gyroNode.NodeData.value, 99.5)
+            testCase.verifyEqual(InvEffNode.NodeData.value, 99.5)
             gui.resetLeaf()
-            testCase.verifyEqual(gyroNode.NodeData.value, 42.57747892)
+            testCase.verifyEqual(InvEffNode.NodeData.value, 0.96)
 
             %--- Test 2: String value
             mcrNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'MCR_GPUWorker'));

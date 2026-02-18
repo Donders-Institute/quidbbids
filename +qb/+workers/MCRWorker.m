@@ -22,33 +22,19 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters
-        obj.bidsfilter.FMW_exrate    = struct('modality', 'anat', ...
-                                              'echo', [], ...
-                                              'part', '', ...
-                                              'desc', 'MWI', ...
-                                              'label', 'free2myelinwater', ...
-                                              'suffix', 'ExchRate');
-        obj.bidsfilter.FitMask       = struct('modality', 'anat', ...
-                                              'echo', [], ...
-                                              'part', '', ...
-                                              'desc', 'MWI', ...
-                                              'label', 'fitted', ...
-                                              'suffix', 'mask');
         obj.bidsfilter.MWFmap        = struct('modality', 'anat', ...
                                               'echo', [], ...
+                                              'flip', '', ...
                                               'part', '', ...
                                               'desc', 'MWI', ...
                                               'suffix', 'MWFmap');
-        obj.bidsfilter.MW_M0map      = struct('modality', 'anat', ...
-                                              'echo', [], ...
-                                              'part', '', ...
-                                              'desc', 'MWI', ...
-                                              'label', 'myelinwater', ...
-                                              'suffix', 'M0Map');
-        obj.bidsfilter.MW_R2starmap  = setfield(obj.bidsfilter.MW_M0map, 'suffix','R2starmap');
-        obj.bidsfilter.FW_M0map      = setfield(obj.bidsfilter.MW_M0map, 'label','freewater');
-        obj.bidsfilter.FW_T1map      = setfield(obj.bidsfilter.MW_M0map, 'suffix','T1map');
-        obj.bidsfilter.FW_R1map      = setfield(obj.bidsfilter.FW_M0map, 'suffix','R1map');
+        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap, 'label','free2myelinwater', 'suffix','ExchRate');
+        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap, 'label','fitted', 'suffix','mask');
+        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap, 'label','myelinwater', 'suffix','M0Map');
+        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map, 'suffix','R2starmap');
+        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, 'label','freewater');
+        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map, 'suffix','T1map');
+        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map, 'suffix','R1map');
         obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.FW_M0map, 'label','axonalwater', 'suffix','R2starmap');
         
         % Create orthoslice variants of the bidsfilters
@@ -125,11 +111,8 @@ methods
         pini = squeeze(unwrappedPhase(:,:,:,1,:)) - 2*pi*totalField .* TE(1);
         pini = polyfit3D_NthOrder(mean(pini(:,:,:,1:(end-1)), 4), mask, 6);
 
-        % Get the algoPara struct for the MCR fit function
-        algoPara      = obj.config.MCRWorker.algoPara;
-        algoPara.T1mw = obj.config.General.t1_mw;
-
-        % Perform data normalisation if needed
+        % Get the algoPara struct and perform data normalisation if needed
+        algoPara = obj.config.MCRWorker.algoPara;
         if ~algoPara.isNormData
             obj.logger.info('Normalising the multi-echo data')
             [~, img] = mwi_image_normalisation(img, mask);
@@ -153,7 +136,8 @@ methods
             img = img_;
         end
 
-        % Construct the imgPara struct for the MCR fit function
+        % Construct the imgPara struct
+        imgPara            = obj.config.MCRWorker.imgPara;
         imgPara.img        = img;
         imgPara.mask       = mask;
         imgPara.fieldmap   = totalField;
@@ -163,11 +147,6 @@ methods
         imgPara.tr         = TR;
         imgPara.fa         = FA;
         imgPara.b0         = bfile.metadata.MagneticFieldStrength;
-        imgPara.b0dir      = obj.config.General.B0dir;
-        imgPara.rho_mw     = obj.config.General.kappa_mw / obj.config.General.kappa_iew;
-        imgPara.E          = obj.config.General.E;
-        imgPara.x_i        = obj.config.General.x_i;
-        imgPara.x_a        = obj.config.General.x_a;
         imgPara.autosave   = false;
         imgPara.output_dir = char(obj.logger.outputdir);
         % imgPara.identifier  = obj.subject.name;     % Add when the MWI PR is accepted and released
@@ -175,10 +154,10 @@ methods
         %     imgPara.identifier = [imgPara.identifier '_' obj.subject.session];
         % end
 
-        % Estimate the MWI MCR model
+        % Estimate the MWI-MCR model
         ws = warning('off', 'MATLAB:nearlySingularMatrix');     % Supress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
         warning('off', 'MWI:IdentifierFile:NotFound')
-        obj.logger.info('Estimating the MWI MCR model')
+        obj.logger.info('Estimating the MWI-MCR model')
         fitRes = mwi_3cx_2R1R2s_dimwi(algoPara, imgPara);
         warning(ws)
 
@@ -193,9 +172,9 @@ methods
         spm_write_vol_gz(V(1), fitRes.T1_IEW,               obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])).path);
         spm_write_vol_gz(V(1), 1 ./ fitRes.T1_IEW,          obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])).path);
         spm_write_vol_gz(V(1), fitRes.kiewm,                obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])).path);
-        spm_write_vol_gz(V(1), fitRes.mask_fitted,          obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])).path);  % Check if this is correct
+        spm_write_vol_gz(V(1), fitRes.mask_fitted,          obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])).path);
     end
-
+    
 end
 
 methods (Static, Access = private)

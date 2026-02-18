@@ -80,9 +80,9 @@ methods
 
         % Estimate the MCR model
         extraData     = [];
-        extraData.b1  = single(B1);
+        extraData.b1  = B1;
         objGPU        = gpuJointR1R2starMapping(TE, TR, FA);
-        askadam_R1R2s = objGPU.estimate(img, mask, extraData, obj.config.R1R2sWorker.fitting);  % TODO: Is single() needed/desired?
+        askadam_R1R2s = objGPU.estimate(img, mask, extraData, obj.config.R1R2sWorker.fitting);
 
         % Save the output data
         V(1).dim = dims(1:3);

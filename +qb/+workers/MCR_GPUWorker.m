@@ -10,6 +10,7 @@ properties (GetAccess = public, SetAccess = protected)
                    "Methods:"
                    "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"]
     needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
+    gyro        = 42.57747892       % Gyromagnetic ratio in ppm
 end
 
 
@@ -25,33 +26,19 @@ methods (Access = protected)
         obj.usesGPU = true;
 
         % Construct the bidsfilters
-        obj.bidsfilter.FMW_exrate    = struct('modality', 'anat', ...
-                                              'echo', [], ...
-                                              'part', '', ...
-                                              'desc', 'gacelle', ...
-                                              'label', 'free2myelinwater', ...
-                                              'suffix', 'ExchRate');
-        obj.bidsfilter.FitMask       = struct('modality', 'anat', ...
-                                              'echo', [], ...
-                                              'part', '', ...
-                                              'desc', 'gacelle', ...
-                                              'label', 'fitted', ...
-                                              'suffix', 'mask');
         obj.bidsfilter.MWFmap        = struct('modality', 'anat', ...
                                               'echo', [], ...
+                                              'flip', '', ...
                                               'part', '', ...
                                               'desc', 'gacelle', ...
                                               'suffix', 'MWFmap');
-        obj.bidsfilter.MW_M0map      = struct('modality', 'anat', ...
-                                              'echo', [], ...
-                                              'part', '', ...
-                                              'desc', 'gacelle', ...
-                                              'label', 'myelinwater', ...
-                                              'suffix', 'M0Map');
-        obj.bidsfilter.MW_R2starmap  = setfield(obj.bidsfilter.MW_M0map, 'suffix','R2starmap');
-        obj.bidsfilter.FW_M0map      = setfield(obj.bidsfilter.MW_M0map, 'label','freewater');
-        obj.bidsfilter.FW_T1map      = setfield(obj.bidsfilter.MW_M0map, 'suffix','T1map');
-        obj.bidsfilter.FW_R1map      = setfield(obj.bidsfilter.FW_M0map, 'suffix','R1map');
+        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap, 'label','free2myelinwater', 'suffix','ExchRate');
+        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap, 'label','fitted', 'suffix','mask');
+        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap, 'label','myelinwater', 'suffix','M0Map');
+        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map, 'suffix','R2starmap');
+        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, 'label','freewater');
+        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map, 'suffix','T1map');
+        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map, 'suffix','R1map');
         obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.FW_M0map, 'label','axonalwater', 'suffix','R2starmap');
     end
 
@@ -124,18 +111,12 @@ methods
         pini = polyfit3D_NthOrder(mean(pini(:,:,:,1:(end-1)), 4), mask, 6);
 
         % Construct the fixed parameters and extra data for the MCR model
-        fixed_params        = obj.config.MCR_GPUWorker.fixed_params;
-        fixed_params.x_i    = obj.config.General.x_i;
-        fixed_params.x_a    = obj.config.General.x_a;
-        fixed_params.E      = obj.config.General.E;
-        fixed_params.rho_mw = obj.config.General.kappa_mw / obj.config.General.kappa_iew;
-        fixed_params.t1_mw  = obj.config.General.t1_mw;
-        fixed_params.B0dir  = obj.config.General.B0dir;
-        fixed_params.B0     = bfile.metadata.MagneticFieldStrength;
-        extraData           = [];
-        extraData.freqBKG   = single(totalField / (obj.config.General.gyro * fixed_params.B0));  % in ppm. TODO: Is single() really needed/desired?
-        extraData.pini      = single(pini);
-        extraData.b1        = single(B1);
+        fixed_params      = obj.config.MCR_GPUWorker.fixed_params;
+        fixed_params.B0   = bfile.metadata.MagneticFieldStrength;
+        extraData         = [];
+        extraData.freqBKG = totalField / (obj.gyro * fixed_params.B0);
+        extraData.pini    = pini;
+        extraData.b1      = B1;
 
         % Estimate the MCR model
         objGPU      = gpuMCRMWI(TE, TR, FA, fixed_params);
@@ -143,7 +124,7 @@ methods
 
         % Extract and save the output data
         V(1).dim = dims(1:3);
-        spm_write_vol_gz(V(1), askadam_mcr.final.MWF * 100,                       obj.bfile_set(bfile, obj.bidsfilter.MWFmap       ).path);  % TODO: Ask Jose: Multiply by 100 to get percentage?
+        spm_write_vol_gz(V(1), askadam_mcr.final.MWF,                             obj.bfile_set(bfile, obj.bidsfilter.MWFmap       ).path);
         spm_write_vol_gz(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.bfile_set(bfile, obj.bidsfilter.MW_M0map     ).path);
         spm_write_vol_gz(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.bfile_set(bfile, obj.bidsfilter.FW_M0map     ).path);
         spm_write_vol_gz(V(1), askadam_mcr.final.R2sMW,                           obj.bfile_set(bfile, obj.bidsfilter.MW_R2starmap ).path);
@@ -151,7 +132,7 @@ methods
         spm_write_vol_gz(V(1), 1 ./ askadam_mcr.final.R1IEW,                      obj.bfile_set(bfile, obj.bidsfilter.FW_T1map     ).path);
         spm_write_vol_gz(V(1), askadam_mcr.final.R1IEW,                           obj.bfile_set(bfile, obj.bidsfilter.FW_R1map     ).path);
         spm_write_vol_gz(V(1), askadam_mcr.final.kIEWM,                           obj.bfile_set(bfile, obj.bidsfilter.FMW_exrate   ).path);
-        spm_write_vol_gz(V(1), mask,                                              obj.bfile_set(bfile, obj.bidsfilter.FitMask      ).path); % Check if this is correct
+        spm_write_vol_gz(V(1), askadam_mcr.mask,                                  obj.bfile_set(bfile, obj.bidsfilter.FitMask      ).path);
     end
 
 end

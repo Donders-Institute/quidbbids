@@ -13,7 +13,7 @@ end
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         import qb.utils.setfields
@@ -113,19 +113,19 @@ methods
 
             % Save the R1-map
             bfile                              = obj.bfile_set(UNIT1, obj.bidsfilter.R1map);
-            bfile.metadata.Sources             = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME + add a JSON sidecar file
+            bfile.metadata.Sources             = {['bids::' bfile.bids_path '/' bfile.filename]};
             bfile.metadata.InversionEfficiency = MP2RAGE.InvEff;
             bfile.metadata.NumberShots         = MP2RAGE.NumberShots;
             bfile.metadata.EchoSpacing         = MP2RAGE.EchoSpacing;
-            spm_write_vol_gz(UNIhdr, R1map, bfile.path);
+            spm_write_vol_gz(UNIhdr, R1map, bfile);
 
             % Save the M0-map
             bfile = obj.bfile_set(bfile, obj.bidsfilter.M0map);
-            spm_write_vol_gz(UNIhdr, M0map, bfile.path);                                % TODO: add a JSON sidecar file
+            spm_write_vol_gz(UNIhdr, M0map, bfile);
 
             % Save the corrected UNIT1
             bfile = obj.bfile_set(bfile, obj.bidsfilter.MP2RAGE_T1w);
-            spm_write_vol_gz(UNIhdr, UNIcorr, bfile.path);                              % TODO: add a JSON sidecar file
+            spm_write_vol_gz(UNIhdr, UNIcorr, bfile);
 
         end
     end

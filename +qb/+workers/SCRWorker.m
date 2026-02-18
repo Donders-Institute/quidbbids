@@ -17,7 +17,7 @@ end
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % Construct the bidsfilters
@@ -112,8 +112,8 @@ methods
             Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
             bfileR2s = obj.bfile_set(S0data{1}, obj.bidsfilter.meanR2starmap);
             bfileChi = obj.bfile_set(S0data{1}, obj.bidsfilter.meanChimap);
-            spm_write_vol_gz(V, R2smean.*mask, bfileR2s.path);          % TODO: Add JSON sidecar files
-            spm_write_vol_gz(V, Chimean.*mask, bfileChi.path);          % TODO: Add JSON sidecar files
+            spm_write_vol_gz(V, R2smean.*mask, bfileR2s);
+            spm_write_vol_gz(V, Chimean.*mask, bfileChi);
 
             % Compute the R1 and M0 maps using DESPOT1 (based on S0).     TODO: Adapt for using echo data as an alternative to S0
             bfile    = bids.File(S0data{1});                            % TODO: FIXME: Random
@@ -124,8 +124,8 @@ methods
             % Save the SCR output maps
             bfileR1 = obj.bfile_set(S0data{1}, obj.bidsfilter.R1map_S0);
             bfileM0 = obj.bfile_set(S0data{1}, obj.bidsfilter.M0map_S0);
-            spm_write_vol_gz(V, R1,       bfileR1.path);                % TODO: Add JSON sidecar files
-            spm_write_vol_gz(V, M0.*mask, bfileM0.path);                % TODO: Add JSON sidecar files
+            spm_write_vol_gz(V, R1,       bfileR1);
+            spm_write_vol_gz(V, M0.*mask, bfileM0);
 
         end
     end

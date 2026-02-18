@@ -13,7 +13,7 @@ end
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         import qb.utils.setfields
@@ -64,8 +64,7 @@ methods
             % Save the FA-map image & json file
             bfile = obj.bfile_set(bfile, obj.bidsfilter.TB1map_angle);
             obj.logger.info("--> Saving regularized B1-map: %s", bfile.filename)
-            qb.utils.spm_write_vol_gz(FAVol, FA, bfile.path);
-            bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
+            qb.utils.spm_write_vol_gz(FAVol, FA, bfile);
 
             % Copy the anat image & json file
             if ~isempty(B1anat)

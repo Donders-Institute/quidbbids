@@ -13,7 +13,7 @@ end
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % SEPIA should have a directory of its own (we cannot control it's output very well)

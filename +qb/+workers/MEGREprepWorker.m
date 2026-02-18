@@ -35,7 +35,7 @@ end
 methods (Access = protected)
 
     function initialize(obj)
-        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This method allows 
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         import qb.utils.setfields
@@ -59,6 +59,7 @@ methods (Access = protected)
                                              'suffix', 'T1w');
         obj.bidsfilter.M0map_echo1  = struct('modality', 'anat', ...
                                              'part', '', ...
+                                             'flip', [], ...
                                              'echo', 1, ...
                                              'space', obj.bidsfilter.syntheticT1.space, ...
                                              'desc', 'despot1', ...
@@ -66,7 +67,7 @@ methods (Access = protected)
         obj.bidsfilter.brainmask    = struct('modality', 'anat', ...
                                              'echo', [], ...
                                              'part', '', ...
-                                             'flip', '', ...
+                                             'flip', [], ...
                                              'desc', 'minimal', ...
                                              'label', 'brain', ...
                                              'suffix', 'mask');
@@ -164,18 +165,16 @@ methods
                 T1w                    = M0 .* GRESignal(flipangles(n), metadata.RepetitionTime, T1);
                 T1w(~isfinite(T1w))    = 0;
                 bfile                  = obj.bfile_set(VFA_e1{n}, obj.bidsfilter.syntheticT1);
-                bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};
+                bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
                 obj.logger.info("Saving T1-like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
-                spm_write_vol_gz(Ve1, T1w, bfile.path);
-                bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+                spm_write_vol_gz(Ve1, T1w, bfile);
             end
 
             % Save the M0 volume as well
             bfile                  = obj.bfile_set(Ve1.fname, obj.bidsfilter.M0map_echo1);
-            bfile.metadata.Sources = strrep(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids:raw:');
+            bfile.metadata.Sources = strrep(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids::');
             obj.logger.info("Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
-            spm_write_vol_gz(Ve1, M0, bfile.path);
-            bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+            spm_write_vol_gz(Ve1, M0, bfile);
         end
     end
 
@@ -250,15 +249,13 @@ methods
 
                     % Save the magnitude image
                     bfile = obj.bfile_set(Vfe_m.fname, struct('space',obj.bidsfilter.syntheticT1.space, 'desc','temp3D'));  % Will be merged to desc=ME4D
-                    bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
-                    spm_write_vol_gz(Vref, hypot(img_r(:,:,:,1), img_r(:,:,:,2)), bfile.path);  % Numerically stable sqrt(Re.^2 + Im.^2)
-                    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+                    bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
+                    spm_write_vol_gz(Vref, hypot(img_r(:,:,:,1), img_r(:,:,:,2)), bfile);   % Numerically stable sqrt(Re.^2 + Im.^2)
 
                     % Save the phase image
                     bfile = obj.bfile_set(Vfe_p.fname, struct('space',obj.bidsfilter.syntheticT1.space, 'desc','temp3D'));  % Will be merged to desc=ME4D
-                    bfile.metadata.Sources = {['bids:raw:' bfile.bids_path]};       % TODO: FIXME
-                    spm_write_vol_gz(Vref, atan2(img_r(:,:,:,2), img_r(:,:,:,1)), bfile.path);  % Quadrant-correct phase in radians, range [-pi, pi]
-                    bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+                    bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
+                    spm_write_vol_gz(Vref, atan2(img_r(:,:,:,2), img_r(:,:,:,1)), bfile);   % Quadrant-correct phase in radians, range [-pi, pi]
 
                 end
 
@@ -292,8 +289,7 @@ methods
                 % Save the resliced FA-map
                 bfile = obj.bfile_set(B1famp, obj.bidsfilter.TB1map_GRE);
                 obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
-                spm_write_vol_gz(Vref, B1, bfile.path);
-                bids.util.jsonencode(fullfile(char(obj.workdir), bfile.bids_path, bfile.json_filename), bfile.metadata)
+                spm_write_vol_gz(Vref, B1, bfile);
             end
 
         end

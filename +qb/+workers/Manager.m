@@ -54,10 +54,11 @@ methods
     end
 
     function create_team(obj, workitems, recurse_)
-        %CREATE_TEAM Selects workers from the pool that together are capable of making the
-        % WORKITEMS (products).
+        %CREATE_TEAM Selects workers from the pool that together are capable of making the WORKITEMS (products).
         %
-        % Asks the user for help if needed. The assembled team is stored in the TEAM property.
+        % Asks the user for help if needed. The assembled team is stored in the TEAM property, which is a struct
+        % with fields corresponding to the workitems and value corresponding to the resume of the worker that will
+        % produce the workitem.
         %
         % NB: RECURSE_ is a private argument that should not be used
 

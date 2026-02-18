@@ -154,7 +154,6 @@ methods
         end
 
         % Construct the imgPara struct for the MCR fit function
-        imgPara            = obj.config.MCRWorker.imgPara;
         imgPara.img        = img;
         imgPara.mask       = mask;
         imgPara.fieldmap   = totalField;

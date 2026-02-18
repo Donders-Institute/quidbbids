@@ -131,7 +131,7 @@ methods
         fixed_params.rho_mw = obj.config.General.kappa_mw / obj.config.General.kappa_iew;
         fixed_params.t1_mw  = obj.config.General.t1_mw;
         fixed_params.B0dir  = obj.config.General.B0dir;
-        fixed_params.b0     = bfile.metadata.MagneticFieldStrength;
+        fixed_params.B0     = bfile.metadata.MagneticFieldStrength;
         extraData           = [];
         extraData.freqBKG   = single(totalField / (obj.config.General.gyro * fixed_params.B0));  % in ppm. TODO: Is single() really needed/desired?
         extraData.pini      = single(pini);

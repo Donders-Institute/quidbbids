@@ -28,8 +28,8 @@ methods
         end
 
         % Clear existing warning and error logfiles
-        for suffix = ["_warnings", "_errors"]
-            logfile = fullfile(obj.outputdir, [obj.sub_ses() suffix '.log']);
+        for suffix = ["warnings", "errors"]
+            logfile = fullfile(obj.outputdir, sprintf('%s_%s.log', obj.sub_ses(), suffix));
             if isfile(logfile)
                 delete(logfile)
             end

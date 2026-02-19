@@ -114,14 +114,14 @@ methods
         % Get the algoPara struct and perform data normalisation if needed
         algoPara = obj.config.MCRWorker.algoPara;
         if ~algoPara.isNormData
-            obj.logger.info('Normalising the multi-echo data')
+            obj.logger.info('--> Normalising the multi-echo data')
             [~, img] = mwi_image_normalisation(img, mask);
         end
 
         % Construct orthoview montages (e.g. for QC) as indicated by the workitem (bidsfilter) name
         ortho = '';
         if endsWith(workitem, 'ortho')
-            obj.logger.info('Constructing orthoview montages')
+            obj.logger.verbose('Constructing orthoview montages')
             ortho = '_ortho';
             [mask, sel] = obj.orthoslice(mask, 'tight');
             B1          = obj.orthoslice(B1(sel{:}));
@@ -157,7 +157,7 @@ methods
         % Estimate the MWI-MCR model
         ws = warning('off', 'MATLAB:nearlySingularMatrix');     % Supress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
         warning('off', 'MWI:IdentifierFile:NotFound')
-        obj.logger.info('Estimating the MWI-MCR model')
+        obj.logger.info('--> Estimating the MWI-MCR model')
         fitRes = mwi_3cx_2R1R2s_dimwi(algoPara, imgPara);
         warning(ws)
 

@@ -166,14 +166,15 @@ methods
                 T1w(~isfinite(T1w))    = 0;
                 bfile                  = obj.bfile_set(VFA_e1{n}, obj.bidsfilter.syntheticT1);
                 bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
-                obj.logger.info("Saving T1-like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
+                obj.logger.verbose("-> Saving T1-like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
                 spm_write_vol_gz(Ve1, T1w, bfile);
             end
 
             % Save the M0 volume as well
-            bfile                  = obj.bfile_set(Ve1.fname, obj.bidsfilter.M0map_echo1);
-            bfile.metadata.Sources = strrep(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids::');
-            obj.logger.info("Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
+            bfile                    = obj.bfile_set(Ve1.fname, obj.bidsfilter.M0map_echo1);
+            bfile.metadata.Sources   = strrep(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids::');
+            bfile.metadata.FlipAngle = flipangles;
+            obj.logger.verbose("-> Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
             spm_write_vol_gz(Ve1, M0, bfile);
         end
     end
@@ -288,7 +289,7 @@ methods
 
                 % Save the resliced FA-map
                 bfile = obj.bfile_set(B1famp, obj.bidsfilter.TB1map_GRE);
-                obj.logger.info("Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
+                obj.logger.verbose("-> Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
                 spm_write_vol_gz(Vref, B1, bfile);
             end
 
@@ -321,8 +322,7 @@ methods
             % Save the combined mask
             bfile = obj.bfile_set(echo1, obj.bidsfilter.brainmask);
             obj.logger.info("--> Creating brain mask: %s", bfile.filename)
-            qb.utils.spm_write_vol_gz(spm_vol(char(echo1)), mask, bfile.path);
-            bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
+            qb.utils.spm_write_vol_gz(spm_vol(char(echo1)), mask, bfile);
 
         end
     end
@@ -356,11 +356,11 @@ methods
                 
                 % Create the 4D mag and phase QSM/MCR input data
                 bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);
-                obj.logger.info("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
+                obj.logger.verbose("-> Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
                 spm_file_merge_gz(magfiles(magidx), bfile.path, {'EchoNumber', 'EchoTime'});
 
                 bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.echos4Dphase);
-                obj.logger.info("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
+                obj.logger.verbose("-> Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
                 spm_file_merge_gz(phasefiles(phaseidx), bfile.path, {'EchoNumber', 'EchoTime'});
 
             end
@@ -391,11 +391,11 @@ methods
 
                 % Create the 4D mag and phase QSM/MCR input data
                 bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.echos4Dmag);
-                obj.logger.info("Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
+                obj.logger.verbose("-> Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
                 spm_file_merge_gz(magfiles(magidx), bfile.path, {'EchoNumber', 'EchoTime'}, false);
 
                 bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.echos4Dphase);
-                obj.logger.info("Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
+                obj.logger.verbose("-> Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
                 spm_file_merge_gz(phasefiles(phaseidx), bfile.path, {'EchoNumber', 'EchoTime'}, false);
 
             end

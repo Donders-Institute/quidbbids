@@ -66,7 +66,7 @@ methods
                 entmask = bids.File(char(mask_)).entities;
                 if  ( isfield(entmag, 'space') &&  isfield(entmask, 'space') && entmag.space == entmask.space) || ...
                     (~isfield(entmag, 'space') && ~isfield(entmask, 'space'))
-                    obj.logger.info("Selecting mask: " + mask_)
+                    obj.logger.verbose("Selecting mask: " + mask_)
                     mask = mask_;
                     break
                 end
@@ -115,7 +115,7 @@ methods
                 bname  = extractBefore(srcmask.name, bfile.extension);
                 source = fullfile(srcmask.folder, srcmask.name);
                 target = fullfile(srcmask.folder, [replace(bname, '_mask_', '_label-') '_mask' bfile.extension]);
-                obj.logger.verbose('Renaming %s -> %s', source, target)
+                obj.logger.verbose('-> Renaming %s -> %s', source, target)
                 movefile(source, target)
             end
 

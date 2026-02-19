@@ -33,7 +33,7 @@ classdef Manager < handle
 
 
 properties
-    team = struct.empty     % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+    team = struct.empty()   % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
     coord                   % The coordinator that help the manager with administrative tasks
     force = false           % Force workers to start working, even if the subject is locked or existing results exist
     interactive = true      % If true, the manager will ask the user for help when needed (false = useful for automated testing)
@@ -235,7 +235,7 @@ methods
         % Block the start button in the GUI (if any) and initialize the workers
         fprintf("\n============= Starting workflow at %s =============\n", datetime('now'))
         for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
-            worker = obj.team.(product).handle;
+            Worker = obj.team.(product).handle;
             name   = obj.team.(product).name;
             jobIDs = containers.Map('KeyType','char', 'ValueType','char');
             for subject = subjects
@@ -249,15 +249,22 @@ methods
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
                 fprintf("▶ Manager dispatched %s to make the '%s' product for %s/%s\n", name, product, subject.name, subject.session)
                 if obj.coord.config.General.useHPC.value
-                    jobIDs(obj.sub_ses(subject)) = qsubfeval(worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
+                    jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
                 else
-                    worker(args{:}).fetch(product);      % TODO: Catch the work done (at some point)
+                    Worker(args{:}).fetch(product);      % TODO: Catch the work done (at some point)
                 end
 
             end
 
             % Monitor the progress of the workers until all work is done and report any errors or warnings
             obj.monitor_progress(product, subjects, jobIDs)
+
+            % Copy the end products to the output directory
+            worker  = Worker(args{:});
+            bfilter = worker.bidsfilter.(product);
+            worker.logger.info('-> Copying %s products to: %s', product, obj.coord.outputdir)
+            bids.copy_to_derivative(char(obj.coord.workdir), 'out_path',char(obj.coord.outputdir), 'filter',bfilter, 'force',obj.force, ...
+                'pipeline_name','QuIDBBIDS', 'unzip',false, 'skip_dep',false, 'use_schema',false, 'verbose',true, 'tolerant',true)
         end
 
         % Unblock the start button in the GUI (if any)

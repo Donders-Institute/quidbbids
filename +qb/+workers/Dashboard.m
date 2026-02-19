@@ -9,7 +9,7 @@ properties
     workitem    % The workitem of interest
     subjects    % The subjects being processed
     jobIDs      % A subses map with qsubfeval job identifiers
-    completed = string.empty   % The list of subses keys of jobs that have completed
+    completed = string.empty()   % The list of subses keys of jobs that have completed
     fig         % The dashboard figure (if any)
 end
 
@@ -89,7 +89,7 @@ methods
             level_   string {mustBeMember(level_, ["warnings", "errors"])} = "warnings"
         end
         
-        subjects = string.empty;
+        subjects = string.empty();
         for worker = dir(fullfile(obj.coord.outputdir, 'logs', '*Worker'))'
             for subject = obj.subjects
 

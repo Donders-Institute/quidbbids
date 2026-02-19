@@ -49,7 +49,7 @@ methods
 
         for n = 1:length(B1famp)
 
-            % Load the FA-map
+            % Load a scaled FA-map
             bfile = bids.File(B1famp{n});
             FAVol = spm_vol(B1famp{n});
             FA    = spm_read_vols(FAVol) / obj.config.B1prepWorker.FAscaling;   % Scale to radians
@@ -61,16 +61,16 @@ methods
                 FA  = angle(qb.MP2RAGE.smooth3D(FA, obj.config.B1prepWorker.FWHM, abs(dim(7:9))));  % Smooth and take angle again
             end
 
-            % Save the FA-map image & json file
+            % Save the scaled/regularized FA-map image & json file
             bfile = obj.bfile_set(bfile, obj.bidsfilter.TB1map_angle);
-            obj.logger.info("--> Saving regularized B1-map: %s", bfile.filename)
+            obj.logger.verbose('-> Copying %s scaled/regularized B1 data to %s', FAVol.fname, bfile.filename)
             qb.utils.spm_write_vol_gz(FAVol, FA, bfile);
 
-            % Copy the anat image & json file
+            % Copy the normal anat image & json file
             if ~isempty(B1anat)
                 bfile = obj.bfile_set(B1anat{n}, obj.bidsfilter.TB1map_anat);
-                copyfile(B1anat{n}, bfile.path);
-                bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
+                obj.logger.verbose('-> Copying %s anatomical B1 data to %s', B1anat{n}, bfile.path)
+                qb.utils.copybfile(B1anat{n}, bfile)
             end
 
         end

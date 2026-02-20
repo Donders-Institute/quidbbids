@@ -262,7 +262,7 @@ methods
             % Copy the end products to the output directory
             worker  = Worker(args{:});
             bfilter = worker.bidsfilter.(product);
-            worker.logger.info('-> Copying %s products to: %s', product, obj.coord.outputdir)
+            worker.logger.verbose('-> Copying %s products to: %s', product, obj.coord.outputdir)
             [out_path, quidb] = fileparts(char(obj.coord.outputdir));
             bids.copy_to_derivative(char(worker.workdir), 'out_path',out_path, 'filter',bfilter, 'force',obj.force, ...
                 'pipeline_name',quidb, 'unzip',false, 'skip_dep',true, 'use_schema',false, 'verbose',true, 'tolerant',true)

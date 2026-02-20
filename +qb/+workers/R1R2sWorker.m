@@ -67,7 +67,7 @@ methods
         % Load the data + metadata
         V    = spm_vol(echos4Dmag{1});                          % For reading the 3D image dimensions
         dims = [V(1).dim length(V) length(echos4Dmag)];
-        img  = NaN(dims);
+        img  = single(NaN(dims));
         for n = 1:dims(5)
             img(:,:,:,:,n) = spm_read_vols(spm_vol(echos4Dmag{n}));
             bfile          = bids.File(echos4Dmag{n});          % For reading metadata, parsing entities, etc

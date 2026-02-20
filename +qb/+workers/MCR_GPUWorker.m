@@ -88,9 +88,9 @@ methods
         % Load the data + metadata
         V              = spm_vol(echos4Dmag{1});                    % For reading the 3D image dimensions
         dims           = [V(1).dim length(V) length(echos4Dmag)];   % Dimensions: [x,y,z,TE,FA]
-        img            = NaN(dims);
-        unwrappedPhase = NaN(dims);
-        totalField     = NaN(dims([1:3 5]));
+        img            = single(NaN(dims));
+        unwrappedPhase = single(NaN(dims));
+        totalField     = single(NaN(dims([1:3 5])));                % Dimensions: [x,y,z,FA]
         mask           = true;
         for n = 1:dims(5)
             bfile                     = bids.File(echos4Dmag{n});   % For reading metadata, parsing entities, etc

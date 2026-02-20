@@ -30,7 +30,7 @@ methods
         obj.workitem = workitem;
         obj.subjects = subjects;
         obj.jobIDs   = jobIDs;
-        if obj.coord.config.General.useHPC.value
+        if obj.coord.config.General.useHPC.value || obj.coord.config.General.useParallel.value
             % obj.fig = qb.GUI.DashboardHPC(obj.coord, obj.workitem, obj.jobIDs); % TODO: implement
             obj.fig = figure;   % WIP dummy handle object
         else
@@ -62,11 +62,18 @@ methods
             end
 
             % Collect the job output and write the diary to disk
-            [~, options] = qsubget(obj.jobIDs(subses), 'output', 'cell', 'StopOnError', false);
-            if ~isempty(options)
+            if obj.coord.config.General.useHPC.value
+                [~, options] = qsubget(obj.jobIDs(subses), 'output', 'cell', 'StopOnError', false);
+                if ~isempty(options)
+                    completed(end+1) = subses;              %#ok<AGROW>
+                    diary            = char(obj.ft_getopt(options, 'diary'));
+                    writelines(diary, fullfile(obj.coord.outputdir, 'logs', sprintf('diary_%s.txt',subses)), WriteMode='append');
+                end
+            elseif obj.coord.config.General.useParallel.value && ismember(obj.jobIDs(subses).State, {'finished','failed'})
                 completed(end+1) = subses;                  %#ok<AGROW>
-                diary            = char(obj.ft_getopt(options, 'diary'));
-                writelines(diary, fullfile(obj.coord.outputdir, 'logs', sprintf('diary_%s.txt',subses)), WriteMode='append');
+                if strcmp(obj.jobIDs(subses).State, 'failed')
+                    warning("QuIDBBIDS:Dashboard:JobMonitor", "Producing %s for subject %s failed:\n%s", obj.workitem, subses, getReport(obj.jobIDs(subses).Error,'extended'))
+                end
             end
         end
         warning(ws)

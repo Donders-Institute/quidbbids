@@ -250,6 +250,8 @@ methods
                 fprintf("▶ Manager dispatched %s to make the '%s' product for %s/%s\n", name, product, subject.name, subject.session)
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
+                elseif obj.coord.config.General.useParallel.value
+                    jobIDs(obj.sub_ses(subject)) = parfeval(Worker, 0, args{:}, product);
                 else
                     Worker(args{:}).fetch(product);      % TODO: Catch the work done (at some point)
                 end

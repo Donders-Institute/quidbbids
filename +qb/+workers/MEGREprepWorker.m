@@ -314,7 +314,9 @@ methods
                 specs = setfield(obj.bidsfilter.brainmask, 'desc', sprintf('VFA%02d', bfile.metadata.FlipAngle));   % Add desc -> (flip)mask is a temporary file
                 bfile = obj.bfile_set(bfile, specs);
                 [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
-                obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(echo1), bfile.path));
+                [status,out] = system('echo $CUDA_VISIBLE_DEVICES');
+                if status == 0 && ~isempty(strtrim(out)), gpu = '--gpu'; else, gpu = ''; end
+                obj.run_command(sprintf("mri_synthstrip -i %s -m %s %s", char(echo1), bfile.path, gpu));
                 mask  = spm_read_vols(spm_vol(bfile.path)) & mask;
                 delete(bfile.path)                      % Delete the temporary mask file
             end

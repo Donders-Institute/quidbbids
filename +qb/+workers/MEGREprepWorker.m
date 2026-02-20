@@ -309,14 +309,12 @@ methods
 
             % Combine all (echo-1) masks to create a minimal brain mask (using mri_synthstrip)
             mask = true;
-            for echo1 = obj.query_ses(BIDS, 'data', bfilter, 'echo',1, 'run',char(run), 'part','mag')     % This will loop over flips (NB: and possibly more)
+            for echo1 = obj.query_ses(BIDS, 'data', bfilter, 'echo',1, 'run',char(run), 'part','mag')   % This will loop over flips (NB: and possibly more)
                 bfile = bids.File(char(echo1));
                 specs = setfield(obj.bidsfilter.brainmask, 'desc', sprintf('VFA%02d', bfile.metadata.FlipAngle));   % Add desc -> (flip)mask is a temporary file
                 bfile = obj.bfile_set(bfile, specs);
                 [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
-                [status,out] = system('echo $CUDA_VISIBLE_DEVICES');
-                if status == 0 && ~isempty(strtrim(out)), gpu = '--gpu'; else, gpu = ''; end
-                obj.run_command(sprintf("mri_synthstrip -i %s -m %s %s", char(echo1), bfile.path, gpu));
+                obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(echo1), bfile.path));        % [status,out] = system('echo $CUDA_VISIBLE_DEVICES') does not detect if pytorch was compiled with CUDA support
                 mask  = spm_read_vols(spm_vol(bfile.path)) & mask;
                 delete(bfile.path)                      % Delete the temporary mask file
             end

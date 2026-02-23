@@ -50,8 +50,8 @@ methods
             coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
         end
 
-        obj.logger = qb.workers.Logging(obj);   % The logger that will keep logs
         obj.coord  = coord;                     % The coordinator that help the manager with administrative tasks
+        obj.logger = qb.workers.Logging(obj, obj.coord.outputdir);   % The logger that will keep logs
         obj.create_team()
     end
 

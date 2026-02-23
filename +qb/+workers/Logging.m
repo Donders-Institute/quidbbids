@@ -8,23 +8,28 @@ classdef Logging < handle
 % See also: qb.QuIDBBIDS (for overview)
 
 properties
-    worker      % The worker that is logging its messages
-    outputdir   % The QuIDBBIDS output directory where the logs will be stored
+    worker  % The worker that is logging its messages
+    logdir  % The directory where the logs will be stored
 end
 
 methods
 
-    function obj = Logging(worker)
+    function obj = Logging(worker, outputdir)
         % Constructor for the Logging class
 
         arguments
             worker (1,1) {mustBeA(worker, {'qb.workers.Worker','qb.workers.Manager'})}
+            outputdir {mustBeTextScalar} = string.empty
         end
 
-        obj.worker    = worker;
-        obj.outputdir = fullfile(worker.outputdir, 'logs', regexp(class(worker), '[^.]+$', 'match', 'once'));   % Only take the class basename, i.e. the last part after the dot
-        if ~isempty(worker.outputdir)
-            [~,~] = mkdir(obj.outputdir);
+        if isempty(outputdir)
+            outputdir = worker.outputdir;
+        end
+
+        obj.worker = worker;
+        obj.logdir = fullfile(outputdir, 'logs', regexp(class(worker), '[^.]+$', 'match', 'once'));   % Only take the class basename, i.e. the last part after the dot
+        if ~isempty(obj.logdir)
+            [~,~] = mkdir(obj.logdir);
         end
     end
 
@@ -37,7 +42,7 @@ methods
         end
 
         for suffix = ["warnings", "errors"]
-            for logfile = dir(fullfile(fileparts(obj.outputdir), worker, sprintf('sub_*%s.log', suffix)))'
+            for logfile = dir(fullfile(fileparts(obj.logdir), worker, sprintf('sub_*%s.log', suffix)))'
                 delete(fullfile(logfile.folder, logfile.name))
             end
         end
@@ -99,7 +104,7 @@ methods
         end
 
         % Log to disk
-        logfile = fullfile(obj.outputdir, [obj.sub_ses() '.log']);
+        logfile = fullfile(obj.logdir, [obj.sub_ses() '.log']);
         fid     = fopen(logfile, 'a');
         if fid ~= -1
             fprintf(fid, "[%s] %s\t| %s\n", datetime('now'), level_, sprintf(message, varargin{:}));
@@ -253,7 +258,7 @@ methods (Access = ?TestLogging)
         % Writes a formatted message to warning/error logfiles as well as to the info file and terminal
 
         % Write to the warning/error files
-        logfile = fullfile(obj.outputdir, [obj.sub_ses() suffix '.log']);
+        logfile = fullfile(obj.logdir, [obj.sub_ses() suffix '.log']);
         fid     = fopen(logfile, 'a');
         if fid ~= -1
             fprintf(fid, "[%s] %s\n", datetime('now'), sprintf(message, varargin{:}));

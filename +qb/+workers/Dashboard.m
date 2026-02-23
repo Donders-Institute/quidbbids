@@ -16,19 +16,17 @@ end
 
 methods
     
-    function obj = Dashboard(coord, workitem, subjects, jobIDs)
+    function obj = Dashboard(coord, workitem, jobIDs)
         %DASHBOARD Constructs a Dashboard GUI object
         
         arguments
             coord    qb.workers.Coordinator
             workitem {mustBeTextScalar}
-            subjects struct
             jobIDs   containers.Map
         end
         
         obj.coord    = coord;
         obj.workitem = workitem;
-        obj.subjects = subjects;
         obj.jobIDs   = jobIDs;
         if obj.coord.config.General.useHPC.value || obj.coord.config.General.useParallel.value
             % obj.fig = qb.GUI.DashboardHPC(obj.coord, obj.workitem, obj.jobIDs); % TODO: implement
@@ -48,15 +46,9 @@ methods
         end
         
         ws = warning('off', 'FieldTrip:qsub:jobNotAvailable');
-        for subject = obj.subjects
-
-            % Skip if we are not at the modality level, i.e. at the subject level while sessions are present
-            if ~ismember("anat", fieldnames(subject)) || isempty(subject.anat)
-                continue
-            end
+        for subses = string(obj.jobIDs.keys)
             
             % Skip if the job was already found as completed
-            subses = obj.sub_ses(subject);
             if ismember(subses, completed)
                 continue
             end
@@ -99,14 +91,8 @@ methods
         
         subjects = string.empty();
         for worker = dir(fullfile(obj.coord.outputdir, 'logs', '*Worker'))'
-            for subject = obj.subjects
+            for subses = string(obj.jobIDs.keys)
 
-                % Skip if we are not at the modality level, i.e. at the subject level while sessions are present
-                if ~ismember("anat", fieldnames(subject)) || isempty(subject.anat)
-                    continue
-                end
-
-                subses = obj.sub_ses(subject);
                 logfile = fullfile(obj.coord.outputdir, 'logs', worker.name, sprintf('%s_%s.log', subses, level_));
                 if isfile(logfile) && dir(logfile).bytes > 0
                     subjects(end+1) = subses;                   %#ok<AGROW>
@@ -135,11 +121,6 @@ end
 
 
 methods (Access = private)
-    
-    function subses = sub_ses(obj, subject)
-        % Parses the sub-#_ses-# prefix from a BIDS.subjects item
-        subses = replace(erase(subject.path, [obj.coord.BIDS.pth filesep]), filesep,'_');
-    end
     
     function val = ft_getopt(~, opt, key)
         % FT_GETOPT(OPT, KEY) gets the value of a specified option from a cell-array with key-value pairs.

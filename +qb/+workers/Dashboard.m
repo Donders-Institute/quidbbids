@@ -7,7 +7,6 @@ classdef Dashboard < handle
 properties
     coord       % The coordinator with the BIDS layout that the workers are working on
     workitem    % The workitem of interest
-    subjects    % The subjects being processed
     jobIDs      % A subses map with qsubfeval job identifiers
     completed = string.empty()   % The list of subses keys of jobs that have completed
     fig         % The dashboard figure (if any)
@@ -76,7 +75,7 @@ methods
         %UPDATE Updates the dashboard figure (if any)
         if isvalid(obj.fig)
             % TODO: implement
-            waitbar(length(obj.completed)/length(obj.subjects), obj.fig)
+            waitbar(length(obj.completed)/length(obj.jobIDs.keys), obj.fig)
         end
     end
     

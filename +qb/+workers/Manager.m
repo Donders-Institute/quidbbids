@@ -120,7 +120,9 @@ methods
         for workitem = string(fieldnames(obj.team))'
             members(end+1) = string(obj.team.(workitem).name);  %#ok<AGROW>
         end
-        members = unique(members);
+        if ~isempty(members)
+            members = unique(members);
+        end
     end
 
     function load_mgr(obj, workflowfile)

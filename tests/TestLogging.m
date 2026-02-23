@@ -37,7 +37,7 @@ classdef TestLogging < BaseTest
         function testLogInfo(testCase)
             testCase.Logger.info("Test message %d", 123)
 
-            logFile = fullfile(testCase.Logger.outputdir, [testCase.Logger.sub_ses() '.log']);
+            logFile = fullfile(testCase.Logger.logdir, [testCase.Logger.sub_ses() '.log']);
             testCase.verifyTrue(isfile(logFile), "The main log file was not created")
             contents = fileread(logFile);
             testCase.verifySubstring(contents, "INFO", "INFO level not written to log")
@@ -47,7 +47,7 @@ classdef TestLogging < BaseTest
         function testLogVerbose(testCase)
             testCase.Logger.verbose("Verbose %s", "XYZ")
 
-            logFile = fullfile(testCase.Logger.outputdir, [testCase.Logger.sub_ses() '.log']);
+            logFile = fullfile(testCase.Logger.logdir, [testCase.Logger.sub_ses() '.log']);
             contents = fileread(logFile);
             testCase.verifySubstring(contents, "VERBOSE", "Verbose level not logged correctly")
             testCase.verifySubstring(contents, "Verbose XYZ")
@@ -56,8 +56,8 @@ classdef TestLogging < BaseTest
         function testLogWarning(testCase)
             testCase.Logger.warning("Warn %s %s", "ABC", "DEF");
 
-            warnFile = fullfile(testCase.Logger.outputdir, [testCase.Logger.sub_ses() '_warnings.log']);
-            mainFile = fullfile(testCase.Logger.outputdir, [testCase.Logger.sub_ses() '.log']);
+            warnFile = fullfile(testCase.Logger.logdir, [testCase.Logger.sub_ses() '_warnings.log']);
+            mainFile = fullfile(testCase.Logger.logdir, [testCase.Logger.sub_ses() '.log']);
 
             testCase.verifyTrue(isfile(warnFile), "Warning log file not created")
             testCase.verifyTrue(isfile(mainFile), "Main log was not created by warning")
@@ -68,8 +68,8 @@ classdef TestLogging < BaseTest
         function testLogError(testCase)
             testCase.Logger.error("Err %s", "XYZ");
 
-            errFile = fullfile(testCase.Logger.outputdir, [testCase.Logger.sub_ses() '_errors.log']);
-            mainFile = fullfile(testCase.Logger.outputdir, [testCase.Logger.sub_ses() '.log']);
+            errFile = fullfile(testCase.Logger.logdir, [testCase.Logger.sub_ses() '_errors.log']);
+            mainFile = fullfile(testCase.Logger.logdir, [testCase.Logger.sub_ses() '.log']);
 
             testCase.verifyTrue(isfile(errFile))
             testCase.verifyTrue(isfile(mainFile))

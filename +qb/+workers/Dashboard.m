@@ -32,7 +32,7 @@ methods
         obj.jobIDs   = jobIDs;
         if obj.coord.config.General.useHPC.value || obj.coord.config.General.useParallel.value
             % obj.fig = qb.GUI.DashboardHPC(obj.coord, obj.workitem, obj.jobIDs); % TODO: implement
-            obj.fig = figure;   % WIP dummy handle object
+            obj.fig = waitbar(0, 'Completed jobs', 'Name','QuIDBBIDS WIP dashboard');   % WIP dummy handle object
         else
             obj.fig = timer;    % Lightweight dummy handle object
             delete(obj.fig)
@@ -84,6 +84,7 @@ methods
         %UPDATE Updates the dashboard figure (if any)
         if isvalid(obj.fig)
             % TODO: implement
+            waitbar(length(obj.completed)/length(obj.subjects), obj.fig)
         end
     end
     

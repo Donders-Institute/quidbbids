@@ -148,7 +148,7 @@ methods
         imgPara.fa         = FA;
         imgPara.b0         = bfile.metadata.MagneticFieldStrength;
         imgPara.autosave   = false;
-        imgPara.output_dir = char(obj.logger.outputdir);
+        imgPara.output_dir = char(obj.logger.logdir);
         % imgPara.identifier  = obj.subject.name;     % Add when the MWI PR is accepted and released
         % if obj.subject.session
         %     imgPara.identifier = [imgPara.identifier '_' obj.subject.session];

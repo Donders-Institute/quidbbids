@@ -26,12 +26,19 @@ methods
         if ~isempty(worker.outputdir)
             [~,~] = mkdir(obj.outputdir);
         end
+    end
 
-        % Clear existing warning and error logfiles
+    function clear(obj, worker)
+        %CLEAR Deletes the error/warning logfiles for WORKER
+
+        arguments
+            obj
+            worker {mustBeTextScalar, mustBeNonempty}
+        end
+
         for suffix = ["warnings", "errors"]
-            logfile = fullfile(obj.outputdir, sprintf('%s_%s.log', obj.sub_ses(), suffix));
-            if isfile(logfile)
-                delete(logfile)
+            for logfile = dir(fullfile(fileparts(obj.outputdir), worker, sprintf('sub_*%s.log', suffix)))'
+                delete(fullfile(logfile.folder, logfile.name))
             end
         end
     end

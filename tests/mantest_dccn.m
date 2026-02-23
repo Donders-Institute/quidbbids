@@ -36,12 +36,12 @@ quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
 
-% First run the non-GPU part of the pipeline
-% quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',48*36e2};
-% quidb.products = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.needs, "MWFmap_ortho"];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.products = p;
-% mgr.start_workflow()
+% First run the non-GPU part of the workflow
+quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',48*36e2};
+quidb.products = "MWFmap_ortho";    % or: [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.needs]
+mgr.start_workflow()
 
-% Then run the GPU part of the pipeline
+% Then run the GPU part of the workflow
 quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',10*36e2, 'options','--partition=gpu --gpus=tesla_p100-pcie-16gb:1'};
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 mgr.start_workflow()
@@ -65,11 +65,11 @@ quidb.config.B1prepWorker.FAscaling.value = 100;
 quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect = 1;
 mgr = quidb.manager();
 
-% First run the non-GPU part of the pipeline
+% First run the non-GPU part of the workflow
 % quidb.products = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.products = p;
 % mgr.start_workflow()
 
-% Then run the GPU part of the pipeline
+% Then run the GPU part of the workflow
 quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1'};
 quidb.products = ["R1map", "R2starmap", "MWFmap"];
 mgr.start_workflow()

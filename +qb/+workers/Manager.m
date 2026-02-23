@@ -34,6 +34,7 @@ classdef Manager < handle
 
 properties
     team = struct.empty()   % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+    logger                  % The logger that will keep logs
     coord                   % The coordinator that help the manager with administrative tasks
     force = false           % Force workers to start working, even if the subject is locked or existing results exist
     interactive = true      % If true, the manager will ask the user for help when needed (false = useful for automated testing)
@@ -49,7 +50,8 @@ methods
             coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
         end
 
-        obj.coord = coord;                      % The coordinator that help the manager with administrative tasks
+        obj.logger = qb.workers.Logging(obj);   % The logger that will keep logs
+        obj.coord  = coord;                     % The coordinator that help the manager with administrative tasks
         obj.create_team()
     end
 
@@ -113,6 +115,16 @@ methods
         end
     end
 
+    function members = team_members(obj)
+        %TEAM_MEMBERS Returns the names of the workers in the team
+
+        members = string.empty();
+        for workitem = string(fieldnames(obj.team))'
+            members(end+1) = string(obj.team.(workitem).name);  %#ok<AGROW>
+        end
+        members = unique(members);
+    end
+
     function load_mgr(obj, workflowfile)
         %LOAD_WORKFLOW Loads all manager properties from the workflowfile
 
@@ -122,11 +134,11 @@ methods
         end
 
         if ~isfile(workflowfile)
-            fprintf('🔧 No previous manager data found\n')
+            obj.logger.verbose('🔧 No previous manager data found\n')
             return
         end
 
-        fprintf('🔧 Loading manager data from: %s\n', workflowfile)
+        obj.logger.info('🔧 Loading manager data from: %s\n', workflowfile)
         load(workflowfile, 'mgr')
         obj.coord.workflowfile = workflowfile;
 
@@ -151,7 +163,7 @@ methods
             end
         end
 
-        fprintf('🔧 Saving manager data to: %s\n', workflowfile)
+        obj.logger.info('🔧 Saving manager data to: %s\n', workflowfile)
         [~,~] = mkdir(fileparts(workflowfile));
         save(workflowfile, 'mgr', '-append')
         obj.coord.workflowfile = workflowfile;
@@ -179,7 +191,7 @@ methods
         cleanup = onCleanup(@() diary('off'));
 
         if ~strlength(obj.coord.products)
-            disp('❌ The list of products is empty, there is nothing to do')
+            obj.logger.warning('❌ The list of products is empty, there is nothing to do')
             return
         end
 
@@ -213,14 +225,14 @@ methods
         % Check if there are still lock-files around from previous crashes
         lockfiles = dir(fullfile(obj.coord.workdir, '**', '*.lock'));
         if ~isempty(lockfiles)
-            fprintf('🔒 Found %d existing lockfile(s)\n', length(lockfiles))
+            obj.logger.info('🔒 Found %d existing lockfile(s)\n', length(lockfiles))
             if obj.interactive
                 sample = fullfile(lockfiles(1).folder, lockfiles(1).name);
                 answer = questdlg(sprintf('Found %d existing lockfile(s), probably caused by previous crashes. Here is a sample:\n\n..%s:\n%s\n\nShall I clean them up?', ...
                 length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Yes');
                 if strcmp(answer, 'Yes')
                     lockfiles = fullfile({lockfiles.folder}, {lockfiles.name});
-                    fprintf('🔓 Deleting %d existing lockfile(s)\n', length(lockfiles))
+                    obj.logger.info('🔓 Deleting %d existing lockfile(s)\n', length(lockfiles))
                     delete(lockfiles{:})
                 end
             end
@@ -228,12 +240,17 @@ methods
 
         % Check if our team is up-to-date
         if ~all(isfield(obj.team, obj.coord.products))
-            disp("🔄 Manager updates the team")
+            obj.logger.info("🔄 Manager updates the team")
             obj.create_team()
         end
 
+        % Clear the worker error/warning logs
+        for member = obj.team_members()
+            obj.logger.clear(member)
+        end
+
         % Block the start button in the GUI (if any) and initialize the workers
-        fprintf("\n============= Starting workflow at %s =============\n", datetime('now'))
+        obj.logger.info("\n============= Starting workflow at %s =============\n", datetime('now'))
         for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
             Worker = obj.team.(product).handle;
             name   = obj.team.(product).name;
@@ -247,7 +264,7 @@ methods
 
                 % Ask the worker to fetch the product for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf("▶ Manager dispatched %s to make the '%s' product for %s/%s\n", name, product, subject.name, subject.session)
+                obj.logger.info("▶ Manager obj.logger.warningatched %s to make the '%s' product for %s/%s\n", name, product, subject.name, subject.session)
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
                 elseif obj.coord.config.General.useParallel.value
@@ -264,14 +281,14 @@ methods
             % Copy the end products to the output directory
             worker  = Worker(args{:});
             bfilter = worker.bidsfilter.(product);
-            worker.logger.verbose('-> Copying %s products to: %s', product, obj.coord.outputdir)
+            obj.logger.verbose('-> Copying %s products to: %s', product, obj.coord.outputdir)
             [out_path, quidb] = fileparts(char(obj.coord.outputdir));
             bids.copy_to_derivative(char(worker.workdir), 'out_path',out_path, 'filter',bfilter, 'force',obj.force, ...
                 'pipeline_name',quidb, 'unzip',false, 'skip_dep',true, 'use_schema',false, 'verbose',true, 'tolerant',true)
         end
 
         % Unblock the start button in the GUI (if any)
-        fprintf("============= Finished workflow at %s =============\n\n", datetime('now'))
+        obj.logger.info("============= Finished workflow at %s =============\n\n", datetime('now'))
     end
 
     function monitor_progress(obj, workitem, subjects, jobIDs)

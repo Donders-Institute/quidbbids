@@ -26,7 +26,7 @@ if isunix
     system(sprintf(['(module load bidscoin; cd %s;' ...
         'slicereport %s anat/*R2starmap* -r report_R2starmap --options i 5 50;' ...
         'slicereport %s anat/*Chimap*    -r report_Chimap    --options i -0.15 0.3) < /dev/null > /dev/null 2>&1'], ...
-        fileparts(quidb.workdir), repmat(replace(quidb.workdir,"QuIDBBIDS","SEPIA"),1,2)));
+        fileparts(quidb.outputdir), repmat(quidb.outputdir,1,2)));
 end
 
 %% MCR-MWI_VFA
@@ -38,7 +38,7 @@ mgr = quidb.manager();
 
 % First run the non-GPU part of the workflow
 quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',48*36e2};
-quidb.products = "MWFmap_ortho";    % or: [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.needs]
+quidb.products = "MWFmap_ortho";
 mgr.start_workflow()
 
 % Then run the GPU part of the workflow
@@ -53,7 +53,7 @@ if isunix
         'slicereport %s anat/*R1R2s*R2starmap* -r report_R2starmap_gacelle --options i 5 50;' ...
         'slicereport %s anat/*MWFmap*          -r report_MWFmap            --options i 0 0.2;' ...
         'slicereport %s anat/*Chimap*          -r report_Chimap            --options i -0.15 0.3) < /dev/null > /dev/null 2>&1'], ...
-        fileparts(quidb.workdir), repmat(quidb.workdir,1,3), replace(quidb.workdir,"QuIDBBIDS","SEPIA")));
+        fileparts(quidb.outputdir), repmat(quidb.outputdir,1,4)));
 end
 
 %% Hamburg_MPM
@@ -81,5 +81,5 @@ if isunix
         'slicereport %s anat/*R1R2s*R2starmap* -r report_R2starmap_gacelle --options i 5 50;' ...
         'slicereport %s anat/*MWFmap*          -r report_MWFmap            --options i 0 0.2;' ...
         'slicereport %s anat/*Chimap*          -r report_Chimap            --options i -0.15 0.3) < /dev/null > /dev/null 2>&1'], ...
-        fileparts(quidb.workdir), repmat(quidb.workdir,1,3), replace(quidb.workdir,"QuIDBBIDS","SEPIA")));
+        fileparts(quidb.outputdir), repmat(quidb.outputdir,1,4)));
 end

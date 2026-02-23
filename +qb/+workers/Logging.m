@@ -28,23 +28,6 @@ methods
         end
     end
 
-    function clear_errors(obj, workers)
-        %CLEAR Deletes the error/warning logfiles for each worker in WORKERS
-
-        arguments
-            obj
-            workers string
-        end
-
-        for wname = workers
-            for suffix = ["warnings", "errors"]
-                for logfile = dir(fullfile(fileparts(obj.logdir), wname, sprintf('sub-*_%s.log', suffix)))'
-                    delete(fullfile(logfile.folder, logfile.name))
-                end
-            end
-        end
-    end
-
     function debug(obj, message, varargin)
         %INFO Writes a formatted messages for debugging purposes
         %

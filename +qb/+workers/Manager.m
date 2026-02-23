@@ -244,7 +244,11 @@ methods
 
         % Clear the worker error/warning logs
         for member = obj.team_members()
-            obj.logger.clear(member)
+            for suffix = ["warnings", "errors"]
+                for logfile = dir(fullfile(obj.coord.outputdir, 'logs', member, sprintf('sub-*_%s.log', suffix)))'
+                    delete(fullfile(logfile.folder, logfile.name))
+                end
+            end
         end
 
         % Block the start button in the GUI (if any) and initialize the workers

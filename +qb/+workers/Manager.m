@@ -280,7 +280,7 @@ methods
             end
 
             % Monitor the progress of the workers until all work is done and report any errors or warnings
-            obj.monitor_progress(product, subjects, jobIDs)
+            obj.monitor_progress(product, jobIDs)
 
             % Copy the end products to the output directory
             worker  = Worker(args{:});
@@ -295,13 +295,12 @@ methods
         fprintf("============= Finished workflow at %s =============\n\n", datetime('now'))
     end
 
-    function monitor_progress(obj, workitem, subjects, jobIDs)
+    function monitor_progress(obj, workitem, jobIDs)
         %MONITOR_PROGRESS Watches over the progress of the workers until all work is done
 
         arguments
             obj
             workitem {mustBeTextScalar}
-            subjects struct
             jobIDs   containers.Map
         end
 

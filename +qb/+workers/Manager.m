@@ -306,7 +306,7 @@ methods
         end
 
         % Launch a dashboard
-        dashboard = qb.workers.Dashboard(obj.coord, workitem, subjects, jobIDs);
+        dashboard = qb.workers.Dashboard(obj.coord, workitem, jobIDs);
 
         % Wait until all work is done
         while length(dashboard.work_done()) < length(jobIDs.keys)

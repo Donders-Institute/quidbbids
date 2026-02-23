@@ -14,36 +14,33 @@ end
 
 methods
 
-    function obj = Logging(worker, outputdir)
+    function obj = Logging(worker)
         % Constructor for the Logging class
 
         arguments
-            worker (1,1) {mustBeA(worker, {'qb.workers.Worker','qb.workers.Manager'})}
-            outputdir {mustBeTextScalar} = string.empty
-        end
-
-        if isempty(outputdir)
-            outputdir = worker.outputdir;
+            worker  qb.workers.Worker
         end
 
         obj.worker = worker;
-        obj.logdir = fullfile(outputdir, 'logs', regexp(class(worker), '[^.]+$', 'match', 'once'));   % Only take the class basename, i.e. the last part after the dot
+        obj.logdir = fullfile(obj.worker.outputdir, 'logs', regexp(class(worker), '[^.]+$', 'match', 'once'));   % Only take the class basename, i.e. the last part after the dot
         if ~isempty(obj.logdir)
             [~,~] = mkdir(obj.logdir);
         end
     end
 
-    function clear(obj, worker)
-        %CLEAR Deletes the error/warning logfiles for WORKER
+    function clear_errors(obj, workers)
+        %CLEAR Deletes the error/warning logfiles for each worker in WORKERS
 
         arguments
             obj
-            worker {mustBeTextScalar, mustBeNonempty}
+            workers string
         end
 
-        for suffix = ["warnings", "errors"]
-            for logfile = dir(fullfile(fileparts(obj.logdir), worker, sprintf('sub_*%s.log', suffix)))'
-                delete(fullfile(logfile.folder, logfile.name))
+        for wname = workers
+            for suffix = ["warnings", "errors"]
+                for logfile = dir(fullfile(fileparts(obj.logdir), wname, sprintf('sub-*_%s.log', suffix)))'
+                    delete(fullfile(logfile.folder, logfile.name))
+                end
             end
         end
     end

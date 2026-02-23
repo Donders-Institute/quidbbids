@@ -18,7 +18,7 @@ methods
         % Constructor for the Logging class
 
         arguments
-            worker    qb.workers.Worker
+            worker (1,1) {mustBeA(worker, {'qb.workers.Worker','qb.workers.Manager'})}
         end
 
         obj.worker    = worker;

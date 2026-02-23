@@ -185,7 +185,7 @@ methods
         end
 
         % Start a diary to log the screen output
-        logdir = fullfile(obj.coord.outputdir, 'logs');
+        logdir = fullfile(obj.outputdir(), 'logs');
         [~,~]  = mkdir(logdir);
         diary(fullfile(logdir, 'diary_workflow.txt'))
         cleanup = onCleanup(@() diary('off'));
@@ -263,7 +263,7 @@ methods
                 end
 
                 % Ask the worker to fetch the product for this subject
-                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
+                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.outputdir(), obj.team, obj.force};
                 obj.logger.info("▶ Manager obj.logger.warningatched %s to make the '%s' product for %s/%s\n", name, product, subject.name, subject.session)
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
@@ -281,8 +281,8 @@ methods
             % Copy the end products to the output directory
             worker  = Worker(args{:});
             bfilter = worker.bidsfilter.(product);
-            obj.logger.verbose('-> Copying %s products to: %s', product, obj.coord.outputdir)
-            [out_path, quidb] = fileparts(char(obj.coord.outputdir));
+            obj.logger.verbose('-> Copying %s products to: %s', product, obj.outputdir())
+            [out_path, quidb] = fileparts(char(obj.outputdir()));
             bids.copy_to_derivative(char(worker.workdir), 'out_path',out_path, 'filter',bfilter, 'force',obj.force, ...
                 'pipeline_name',quidb, 'unzip',false, 'skip_dep',true, 'use_schema',false, 'verbose',true, 'tolerant',true)
         end
@@ -318,6 +318,11 @@ methods
         if isvalid(dashboard.fig)
             close(dashboard.fig)
         end
+    end
+
+    function outputdir = outputdir(obj)
+        %OUTPUTDIR Returns the output directory (by asking the coordinator). THis function is required for construction of the logger
+        outputdir = obj.coord.outputdir;
     end
 
 end

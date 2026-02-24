@@ -3,7 +3,7 @@ function resetconfig()
 
 config_default = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), "config_default.json");
 
-disp("Creating factory default configuration: " + config_default)
+disp("🔧 Creating factory default configuration: " + config_default)
 if isfile(config_default)
     delete(config_default)
 end

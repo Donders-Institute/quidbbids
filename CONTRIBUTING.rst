@@ -49,6 +49,13 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
 
       $ git checkout -b [topic_of_your_contribution]
 
+   To update QuIDBBIDS dependencies run:
+
+   .. code-block:: bash
+
+      $ git submodule update --remote --merge                     # This will update all submodules to their latest commit
+      $ git submodule update --remote --merge dependencies/spm    # This will update the SPM submodule only
+
 4. When you are done with coding, you should then test, commit and push your work to GitHub:
 
    .. code-block:: bash

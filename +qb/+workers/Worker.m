@@ -11,32 +11,37 @@ classdef (Abstract) Worker < handle
 % See also: qb.workers.Manager
 
 
-properties (Abstract, GetAccess = public, SetAccess = protected)
-    name        % Personal name of the worker
-    description % Description of the work that is done
-    version     % The semantic version of the worker
-    needs       % List of workitems the worker needs. Workitems can contain regexp patterns
-end
-
-
-properties (Abstract)
-    bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), 'run',1)`
+properties (Abstract, Constant)
+    description     % Description of the work that is done
+    needs           % List of workitems the worker needs. Workitems can contain regexp patterns
+    usesGPU         % Logical flag indicating if the worker can use GPU resources
 end
 
 
 properties (GetAccess = public, SetAccess = protected)
-    usesGPU     % Logical flag indicating if the worker can use GPU resources. Default = false
+    name            % Basename of the worker
 end
 
 
 properties
-    BIDS        % BIDS layout from bids-matlab (raw input data only)
-    subject     % The subject that will be worked on
-    config      % Configuration settings that are used to produce the work
-    workdir
-    outputdir
-    team        % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker resume
-    logger      % A logger object for keeping logs
+    BIDS            % BIDS layout from bids-matlab (raw input data only)
+    subject         % The subject that will be worked on
+    config          % Configuration settings that are used to produce the work
+    workdir         % Working directory for intermediate files
+    outputdir       % Output directory for final results
+    team            % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker resume
+    force           % Force to start working, even if the subject is locked or existing results exist
+    bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), 'run',1)`
+    logger          % A logger object for keeping logs
+end
+
+
+methods (Abstract, Access = protected)
+
+    initialize(obj)
+    %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
+    % subclasses to perform additional setup after the common Worker properties have been initialized.
+
 end
 
 
@@ -50,16 +55,17 @@ end
 
 methods
 
-    function obj = Worker(BIDS, subject, config, workdir, outputdir, team, workitems)
+    function obj = Worker(BIDS, subject, config, workdir, outputdir, team, force, workitems)
         % Constructor for the abstract Worker class
 
         arguments
             BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
             subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
             config    (1,1) struct = struct()   % Configuration struct loaded from the config file
-            workdir   {mustBeTextScalar} = ''
-            outputdir {mustBeTextScalar} = ''
-            team      struct       = struct()   % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
+            workdir   {mustBeTextScalar} = ''   % Working directory for intermediate files
+            outputdir {mustBeTextScalar} = ''   % Output directory for final results
+            team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
+            force     (1,1) logical = false     % Force to start working, even if the subject is locked or existing results exist
             workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
         end
 
@@ -69,9 +75,19 @@ methods
         obj.workdir   = workdir;
         obj.outputdir = outputdir;
         obj.team      = team;
-        obj.usesGPU   = false;
+        obj.force     = force;
+        obj.name      = string(erase(class(obj), 'qb.workers.'));  % Get the class name without package prefix
         obj.logger    = qb.workers.Logging(obj);
 
+        % Force subclass-specific construction step
+        obj.initialize()
+
+        % Make the workitems (if requested)
+        if strlength(workitems)                 % isempty(string('')) -> false
+            for workitem = string(workitems)
+                obj.fetch(workitem);
+            end
+        end
     end
 
     function workitems = makes(obj)
@@ -81,7 +97,7 @@ methods
         end
     end
 
-    function work = fetch(obj, workitem, force)
+    function work = fetch(obj, workitem)
         %FETCH Gets the workitem.
         %
         % FETCH first tries to collect the workitem but if it doesn't exist then locks the work
@@ -91,7 +107,6 @@ methods
         %
         % Inputs:
         %   WORKITEM - Name of the work item that needs to be fetched
-        %   FORCE    - Force to start working, even if the subject is locked or existing results exist
         %
         % Output:
         %   WORK     - A cell array of paths to the produced data files. The produced work
@@ -100,7 +115,6 @@ methods
         arguments
             obj
             workitem {mustBeTextScalar, mustBeNonempty}
-            force    logical = false
         end
 
         % Check the input
@@ -112,12 +126,14 @@ methods
 
         % See if we can collect the requested workitem
         work = obj.query_ses(obj.BIDSW_ses(), 'data', obj.bidsfilter.(workitem));
-        if isempty(work) || force
+        if isempty(work) || obj.force
 
             obj.logger.info("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path)
+
+            % Check if the subject is already being worked on
             locked = obj.is_locked();
             if locked
-                if force
+                if obj.force
                     obj.logger.warning("Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked)
                 else
                     obj.logger.error("%s was: %s", fileparts(obj.statusfile('.lock')), locked)
@@ -125,14 +141,32 @@ methods
                 end
             end
 
-            % TODO: update the dashboard (non-HPC usage)
+            % Check if there is a GPU available
+            if obj.usesGPU
+                if canUseGPU()
+                    obj.logger.verbose("%s is configured to use GPU: %s (%s)", obj.name, gpuDevice().Name, gpuDevice().ComputeCapability)
+                else
+                    [status, out] = system('nvidia-smi --query-gpu=name --format=csv,noheader');
+                    reason = 'GPU acceleration is unavailable';
+                    if status == 0 && ~isempty(strtrim(out))
+                        reason = ['GPU detected (' strtrim(out) ') but MATLAB cannot use it'];
+                    end
+                    obj.logger.exception(['%s was configured to use a GPU, but %s. Possible causes: no GPU allocated by the scheduler, incompatible ' ...
+                                          'CUDA/driver, or missing Parallel Computing Toolbox license. Falling back to CPU.'], obj.name, reason)
+                end
+            end
 
             % Get the work done
-            cleanup = onCleanup(@() obj.unlock());
+            cleanup = onCleanup(@obj.unlock);
             obj.lock()
+            [prevMsg, prevId] = lastwarn;
             obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
 
-            % TODO: update the dashboard (non-HPC usage)
+            % Ignore the SPM setting random 'state' and the SEPIA rmpath warnings (-> lastwarn is displayed by qsubget())
+            [~, id] = lastwarn;
+            if ismember(id, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound'})
+                lastwarn(prevMsg, prevId)
+            end
 
             % Collect the requested workitem
             work = obj.query_ses(obj.BIDSW_ses(), 'data', obj.bidsfilter.(workitem));
@@ -144,7 +178,7 @@ methods
             end
 
         else
-            obj.logger.info("%s fetched %d requested %s items (%s/%s)", obj.name, length(work), workitem, obj.subject.name, obj.subject.session)
+            obj.logger.info("%s fetched %d requested %s item(s) (%s/%s)", obj.name, length(work), workitem, obj.subject.name, obj.subject.session)
         end
 
         % Make sure that the work exists
@@ -213,7 +247,7 @@ methods
         [~,~]     = mkdir(fileparts(lock_file));
         fid = fopen(lock_file, 'w');
         if fid ~= -1
-            fprintf(fid, "Locked for %s by %s on %s", class(obj), getenv('USERNAME'), datetime('now'));
+            fprintf(fid, "Locked for %s by %s on %s", class(obj), char(java.lang.System.getProperty('user.name')), datetime('now'));
             fclose(fid);
         else
             obj.logger.exception("%s could not lock %s", obj.name, lock_file)
@@ -253,7 +287,7 @@ methods
         done_file = obj.statusfile('.done');
         fid = fopen(done_file, 'a');
         if fid ~= -1
-            fprintf(fid, "%s work was done by %s on %s\n", class(obj), getenv('USERNAME'), datetime('now'));
+            fprintf(fid, "%s work was done by %s on %s\n", class(obj), char(java.lang.System.getProperty('user.name')), datetime('now'));
             fclose(fid);
         else
             obj.logger.error("%s could not write a done-file in %s", obj.name, done_file)
@@ -275,66 +309,51 @@ methods
         label = label{end};
     end
 
+    function subses = sub_ses(obj)
+        % Parses the sub-#_ses-# prefix from a BIDS.subjects item
+        subses = replace(erase(obj.subject.path, [obj.BIDS.pth filesep]), filesep,'_');
+    end
+
     function BIDSW = BIDSW_ses(obj, workdir)
         %BIDSW_SES Gets a tolerant bids.layout() for the WORKDIR sub/ses data only (default: WORKDIR = obj.workdir)
+        %
+        % Waits up to 60 seconds for the workdir BIDS initializiation to be ready, allowing the HPC file system latency to settle
 
         if nargin < 2 || isempty(workdir)
             workdir = obj.workdir;
         end
+        
+        % Check for the BIDS layout to be ready (HPC file system latency workaround)
+        start = tic;
+        while ~isfile(fullfile(workdir, 'dataset_description.json')) && toc(start) < 60
+            pause(5);
+        end
+        if toc(start) >= 60
+            obj.logger.warning('BIDS layout %s did not become available within 60 seconds', workdir)
+        end
+
+        % Make sure the sub/ses dir exists or bids.layout will error
         filter.sub = {obj.sub()};
+        subsesdir  = "sub-" + obj.sub();
         if obj.ses()
             filter.ses = {obj.ses()};
+            subsesdir  = fullfile(subsesdir, "ses-" + obj.ses());
         end
+        [~,~] = mkdir(fullfile(workdir, subsesdir));        
+
         BIDSW = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_derivatives',false, 'tolerant',true, 'verbose',false);
     end
 
-    function [status, output] = run_command(obj, command, silent)
-        %RUN_COMMAND Executes a shell command and display its output.
-        %
-        %   [STATUS, OUTPUT] = RUN_COMMAND(COMMAND) prints the specified shell
-        %   COMMAND to the console, executes it using SYSTEM(), and returns the
-        %   STATUS and OUTPUT.
-        %
-        %   If the command fails (i.e., STATUS ~= 0), an error is raised with
-        %   a message containing the exit status and the command's output.
-        %
-        %   Inputs:
-        %       COMMAND - A string containing the shell command to execute.
-        %       SILENT  - If true, suppress output unless there is an error.
-        %                 Default = false.
-        %
-        %   Outputs:
-        %       STATUS  - Exit code returned by the SYSTEM command.
-        %       OUTPUT  - Command-line output returned by the SYSTEM command.
-
-        arguments
-            obj
-            command {mustBeTextScalar, mustBeNonempty}
-            silent  (1,1) logical = false
-        end
-
-        % Run the command
-        if ~silent
-            obj.logger.info("$ " + command)
-        end
-        [status, output] = system(command);
-
-        % Check for errors
-        if status ~= 0
-            obj.logger.error('Command failed with status %d\nOutput:\n%s', status, output)
-        elseif ~silent && ~isempty(output)
-            obj.logger.info(output)
-        end
-    end
-
     function [result, bfiles] = query_ses(obj, layout, query, varargin)
-        %QUERY_SES A thin wrapper around bids.query that adds an additional filter for the current subject and session
+        %QUERY_SES A thin wrapper around bids.query that adds an additional filter for the current subject and session. It
+        % also ensures that the output is always formatted as a row.
         %
         % Inputs:
         %   LAYOUT - BIDS directory name or BIDS structure (from bids.layout) to query
         %   QUERY  - The type of query to perform (e.g., 'data', 'metadata', 'runs', etc.)
-        %   FILTER - (optional) Either a struct, or name-value pairs specifying additional filters for the query (i.e. as
-        %            in bids.query), or a struct followed by the name-value pairs
+        %   FILTER - (optional) Either a struct, or name-value pairs specifying additional filters for the query
+        %            (i.e. as in bids.query), or a struct followed by the name-value pairs. It's possible to use regular
+        %            as well as range expressions in the queried values. To exclude an entity, use '' or [].
         %
         % Output:
         %   RESULT - The result of the bids.query with the subject/session filter applied. NB: always a row cell array
@@ -358,6 +377,13 @@ methods
             obj.logger.exception('QUERY_SES expects the FILTER to be either a struct, or name-value pairs or a struct followed by name-value pairs')
         end
 
+        % Check if there is any data to query
+        if ~isfield(layout, 'subjects') || ~isfield(layout.subjects, 'name') || ~ismember(obj.subject.name, {layout.subjects.name})
+            result = {};
+            bfiles = {};
+            return
+        end
+
         % Do the query with the subject/session + any additional filters added
         result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), 'ses',obj.ses(), varargin{:}));
 
@@ -379,7 +405,7 @@ methods
                     bfiles{n} = bids.File(result{n});
                 end
             else
-                obj.logger.warning("QuIDBBIDS:QuerySes:Exception", "The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
+                obj.logger.warning("The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
             end
         end
     end
@@ -451,6 +477,45 @@ methods
             oldroot              = extractBefore(bfile.path, bfile.bids_path);  % Ends with filesep
             bfile.path           = replace(bfile.path,           oldroot, fullfile(rootdir, filesep));
             bfile.metadata_files = replace(bfile.metadata_files, oldroot, fullfile(rootdir, filesep));
+        end
+    end
+
+    function [status, output] = run_command(obj, command, silent)
+        %RUN_COMMAND Executes a shell command and display its output.
+        %
+        %   [STATUS, OUTPUT] = RUN_COMMAND(COMMAND) prints the specified shell
+        %   COMMAND to the console, executes it using SYSTEM(), and returns the
+        %   STATUS and OUTPUT.
+        %
+        %   If the command fails (i.e., STATUS ~= 0), an error is raised with
+        %   a message containing the exit status and the command's output.
+        %
+        %   Inputs:
+        %       COMMAND - A string containing the shell command to execute.
+        %       SILENT  - If true, suppress output unless there is an error.
+        %                 Default = false.
+        %
+        %   Outputs:
+        %       STATUS  - Exit code returned by the SYSTEM command.
+        %       OUTPUT  - Command-line output returned by the SYSTEM command.
+
+        arguments
+            obj
+            command {mustBeTextScalar, mustBeNonempty}
+            silent  (1,1) logical = false
+        end
+
+        % Run the command
+        if ~silent
+            obj.logger.info("$ " + command)
+        end
+        [status, output] = system(command);
+
+        % Check for errors
+        if status ~= 0
+            obj.logger.error('Command failed with status %d\nOutput:\n%s', status, output)
+        elseif ~silent && ~isempty(output)
+            obj.logger.info(output)
         end
     end
 

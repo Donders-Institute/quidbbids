@@ -2,7 +2,7 @@ Screenshots
 ===========
 
 QuIDBBIDS architecture
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 .. figure:: ./_static/workflow_diagram.png
    :width: 90%
@@ -14,7 +14,7 @@ QuIDBBIDS architecture
    producing workitems ``1–6``. Finally, the manager initiates a controller to verify successful completion.
 
 Configuration editor
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 .. figure:: ./_static/configeditor.png
 
@@ -23,7 +23,7 @@ Configuration editor
    The description of the selected parameter (top) with a box to edit its value (bottom).
 
 QuIDBBIDS data
-~~~~~~~~~~~~~~
+--------------
 
 .. figure:: ./_static/BIDS_data.png
    :width: 80%

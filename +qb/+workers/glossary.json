@@ -1,9 +1,9 @@
 {
     "Chimap": "Magnetic susceptibility map derived from phase or quantitative susceptibility mapping (QSM) reconstruction",
-    "FMW_exrate": "Exchange rate map in Free Myelin Water analysis",
+    "FMW_exrate": "Exchange rate map in Free <-> Myelin Water analysis",
     "FW_M0map": "Free Water proton density (M0) map",
     "FW_R1map": "Free Water longitudinal relaxation rate (R1) map",
-    "FW_R2starmap": "Free Water effective transverse relaxation rate (R2*) map",
+    "IAW_R2starmap": "Intra-Axonal Water effective transverse relaxation rate (R2*) map",
     "FW_T1map": "Free Water longitudinal relaxation time (T1) map",
     "FitMask": "Mask indicating voxels with successful quantitative parameter fitting",
     "M0map": "Proton density (M0) map derived from GRE or similar acquisitions",

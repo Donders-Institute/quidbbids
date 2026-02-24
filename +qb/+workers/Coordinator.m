@@ -11,6 +11,7 @@ properties
     products        % The end productcs (workitems) requested by the user
     resumes         % The resumes of all available workers
     configfile      % Path to the active configuration file
+    workflowfile    % Path to the active workflow file
     config          % Configuration struct loaded from the config file
 end
 
@@ -26,7 +27,7 @@ methods
         % Constructor for the abstract Coordinator class
         %
         % Inputs:
-        %   BIDSDIR    - BIDS layout object from bids-matlab
+        %   BIDS       - BIDS layout object from bids-matlab
         %   OUTPUTDIR  - Path to the derivatives bidsapp subdirectory where output will be written
         %   WORKDIR    - Working directory for intermediate results. Default: outputdir/[APPNAME]_work
         %   CONFIGFILE - Path to a configuration file with workflow settings
@@ -49,13 +50,14 @@ methods
         end
 
         % Set the properties
-        obj.BIDS       = BIDS;
-        obj.outputdir  = outputdir;
-        obj.workdir    = workdir;
-        obj.configfile = configfile;
-        obj.config     = obj.get_config();
-        obj.resumes    = obj.get_resumes();
-        obj.products   = "";
+        obj.BIDS         = BIDS;
+        obj.outputdir    = outputdir;
+        obj.workdir      = workdir;
+        obj.configfile   = configfile;
+        obj.workflowfile = regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat");
+        obj.config       = obj.get_config();
+        obj.resumes      = obj.get_resumes();
+        obj.products     = "";
     end
 
     function set.products(obj, val)
@@ -91,7 +93,6 @@ methods
         %   RESUME.NAME.HANDLE      - The function handle
         %              .NAME        - Their personal name
         %              .DESCRIPTION - The description of what they do
-        %              .VERSION     - Their semantic version number
         %              .MAKES       - The workitems they can make
         %              .NEEDS       - The workitems they need for work
         %              .USESGPU     - True if the worker can make use of the GPU
@@ -106,11 +107,10 @@ methods
         end
         for wfile = wfiles
             if ~strcmp(wfile.name, 'Worker.m')   % Exclude the abstract Worker class
-                worker = qb.workers.(erase(wfile.name, '.m'))(struct(),struct('name','','session',''));
+                worker = qb.workers.(erase(wfile.name, '.m'))(obj.BIDS, struct('name','','session',''), obj.config);
                 resumes.(worker.name).handle      = str2func(class(worker));
                 resumes.(worker.name).name        = worker.name;
                 resumes.(worker.name).description = worker.description;
-                resumes.(worker.name).version     = worker.version;
                 resumes.(worker.name).makes       = worker.makes();
                 resumes.(worker.name).needs       = worker.needs(:)';
                 resumes.(worker.name).usesGPU     = worker.usesGPU;
@@ -118,6 +118,50 @@ methods
             end
         end
 
+    end
+
+    function load_coord(obj, workflowfile)
+        %LOAD_WORKFLOW Loads all coordinator properties from the workflowfile
+
+        arguments
+            obj
+            workflowfile {mustBeTextScalar} = obj.workflowfile
+        end
+
+        if ~isfile(workflowfile)
+            fprintf('🔧 No previous coordinator data found\n')
+            return
+        end
+
+        fprintf('🔧 Loading coordinator data from: %s\n', workflowfile)
+        load(workflowfile, 'coord')
+        obj.workflowfile = workflowfile;
+
+        % Set the coordinator data
+        for property = string(fieldnames(coord)')
+            obj.(property) = coord.(property);
+        end
+    end
+
+    function save_coord(obj, workflowfile)
+        %SAVE_WORKFLOW Saves all coordinator properties to the workflowfile, except the BIDS and config data
+
+        arguments
+            obj
+            workflowfile {mustBeTextScalar} = obj.workflowfile
+        end
+
+        % Get the coordinator data
+        for property = string(properties(obj)')
+            if ~ismember(property, {'BIDS','config','configfile'})
+                coord.(property) = obj.(property);
+            end
+        end
+
+        fprintf('🔧 Saving coordinator data to: %s\n', workflowfile)
+        [~,~] = mkdir(fileparts(workflowfile));
+        save(workflowfile, 'coord', '-append')
+        obj.workflowfile = workflowfile;
     end
 
 end

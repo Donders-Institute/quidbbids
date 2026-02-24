@@ -1,80 +1,53 @@
 classdef MCRWorker < qb.workers.Worker
-%MCRWORKER Runs MCR workflow
+%MCRWORKER Runs MCR workflow on the CPU
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
-properties (GetAccess = public, SetAccess = protected)
-    name        = "Jose"        % Name of the worker
-    description = ["If you don't want to stay single, I am sure I can fit you a Multi-Compartment Model";
-                    "";
-                    "Methods:"
-                    "- "]       % Description of the work that is done
-    version     = "0.1.0"       % The version of MCRWorker
-    needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"] % List of workitems the worker needs. Workitems can contain regexp patterns
+properties (Constant)
+    description = ["Don’t worry, we don’t believe in single compartments here — I can model you something with a lot more interaction.";
+                   "";
+                   "Methods:"
+                   "- "]
+    needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
+    usesGPU     = false
 end
 
 
-properties
-    bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
+methods (Access = protected)
+
+    function initialize(obj)
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
+        % subclasses to perform additional setup after the common Worker properties have been initialized.
+
+        import qb.utils.setfields
+
+        % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
+        obj.bidsfilter.MWFmap        = struct('modality', 'anat', ...
+                                              'echo', [], ...
+                                              'flip', [], ...
+                                              'part', '', ...
+                                              'desc', 'MWI', ...
+                                              'suffix', 'MWFmap');
+        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap, 'label','free2myelinwater', 'suffix','ExchRate');
+        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap, 'label','fitted', 'suffix','mask');
+        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap, 'label','myelinwater', 'suffix','M0Map');
+        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map, 'suffix','R2starmap');
+        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, 'label','freewater');
+        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map, 'suffix','T1map');
+        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map, 'suffix','R1map');
+        obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.FW_M0map, 'label','axonalwater', 'suffix','R2starmap');
+        
+        % Create orthoslice variants of the bidsfilters
+        for fn = string(fieldnames(obj.bidsfilter)')
+            obj.bidsfilter.(fn + "_ortho") = setfield(obj.bidsfilter.(fn), 'desc', [obj.bidsfilter.(fn).desc 'ortho']);
+        end
+    end
+
 end
 
 
 methods
-
-    function obj = MCRWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
-        % Constructor for this concrete Worker class
-
-        arguments
-            BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
-            subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-            config    (1,1) struct = struct()   % Configuration struct loaded from the config file
-            workdir   {mustBeTextScalar} = ''
-            outputdir {mustBeTextScalar} = ''
-            team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
-            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
-        end
-
-        % Call the abstract parent constructor
-        obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
-
-        % Make the abstract properties concrete
-        obj.bidsfilter.MWFmap       = struct('modality', 'anat', ...
-                                             'echo', [], ...
-                                             'part', '', ...
-                                             'desc', 'gacelle', ...
-                                             'suffix', 'MWFmap');
-        obj.bidsfilter.MW_M0map     = struct('modality', 'anat', ...
-                                             'echo', [], ...
-                                             'part', '', ...
-                                             'desc', 'gacelle', ...
-                                             'label', 'myelinwater', ...
-                                             'suffix', 'M0Map');
-        obj.bidsfilter.MW_R2starmap = setfield(obj.bidsfilter.MW_M0map, 'suffix','R2starmap');
-        obj.bidsfilter.FW_M0map     = setfield(obj.bidsfilter.MW_M0map, 'label','freewater');
-        obj.bidsfilter.FW_T1map     = setfield(obj.bidsfilter.MW_M0map, 'suffix','T1map');
-        obj.bidsfilter.FW_R2starmap = setfield(obj.bidsfilter.FW_M0map, 'suffix','R2starmap');
-        obj.bidsfilter.FW_R1map     = setfield(obj.bidsfilter.FW_M0map, 'suffix','R1map');
-        obj.bidsfilter.FMW_exrate   = struct('modality', 'anat', ...
-                                             'echo', [], ...
-                                             'part', '', ...
-                                             'desc', 'gacelle', ...
-                                             'label', 'free2myelinwater', ...
-                                             'suffix', 'ExchRate');
-        obj.bidsfilter.FitMask      = struct('modality', 'anat', ...
-                                             'echo', [], ...
-                                             'part', '', ...
-                                             'desc', 'gacelle', ...
-                                             'label', 'fitted', ...
-                                             'suffix', 'mask');
-
-        % Make the workitems (if requested)
-        if strlength(workitems)                             % isempty(string('')) -> false
-            for workitem = string(workitems)
-                obj.fetch(workitem);
-            end
-        end
-    end
 
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
@@ -116,10 +89,10 @@ methods
 
         % Load the data + metadata
         V              = spm_vol(echos4Dmag{1});                    % For reading the 3D image dimensions
-        dims           = [V(1).dim length(V) length(echos4Dmag)];
-        img            = NaN(dims);
-        unwrappedPhase = NaN(dims);
-        totalField     = NaN(dims([1:3 5]));
+        dims           = [V(1).dim length(V) length(echos4Dmag)];   % Dimensions: [x,y,z,TE,FA]
+        img            = single(NaN(dims));
+        unwrappedPhase = single(NaN(dims));
+        totalField     = single(NaN(dims([1:3 5])));                % Dimensions: [x,y,z,FA]
         mask           = true;
         for n = 1:dims(5)
             bfile                     = bids.File(echos4Dmag{n});   % For reading metadata, parsing entities, etc
@@ -127,7 +100,7 @@ methods
             unwrappedPhase(:,:,:,:,n) = spm_read_vols(spm_vol(unwrapped{n}));
             totalField(:,:,:,n)       = spm_read_vols(spm_vol(fieldmap{n}));
             mask                      = spm_read_vols(spm_vol(localfmask{n})) & mask;
-            FA(n)                     = bfile.metadata.FlipAngle; %#ok<AGROW>
+            FA(n)                     = bfile.metadata.FlipAngle;   %#ok<AGROW>
         end
         B1 = spm_read_vols(spm_vol(char(TB1map_GRE)));
         TR = bfile.metadata.RepetitionTime;
@@ -139,26 +112,120 @@ methods
         pini = squeeze(unwrappedPhase(:,:,:,1,:)) - 2*pi*totalField .* TE(1);
         pini = polyfit3D_NthOrder(mean(pini(:,:,:,1:(end-1)), 4), mask, 6);
 
-        % Estimate the MCR model
-        extraData         = [];
-        extraData.freqBKG = single(totalField / (obj.config.General.gyro * obj.config.MCRWorker.fixed_params.B0));  % in ppm
-        extraData.pini    = single(pini);
-        extraData.b1      = single(B1);
-        objGPU            = gpuMCRMWI(TE, TR, FA, obj.config.MCRWorker.fixed_params);
-        askadam_mcr       = objGPU.estimate(img, mask, extraData, obj.config.MCRWorker.fitting.GPU);  % TODO: Is single() really needed/desired?
+        % Get the algoPara struct and perform data normalisation if needed
+        algoPara = obj.config.MCRWorker.algoPara;
+        if ~algoPara.isNormData
+            obj.logger.info('--> Normalising the multi-echo data')
+            [~, img] = mwi_image_normalisation(img, mask);
+        end
+
+        % Construct orthoview montages (e.g. for QC) as indicated by the workitem (bidsfilter) name
+        ortho = '';
+        if endsWith(workitem, 'ortho')
+            obj.logger.verbose('Constructing orthoview montages')
+            ortho = '_ortho';
+            [mask, sel] = obj.orthoslice(mask, 'tight');
+            B1          = obj.orthoslice(B1(sel{:}));
+            pini        = obj.orthoslice(pini(sel{:}));
+            for n = dims(5):-1:1    % Loop backwards to preallocate the '_' variables
+                totalField_(:,:,:,n) = obj.orthoslice(totalField(sel{:},n));
+                for m = dims(4):-1:1
+                    img_(:,:,:,m,n) = obj.orthoslice(img(sel{:},m,n));
+                end
+            end
+            totalField = totalField_;
+            img = img_;
+        end
+
+        % Construct the imgPara struct
+        imgPara            = obj.config.MCRWorker.imgPara;
+        imgPara.img        = img;
+        imgPara.mask       = mask;
+        imgPara.fieldmap   = totalField;
+        imgPara.pini       = pini;
+        imgPara.b1map      = B1;
+        imgPara.te         = TE;
+        imgPara.tr         = TR;
+        imgPara.fa         = FA;
+        imgPara.b0         = bfile.metadata.MagneticFieldStrength;
+        imgPara.autosave   = false;
+        imgPara.output_dir = char(obj.logger.logdir);
+        % imgPara.identifier  = obj.subject.name;     % Add when the MWI PR is accepted and released
+        % if obj.subject.session
+        %     imgPara.identifier = [imgPara.identifier '_' obj.subject.session];
+        % end
+
+        % Estimate the MWI-MCR model
+        ws = warning('off', 'MATLAB:nearlySingularMatrix');     % Supress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
+        warning('off', 'MWI:IdentifierFile:NotFound')
+        obj.logger.info('--> Estimating the MWI-MCR model')
+        fitRes = mwi_3cx_2R1R2s_dimwi(algoPara, imgPara);
+        warning(ws)
 
         % Extract and save the output data
-        V(1).dim = dims(1:3);
-        spm_write_vol_gz(V(1), askadam_mcr.final.MWF * 100,                       obj.bfile_set(bfile, obj.bidsfilter.MWFmap      ).path);  % TODO: Ask Jose: Multiply by 100 to get percentage?
-        spm_write_vol_gz(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.bfile_set(bfile, obj.bidsfilter.MW_M0map    ).path);
-        spm_write_vol_gz(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.bfile_set(bfile, obj.bidsfilter.FW_M0map    ).path);
-        spm_write_vol_gz(V(1), askadam_mcr.final.R2sMW,                           obj.bfile_set(bfile, obj.bidsfilter.MW_R2starmap).path);
-        spm_write_vol_gz(V(1), askadam_mcr.final.R2sIW,                           obj.bfile_set(bfile, obj.bidsfilter.FW_R2starmap).path);
-        spm_write_vol_gz(V(1), 1 ./ askadam_mcr.final.R1IEW,                      obj.bfile_set(bfile, obj.bidsfilter.FW_T1map    ).path);
-        spm_write_vol_gz(V(1), askadam_mcr.final.R1IEW,                           obj.bfile_set(bfile, obj.bidsfilter.FW_R1map    ).path);
-        spm_write_vol_gz(V(1), askadam_mcr.final.kIEWM,                           obj.bfile_set(bfile, obj.bidsfilter.FMW_exrate  ).path);
-        spm_write_vol_gz(V(1), mask,                                              obj.bfile_set(bfile, obj.bidsfilter.FitMask     ).path); % Check if this is correct
-        % spm_write_vol_gz(V(1), extraData.pini + askadam_mcr.final.dpini,          obj.bfile_set(bfile, obj.bidsfilter.MW_M0map    ).path); '_Initialphase.nii.gz'])); TODO: Ask Jose if needed
+        V(1).dim = [size(mask,1) size(mask,2) size(mask,3)];
+        MWF = fitRes.S0_MW ./ (fitRes.S0_MW + fitRes.S0_EW + fitRes.S0_IW);
+        spm_write_vol_gz(V(1), MWF,                         obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])));
+        spm_write_vol_gz(V(1), fitRes.S0_MW,                obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])));
+        spm_write_vol_gz(V(1), fitRes.S0_IW + fitRes.S0_EW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])));
+        spm_write_vol_gz(V(1), fitRes.R2s_MW,               obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])));
+        spm_write_vol_gz(V(1), fitRes.R2s_IW,               obj.bfile_set(bfile, obj.bidsfilter.(['IAW_R2starmap' ortho])));
+        spm_write_vol_gz(V(1), fitRes.T1_IEW,               obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])));
+        spm_write_vol_gz(V(1), 1 ./ fitRes.T1_IEW,          obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])));
+        spm_write_vol_gz(V(1), fitRes.kiewm,                obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])));
+        spm_write_vol_gz(V(1), fitRes.mask_fitted,          obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])));
+    end
+
+end
+
+methods (Static, Access = private)
+
+    function [montage, sel] = orthoslice(vol, crop, xyz)
+        % [montage, sel] = orthoslice(vol, crop, xyz)
+        %
+        % Extract orthogonal slices from a 3D vol and return them as a concatenated row montage.
+        %
+        % Inputs:
+        %   vol     - 3D image volume
+        %   crop    - If 'tight' then the volume is cropped to the non-zero part of the image
+        %   xyz     - kz positions (default: center of vol)
+        %
+        % Outputs:
+        %   montage - 2D image of the orthogonal slices (axial, coronal, sagittal)
+        %   sel     - cell array of the selection indices in each dimension (useful for applying the same cropping to other volumes)
+
+        % Defaults
+        if nargin < 2 || isempty(crop)
+            crop = 'normal';
+        end
+
+        % Crop the volume to the non-zero part if 'tight' display is requested
+        sel = {1:size(vol,1), 1:size(vol,2), 1:size(vol,3)};
+        if strcmp(crop, 'tight')
+            [x,y,z] = ind2sub(size(vol), find(vol));
+            sel     = {min(x):max(x), min(y):max(y), min(z):max(z)};
+            vol     = vol(sel{:});
+        end
+
+        % Set the slice positions to the center of the volume if not provided
+        dims = size(vol);
+        if nargin < 3 || isempty(xyz)
+            xyz = round(dims/2);
+        end
+
+        % Create three blank images and 1) an axial, 2) a coronal and 3) a sagittal slice
+        axial  = zeros([dims(1) max(dims(2:3))]);
+        coron  = zeros([dims(1) max(dims(2:3))]);
+        sagit  = zeros([dims(2) max(dims(2:3))]);
+        axial_ = squeeze(vol(:,:,xyz(3)));
+        coron_ = squeeze(vol(:,xyz(2),:));
+        sagit_ = squeeze(vol(xyz(1),:,:));
+
+        % Center the three slices in their respective blank images and concatenate them to a row montage
+        axial(:, round((size(axial,2) - size(axial_,2))/2) + (1:size(axial_,2))) = axial_;
+        coron(:, round((size(coron,2) - size(coron_,2))/2) + (1:size(coron_,2))) = coron_;
+        sagit(:, round((size(sagit,2) - size(sagit_,2))/2) + (1:size(sagit_,2))) = sagit_;
+        montage = cat(1, axial, coron, sagit);
     end
 
 end

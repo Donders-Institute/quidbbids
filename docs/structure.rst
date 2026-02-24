@@ -6,7 +6,7 @@ QuIDBBIDS organises data according to the BIDS (Brain Imaging Data Structure) st
 which processed data is stored. QuIDBBIDS uses this folder to store its two output types:
 
 1. ``./derivatives/QuIDBBIDS_work``. In here all temporary files and workitems are stored that are
-   produced during execution of the workflow. All items are re-used or re-produced if the workflow is
+   produced during execution of the workflow. All items are reused or reproduced if the workflow is
    re-executed. This folder can be deleted after processing is finished.
 2. ``./derivatives/QuIDBBIDS``. In here all final output files (products) are stored, organized according 
    to BIDS derivatives specification. This folder should be kept after processing is finished.

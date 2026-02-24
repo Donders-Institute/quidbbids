@@ -156,7 +156,7 @@ methods
         % end
 
         % Estimate the MWI-MCR model
-        ws = warning('off', 'MATLAB:nearlySingularMatrix');     % Supress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
+        ws = warning('off', 'MATLAB:nearlySingularMatrix');     % Suppress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
         warning('off', 'MWI:IdentifierFile:NotFound')
         obj.logger.info('--> Estimating the MWI-MCR model')
         fitRes = mwi_3cx_2R1R2s_dimwi(algoPara, imgPara);

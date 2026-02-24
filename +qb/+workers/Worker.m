@@ -317,7 +317,7 @@ methods
     function BIDSW = BIDSW_ses(obj, workdir)
         %BIDSW_SES Gets a tolerant bids.layout() for the WORKDIR sub/ses data only (default: WORKDIR = obj.workdir)
         %
-        % Waits up to 60 seconds for the workdir BIDS initializiation to be ready, allowing the HPC file system latency to settle
+        % Waits up to 60 seconds for the workdir BIDS initialization to be ready, allowing the HPC file system latency to settle
 
         if nargin < 2 || isempty(workdir)
             workdir = obj.workdir;

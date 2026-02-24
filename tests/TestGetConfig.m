@@ -14,7 +14,7 @@ classdef TestGetConfig < BaseTest
             cd(fullfile(fileparts(mfilename("fullpath")),'..','+qb','private'))
 
             % Path for test config file
-            testCase.ConfigFile = fullfile(testCase.TempDir, 'derivatives', 'QuIDBBIDS', 'code', 'config.json');
+            testCase.ConfigFile = fullfile(testCase.TempDir, 'code', 'QuIDBBIDS', 'config.json');
         end
     end
 

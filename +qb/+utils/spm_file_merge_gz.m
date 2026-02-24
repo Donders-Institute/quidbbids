@@ -105,6 +105,13 @@ for n = 1:numel(V)
         metavalues = cell(length(metafields), numel(V));
     end
 
+    % Add the source file to the metadata Sources
+    if isfield(bfile.metadata, 'Sources')
+        metadata.Sources{n} = bfile.metadata.Sources;
+    else
+        metadata.Sources{n} = ['bids::' bfile.bids_path '/' bfile.filename];
+    end
+
     % Aggregate the metavalues for the specified metafields (if available)
     for m = 1:length(metafields)
         if isfield(bfile.metadata, metafields{m})
@@ -123,7 +130,10 @@ for n = 1:numel(V)
 
 end
 
-% Write the output JSON sidecar (if there was at least one input sidecar)
-if ~isempty(fieldnames(metadata))
-    bids.util.jsonencode(spm_file(spm_file(fname, 'ext',''), 'ext','.json'), metadata)
+% SEPIA requires the 'ConversionSoftware' field to be present (to read the TE values from the JSON sidecar), so we add it here as an ugly workaround
+if ~isfield(metadata, 'ConversionSoftware')
+    metadata.ConversionSoftware = 'dcm2niix';
 end
+
+% Write the output JSON sidecar
+bids.util.jsonencode(spm_file(spm_file(fname, 'ext',''), 'ext','.json'), metadata)

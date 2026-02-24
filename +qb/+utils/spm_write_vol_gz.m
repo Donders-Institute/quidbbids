@@ -1,17 +1,18 @@
-function V = spm_write_vol_gz(V, Y, fname, dt)
+function V = spm_write_vol_gz(V, Y, bfile, dt)
 % A convenient wrapper around SPM_WRITE_VOL that writes either a .nii or .nii.gz file.
 %
 % Usage:
 %   V = spm_write_vol_gz(V, Y)
-%   V = spm_write_vol_gz(V, Y, fname)
+%   V = spm_write_vol_gz(V, Y, bfile)
 %   V = spm_write_vol_gz(V, Y, fname, dt)
 %
 % Inputs:
 %   V     - Volume structure containing header information (see spm_vol).
 %           Alternatively, V can be a numeric vector specifying voxel sizes [vx vy vz]
 %   Y     - Image 3D data array to write to disk
-%   fname - (Optional) Output file name. If provided, overrides V.fname. Needed
-%           if V is specified as voxel sizes.
+%   bfile - (Optional) Output bids.File or filename. If provided, overrides V.fname.
+%           Needed if V is specified as voxel sizes. If provided as a bids.File, the
+%           JSON sidecar file will also be saved with the metadata from the bfile.
 %   dt    - (Optional) Desired data type as a string. If not specified, an appropriate
 %           type is automatically chosen based on Y.
 %
@@ -38,8 +39,8 @@ end
 % Create a minimal header struction if only voxel sizes are provided
 if isnumeric(V) && isvector(V)
     V = struct('mat', diag([V(:); 1]));
-    if nargin < 3 || isempty(fname)
-        error('QuIDBBIDS:Nifti:MissingInputArgument', 'When providing only voxel sizes, an output filename must be specified')
+    if nargin < 3 || isempty(bfile)
+        error('QuIDBBIDS:Nifti:MissingInputArgument', 'When providing only voxel sizes, an output (b)filename must be specified')
     end
 end
 
@@ -58,9 +59,15 @@ else
     V.dt    = [spm_type('float32') spm_platform('bigend')];
 end
 
-% Override filename if provided
-if nargin > 2 && ~isempty(fname)
-    V.fname = char(fname);
+% Save a json sidecar file and override V.fname if bfile was provided
+if nargin > 2 && ~isempty(bfile)
+    if isa(bfile, 'bids.File')
+        [~,~] = mkdir(fileparts(bfile.path));
+        bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
+        V.fname = char(bfile.path);
+    else
+        V.fname = char(bfile);
+    end
 end
 
 % Write the data to the file, either as .nii or .nii.gz

@@ -33,9 +33,10 @@ classdef Manager < handle
 
 
 properties
-    team = struct()     % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
-    coord               % The coordinator that help the manager with administrative tasks
-    force = false       % Force workers to start working, even if the subject is locked or existing results exist
+    team = struct.empty()   % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+    coord                   % The coordinator that help the manager with administrative tasks
+    force = false           % Force workers to start working, even if the subject is locked or existing results exist
+    interactive = true      % If true, the manager will ask the user for help when needed (false = useful for automated testing)
 end
 
 
@@ -48,15 +49,16 @@ methods
             coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
         end
 
-        obj.coord = coord;                      % The coordinator that help the manager with administrative tasks
+        obj.coord  = coord;                     % The coordinator that help the manager with administrative tasks
         obj.create_team()
     end
 
     function create_team(obj, workitems, recurse_)
-        %CREATE_TEAM Selects workers from the pool that together are capable of making the
-        % WORKITEMS (products).
+        %CREATE_TEAM Selects workers from the pool that together are capable of making the WORKITEMS (products).
         %
-        % Asks the user for help if needed. The assembled team is stored in the TEAM property.
+        % Asks the user for help if needed. The assembled team is stored in the TEAM property, which is a struct
+        % with fields corresponding to the workitems and value corresponding to the resume of the worker that will
+        % produce the workitem.
         %
         % NB: RECURSE_ is a private argument that should not be used
 
@@ -82,7 +84,7 @@ methods
                 % Add to the team if the worker is capable
                 for workitem_ = makes(match)                % Loop over the actual workitems (without optional regexp pattern)
                     if isfield(obj.team, workitem_)         % Append the worker to the list
-                        if ~ismember(func2str(worker.handle), cellfun(@func2str, {obj.team.(workitem_).handle}, 'UniformOutput', false))    % Check if we haven't already added this worker
+                        if ~ismember(worker.name, obj.team.(workitem_).name)    % Check if we haven't already added this worker
                             obj.team.(workitem_)(end+1) = worker;
                         end
                     else                                    % Or create a new list
@@ -111,73 +113,225 @@ methods
         end
     end
 
-    function load_workflow(obj)
+    function members = team_members(obj)
+        %TEAM_MEMBERS Returns the names of the workers in the team
+
+        members = string.empty();
+        for workitem = string(fieldnames(obj.team))'
+            members(end+1) = string(obj.team.(workitem).name);  %#ok<AGROW>
+        end
+        if ~isempty(members)
+            members = unique(members);
+        end
     end
 
-    function save_workflow(obj)
-        %SAVE_WORKFLOW Saves the PRODUCT and TEAM properties to the output directory
-    end
-
-    function start_workflow(obj, subjects)
-        %START_WORKFLOW For each end product, asks the responsible team worker to fetch it
+    function load_mgr(obj, workflowfile)
+        %LOAD_WORKFLOW Loads all manager properties from the workflowfile
 
         arguments
             obj
-            subjects struct = obj.coord.BIDS.subjects;
+            workflowfile {mustBeTextScalar} = obj.coord.workflowfile
+        end
+
+        if ~isfile(workflowfile)
+            fprintf('🔧 No previous manager data found\n')
+            return
+        end
+
+        fprintf('🔧 Loading manager data from: %s\n', workflowfile)
+        load(workflowfile, 'mgr')
+        obj.coord.workflowfile = workflowfile;
+
+        % Set the manager data
+        for property = string(fieldnames(mgr)')
+            obj.(property) = mgr.(property);
+        end
+    end
+
+    function save_mgr(obj, workflowfile)
+        %SAVE_WORKFLOW Saves all manager properties to the workflowfile, except the COORD handle
+
+        arguments
+            obj
+            workflowfile {mustBeTextScalar} = obj.coord.workflowfile
+        end
+
+        % Get the manager data
+        for property = string(properties(obj)')
+            if ~ismember(property, {'coord'})
+                mgr.(property) = obj.(property);
+            end
+        end
+
+        fprintf('🔧 Saving manager data to: %s\n', workflowfile)
+        [~,~] = mkdir(fileparts(workflowfile));
+        save(workflowfile, 'mgr', '-append')
+        obj.coord.workflowfile = workflowfile;
+    end
+
+    function start_workflow(obj, subjects)
+        %START_WORKFLOW For each end product, asks the responsible team worker to fetch it. Logs the screen output in a diary.
+        %
+        % Inputs:
+        %   SUBJECTS - String array with subject names for which the workflow should be executed. Default is all subjects in the BIDS layout
+        %
+        % Examples:
+        %   mgr.start_workflow()                      % Starts the workflow for all subjects
+        %   mgr.start_workflow(["sub-01", "sub-02"])  % Starts the workflow for subjects sub-01 and sub-02 only
+
+        arguments
+            obj
+            subjects string = "";
+        end
+
+        % Start a diary to log the screen output
+        logdir = fullfile(obj.coord.outputdir, 'logs');
+        [~,~]  = mkdir(logdir);
+        diary(fullfile(logdir, 'diary_workflow.txt'))
+        cleanup = onCleanup(@() diary('off'));
+
+        if ~strlength(obj.coord.products)
+            disp('❌ The list of products is empty, there is nothing to do')
+            return
+        end
+
+        % Avoid issues with persistent memory locks of the qsublist function
+        if obj.coord.config.General.useHPC.value
+            cleanup = onCleanup(@() qsublist('killall'));
+            batch = obj.getbatch();
+            if mislocked('qsublist') && obj.interactive
+                answer = questdlg(sprintf('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes, that may cause issues.\n\nCan I cleanup the bookkeeping?'), ...
+                    'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Yes');
+                if isempty(answer) || strcmp(answer, 'Cancel')
+                    return
+                elseif strcmp(answer, 'Yes')
+                    munlock('qsublist')
+                    clear('qsublist')   % TODO: make this less brutal by only clearing the submitted jobs
+                end
+            end
+        end
+
+        % Parse the subjects for which the workflow should be executed
+        if strlength(subjects) > 0
+            sel = false(size(obj.coord.BIDS.subjects));
+            for subject = subjects(:)'
+                sel(strcmp({obj.coord.BIDS.subjects.name}, subject)) = true;
+            end
+            subjects = obj.coord.BIDS.subjects(sel);
+        else
+            subjects = obj.coord.BIDS.subjects;
+        end
+
+        % Check if there are still lock-files around from previous crashes
+        lockfiles = dir(fullfile(obj.coord.workdir, '**', '*.lock'));
+        if ~isempty(lockfiles)
+            fprintf('🔒 Found %d existing lockfile(s)\n', length(lockfiles))
+            if obj.interactive
+                sample = fullfile(lockfiles(1).folder, lockfiles(1).name);
+                answer = questdlg(sprintf('Found %d existing lockfile(s), probably caused by previous crashes. Here is a sample:\n\n..%s:\n%s\n\nShall I clean them up?', ...
+                length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Yes');
+                if strcmp(answer, 'Yes')
+                    lockfiles = fullfile({lockfiles.folder}, {lockfiles.name});
+                    fprintf('🔓 Deleting %d existing lockfile(s)\n', length(lockfiles))
+                    delete(lockfiles{:})
+                end
+            end
+        end
+
+        % Check if our team is up-to-date
+        if ~all(isfield(obj.team, obj.coord.products))
+            disp("🔄 Manager updates the team")
+            obj.create_team()
+        end
+
+        % Clear the worker error/warning logs
+        for member = obj.team_members()
+            for suffix = ["warnings", "errors"]
+                for logfile = dir(fullfile(obj.coord.outputdir, 'logs', member, sprintf('sub-*_%s.log', suffix)))'
+                    delete(fullfile(logfile.folder, logfile.name))
+                end
+            end
         end
 
         % Block the start button in the GUI (if any) and initialize the workers
+        fprintf("\n============= Starting workflow at %s =============\n", datetime('now'))
         for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
-            worker = obj.team.(product).handle;
+            Worker = obj.team.(product).handle;
+            name   = obj.team.(product).name;
+            jobIDs = containers.Map('KeyType','char', 'ValueType','char');
             for subject = subjects
 
-                % Make sure we have anat data for this subject
+                % Skip if we are not at the modality level, i.e. at the subject level while sessions are present
                 if ~ismember("anat", fieldnames(subject)) || isempty(subject.anat)
                     continue
                 end
 
                 % Ask the worker to fetch the product for this subject
-                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
+                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
+                fprintf("▶ Manager dispatched %s to make the '%s' product for %s/%s\n", name, product, subject.name, subject.session)
                 if obj.coord.config.General.useHPC.value
-                    qsubfeval(worker, args{:}, product, obj.coord.config.qsubfeval.(product){:});   % NB: products are passed directly
+                    jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
+                elseif obj.coord.config.General.useParallel.value
+                    jobIDs(obj.sub_ses(subject)) = parfeval(Worker, 0, args{:}, product);
                 else
-                    worker(args{:}).fetch(product, obj.force);     % TODO: Catch the work done (at some point)
+                    Worker(args{:}).fetch(product);      % TODO: Catch the work done (at some point)
                 end
 
             end
 
-            if obj.coord.config.General.useHPC.value
-                obj.monitor_progress(product)
-            end
+            % Monitor the progress of the workers until all work is done and report any errors or warnings
+            obj.monitor_progress(product, jobIDs)
+
+            % Copy the end products to the output directory
+            worker  = Worker(args{:});
+            bfilter = worker.bidsfilter.(product);
+            worker.logger.verbose('-> Copying %s products to: %s', product, obj.coord.outputdir)
+            [out_path, quidb] = fileparts(char(obj.coord.outputdir));
+            bids.copy_to_derivative(char(worker.workdir), 'out_path',out_path, 'filter',bfilter, 'force',obj.force, ...
+                'pipeline_name',quidb, 'unzip',false, 'skip_dep',true, 'use_schema',false, 'verbose',true, 'tolerant',true)
         end
+
         % Unblock the start button in the GUI (if any)
+        fprintf("============= Finished workflow at %s =============\n\n", datetime('now'))
     end
 
-    function monitor_progress(obj, workitem)
+    function monitor_progress(obj, workitem, jobIDs)
         %MONITOR_PROGRESS Watches over the progress of the workers until all work is done
 
+        arguments
+            obj
+            workitem {mustBeTextScalar}
+            jobIDs   containers.Map
+        end
+
         % Launch a dashboard
-        logdir    = fullfile(obj.coord.outputdir, 'logs', class(obj));   % TODO: FIXME
-        dashboard = qb.workers.Dashboard(obj.coord.BIDS, logdir, workitem);
+        dashboard = qb.workers.Dashboard(obj.coord, workitem, jobIDs);
 
         % Wait until all work is done
-        while ~all([dashboard.jobs.finished])
-            pause(5)
+        while length(dashboard.work_done()) < length(jobIDs.keys)
+            pause(1)
             dashboard.update()
         end
 
         % Report any errors or warnings
-        dashboard.has_warnings(verbose)
-        dashboard.has_errors(verbose)
+        dashboard.has_warnings(true);
+        dashboard.has_errors(true);
 
         % Close the dashboard
-        dashboard.close()
+        if isvalid(dashboard.fig)
+            close(dashboard.fig)
+        end
     end
 
 end
 
 
 methods (Access = private)
+
+    function subses = sub_ses(obj, subject)
+        % Parses the sub-#_ses-# prefix from a BIDS.subjects item
+        subses = replace(erase(subject.path, [obj.coord.BIDS.pth filesep]), filesep,'_');
+    end
 
     function selectworker(obj, workitem)
         % Helper function for CREATE_TEAM to select a worker for this (non-regexp) workitem and make him/her the "preferred worker"
@@ -188,8 +342,7 @@ methods (Access = private)
         end
 
         % Check if any of the workers is preferred. If not ask the user and make the worker preferred
-        if ~any([workers.preferred])
-            uiwait(helpdlg({"There are multiple workers that can produce: " + workitem, "Please select the one you want to use"}, "Create team"))
+        if obj.interactive && ~any([workers.preferred])
             chosen = qb.GUI.askuser(workers, workitem);
             if chosen
                 workers(chosen).preferred = true;
@@ -204,6 +357,18 @@ methods (Access = private)
         if length(obj.team.(workitem)) ~= 1
             error('QuIDBBIDS:WorkItem:InvalidCount', "Expected only a single workitem, but got %d", length(obj.team.(workitem)))
         end
+    end
+
+    function batch = getbatch(~)
+        % GETBATCH returns an incrementing number that can be used to distinguish subsequent QSUBFEVAL calls
+
+        persistent batch_
+
+        if isempty(batch_)
+            batch_ = 0;
+        end
+        batch_ = batch_ + 1;
+        batch = batch_;
     end
 
 end

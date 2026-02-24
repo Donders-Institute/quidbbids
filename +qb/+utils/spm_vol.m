@@ -1,4 +1,7 @@
 function V = spm_vol(P)
+% A version of SPM_VOL that does not warn for compressed files
+%__________________________________________________________________________
+%
 % Get header information for images
 % FORMAT V = spm_vol(P)
 % P - a char or cell array of filenames

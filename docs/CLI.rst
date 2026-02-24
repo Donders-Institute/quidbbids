@@ -6,7 +6,9 @@ below describe a minimal example of how to initialize and run a QuIDBBIDS workfl
 requesting R1, R2*, and MWF maps as output:
 
 Initializing QuIDBBIDS
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
+
+To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by providing the path to your BIDS dataset.
 
 .. code-block:: matlab
 
@@ -14,21 +16,21 @@ Initializing QuIDBBIDS
    >> quidb.workitems                                      % See e.g. what QuIDBBIDS can make
       "Chimap" "FMW_exrate" "FW_M0map" "FW_R1map" [...]
 
-   >> quidb.resumes.R2D2                                   % NB: Only ever edit the `preferred` field
+   >> quidb.resumes.R2R1R2sWorker                          % NB: Only ever edit the `preferred` field
            handle: @qb.workers.R1R2sWorker
-             name: "R2D2"
+             name: "R1R2sWorker"
       description: [24×1 string]
-          version: "0.1.0"
             makes: ["R2starmap" "M0map" "R1map"]
             needs: ["echos4Dmag" "TB1map_GRE" "brainmask"]
-          usesGPU: 0
+          usesGPU: 1
         preferred: 0
 
    >> quidb.products = ["R1map", "R2starmap", "MWFmap"];   % Specify the output items
-   >> quidb.resumes.R2D2.preferred = true;                 % Specify the worker that makes the R1/R2starmap
+   >> quidb.resumes.R2R1R2sWorker.preferred = true;        % Specify the worker that makes the R1/R2starmap
 
 Edit settings and options
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
+
 All configuration settings and options for processing the data of your dataset can be set per worker by 
 modifying the ``config`` properties of your ``QuIDBBIDS`` object. For instance, to inspect the ``NumberShots`` 
 parameter of the MP2RAGEWorker and modify it from ``176`` to ``192``, and use your HPC you can do:
@@ -52,7 +54,9 @@ parameter of the MP2RAGEWorker and modify it from ``176`` to ``192``, and use yo
    >> quidb.config.General.useHPC.value = true;
 
 Run the workflow
-~~~~~~~~~~~~~~~~
+----------------
+
+Finally, to run the workflow, initialize the manager from your ``QuIDBBIDS`` object and start the workflow:
 
 .. code-block:: matlab
 
@@ -66,3 +70,5 @@ browser:
 .. code-block:: matlab
 
    >> doc qb.QuIDBBIDS
+
+A more advanced example of a CLI workflow can be found in this `manual test script <https://github.com/Donders-Institute/quidbbids/blob/main/tests/mantest_dccn.m>`__.

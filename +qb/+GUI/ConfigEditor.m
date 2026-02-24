@@ -424,7 +424,7 @@ classdef ConfigEditor < handle
             cleanup = onCleanup(@() set(obj.Fig, 'Visible', 'on'));     % Ensure main GUI is shown again on function exit
             try
                 w = helpdlg({sprintf('Opening SEPIA GUI for configuring "%s.%s.%s" settings', path{1:3});''; ...
-                            'Initialization can be slow, please wait a few seconds...';''; ... 
+                            'Initialization can be slow, please wait a few seconds...⌛';''; ... 
                             sprintf('NB: This overwrites all current "%s.%s.%s" settings', path{1:3});''}, 'SEPIA Config Editor');
                 pause(0.1)      % Give time to render the dialog
                 h = sepia();    % Opens the full SEPIA GUI
@@ -455,7 +455,7 @@ classdef ConfigEditor < handle
             % Wait for user to finish
             if isvalid(w), close(w), end
             uiwait(h.fig)
-            disp('SEPIA configuration editing done')
+            disp('🔧 SEPIA configuration editing done')
 
             % Update the config with the new parameters
             if isvalid(h.fig)
@@ -575,8 +575,8 @@ classdef ConfigEditor < handle
             % S = obj.setValueInConfig(S, {'a','b','c'}, val)
             %
             % Example:
-            %   path = {'MCRWorker','fixed_params','x_i'}
-            %   S.MCRWorker.fixed_params.x_i = val
+            %   path = {'MCR_GPUWorker','fixed_params','x_i'}
+            %   S.MCR_GPUWorker.fixed_params.x_i = val
 
             if isscalar(path)
                 S.(path{1}) = val;

@@ -4,56 +4,32 @@ classdef B1prepWorker < qb.workers.Worker
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
-properties (GetAccess = public, SetAccess = protected)
-    name        = "Yoda"        % Name of the worker
+properties (Constant)
     description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"] % Description of the work that is done
-    version     = "0.1.0"       % The version of B1prepWorker
-    needs       = []            % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = []                % List of workitems the worker needs. Workitems can contain regexp patterns
+    usesGPU     = false
 end
 
-properties
-    bidsfilter  % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(layout, 'data', bidsfilter.(workitem), 'run',1)`
+
+methods (Access = protected)
+
+    function initialize(obj)
+        %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
+        % subclasses to perform additional setup after the common Worker properties have been initialized.
+
+        import qb.utils.setfields
+
+        % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
+        obj.bidsfilter.rawTB1map_famp = setfields(obj.config.General.BIDS.include, 'modality','fmap', 'acq','famp');
+        obj.bidsfilter.rawTB1map_anat = setfields(obj.bidsfilter.rawTB1map_famp, 'acq','anat');
+        obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawTB1map_famp, 'desc','corrected', 'space','raw', 'suffix','TB1map');
+        obj.bidsfilter.TB1map_anat    = setfields(obj.bidsfilter.TB1map_angle, 'acq','anat');
+    end
+
 end
 
 
 methods
-
-    function obj = B1prepWorker(BIDS, subject, config, workdir, outputdir, team, workitems)
-        % Constructor for this concrete Worker class
-
-        arguments
-            BIDS      (1,1) struct = struct()   % BIDS layout from bids-matlab (raw input data only)
-            subject   (1,1) struct = struct()   % A subject struct (as produced by bids.layout().subjects) for which the workitem needs to be fetched
-            config    (1,1) struct = struct()   % Configuration struct loaded from the config file
-            workdir   {mustBeTextScalar} = ''
-            outputdir {mustBeTextScalar} = ''
-            team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
-            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
-        end
-
-        import qb.utils.setfields
-
-        % Call the abstract parent constructor
-        obj@qb.workers.Worker(BIDS, subject, config, workdir, outputdir, team, workitems);
-
-        % Make the abstract properties concrete
-        try
-            include = obj.config.General.BIDS.include;
-        catch
-            include = struct();
-        end
-        obj.bidsfilter.rawTB1map_famp = setfields(include, 'modality','fmap', 'acq','famp');
-        obj.bidsfilter.rawTB1map_anat = setfields(obj.bidsfilter.rawTB1map_famp, 'acq','anat');
-        obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawTB1map_famp, 'desc','corrected', 'space','raw', 'suffix','TB1map');
-        obj.bidsfilter.TB1map_anat    = setfields(obj.bidsfilter.TB1map_angle, 'acq','anat');
-
-        % Make the workitems (if requested)
-        if strlength(workitems)                             % isempty(string('')) -> false
-            for workitem = string(workitems)
-                obj.fetch(workitem);
-            end
-        end
-    end
 
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
@@ -69,18 +45,15 @@ methods
         B1famp = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawTB1map_famp);
         B1anat = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawTB1map_anat);    % NB: Assumes the order is the same as for B1famp
         if length(B1anat) ~= length(B1famp)
-            obj.logger.warning("Unexpected number of B1-files found: acq-anat=%d vs acq-famp=%d", length(B1anat), length(B1famp))
+            obj.logger.warning('Unexpected number of B1-files found: acq-anat=%d vs acq-famp=%d', length(B1anat), length(B1famp))
         end
 
         for n = 1:length(B1famp)
 
-            % Load the FA-map
+            % Load a scaled FA-map
             bfile = bids.File(B1famp{n});
             FAVol = spm_vol(B1famp{n});
-            FA    = spm_read_vols(FAVol);
-            if isfield(obj.config.B1prepWorker.FAscaling, bfile.metadata.Manufacturer)
-                FA = FA / obj.config.B1prepWorker.FAscaling.(bfile.metadata.Manufacturer);  % Scale to degrees
-            end
+            FA    = spm_read_vols(FAVol) / obj.config.B1prepWorker.FAscaling;   % Scale to radians
 
             % Regularize the FA-map in order to avoid influence of salt & pepper border noise
             if ~isempty(B1anat) && obj.config.B1prepWorker.FWHM ~= 0
@@ -89,17 +62,16 @@ methods
                 FA  = angle(qb.MP2RAGE.smooth3D(FA, obj.config.B1prepWorker.FWHM, abs(dim(7:9))));  % Smooth and take angle again
             end
 
-            % Save the FA-map image & json file
+            % Save the scaled/regularized FA-map image & json file
             bfile = obj.bfile_set(bfile, obj.bidsfilter.TB1map_angle);
-            obj.logger.info("--> Saving regularized B1-map: %s", bfile.filename)
-            qb.utils.spm_write_vol_gz(FAVol, FA, bfile.path);
-            bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
+            obj.logger.verbose('-> Copying %s scaled/regularized B1 data to %s', FAVol.fname, bfile.filename)
+            qb.utils.spm_write_vol_gz(FAVol, FA, bfile);
 
-            % Copy the anat image & json file
+            % Copy the normal anat image & json file
             if ~isempty(B1anat)
                 bfile = obj.bfile_set(B1anat{n}, obj.bidsfilter.TB1map_anat);
-                copyfile(B1anat{n}, bfile.path);
-                bids.util.jsonencode(replace(bfile.path, bfile.filename, bfile.json_filename), bfile.metadata)
+                obj.logger.verbose('-> Copying %s anatomical B1 data to %s', B1anat{n}, bfile.path)
+                qb.utils.copybfile(B1anat{n}, bfile)
             end
 
         end

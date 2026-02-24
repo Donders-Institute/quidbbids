@@ -15,7 +15,7 @@ classdef MEGREprepWorker < qb.workers.Worker
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
-properties (GetAccess = public, SetAccess = protected)
+properties (Constant)
     description = ["I am a working class hero that will happily do the following pre-processing work for you:";
                    "";
                    "1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
@@ -29,6 +29,7 @@ properties (GetAccess = public, SetAccess = protected)
                    "";
                    "If only MEGRE data is available, then steps 1 and 2 are skipped"]
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
+    usesGPU     = false
 end
 
 
@@ -40,7 +41,7 @@ methods (Access = protected)
 
         import qb.utils.setfields
 
-        % Construct the bidsfilters
+        % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
         include = obj.config.General.BIDS.include;
         obj.bidsfilter.rawMEGRE     = setfields(include, ...
                                              'modality', 'anat', ...

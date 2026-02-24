@@ -11,15 +11,15 @@ classdef (Abstract) Worker < handle
 % See also: qb.workers.Manager
 
 
-properties (Abstract, GetAccess = public, SetAccess = protected)
+properties (Abstract, Constant)
     description     % Description of the work that is done
     needs           % List of workitems the worker needs. Workitems can contain regexp patterns
+    usesGPU         % Logical flag indicating if the worker can use GPU resources
 end
 
 
 properties (GetAccess = public, SetAccess = protected)
     name            % Basename of the worker
-    usesGPU = false % Logical flag indicating if the worker can use GPU resources. Default = false
 end
 
 
@@ -88,7 +88,6 @@ methods
                 obj.fetch(workitem);
             end
         end
-
     end
 
     function workitems = makes(obj)
@@ -142,8 +141,6 @@ methods
                 end
             end
 
-            % TODO: update the dashboard (non-HPC usage)
-
             % Check if there is a GPU available
             if obj.usesGPU
                 if canUseGPU()
@@ -170,8 +167,6 @@ methods
             if ismember(id, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound'})
                 lastwarn(prevMsg, prevId)
             end
-
-            % TODO: update the dashboard (non-HPC usage)
 
             % Collect the requested workitem
             work = obj.query_ses(obj.BIDSW_ses(), 'data', obj.bidsfilter.(workitem));

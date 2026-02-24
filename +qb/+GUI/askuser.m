@@ -87,7 +87,7 @@ function chosen = askuser(workers, workitem)
                                 w.name, w.preferred, w.usesGPU, join(w.description, newline)));
 
         % Tables data
-        tblNeeds.Data = makeTableData(w.needs());
+        tblNeeds.Data = makeTableData(w.needs);
         tblMakes.Data = makeTableData(w.makes());
 
         % Recalculate infoWidth based on current figure width

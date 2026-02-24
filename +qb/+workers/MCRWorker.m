@@ -4,12 +4,13 @@ classdef MCRWorker < qb.workers.Worker
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
-properties (GetAccess = public, SetAccess = protected)
+properties (Constant)
     description = ["Don’t worry, we don’t believe in single compartments here — I can model you something with a lot more interaction.";
                    "";
                    "Methods:"
                    "- "]
     needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
+    usesGPU     = false
 end
 
 
@@ -21,7 +22,7 @@ methods (Access = protected)
 
         import qb.utils.setfields
 
-        % Construct the bidsfilters
+        % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
         obj.bidsfilter.MWFmap        = struct('modality', 'anat', ...
                                               'echo', [], ...
                                               'flip', [], ...

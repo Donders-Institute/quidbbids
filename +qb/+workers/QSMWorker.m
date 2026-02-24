@@ -4,9 +4,10 @@ classdef QSMWorker < qb.workers.Worker
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
-properties (GetAccess = public, SetAccess = protected)
+properties (Constant)
     description = ["I am your SEPIA expert that can make shiny QSM and R2-star images for you"] % Description of the work that is done
     needs       = ["echos4Dmag", "echos4Dphase", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
+    usesGPU     = false
 end
 
 
@@ -22,7 +23,7 @@ methods (Access = protected)
             bids.init(char(obj.workdir), 'is_derivative', true)
         end
 
-        % Construct the bidsfilters
+        % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
         obj.bidsfilter.R2starmap  = struct('modality', 'anat', ...
                                            'echo', [], ...
                                            'part', '', ...          % SEPIA outputs images with an appended "part-phase" substring

@@ -4,12 +4,13 @@ classdef R1R2sWorker < qb.workers.Worker
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
-properties (GetAccess = public, SetAccess = protected)
+properties (Constant)
     description = ["I'm R2-D2, an astromech droid that can fix starships and, yes, generate precise R1- and R2-starmaps for all your neuro-navigation needs!";
                    "";
                    "Methods:"
                    "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"]
     needs       = ["echos4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
+    usesGPU     = true
 end
 
 
@@ -19,10 +20,7 @@ methods (Access = protected)
         %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
-        % We can use the GPU
-        obj.usesGPU = true;
-
-        % Construct the bidsfilters
+        % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
         obj.bidsfilter.R2starmap = struct('modality', 'anat', ...
                                           'echo', [], ...
                                           'flip', [], ...

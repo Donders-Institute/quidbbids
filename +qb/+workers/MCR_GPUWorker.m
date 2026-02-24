@@ -4,13 +4,13 @@ classdef MCR_GPUWorker < qb.workers.Worker
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
-properties (GetAccess = public, SetAccess = protected)
+properties (Constant)
     description = ["If you don't want to stay single, I am sure I can fit you a Multi-Compartment Model";
                     "";
                    "Methods:"
                    "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"]
     needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
-    gyro        = 42.57747892       % Gyromagnetic ratio in ppm
+    usesGPU     = true
 end
 
 
@@ -22,10 +22,7 @@ methods (Access = protected)
 
         import qb.utils.setfields
 
-        % We can use the GPU
-        obj.usesGPU = true;
-
-        % Construct the bidsfilters
+        % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
         obj.bidsfilter.MWFmap        = struct('modality', 'anat', ...
                                               'echo', [], ...
                                               'flip', [], ...
@@ -114,7 +111,7 @@ methods
         fixed_params      = obj.config.MCR_GPUWorker.fixed_params;
         fixed_params.B0   = bfile.metadata.MagneticFieldStrength;
         extraData         = [];
-        extraData.freqBKG = totalField / (obj.gyro * fixed_params.B0);
+        extraData.freqBKG = totalField / (42.57747892 * fixed_params.B0);       % 42.57747892 -> Gyromagnetic ratio in ppm
         extraData.pini    = pini;
         extraData.b1      = B1;
 

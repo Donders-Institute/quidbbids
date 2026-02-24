@@ -4,9 +4,10 @@ classdef MP2RAGEWorker < qb.workers.Worker
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
-properties (GetAccess = public, SetAccess = protected)
+properties (Constant)
     description = ["I am a working class hero that will happily do the following pre-processing work for you:"]
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
+    usesGPU     = false
 end
 
 
@@ -18,7 +19,7 @@ methods (Access = protected)
 
         import qb.utils.setfields
 
-        % Construct the bidsfilters
+        % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
         obj.bidsfilter.rawUNIT1    = setfields(obj.config.General.BIDS.include, 'modality', 'anat', 'suffix', 'UNIT1');
         obj.bidsfilter.rawINV1     = setfields(obj.bidsfilter.rawUNIT1, 'inv', 1, 'suffix', 'MP2RAGE');
         obj.bidsfilter.rawINV2     = setfield(obj.bidsfilter.rawINV1, 'inv', 2);

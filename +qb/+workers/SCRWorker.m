@@ -4,13 +4,14 @@ classdef SCRWorker < qb.workers.Worker
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
-properties (GetAccess = public, SetAccess = protected)
+properties (Constant)
     description = ["Your relaxed number cruncher that fits SCR models for breakfast";
                    "";
                    "Methods:"
                    "- Compute weighted means of the R2-star & Chi-maps over the different flip-angles";
                    "- Compute R1- & M0-maps based on despot1 with S0 estimates"]
     needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "TB1map_GRE"]   % List of workitems the worker needs. Workitems can contain regexp patterns
+    usesGPU     = false
 end
 
 
@@ -20,7 +21,7 @@ methods (Access = protected)
         %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
-        % Construct the bidsfilters
+        % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
         obj.bidsfilter.R1map_S0      = struct('modality', 'anat', ...
                                               'echo', [], ...
                                               'part', '', ...

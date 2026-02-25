@@ -18,6 +18,7 @@ quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
 quidb.products = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
 quidb.resumes.QSMWorker.preferred = true;       % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
+quidb.config.General.tag.value = "manualtest";
 mgr = quidb.manager();
 mgr.start_workflow()
 

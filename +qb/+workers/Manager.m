@@ -301,11 +301,11 @@ methods
         end
         
         labels = extractAfter({subjects.name}, 'sub-');
-        BIDSW  = bids.layout(worker.workdir, 'filter',struct('sub',{labels}), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+        BIDSW  = bids.layout(char(worker.workdir), 'filter',struct('sub',{labels}), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
         for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(product))')
             target = bids.File(char(source));
             target.entities.tag = char(worker.config.General.tag);
-            target.path = strrep(source, worker.workdir, obj.coord.outputdir);
+            target.path = fullfile(obj.coord.outputdir, target.bids_path, target.filename);
             worker.logger.info('-> Saving %s product as: %s', product, target.path)
             qb.utils.copybfile(source, target, obj.force)
         end

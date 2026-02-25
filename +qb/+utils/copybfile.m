@@ -30,5 +30,5 @@ if isfile(target.path) && ~force
 else
     [~,~] = mkdir(fileparts(target.path));
     copyfile(source.path, target.path)
-    bids.util.jsonencode(strrep(target.path, target.filename, target.json_filename), source.metadata)
+    bids.util.jsonencode(char(strrep(target.path, target.filename, target.json_filename)), source.metadata)
 end

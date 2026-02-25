@@ -1,6 +1,7 @@
 {
   "General": {
-    "version": {"value": "0.1.0", "description": "QuIDBBIDS version that should match the version in resources/mpackage.json"},
+    "version": {"value": "0.2.0", "description": "QuIDBBIDS version that should match the version in resources/mpackage.json"},
+    "tag": {"value": "", "description": "A custom tag that is added to the output products, e.g. to distinguish or compare the results when using different parameter settings"},
     "useHPC": {"value": false, "description": "Use HPC cluster (true/false)"},
     "HPC": {"value": ["memreq",10e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu40g --gres=gpu:1\"]"},
     "useParallel": {"value": false, "description": "true = use parfeval for processing subjects in parallel (this option will be ignored if useHPC == true)"},

@@ -283,16 +283,32 @@ methods
             obj.monitor_progress(product, jobIDs)
 
             % Copy the end products to the output directory
-            worker  = Worker(args{:});
-            bfilter = worker.bidsfilter.(product);
-            worker.logger.verbose('-> Copying %s products to: %s', product, obj.coord.outputdir)
-            [out_path, quidb] = fileparts(char(obj.coord.outputdir));
-            bids.copy_to_derivative(char(worker.workdir), 'out_path',out_path, 'filter',bfilter, 'force',obj.force, ...
-                'pipeline_name',quidb, 'unzip',false, 'skip_dep',true, 'use_schema',false, 'verbose',true, 'tolerant',true)
+            obj.copy_to_outputdir(Worker(args{:}), product, subjects)
         end
 
         % Unblock the start button in the GUI (if any)
         fprintf("============= Finished workflow at %s =============\n\n", datetime('now'))
+    end
+
+    function copy_to_outputdir(obj, worker, product, subjects)
+        %COPY_TO_OUTPUTDIR Copies the product files from the workdir to the outputdir
+
+        arguments
+            obj
+            worker      qb.workers.Worker
+            product     string
+            subjects    struct
+        end
+        
+        labels = extractAfter({subjects.name}, 'sub-');
+        BIDSW  = bids.layout(worker.workdir, 'filter',struct('sub',{labels}), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+        for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(product))')
+            target = bids.File(char(source));
+            target.entities.tag = char(worker.config.General.tag);
+            target.path = strrep(source, worker.workdir, obj.coord.outputdir);
+            worker.logger.info('-> Saving %s product as: %s', product, target.path)
+            qb.utils.copybfile(source, target, obj.force)
+        end
     end
 
     function monitor_progress(obj, workitem, jobIDs)

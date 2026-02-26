@@ -75,7 +75,7 @@ methods
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
         if numel(unique([length(unwrapped), length(fieldmap)])) > 1
             obj.logger.exception('%s received an ambiguous number of echos4Dmag, unwrapped or fieldmaps:%s', obj.name, ...
-                                    sprintf('\n%s', unwrapped{:}, fieldmap{:}))
+                                 sprintf('\n%s', unwrapped{:}, fieldmap{:}))
         end
         if length(echos4Dmag) < 2
             obj.logger.exception('%s received data for only %d flip angles', obj.name, length(echos4Dmag))
@@ -110,7 +110,7 @@ methods
         img  = img .* exp(1i*unwrappedPhase);
         mask = mask & all(~isnan(img), [4 5]);
         pini = squeeze(unwrappedPhase(:,:,:,1,:)) - 2*pi*totalField .* TE(1);
-        pini = polyfit3D_NthOrder(mean(pini(:,:,:,1:(end-1)), 4), mask, 6);
+        pini = polyfit3D_NthOrder(double(mean(pini(:,:,:,1:end-1), 4)), mask, 6);
 
         % Get the algoPara struct and perform data normalisation if needed
         algoPara = obj.config.MCRWorker.algoPara;

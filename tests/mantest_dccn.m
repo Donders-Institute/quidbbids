@@ -44,7 +44,7 @@ mgr.start_workflow()
 
 % Then run the GPU part of the workflow
 quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',10*36e2, 'options','--partition=gpu --gpus=tesla_p100-pcie-16gb:1'};
-quidb.products = ["R1map", "R2starmap", "MWFmap"];
+quidb.products = ["R1map", "R2starmap", "Chimap", "MWFmap"];
 mgr.start_workflow()
 
 % Make QC reports
@@ -72,7 +72,7 @@ mgr = quidb.manager();
 
 % Then run the GPU part of the workflow
 quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1'};
-quidb.products = ["R1map", "R2starmap", "MWFmap"];
+quidb.products = ["R1map", "R2starmap", "Chimap", "MWFmap"];
 mgr.start_workflow()
 
 % Make QC reports

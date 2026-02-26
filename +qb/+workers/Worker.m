@@ -144,7 +144,7 @@ methods
             % Check if there is a GPU available
             if obj.usesGPU
                 if canUseGPU()
-                    obj.logger.verbose("%s is configured to use GPU: %s (%s)", obj.name, gpuDevice().Name, gpuDevice().ComputeCapability)
+                    obj.logger.info("%s is set-up to use GPU: %s (%s)", obj.name, gpuDevice().Name, gpuDevice().ComputeCapability)
                 else
                     [status, out] = system('nvidia-smi --query-gpu=name --format=csv,noheader');
                     reason = 'but GPU acceleration is unavailable';

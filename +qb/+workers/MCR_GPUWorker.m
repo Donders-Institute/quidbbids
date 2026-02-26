@@ -105,7 +105,7 @@ methods
         img  = img .* exp(1i*unwrappedPhase);
         mask = mask & all(~isnan(img), [4 5]);
         pini = squeeze(unwrappedPhase(:,:,:,1,:)) - 2*pi*totalField .* TE(1);
-        pini = polyfit3D_NthOrder(mean(pini(:,:,:,1:(end-1)), 4), mask, 6);
+        pini = polyfit3D_NthOrder(double(mean(pini(:,:,:,1:end-1), 4)), mask, 6);
 
         % Construct the fixed parameters and extra data for the MCR model
         fixed_params      = obj.config.MCR_GPUWorker.fixed_params;

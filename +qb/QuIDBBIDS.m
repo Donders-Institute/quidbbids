@@ -54,6 +54,15 @@ methods
             configfile {mustBeTextScalar} = ""
         end
 
+        % Warn the user if the Matlab version is too old
+        if isMATLABReleaseOlderThan("R2022a")
+            msg = sprintf('Your MATLAB version (%s) is older than R2022a.\n\nQuIDBBIDS was developed for R2022a and later, so some GPU or other features may not work as expected', version('-release'));
+            if usejava('desktop')
+                warndlg(msg, 'QuIDBBIDS Warning')
+            end
+            warning('QuIDBBIDS:MATLABVersion', msg)         %#ok<SPWRN>
+        end
+
         fprintf(['\n⏱ Starting up QuIDBBIDS...' ...
                  '\n‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n'])
 
@@ -81,7 +90,6 @@ methods
                                             'tolerant', true, ...
                                             'verbose', true);
         obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
-
     end
 
     function startGUI(obj)

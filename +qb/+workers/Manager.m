@@ -188,7 +188,7 @@ methods
         logdir = fullfile(obj.coord.outputdir, 'logs');
         [~,~]  = mkdir(logdir);
         diary(fullfile(logdir, 'diary_workflow.txt'))
-        cleanup = onCleanup(@() diary('off'));
+        diary_off = onCleanup(@() diary('off'));
 
         if ~strlength(obj.coord.products)
             disp('❌ The list of products is empty, there is nothing to do')

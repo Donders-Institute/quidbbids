@@ -79,6 +79,11 @@ methods
         obj.name      = string(erase(class(obj), 'qb.workers.'));  % Get the class name without package prefix
         obj.logger    = qb.workers.Logging(obj);
 
+        % Restore rng settings because spm_coreg uses a legacy random number generator that crashes e.g. mwi_3cx_2R1R2s_dimwi
+        if strcmpi(RandStream.getGlobalStream().Type, 'legacy')
+            rng('default')
+        end
+
         % Force subclass-specific construction step
         obj.initialize()
 
@@ -161,6 +166,11 @@ methods
             obj.lock()
             [prevMsg, prevId] = lastwarn;
             obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
+
+            % Restore rng settings because spm_coreg uses a legacy random number generator that crashes e.g. mwi_3cx_2R1R2s_dimwi
+            if strcmpi(RandStream.getGlobalStream().Type, 'legacy')
+                rng('default')
+            end
 
             % Ignore the SPM setting random 'state' and the SEPIA rmpath warnings (-> lastwarn is displayed by qsubget())
             [~, id] = lastwarn;

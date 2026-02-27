@@ -48,10 +48,6 @@ methods
         import qb.utils.spm_write_vol_gz
         import qb.utils.spm_vol
 
-        % Restore rng settings because spm_coreg uses a legacy random number generator that crashes e.g. mwi_3cx_2R1R2s_dimwi
-        rnstate = rng();
-        cleanup = onCleanup(@() rng(rnstate));
-
         % Get the B1 images from the team
         B1famp = obj.ask_team('TB1map_angle');
         B1anat = obj.ask_team('TB1map_anat');

@@ -190,10 +190,6 @@ methods
         import qb.utils.spm_vol
         import qb.utils.setfields
 
-        % Restore rng settings because spm_coreg uses a legacy random number generator that crashes e.g. mwi_3cx_2R1R2s_dimwi
-        rnstate = rng();
-        cleanup = onCleanup(@() rng(rnstate));
-
         % Index the workdir layout (only for obj.subject)
         BIDSW = obj.BIDSW_ses();
 

@@ -161,6 +161,10 @@ methods
                 end
             end
 
+            % Store the matlab path (to avoid issues with workers that change the path, e.g. SEPIA) and restore it at the end of the work
+            mpath   = path();
+            restore = onCleanup(@() path(mpath));
+
             % Get the work done
             cleanup = onCleanup(@obj.unlock);
             obj.lock()

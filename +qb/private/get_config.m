@@ -49,7 +49,7 @@ if nargin > 1 && ~isempty(fieldnames(config))   % Write JSON
 else                                            % Read JSON
     if ~isfile(configfile)
         disp("🔧 Creating study configuration: " + configfile)
-        [~,~] = mkdir(fullfile(fileparts(configfile), "workers"));
+        [~,~] = mkdir(fileparts(configfile));
         copyfile(config_default, configfile)
     end
     config = qb.utils.jsondecode(fileread(configfile));

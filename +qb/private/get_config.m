@@ -51,6 +51,7 @@ else                                            % Read JSON
         disp("🔧 Creating study configuration: " + configfile)
         [~,~] = mkdir(fileparts(configfile));
         copyfile(config_default, configfile)
+        mkdir(fullfile(fileparts(configfile), "workers"))
     end
     config = qb.utils.jsondecode(fileread(configfile));
 

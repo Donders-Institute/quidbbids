@@ -11,6 +11,7 @@ function addpath_deps()
 
 % Skip entirely if deployed
 if isdeployed
+    warning('QuIDBBIDS:Deployed:MATLABPath', 'Running in deployed mode, so MATLAB path cannot be altered/restored. This may cause issues with some workers (e.g. QSM/MCR/MWI)!')
     return
 end
 

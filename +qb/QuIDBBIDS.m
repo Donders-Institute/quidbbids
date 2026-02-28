@@ -83,7 +83,10 @@ methods
         % Set the Matlab-path for the dependencies
         qb.addpath_deps()
 
+        % Get or create the configuration
         config = get_config(configfile);    % Cannot call obj.get_config directly because obj is not yet fully constructed / the superclass has not yet been called
+
+        % Initialize the BIDS layout and call the superclass constructor
         BIDS   = bids.layout(char(bidsdir), 'use_schema', true, ...
                                             'index_derivatives', false, ...
                                             'filter', config.General.BIDS.include.value, ...

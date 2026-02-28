@@ -1,5 +1,5 @@
 function ver = version()
-    % VERSION() returns the SemVer string for QuIDBBIDS
+    % VERSION Returns the SemVer string for QuIDBBIDS
 
     % Read and parse the version from the mpackage JSON file
     jsonfile = fullfile(fileparts(fileparts(mfilename("fullpath"))), "resources", "mpackage.json");

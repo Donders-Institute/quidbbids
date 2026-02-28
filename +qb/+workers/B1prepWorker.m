@@ -71,7 +71,7 @@ methods
             if ~isempty(B1anat)
                 bfile = obj.bfile_set(B1anat{n}, obj.bidsfilter.TB1map_anat);
                 obj.logger.verbose('-> Copying %s anatomical B1 data to %s', B1anat{n}, bfile.path)
-                qb.utils.copybfile(B1anat{n}, bfile)
+                qb.utils.copybfile(B1anat{n}, bfile, true)
             end
 
         end

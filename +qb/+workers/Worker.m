@@ -79,6 +79,11 @@ methods
         obj.name      = string(erase(class(obj), 'qb.workers.'));  % Get the class name without package prefix
         obj.logger    = qb.workers.Logging(obj);
 
+        % Restore rng settings because spm_coreg uses a legacy random number generator that crashes e.g. mwi_3cx_2R1R2s_dimwi
+        if strcmpi(RandStream.getGlobalStream().Type, 'legacy')
+            rng('default')
+        end
+
         % Force subclass-specific construction step
         obj.initialize()
 
@@ -144,16 +149,22 @@ methods
             % Check if there is a GPU available
             if obj.usesGPU
                 if canUseGPU()
-                    obj.logger.verbose("%s is configured to use GPU: %s (%s)", obj.name, gpuDevice().Name, gpuDevice().ComputeCapability)
+                    obj.logger.info("%s is set-up to use GPU: %s (%s)", obj.name, gpuDevice().Name, gpuDevice().ComputeCapability)
                 else
                     [status, out] = system('nvidia-smi --query-gpu=name --format=csv,noheader');
-                    reason = 'GPU acceleration is unavailable';
+                    reason = 'but GPU acceleration is unavailable';
                     if status == 0 && ~isempty(strtrim(out))
-                        reason = ['GPU detected (' strtrim(out) ') but MATLAB cannot use it'];
+                        reason = ['and the GPU was detected (' strtrim(out) '), but MATLAB cannot use it'];
                     end
-                    obj.logger.exception(['%s was configured to use a GPU, but %s. Possible causes: no GPU allocated by the scheduler, incompatible ' ...
-                                          'CUDA/driver, or missing Parallel Computing Toolbox license. Falling back to CPU.'], obj.name, reason)
+                    obj.logger.error(['%s was configured to use a GPU, %s. Possible causes: no GPU allocated by the scheduler, incompatible ' ...
+                                      'CUDA/driver, or missing Parallel Computing Toolbox license.'], obj.name, reason)
                 end
+            end
+
+            % Store the matlab path (to avoid issues with workers that change the path, e.g. SEPIA) and restore it at the end of the work
+            if ~isdeployed
+                mpath   = path();
+                restore = onCleanup(@() path(mpath));
             end
 
             % Get the work done
@@ -161,6 +172,11 @@ methods
             obj.lock()
             [prevMsg, prevId] = lastwarn;
             obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
+
+            % Restore rng settings because spm_coreg uses a legacy random number generator that crashes e.g. mwi_3cx_2R1R2s_dimwi
+            if strcmpi(RandStream.getGlobalStream().Type, 'legacy')
+                rng('default')
+            end
 
             % Ignore the SPM setting random 'state' and the SEPIA rmpath warnings (-> lastwarn is displayed by qsubget())
             [~, id] = lastwarn;

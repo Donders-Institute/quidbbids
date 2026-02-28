@@ -75,7 +75,7 @@ methods
         %UPDATE Updates the dashboard figure (if any)
         if isvalid(obj.fig)
             % TODO: implement
-            waitbar(length(obj.completed)/length(obj.jobIDs.keys), obj.fig)
+            waitbar(length(obj.completed)/length(obj.jobIDs.keys), obj.fig, sprintf('Completed jobs (%d/%d)', length(obj.completed), length(obj.jobIDs.keys)))
         end
     end
     

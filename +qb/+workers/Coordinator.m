@@ -104,6 +104,7 @@ methods
         wfiles  = dir(fullfile(fileparts(which("qb.workers.Worker")), "*Worker*.m"))';
         if ~isdeployed
             wfiles = [wfiles, dir(fullfile(fileparts(obj.configfile), "*Worker*.m"))'];
+            warning('QuIDBBIDS:Deployed:MATLABPath', 'Running in deployed mode, so MATLAB path cannot be altered/restored. This may cause issues with some workers (e.g. QSM/MCR/MWI)!')
         end
         for wfile = wfiles
             if ~strcmp(wfile.name, 'Worker.m')   % Exclude the abstract Worker class

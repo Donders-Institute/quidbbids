@@ -14,7 +14,9 @@ To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by provid
 
    >> quidb = qb.QuIDBBIDS('/path/to/bids/dataset');       % Initialize QuIDBBIDS coordinator
    >> quidb.workitems                                      % See e.g. what QuIDBBIDS can make
-      "Chimap" "FMW_exrate" "FW_M0map" "FW_R1map" [...]
+      Chimap               : Magnetic susceptibility map derived from phase or quantitative susceptibility mapping (QSM) reconstruction
+      FMW_exrate           : Exchange rate map in Free <-> Myelin Water analysis
+      [...]                : [...]
 
    >> quidb.resumes.R2R1R2sWorker                          % NB: Only ever edit the `preferred` field
            handle: @qb.workers.R1R2sWorker

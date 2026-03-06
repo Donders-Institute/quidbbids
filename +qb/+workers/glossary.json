@@ -32,6 +32,7 @@
     "rawINV2": "Raw magnitude image of the second MP2RAGE inversion before processing",
     "rawMEGRE": "Raw multi-echo gradient echo images before processing",
     "rawMEVFA": "Raw multi-echo variable flip angle (VFA) data before processing",
+    "rawMEMPM": "Raw multi-echo multi-parametric mapping (MPM) data before processing",
     "rawTB1map_anat": "Raw anatomical B1+ mapping data before processing",
     "rawTB1map_famp": "Raw flip angle map from B1+ mapping before processing",
     "rawUNIT1": "Raw uniform T1-weighted image from MP2RAGE before processing",

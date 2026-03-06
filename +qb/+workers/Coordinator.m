@@ -1,7 +1,7 @@
 classdef (Abstract) Coordinator < handle
 %Coordinator Abstract base class for building a BIDS app control center (e.g. with a GUI to edit the CONFIG property)
 %
-% The manager doesn't know how the data is organized and needs assistance of the coordinator
+% The manager doesn't know how the data is organized and needs assistance from the coordinator
 
 
 properties
@@ -13,6 +13,7 @@ properties
     configfile      % Path to the active configuration file
     workflowfile    % Path to the active workflow file
     config          % Configuration struct loaded from the config file
+    glossary        % Glossary struct loaded from the glossary.json file
 end
 
 
@@ -58,6 +59,11 @@ methods
         obj.config       = obj.get_config();
         obj.resumes      = obj.get_resumes();
         obj.products     = "";
+        obj.glossary     = struct();
+        glossfile = fullfile(fileparts(fileparts(mfilename('fullpath'))), '+workers','glossary.json');
+        if isfile(glossfile)
+            obj.glossary = jsondecode(fileread(glossfile));
+        end
     end
 
     function set.products(obj, val)
@@ -77,13 +83,26 @@ methods
     end
 
     function items = workitems(obj)
-        %WORKITEMS Gets a list of all the workitems the workers can make
+        %WORKITEMS Gets or displays a list of all the workitems the workers can make
 
         makes = [];
         for name = fieldnames(obj.resumes)'
             makes = [makes, obj.resumes.(name{1}).makes];       %#ok<AGROW>
         end
-        items = unique(makes);
+        if nargout
+            items = unique(makes);
+        else
+            for item = unique(makes)
+                if isfield(obj.glossary, item)
+                    description = obj.glossary.(item);
+                elseif endsWith(item, "_ortho")
+                    description = sprintf('A 2D montage with 3 orthogonal (QC) slices of "%s"', item);
+                else
+                    description = '';
+                end
+                fprintf('%-*s : %s\n', 20, item, description);
+            end
+        end
     end
 
     function resumes = get_resumes(obj)

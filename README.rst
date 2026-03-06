@@ -26,7 +26,7 @@ QuIDBBIDS is a work-in-progress (WIP) that is being developed at the `Donders In
 .. note::
 
    * All **source code** is hosted at `GitHub <https://github.com/Donders-Institute/quidbbids>`__ and **freely available** under the GPL-3.0-or-later `license <https://spdx.org/licenses/GPL-3.0-or-later.html>`__.
-   * The full BIDScoin **documentation** is hosted at `Read the Docs <https://quidbbids.readthedocs.io>`__
+   * The full QuIDBBIDS **documentation** is hosted at `Read the Docs <https://quidbbids.readthedocs.io>`__
    * You are encouraged to **post issues or questions at** `GitHub <https://github.com/Donders-Institute/quidbbids/issues>`__
 
 .. |Tests| image:: https://github.com/Donders-Institute/quidbbids/actions/workflows/tests.yml/badge.svg

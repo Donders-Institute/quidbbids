@@ -26,7 +26,7 @@ master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags from file
 with open(Path(__file__).parents[1]/'project.json') as fid:
-  release = json.load(fid)['version']
+  release = json.load(fid)['project']['version']
 
 # -- General configuration ---------------------------------------------------
 

@@ -12,7 +12,7 @@ function chosen = askuser(workers, workitem)
 
     % Load glossary
     glossary  = struct();
-    glossfile = fullfile(fileparts(fileparts(mfilename('fullpath'))), 'glossary.json');
+    glossfile = fullfile(fileparts(fileparts(mfilename('fullpath'))), '+workers','glossary.json');
     if isfile(glossfile)
         glossary = jsondecode(fileread(glossfile));
     end

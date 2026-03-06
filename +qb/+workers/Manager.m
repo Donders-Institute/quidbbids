@@ -49,7 +49,7 @@ methods
             coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
         end
 
-        obj.coord  = coord;                     % The coordinator that help the manager with administrative tasks
+        obj.coord = coord;                      % The coordinator that help the manager with administrative tasks
         obj.create_team()
     end
 

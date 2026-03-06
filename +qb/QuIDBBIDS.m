@@ -93,6 +93,11 @@ methods
                                             'tolerant', true, ...
                                             'verbose', true);
         obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
+
+        % Add project metadata to the output folders
+        obj.metadata = jsondecode(fileread(fullfile(fileparts(fileparts(mfilename('fullpath'))), 'project.json')));
+        obj.add_metadata(obj.outputdir)
+        obj.add_metadata(obj.workdir)
     end
 
     function startGUI(obj)
@@ -160,6 +165,32 @@ methods
 
         config = get_config(obj.configfile, config);    % Implementation is in private/get_config to avoid circularity issues during object construction
 
+    end
+
+end
+
+
+methods (Access = private)
+
+    function add_metadata(obj, outputdir)
+        % Adds project metadata to the QuIDBBIDS output folder
+
+        arguments
+            obj
+            outputdir   {mustBeTextScalar}
+         end
+
+         % Check if the outputdir is already a QuIDBBIDS dataset
+         descripfile = fullfile(outputdir, 'dataset_description.json');
+         descrip     = fileread(descripfile);
+         if ~contains(descrip, obj.metadata.project.displayName)
+             descrip = jsondecode(descrip);
+             descrip.GeneratedBy = struct('Name',        obj.metadata.project.displayName, ...
+                                          'Version',     obj.metadata.project.version, ...
+                                          'Description', obj.metadata.project.description, ...
+                                          'CodeURL',     obj.metadata.urls.repository);
+             bids.util.jsonencode(char(descripfile), descrip)
+         end
     end
 
 end

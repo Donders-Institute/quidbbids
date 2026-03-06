@@ -10,6 +10,6 @@ resources/*
 .vscode
 *.pyc
 .DS_Store
-!resources/mpackage.json
+!package.json
 Thumbs.db
 QuIDBBIDS.prj

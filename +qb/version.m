@@ -2,7 +2,7 @@ function ver = version()
     % VERSION Returns the SemVer string for QuIDBBIDS
 
     % Read and parse the version from the mpackage JSON file
-    jsonfile = fullfile(fileparts(fileparts(mfilename("fullpath"))), "resources", "mpackage.json");
+    jsonfile = fullfile(fileparts(fileparts(mfilename("fullpath"))), "package.json");
     if exist(jsonfile, "file")
         ver = jsondecode(fileread(jsonfile)).version;
     else

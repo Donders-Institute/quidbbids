@@ -43,7 +43,7 @@ methods
             workdir = fullfile(BIDS.pth, "derivatives", bidsapp + "_work");
         end
 
-        % Initialize the QuIDBBIDS derivatives and workdir datasets.
+        % Initialize the derivatives and workdir datasets
         if ~isfolder(outputdir)
             bids.init(char(outputdir), 'is_derivative', true)
         end

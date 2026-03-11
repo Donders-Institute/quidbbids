@@ -55,8 +55,10 @@ methods
         end
 
         % Warn the user if the Matlab version is too old
-        if isMATLABReleaseOlderThan("R2022a")
-            msg = sprintf('Your MATLAB version (%s) is older than R2022a.\n\nQuIDBBIDS was developed for R2022a and later, so some GPU or other features may not work as expected', version('-release'));
+        metadata = jsondecode(fileread(fullfile(fileparts(fileparts(mfilename('fullpath'))), 'project.json')));
+        mversion = extractAfter(metadata.project.dependencies.matlab,'>=');
+        if isMATLABReleaseOlderThan(mversion)
+            msg = sprintf('Your MATLAB version (%s) is older than %s.\n\nQuIDBBIDS was developed for %s and later, so some GPU or other features may not work as expected', version('-release'), mversion, mversion);
             if usejava('desktop')
                 warndlg(msg, 'QuIDBBIDS Warning')
             end
@@ -95,7 +97,7 @@ methods
         obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
 
         % Add project metadata to the output folders
-        obj.metadata = jsondecode(fileread(fullfile(fileparts(fileparts(mfilename('fullpath'))), 'project.json')));
+        obj.metadata = metadata;
         obj.add_metadata(obj.outputdir)
         obj.add_metadata(obj.workdir)
     end
@@ -183,12 +185,18 @@ methods (Access = private)
          % Check if the outputdir is already a QuIDBBIDS dataset
          descripfile = fullfile(outputdir, 'dataset_description.json');
          descrip     = fileread(descripfile);
-         if ~contains(descrip, obj.metadata.project.displayName)
-             descrip = jsondecode(descrip);
-             descrip.GeneratedBy = struct('Name',        obj.metadata.project.displayName, ...
+         if ~contains(descrip, obj.metadata.project.name)
+             descrip             = jsondecode(descrip);
+             if endsWith(outputdir, '_work')
+                descrip.Name     = [obj.metadata.project.name ' intermediate working data'];
+             else
+                descrip.Name     = [obj.metadata.project.name ' output data'];
+             end
+             descrip.BIDSVersion = obj.metadata.project.BIDSVersion;
+             descrip.GeneratedBy = struct('Name',        obj.metadata.project.name, ...
                                           'Version',     obj.metadata.project.version, ...
                                           'Description', obj.metadata.project.description, ...
-                                          'CodeURL',     obj.metadata.urls.repository);
+                                          'CodeURL',     obj.metadata.project.urls.repository);
              bids.util.jsonencode(char(descripfile), descrip)
          end
     end

@@ -1,42 +1,43 @@
 {
   "project": {
-    "name": "quidbbids",
-    "displayName": "QuIDBBIDS",
+    "name": "QuIDBBIDS",
     "version": "0.2.1",
-    "description": "MATLAB toolbox for preprocessing and biomarker extraction from quantitative MR images organized according to the BIDS standard.",
+    "BIDSVersion": "1.11.1",
+    "description": "MATLAB toolbox for preprocessing and biomarker extraction from quantitative MR images organized according to the BIDS standard",
     "keywords": [
       "MRI",
       "quantitative MRI",
       "QSM",
+      "MWI",
+      "MCR",
       "BIDS",
       "neuroimaging"
-    ]
+    ],
+    "license": "GPL-3.0-or-later",
+    "authors": [
+      {
+        "name": "Marcel Zwiers",
+        "email": "m.zwiers@donders.ru.nl"
+      },
+      {
+        "name": "Jose P. Marques",
+        "email": "j.marques@donders.ru.nl"
+      }
+    ],
+    "urls": {
+      "repository": "https://github.com/Donders-Institute/quidbbids",
+      "documentation": "https://quidbbids.readthedocs.io",
+      "homepage": "https://github.com/Donders-Institute/quidbbids"
+    },
+    "dependencies": {
+      "matlab": ">=R2022a",
+      "submodules": ".gitmodules"
+    }
   },
 
   "organization": {
     "name": "Donders Institute for Brain, Cognition and Behaviour",
     "institution": "Radboud University",
     "url": "https://www.ru.nl/en/donders-institute"
-  },
-
-  "authors": [
-    {
-      "name": "Marcel Zwiers",
-      "email": "m.zwiers@donders.ru.nl"
-    },
-    {
-      "name": "Jose P. Marques",
-      "email": "j.marques@donders.ru.nl"
-    }
-  ],
-
-  "urls": {
-    "repository": "https://github.com/Donders-Institute/quidbbids",
-    "documentation": "https://quidbbids.readthedocs.io",
-    "homepage": "https://github.com/Donders-Institute/quidbbids"
-  },
-
-  "requirements": {
-    "matlab": ">=R2022a"
   }
 }

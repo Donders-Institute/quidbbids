@@ -54,9 +54,23 @@ methods
             configfile {mustBeTextScalar} = ""
         end
 
+        % Check for the latest QuIDBBIDS version
+        [ver, rel] = qb.version();
+        if ~contains(ver, ["-" "+"]) && ~contains(rel, ["-" "+"])
+            v = sscanf(ver, '%d.%d.%d');
+            r = sscanf(rel, '%d.%d.%d');
+            if any((v<r) & (cumsum(v~=r)==1))
+                msg = sprintf('Your QuIDBBIDS version is v%s, but the latest released version is v%s', ver, rel);
+                if usejava('desktop')
+                    helpdlg(msg, 'QuIDBBIDS Info')
+                end
+                warning('QuIDBBIDS:UpdateAvailable', msg)         %#ok<SPWRN>
+            end
+        end
+
         % Warn the user if the Matlab version is too old
         metadata = jsondecode(fileread(fullfile(fileparts(fileparts(mfilename('fullpath'))), 'project.json')));
-        mversion = extractAfter(metadata.project.dependencies.matlab,'>=');
+        mversion = erase(metadata.project.dependencies.matlab, '>');
         if isMATLABReleaseOlderThan(mversion)
             msg = sprintf('Your MATLAB version (%s) is older than %s.\n\nQuIDBBIDS was developed for %s and later, so some GPU or other features may not work as expected', version('-release'), mversion, mversion);
             if usejava('desktop')
@@ -180,25 +194,25 @@ methods (Access = private)
         arguments
             obj
             outputdir   {mustBeTextScalar}
-         end
+        end
 
-         % Check if the outputdir is already a QuIDBBIDS dataset
-         descripfile = fullfile(outputdir, 'dataset_description.json');
-         descrip     = fileread(descripfile);
-         if ~contains(descrip, obj.metadata.project.name)
-             descrip             = jsondecode(descrip);
-             if endsWith(outputdir, '_work')
-                descrip.Name     = [obj.metadata.project.name ' intermediate working data'];
-             else
-                descrip.Name     = [obj.metadata.project.name ' output data'];
-             end
-             descrip.BIDSVersion = obj.metadata.project.BIDSVersion;
-             descrip.GeneratedBy = struct('Name',        obj.metadata.project.name, ...
-                                          'Version',     obj.metadata.project.version, ...
-                                          'Description', obj.metadata.project.description, ...
-                                          'CodeURL',     obj.metadata.project.urls.repository);
-             bids.util.jsonencode(char(descripfile), descrip)
-         end
+        % Check if the outputdir is already a QuIDBBIDS dataset
+        descripfile = fullfile(outputdir, 'dataset_description.json');
+        descrip     = fileread(descripfile);
+        if ~contains(descrip, obj.metadata.project.name)
+            descrip             = jsondecode(descrip);
+            if endsWith(outputdir, '_work')
+               descrip.Name     = [obj.metadata.project.name ' intermediate working data'];
+            else
+               descrip.Name     = [obj.metadata.project.name ' output data'];
+            end
+            descrip.BIDSVersion = obj.metadata.project.BIDSVersion;
+            descrip.GeneratedBy = struct('Name',        obj.metadata.project.name, ...
+                                         'Version',     qb.version(), ...
+                                         'Description', obj.metadata.project.description, ...
+                                         'CodeURL',     obj.metadata.project.urls.repository);
+            bids.util.jsonencode(char(descripfile), descrip)
+        end
     end
 
 end

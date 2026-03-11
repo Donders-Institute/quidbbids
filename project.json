@@ -30,7 +30,7 @@
       "homepage": "https://github.com/Donders-Institute/quidbbids"
     },
     "dependencies": {
-      "matlab": ">=R2022a",
+      "matlab": ">R2020a",
       "submodules": ".gitmodules"
     }
   },

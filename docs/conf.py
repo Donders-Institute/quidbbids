@@ -25,8 +25,8 @@ author     = 'Marcel Zwiers'
 master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags from file
-with open(Path(__file__).parents[1]/'resources'/'mpackage.json') as fid:
-  release = json.load(fid)['version']
+with open(Path(__file__).parents[1]/'project.json') as fid:
+  release = json.load(fid)['project']['version']
 
 # -- General configuration ---------------------------------------------------
 

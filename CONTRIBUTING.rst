@@ -14,7 +14,6 @@ Project organization
 
 * `dependencies/ <./dependencies>`_ - The Sphinx `RTD <https://quidbbids.readthedocs.io>`__ documentation repository
 * `docs/ <./docs>`_ - The Sphinx `RTD <https://quidbbids.readthedocs.io>`__ documentation repository
-* `resources/ <./resources>`_ - The MATLAB `package definition <https://nl.mathworks.com/help/matlab/ref/mpackage.json.html?s_tid=srchtitle_support_results_1_mpackage.json>`__ for QuIDBBIDS
 * `tests/ <./tests>`_ - The collection of (matlab.unittest) test modules for the `CI development <https://github.com/features/actions>`__ of QuIDBBIDS
 
 How to contribute code

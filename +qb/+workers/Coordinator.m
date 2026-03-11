@@ -1,18 +1,20 @@
 classdef (Abstract) Coordinator < handle
 %Coordinator Abstract base class for building a BIDS app control center (e.g. with a GUI to edit the CONFIG property)
 %
-% The manager doesn't know how the data is organized and needs assistance of the coordinator
+% The manager doesn't know how the data is organized and needs assistance from the coordinator
 
 
 properties
-    BIDS            % BIDS layout object from bids-matlab
-    outputdir       % BIDSApp derivatives subdirectory where the output is stored
-    workdir         % Working directory for intermediate results
-    products        % The end productcs (workitems) requested by the user
-    resumes         % The resumes of all available workers
-    configfile      % Path to the active configuration file
-    workflowfile    % Path to the active workflow file
-    config          % Configuration struct loaded from the config file
+    BIDS                    % BIDS layout object from bids-matlab
+    outputdir               % BIDSApp derivatives subdirectory where the output is stored
+    workdir                 % Working directory for intermediate results
+    products                % The end productcs (workitems) requested by the user
+    resumes                 % The resumes of all available workers
+    configfile              % Path to the active configuration file
+    workflowfile            % Path to the active workflow file
+    config                  % Configuration struct loaded from the config file
+    glossary = struct()     % Glossary struct loaded from the glossary.json file
+    metadata = struct()     % A struct with metadata about the software package
 end
 
 
@@ -41,7 +43,7 @@ methods
             workdir = fullfile(BIDS.pth, "derivatives", bidsapp + "_work");
         end
 
-        % Initialize the QuIDBBIDS derivatives and workdir datasets.
+        % Initialize the derivatives and workdir datasets
         if ~isfolder(outputdir)
             bids.init(char(outputdir), 'is_derivative', true)
         end
@@ -57,13 +59,17 @@ methods
         obj.workflowfile = regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat");
         obj.config       = obj.get_config();
         obj.resumes      = obj.get_resumes();
-        obj.products     = "";
+        obj.products     = "";      % NB: This has to be called after get_resumes() because set.products() needs to know the workitems
+        glossfile = fullfile(fileparts(mfilename('fullpath')), 'glossary.json');
+        if isfile(glossfile)
+            obj.glossary = jsondecode(fileread(glossfile));
+        end
     end
 
     function set.products(obj, val)
         % Check if the product exist and force anything assigned to be stored as a string row
         for product = string(val(:)')
-            if product~="" && all(cellfun(@isempty, regexp(obj.workitems, "^" + product + "$")))
+            if product~="" && all(cellfun(@isempty, regexp(obj.workitems(), "^" + product + "$")))
                 warning("QuIDBBIDS:Products:Ambiguous", "The '%s' product was not found, it must match any of:%s", product, sprintf(' "%s"', obj.workitems()))
                 return
             end
@@ -77,13 +83,26 @@ methods
     end
 
     function items = workitems(obj)
-        %WORKITEMS Gets a list of all the workitems the workers can make
+        %WORKITEMS Gets or displays a list of all the workitems the workers can make
 
         makes = [];
         for name = fieldnames(obj.resumes)'
             makes = [makes, obj.resumes.(name{1}).makes];       %#ok<AGROW>
         end
-        items = unique(makes);
+        if nargout
+            items = unique(makes);
+        else
+            for item = unique(makes)
+                if isfield(obj.glossary, item)
+                    description = obj.glossary.(item);
+                elseif endsWith(item, "_ortho")
+                    description = sprintf('A 2D montage with 3 orthogonal (QC) slices of "%s"', item);
+                else
+                    description = '';
+                end
+                fprintf('%-*s : %s\n', 20, item, description);
+            end
+        end
     end
 
     function resumes = get_resumes(obj)
@@ -102,9 +121,8 @@ methods
 
         resumes = {};
         wfiles  = dir(fullfile(fileparts(which("qb.workers.Worker")), "*Worker*.m"))';
-        if ~isdeployed
-            wfiles = [wfiles, dir(fullfile(fileparts(obj.configfile), "*Worker*.m"))'];
-            warning('QuIDBBIDS:Deployed:MATLABPath', 'Running in deployed mode, so MATLAB path cannot be altered/restored. This may cause issues with some workers (e.g. QSM/MCR/MWI)!')
+        if ~isdeployed      % Add additional workers from the (custom/home) configfile folder
+            wfiles = [wfiles, dir(fullfile(fileparts(obj.configfile), "workers", "*Worker*.m"))'];
         end
         for wfile = wfiles
             if ~strcmp(wfile.name, 'Worker.m')   % Exclude the abstract Worker class

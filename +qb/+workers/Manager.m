@@ -5,7 +5,7 @@ classdef Manager < handle
 % composing workflows, setting config parameters, creating a team of workers from the pool, and
 % putting the team to work.
 %
-% Interactive workflow:
+% Workflow:
 %   0. User initializes the workflow and calls Manager
 %   1. Manager loads an existing workflow from the output directory (if present) and asks user
 %      what products to make
@@ -18,10 +18,6 @@ classdef Manager < handle
 %          produce their workitems -- all the way up until only raw BIDS data items are needed
 %   5. Manager monitors the progress of the workers and informs the user until all work is done
 %   6. Manager fetches the end products and copies them to the output directory
-%
-% Batch workflow:
-%
-% Usage:
 %
 % Limitation:
 %   In the workflow, each workitem is always made by the same worker, i.e. it is not possible to
@@ -49,7 +45,7 @@ methods
             coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
         end
 
-        obj.coord  = coord;                     % The coordinator that help the manager with administrative tasks
+        obj.coord = coord;                      % The coordinator that help the manager with administrative tasks
         obj.create_team()
     end
 

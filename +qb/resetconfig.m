@@ -8,5 +8,5 @@ if isfile(config_default)
     delete(config_default)
 end
 [pth, name, ext] = fileparts(config_default);
-[~,~] = mkdir(pth);
+[~,~] = mkdir(fullfile(pth, 'workers'));    % Also create the workers subfolder
 copyfile(fullfile(fileparts(mfilename("fullpath")), "private", name + ext), config_default)

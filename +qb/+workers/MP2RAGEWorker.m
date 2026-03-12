@@ -20,16 +20,16 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.rawUNIT1    = setfields(obj.config.General.BIDS.include, 'modality', 'anat', 'suffix', 'UNIT1');
-        obj.bidsfilter.rawINV1     = setfields(obj.bidsfilter.rawUNIT1, 'inv', 1, 'suffix', 'MP2RAGE');
-        obj.bidsfilter.rawINV2     = setfield(obj.bidsfilter.rawINV1, 'inv', 2);
-        obj.bidsfilter.R1map       = struct('modality', 'anat', ...
-                                            'part', '', ...
-                                            'space', 'MP2RAGE', ...
-                                            'desc', 'UNIT1corrected', ...
-                                            'suffix', 'R1map');
-        obj.bidsfilter.M0map       = setfield(obj.bidsfilter.R1map, 'suffix', 'M0map');
-        obj.bidsfilter.MP2RAGE_T1w = setfield(obj.bidsfilter.R1map, 'suffix', 'T1w');
+        obj.bidsfilter.rawUNIT1    = setfields(obj.config.General.BIDS.include, modality = 'anat', suffix = 'UNIT1');
+        obj.bidsfilter.rawINV1     = setfields(obj.bidsfilter.rawUNIT1, inv = 1, suffix = 'MP2RAGE');
+        obj.bidsfilter.rawINV2     = setfield(obj.bidsfilter.rawINV1, inv = 2);
+        obj.bidsfilter.R1map       = struct(modality = 'anat', ...
+                                            part     = '', ...
+                                            space    = 'MP2RAGE', ...
+                                            desc     = 'UNIT1corrected', ...
+                                            suffix   = 'R1map');
+        obj.bidsfilter.M0map       = setfield(obj.bidsfilter.R1map, suffix = 'M0map');
+        obj.bidsfilter.MP2RAGE_T1w = setfield(obj.bidsfilter.R1map, suffix = 'T1w');
     end
 
 end
@@ -76,7 +76,7 @@ methods
 
             % Realign & reslice the B1 reference image to the INV2 image
             Vin   = spm_vol(char(B1anat));
-            x     = spm_coreg(INV2hdr, Vin, struct('cost_fun', 'nmi'));
+            x     = spm_coreg(INV2hdr, Vin, struct(cost_fun = 'nmi'));
             B1_   = spm_vol(char(B1famp));
             T     = B1_.mat \ spm_matrix(x) * INV2hdr.mat;     % T = Mapping from voxels in INV2Ref to voxels in B1famp
             B1img = NaN(INV2hdr.dim);

@@ -23,20 +23,20 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.MWFmap        = struct('modality', 'anat', ...
-                                              'echo', [], ...
-                                              'flip', [], ...
-                                              'part', '', ...
-                                              'desc', 'gacelle', ...
-                                              'suffix', 'MWFmap');
-        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap, 'label','free2myelinwater', 'suffix','ExchRate');
-        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap, 'label','fitted', 'suffix','mask');
-        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap, 'label','myelinwater', 'suffix','M0Map');
-        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map, 'suffix','R2starmap');
-        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, 'label','freewater');
-        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map, 'suffix','T1map');
-        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map, 'suffix','R1map');
-        obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.FW_M0map, 'label','axonalwater', 'suffix','R2starmap');
+        obj.bidsfilter.MWFmap        = struct(modality = 'anat', ...
+                                              echo     = [], ...
+                                              flip     = [], ...
+                                              part     = '', ...
+                                              desc     = 'gacelle', ...
+                                              suffix   = 'MWFmap');
+        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap, label = 'free2myelinwater', suffix = 'ExchRate');
+        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap, label = 'fitted', suffix = 'mask');
+        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap, label = 'myelinwater', suffix = 'M0Map');
+        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map, suffix = 'R2starmap');
+        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, label = 'freewater');
+        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map, suffix = 'T1map');
+        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map, suffix = 'R1map');
+        obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.FW_M0map, label = 'axonalwater', suffix = 'R2starmap');
     end
 
 end

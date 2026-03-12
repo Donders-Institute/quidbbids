@@ -17,6 +17,8 @@ methods (Access = protected)
         %INITIALIZE Subclass-specific initialization hook called by the base constructor. This interface design allows 
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
+        import qb.utils.setfields
+
         % SEPIA should have a directory of its own (we cannot control it's output very well)
         obj.workdir = replace(obj.workdir, "QuIDBBIDS", "SEPIA");
         if ~isempty(obj.workdir) && ~isfolder(obj.workdir)
@@ -24,16 +26,16 @@ methods (Access = protected)
         end
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.R2starmap  = struct('modality', 'anat', ...
-                                           'echo', [], ...
-                                           'part', '', ...          % SEPIA outputs images with an appended "part-phase" substring
-                                           'suffix', 'R2starmap');
-        obj.bidsfilter.T2starmap  = setfield(obj.bidsfilter.R2starmap, 'suffix','T2starmap');
-        obj.bidsfilter.S0map      = setfield(obj.bidsfilter.R2starmap, 'suffix','S0map');
-        obj.bidsfilter.Chimap     = setfield(obj.bidsfilter.R2starmap, 'suffix','Chimap');
-        obj.bidsfilter.fieldmap   = setfield(obj.bidsfilter.R2starmap, 'suffix','fieldmap');
-        obj.bidsfilter.unwrapped  = setfield(setfield(obj.bidsfilter.R2starmap, 'part','phase'), 'suffix','unwrapped');
-        obj.bidsfilter.localfmask = setfield(setfield(obj.bidsfilter.R2starmap, 'label','localfield'), 'suffix','mask');
+        obj.bidsfilter.R2starmap  = struct(modality = 'anat', ...
+                                           echo     = [], ...
+                                           part     = '', ...          % SEPIA outputs images with an appended "part-phase" substring
+                                           suffix   = 'R2starmap');
+        obj.bidsfilter.T2starmap  = setfields(obj.bidsfilter.R2starmap, suffix = 'T2starmap');
+        obj.bidsfilter.S0map      = setfields(obj.bidsfilter.R2starmap, suffix = 'S0map');
+        obj.bidsfilter.Chimap     = setfields(obj.bidsfilter.R2starmap, suffix = 'Chimap');
+        obj.bidsfilter.fieldmap   = setfields(obj.bidsfilter.R2starmap, suffix = 'fieldmap');
+        obj.bidsfilter.unwrapped  = setfields(obj.bidsfilter.R2starmap, part = 'phase', suffix = 'unwrapped');
+        obj.bidsfilter.localfmask = setfields(obj.bidsfilter.R2starmap, label = 'localfield', suffix = 'mask');
     end
 
 end
@@ -86,7 +88,7 @@ methods
             clear input
             input.nifti      = magfiles{n};                                         % For extracting B0 direction, voxel size, matrix size (only the first 3 dimensions)
             input.TEFileList = {spm_file(spm_file(magfiles{n}, 'ext',''), 'ext','.json')};   % If given, then SEPIA requires non-BIDS "ConversionSoftware" field from dcm2niix
-            bfile            = obj.bfile_set(magfiles{n}, setfield(obj.bidsfilter.R2starmap, 'suffix',''));  % Output basename; SEPIA adds suffixes of its own
+            bfile            = obj.bfile_set(magfiles{n}, setfield(obj.bidsfilter.R2starmap, suffix=''));  % Output basename; SEPIA adds suffixes of its own
             output           = extractBefore(bfile.path, bfile.extension);          % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
             save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output) % Override SEPIA's TE values with what the bfile says (-> added by spm_file_merge_gz)
 

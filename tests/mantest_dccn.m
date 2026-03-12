@@ -1,6 +1,5 @@
 % MANTEST_DCCN is a manual test script that performs integration test runs on various DCCN datasets
 
-clear functions classes     %#ok<CLCLS,CLFUNC>
 if isunix
     restoredefaultpath
     addpath('/home/common/matlab/sepia/sepia_1.2.2.6')

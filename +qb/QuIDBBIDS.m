@@ -54,6 +54,16 @@ methods
             configfile {mustBeTextScalar} = ""
         end
 
+        % Check the input
+        if strlength(bidsdir) == 0
+            if usejava('swing')
+                bidsdir = uigetdir(pwd, "Select the root BIDS directory");
+            end
+            if isequal(bidsdir, 0) || strlength(bidsdir) == 0
+                error('You must provide a BIDS input directory')
+            end
+        end
+
         % Check for the latest QuIDBBIDS version
         [ver, rel] = qb.version();
         if ~contains(ver, ["-" "+"]) && ~contains(rel, ["-" "+"])
@@ -61,7 +71,7 @@ methods
             r = sscanf(rel, '%d.%d.%d');
             if any((v<r) & (cumsum(v~=r)==1))
                 msg = sprintf('Your QuIDBBIDS version is v%s, but the latest released version is v%s', ver, rel);
-                if usejava('desktop')
+                if usejava('swing')
                     helpdlg(msg, 'QuIDBBIDS Info')
                 end
                 warning('QuIDBBIDS:UpdateAvailable', msg)         %#ok<SPWRN>
@@ -73,18 +83,18 @@ methods
         mversion = erase(metadata.project.dependencies.matlab, '>');
         if isMATLABReleaseOlderThan(mversion)
             msg = sprintf('Your MATLAB version (%s) is older than %s.\n\nQuIDBBIDS was developed for %s and later, so some GPU or other features may not work as expected', version('-release'), mversion, mversion);
-            if usejava('desktop')
+            if usejava('swing')
                 warndlg(msg, 'QuIDBBIDS Warning')
             end
             warning('QuIDBBIDS:MATLABVersion', msg)         %#ok<SPWRN>
         end
 
+        % Get started by first setting-up the path
         fprintf(['\n⏱ Starting up QuIDBBIDS...' ...
                  '\n‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n'])
+        qb.addpath_deps()
 
-        if strlength(bidsdir) == 0
-            bidsdir = uigetdir(pwd, "Select the root BIDS directory");
-        end
+        % Get or create the configuration settings
         default = strcmp(configfile, "default");
         if strlength(configfile) == 0 || default
             configfile = fullfile(bidsdir, "code", "QuIDBBIDS", "config.json");  % A bit of a hack because obj is not yet fully constructed
@@ -95,11 +105,6 @@ methods
         elseif isfolder(configfile)
             error("QuIDBBIDS:Nifti:InvalidInputArgument", "The configfile must be a file, not a folder: %s", configfile)
         end
-
-        % Set the Matlab-path for the dependencies
-        qb.addpath_deps()
-
-        % Get or create the configuration
         config = get_config(configfile);    % Cannot call obj.get_config directly because obj is not yet fully constructed / the superclass has not yet been called
 
         % Initialize the BIDS layout and call the superclass constructor

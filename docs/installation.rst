@@ -5,7 +5,7 @@ QuIDBBIDS is a MATLAB package that can be installed on Linux, Windows, and macOS
 
 **Requirements:**
 
-- `MATLAB <https://nl.mathworks.com/products/MATLAB.html>`__ (R2024b or later)
+- `MATLAB <https://nl.mathworks.com/products/MATLAB.html>`__ (see `project.json <https://github.com/Donders-Institute/quidbbids/blob/main/project.json>`__ for more details)
 - `Git <https://git-scm.com>`__ (for cloning and updating the repository)
 
 Installing QuIDBBIDS

@@ -180,7 +180,7 @@ methods
 
             % Ignore the SPM setting random 'state' and the SEPIA rmpath warnings (-> lastwarn is displayed by qsubget())
             [~, id] = lastwarn;
-            if ismember(id, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound'})
+            if ismember(id, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound', 'MATLAB:MKDIR:DirectoryExists'})
                 lastwarn(prevMsg, prevId)
             end
 
@@ -367,9 +367,9 @@ methods
         % Inputs:
         %   LAYOUT - BIDS directory name or BIDS structure (from bids.layout) to query
         %   QUERY  - The type of query to perform (e.g., 'data', 'metadata', 'runs', etc.)
-        %   FILTER - (optional) Either a struct, or name-value pairs specifying additional filters for the query
-        %            (i.e. as in bids.query), or a struct followed by the name-value pairs. It's possible to use regular
-        %            as well as range expressions in the queried values. To exclude an entity, use '' or [].
+        %   FILTER - (optional) Either a struct, named-values, or name-value pairs specifying additional filters for the
+        %            query (i.e. as in bids.query), or a struct followed by the name-value pairs. It's possible to use
+        %            regular as well as range expressions in the queried values. To exclude an entity, use '' or [].
         %
         % Output:
         %   RESULT - The result of the bids.query with the subject/session filter applied. NB: always a row cell array
@@ -377,9 +377,9 @@ methods
         %
         % Usage:
         %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, [FILTER])
-        %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, struct('name1', value1, 'name2', value2, ...))
+        %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, struct(name1=value1, name2=value2, ...))
         %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
-        %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, struct('name1', value1), 'name2', value2, ...)
+        %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, struct(name1=value1), name2=value2, ...)
         %
         % See also: bids.query
 
@@ -444,7 +444,7 @@ methods
         %                 OBJ.WORKDIR.
         %
         %   Example:
-        %       specs = struct('acq','demo', 'run',1, 'suffix','M0map');
+        %       specs = struct(acq='demo', run=1, suffix='M0map');
         %       root  = 'P:\workdir';
         %       bfile = bids.File('P:\rawdir\sub-004\anat\sub-004_acq-fl3d_MEGRE.nii.gz');
         %       bfile = obj.bfile_set(bfile, specs, root);

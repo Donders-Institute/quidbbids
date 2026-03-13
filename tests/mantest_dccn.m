@@ -1,6 +1,6 @@
 % MANTEST_DCCN is a manual test script that performs integration test runs on various DCCN datasets
 
-clear functions classes     %#ok<CLCLS,CLFUNC>
+clear classes   %#ok<CLCLS>
 if isunix
     restoredefaultpath
     addpath('/home/common/matlab/sepia/sepia_1.2.2.6')
@@ -14,11 +14,11 @@ qb.resetconfig              % Useful when running the development version
 
 %% ABRIM_MEGRE
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM_MEGRE'), "", "", "default")
-quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect = 1;
+quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
 quidb.products = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
 quidb.resumes.QSMWorker.preferred = true;       % Optional, else GUI usage
-quidb.config.General.useHPC = true;
-quidb.config.General.tag = "manualtest";
+quidb.config.General.useHPC.value = true;
+quidb.config.General.tag.value = "manualtest";
 mgr = quidb.manager();
 mgr.start_workflow()
 
@@ -34,16 +34,16 @@ end
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "default")
 quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
 quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
-quidb.config.General.useHPC = true;
+quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
 
 % First run the non-GPU part of the workflow
-quidb.config.General.HPC = {'memreq',20e9, 'timreq',48*36e2};
+quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',48*36e2};
 quidb.products = "MWFmap_ortho";
 mgr.start_workflow()
 
 % Then run the GPU part of the workflow
-quidb.config.General.HPC = {'memreq',20e9, 'timreq',10*36e2, 'options','--partition=gpu --gres=gpu:1'};
+quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',10*36e2, 'options','--partition=gpu --gres=gpu:1'};
 quidb.products = ["R1map", "R2starmap", "Chimap", "MWFmap"];
 mgr.start_workflow()
 
@@ -61,9 +61,9 @@ end
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_Hamburg_MPM'), "", "", "default")
 quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
 quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
-quidb.config.General.useHPC = true;
-quidb.config.B1prepWorker.FAscaling = 100;
-quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect = 1;
+quidb.config.General.useHPC.value = true;
+quidb.config.B1prepWorker.FAscaling.value = 100;
+quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
 mgr = quidb.manager();
 
 % First run the non-GPU part of the workflow
@@ -71,7 +71,7 @@ mgr = quidb.manager();
 % mgr.start_workflow()
 
 % Then run the GPU part of the workflow
-quidb.config.General.HPC = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1'};
+quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1'};
 quidb.products = ["R1map", "R2starmap", "Chimap", "MWFmap"];
 mgr.start_workflow()
 

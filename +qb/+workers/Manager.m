@@ -297,7 +297,7 @@ methods
         end
         
         labels = extractAfter({subjects.name}, 'sub-');
-        BIDSW  = bids.layout(char(worker.workdir), 'filter',struct('sub',{labels}), 'use_schema',false, 'index_derivatives',false, 'index_dependencies',false, 'tolerant',true, 'verbose',false);
+        BIDSW  = bids.layout(char(worker.workdir), filter=struct('sub',{labels}), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
         for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(product))')
             target = bids.File(char(source));
             target.entities.tag = char(worker.config.General.tag);

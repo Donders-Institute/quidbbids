@@ -11,7 +11,7 @@ classdef TestQuIDBBIDS < BaseTest
     methods(TestMethodSetup)
         function createTempDir(testCase)
             testCase.TmpDir = tempname;
-            mkdir(fullfile(testCase.TmpDir))
+            mkdir(testCase.TmpDir)
             bids.init(testCase.TmpDir)
         end
     end
@@ -19,18 +19,19 @@ classdef TestQuIDBBIDS < BaseTest
     methods(TestMethodTeardown)
         function removeTempDir(testCase)
             rmdir(testCase.TmpDir, 's')
+            delete(findall(0,'Name','QuIDBBIDS Info'))
         end
     end
 
     methods(Test)
 
-        function test_constructor(testCase)
+        function testConstructor(testCase)
             % Test basic object construction
             obj = qb.QuIDBBIDS(testCase.TmpDir);
             testCase.assertClass(obj, 'qb.QuIDBBIDS')
         end
 
-        function test_getconfig(testCase)
+        function testGetconfig(testCase)
             configfile = fullfile(testCase.TmpDir, 'code', 'QuIDBBIDS', 'config.json');
             testCase.assertFalse(isfile(configfile), sprintf('Configfile "%s" should not yet exist', configfile))
 
@@ -47,8 +48,17 @@ classdef TestQuIDBBIDS < BaseTest
             fclose(fid);
             obj = qb.QuIDBBIDS(testCase.TmpDir, "", "", "default");
             testCase.assertFalse(isfield(obj.config, "Testing"), '"Testing" field does not exist in default config')
-
         end
+
+        function testInit(testCase)
+            obj = qb.QuIDBBIDS(testCase.TmpDir);
+            descripfile = fullfile(obj.outputdir, 'dataset_description.json');
+            testCase.assertTrue(isfile(descripfile))
+            descrip     = jsondecode(fileread(descripfile));
+            testCase.assertEqual(descrip.GeneratedBy.Name, 'QuIDBBIDS')
+            testCase.assertEqual(descrip.GeneratedBy.Description, obj.metadata.project.description)
+        end
+
     end
 
 end

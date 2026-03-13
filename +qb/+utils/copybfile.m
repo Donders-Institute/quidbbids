@@ -8,7 +8,7 @@ function copybfile(source, target, force)
 %
 % Example:
 %   source = 'bidsdir/sub-004/anat/sub-004_acq-fl3d_MEGRE.nii.gz';
-%   target = obj.bfile_set(source, struct('acq','demo', 'run',1, 'suffix','M0map'));
+%   target = obj.bfile_set(source, struct(acq='demo', run=1, suffix='M0map'));
 %   obj.copybfile(source, target)   % Write source data to: 'workdir/sub-004/anat/sub-004_acq-demo_run-1_M0map.*'
 %
 % See also: bids.File

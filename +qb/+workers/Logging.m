@@ -23,9 +23,6 @@ methods
 
         obj.worker = worker;
         obj.logdir = fullfile(obj.worker.outputdir, 'logs', regexp(class(worker), '[^.]+$', 'match', 'once'));   % Only take the class basename, i.e. the last part after the dot
-        if ~isempty(obj.logdir)
-            [~,~] = mkdir(obj.logdir);
-        end
     end
 
     function debug(obj, message, varargin)
@@ -84,6 +81,7 @@ methods
         end
 
         % Log to disk
+        [~,~]   = mkdir(obj.logdir);
         logfile = fullfile(obj.logdir, [obj.sub_ses() '.log']);
         fid     = fopen(logfile, 'a');
         if fid ~= -1
@@ -238,6 +236,7 @@ methods (Access = ?TestLogging)
         % Writes a formatted message to warning/error logfiles as well as to the info file and terminal
 
         % Write to the warning/error files
+        [~,~]   = mkdir(obj.logdir);
         logfile = fullfile(obj.logdir, [obj.sub_ses() suffix '.log']);
         fid     = fopen(logfile, 'a');
         if fid ~= -1

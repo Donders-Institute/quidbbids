@@ -56,7 +56,7 @@ classdef ConfigEditor < handle
                 try
                     config = qb.utils.jsondecode(fileread(configfile));
                 catch ME
-                    errordlg(['Unable to read/parse JSON: ' ME.message],'File Error')
+                    errordlg(['Unable to read/parse JSON: ' ME.message], 'File Error')
                     return
                 end
             end

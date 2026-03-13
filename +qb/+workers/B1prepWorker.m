@@ -20,10 +20,10 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.rawTB1map_famp = setfields(obj.config.General.BIDS.include, 'modality','fmap', 'acq','famp');
-        obj.bidsfilter.rawTB1map_anat = setfields(obj.bidsfilter.rawTB1map_famp, 'acq','anat');
-        obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawTB1map_famp, 'desc','corrected', 'space','raw', 'suffix','TB1map');
-        obj.bidsfilter.TB1map_anat    = setfields(obj.bidsfilter.TB1map_angle, 'acq','anat');
+        obj.bidsfilter.rawTB1map_famp = setfields(obj.config.General.BIDS.include, modality = 'fmap', acq = 'famp');
+        obj.bidsfilter.rawTB1map_anat = setfields(obj.bidsfilter.rawTB1map_famp, acq = 'anat');
+        obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawTB1map_famp, desc = 'corrected', space = 'raw', suffix = 'TB1map');
+        obj.bidsfilter.TB1map_anat    = setfields(obj.bidsfilter.TB1map_angle, acq = 'anat');
     end
 
 end

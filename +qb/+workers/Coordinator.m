@@ -126,7 +126,7 @@ methods
         end
         for wfile = wfiles
             if ~strcmp(wfile.name, 'Worker.m')   % Exclude the abstract Worker class
-                worker = qb.workers.(erase(wfile.name, '.m'))(obj.BIDS, struct('name','','session',''), obj.config);
+                worker = qb.workers.(erase(wfile.name, '.m'))(obj.BIDS, struct(name='',session=''), obj.config);
                 resumes.(worker.name).handle      = str2func(class(worker));
                 resumes.(worker.name).name        = worker.name;
                 resumes.(worker.name).description = worker.description;

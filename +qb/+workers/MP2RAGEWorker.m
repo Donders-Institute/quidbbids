@@ -59,9 +59,9 @@ methods
         for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawUNIT1)
 
             % Load the raw MP2RAGE headers & data (https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#unit1-images)
-            UNIT1 = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawUNIT1, 'run',char(run));      % bids-matlab doesn't understand this: 'part','(mag)?'
-            INV1  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV1,  'run',char(run));      % idem
-            INV2  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV2,  'run',char(run));      % idem
+            UNIT1 = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawUNIT1, run=char(run));      % bids-matlab doesn't understand this: part='(mag)?'
+            INV1  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV1,  run=char(run));      % idem
+            INV2  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV2,  run=char(run));      % idem
             if length(UNIT1) ~= 1 || length(INV1) ~= 1 || length(INV2) ~= 1
                 obj.logger.error("Expected one UNIT1, INV1 and INV2 file for run %s, but got %d, %d and %d files", char(run), length(UNIT1), length(INV1), length(INV2))
             end

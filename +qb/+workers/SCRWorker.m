@@ -76,12 +76,12 @@ methods
         % Process all runs independently
         for run = obj.query_ses(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs
 
-            S0data     = obj.query_ses(BIDSWS, 'data',     S0filter,     'run', char(run));
-            R2stardata = obj.query_ses(BIDSWS, 'data',     R2starfilter, 'run', char(run));
-            Chidata    = obj.query_ses(BIDSWS, 'data',     Chifilter,    'run', char(run));
-            maskdata   = obj.query_ses(BIDSWS, 'data',     maskfilter,   'run', char(run));
-            meta       = obj.query_ses(BIDSWS, 'metadata', S0filter,     'run', char(run));
-            flips      = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
+            S0data     = obj.query_ses(BIDSWS, 'data',     S0filter,     run=char(run));
+            R2stardata = obj.query_ses(BIDSWS, 'data',     R2starfilter, run=char(run));
+            Chidata    = obj.query_ses(BIDSWS, 'data',     Chifilter,    run=char(run));
+            maskdata   = obj.query_ses(BIDSWS, 'data',     maskfilter,   run=char(run));
+            meta       = obj.query_ses(BIDSWS, 'metadata', S0filter,     run=char(run));
+            flips      = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), UniformOutput=true);
 
             % Check the queries workitems
             if numel(unique([length(S0data), length(R2stardata), length(Chidata), length(maskdata)])) > 1

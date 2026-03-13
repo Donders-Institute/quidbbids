@@ -31,7 +31,7 @@ properties
     outputdir       % Output directory for final results
     team            % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker resume
     force           % Force to start working, even if the subject is locked or existing results exist
-    bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), 'run',1)`
+    bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), run=1)`
     logger          % A logger object for keeping logs
 end
 

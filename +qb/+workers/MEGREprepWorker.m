@@ -209,7 +209,7 @@ methods
                 VFA_e1 = obj.query_ses(obj.BIDS, 'data', VFA_e1_filter, 'flip',char(flip));
 
                 % Get the common synthetic FA target image
-                VFAref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.syntheticT1, 'run',char(run), 'flip',char(flip));
+                VFAref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.syntheticT1, run=char(run), flip=char(flip));
                 if length(VFAref) ~= 1
                     obj.logger.exception("I expected one synthetic reference images, but found:" + sprintf("\n%s",VFAref{:}))
                 end
@@ -225,8 +225,8 @@ methods
                 for echo = obj.query_ses(obj.BIDS, 'echos', VFA_flip_filter)
 
                     % Load the magnitude and phase data -> convert to complex data (to correctly resample phase-wraps)
-                    VFA_fe_m     = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo), 'part','mag');
-                    VFA_fe_p     = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, 'echo',char(echo), 'part','phase');
+                    VFA_fe_m     = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, echo=char(echo), part='mag');
+                    VFA_fe_p     = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, echo=char(echo), part='phase');
                     Vfe_m        = spm_vol(char(VFA_fe_m));         % Magnitude volume
                     Vfe_p        = spm_vol(char(VFA_fe_p));         % Phase volume
                     img_m        = spm_read_vols(Vfe_m);
@@ -264,7 +264,7 @@ methods
             end
 
             % Get the B1 images and the common M0 target image
-            M0ref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.M0map_echo1, 'run',char(run));
+            M0ref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.M0map_echo1, run=char(run));
             if length(M0ref) ~= 1
                 obj.logger.error("Unexpected M0map images found: %s", sprintf("\n%s", M0ref{:}))
             end
@@ -310,7 +310,7 @@ methods
 
             % Combine all (echo-1) masks to create a minimal brain mask (using mri_synthstrip)
             mask = true;
-            for echo1 = obj.query_ses(BIDS, 'data', bfilter, 'echo',1, 'run',char(run), 'part','mag')   % This will loop over flips (NB: and possibly more)
+            for echo1 = obj.query_ses(BIDS, 'data', bfilter, echo=1, run=char(run), part='mag')   % This will loop over flips (NB: and possibly more)
                 bfile = bids.File(char(echo1));
                 specs = setfield(obj.bidsfilter.brainmask, desc = sprintf('VFA%02d', bfile.metadata.FlipAngle));   % Add desc -> (flip)mask is a temporary file
                 bfile = obj.bfile_set(bfile, specs);
@@ -348,8 +348,8 @@ methods
                 bfilter.flip = char(flip);
 
                 % Get the mag/phase echo images for this flip angle & run
-                [magfiles,   magbfiles]   = obj.query_ses(BIDSW, 'data',  bfilter, 'part','mag');
-                [phasefiles, phasebfiles] = obj.query_ses(BIDSW, 'data',  bfilter, 'part','phase');
+                [magfiles,   magbfiles]   = obj.query_ses(BIDSW, 'data',  bfilter, part='mag');
+                [phasefiles, phasebfiles] = obj.query_ses(BIDSW, 'data',  bfilter, part='phase');
 
                 % Sort the mag/phase files by their echo index
                 [~, magidx]   = sort(cellfun(@(s) s.metadata.EchoNumber, magbfiles));
@@ -383,8 +383,8 @@ methods
                 bfilter.run = char(run);
 
                 % Get the mag/phase echo images for this flip angle & run
-                [magfiles,   magbfiles]   = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','mag');
-                [phasefiles, phasebfiles] = obj.query_ses(obj.BIDS, 'data', bfilter, 'part','phase');
+                [magfiles,   magbfiles]   = obj.query_ses(obj.BIDS, 'data', bfilter, part='mag');
+                [phasefiles, phasebfiles] = obj.query_ses(obj.BIDS, 'data', bfilter, part='phase');
 
                 % Sort the mag/phase files by their echo index
                 [~, magidx]   = sort(cellfun(@(s) s.metadata.EchoNumber, magbfiles));

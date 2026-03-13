@@ -18,7 +18,7 @@ function [ver, latest] = version()
             [status, cmdout] = system('git ls-remote --tags --refs https://github.com/Donders-Institute/quidbbids');
             if status == 0
                 tags   = extractAfter(splitlines(strtrim(cmdout)), 'refs/tags/' + ("v"|"V"));
-                vnums  = cellfun(@(s) sscanf(s,'%d.%d.%d')', tags, 'UniformOutput', false);
+                vnums  = cellfun(@(s) sscanf(s,'%d.%d.%d')', tags, UniformOutput=false);
                 [~, i] = sortrows(cell2mat(vnums), 'descend');
                 latest = tags{i(1)};
             else

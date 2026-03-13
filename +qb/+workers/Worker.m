@@ -180,7 +180,7 @@ methods
 
             % Ignore the SPM setting random 'state' and the SEPIA rmpath warnings (-> lastwarn is displayed by qsubget())
             [~, id] = lastwarn;
-            if ismember(id, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound'})
+            if ismember(id, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound', 'MATLAB:MKDIR:DirectoryExists'})
                 lastwarn(prevMsg, prevId)
             end
 

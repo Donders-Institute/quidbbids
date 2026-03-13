@@ -1,7 +1,7 @@
 {
   "project": {
     "name": "QuIDBBIDS",
-    "version": "0.3.0-dev",
+    "version": "0.2.3",
     "BIDSVersion": "1.11.1",
     "description": "MATLAB toolbox for preprocessing and biomarker extraction from quantitative MR images organized according to the BIDS standard",
     "keywords": [

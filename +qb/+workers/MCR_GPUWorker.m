@@ -29,14 +29,14 @@ methods (Access = protected)
                                               part     = '', ...
                                               desc     = 'gacelle', ...
                                               suffix   = 'MWFmap');
-        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap, label = 'free2myelinwater', suffix = 'ExchRate');
-        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap, label = 'fitted', suffix = 'mask');
-        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap, label = 'myelinwater', suffix = 'M0Map');
-        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map, suffix = 'R2starmap');
-        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, label = 'freewater');
-        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map, suffix = 'T1map');
-        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map, suffix = 'R1map');
-        obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.FW_M0map, label = 'axonalwater', suffix = 'R2starmap');
+        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap,   label='free2myelinwater', suffix='ExchRate');
+        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap,   label='fitted',           suffix='mask');
+        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap,   label='myelinwater',      suffix='M0Map');
+        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map,                           suffix='R2starmap');
+        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, label='freewater');
+        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map,                           suffix='T1map');
+        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map,                           suffix='R1map');
+        obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.MW_R2starmap, label='axonalwater');
     end
 
 end
@@ -52,7 +52,7 @@ methods
             workitem {mustBeTextScalar, mustBeNonempty}
         end
 
-        import qb.utils.spm_write_vol_gz
+        import qb.utils.write_vol
         import qb.utils.spm_vol
 
         % Check the input
@@ -121,15 +121,15 @@ methods
 
         % Extract and save the output data
         V(1).dim = dims(1:3);
-        spm_write_vol_gz(V(1), askadam_mcr.final.MWF,                             obj.bfile_set(bfile, obj.bidsfilter.MWFmap       ));
-        spm_write_vol_gz(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.bfile_set(bfile, obj.bidsfilter.MW_M0map     ));
-        spm_write_vol_gz(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.bfile_set(bfile, obj.bidsfilter.FW_M0map     ));
-        spm_write_vol_gz(V(1), askadam_mcr.final.R2sMW,                           obj.bfile_set(bfile, obj.bidsfilter.MW_R2starmap ));
-        spm_write_vol_gz(V(1), askadam_mcr.final.R2sIW,                           obj.bfile_set(bfile, obj.bidsfilter.IAW_R2starmap));
-        spm_write_vol_gz(V(1), 1 ./ askadam_mcr.final.R1IEW,                      obj.bfile_set(bfile, obj.bidsfilter.FW_T1map     ));
-        spm_write_vol_gz(V(1), askadam_mcr.final.R1IEW,                           obj.bfile_set(bfile, obj.bidsfilter.FW_R1map     ));
-        spm_write_vol_gz(V(1), askadam_mcr.final.kIEWM,                           obj.bfile_set(bfile, obj.bidsfilter.FMW_exrate   ));
-        spm_write_vol_gz(V(1), askadam_mcr.mask,                                  obj.bfile_set(bfile, obj.bidsfilter.FitMask      ));
+        write_vol(V(1), askadam_mcr.final.MWF,                             obj.bfile_set(bfile, obj.bidsfilter.MWFmap       ));
+        write_vol(V(1), askadam_mcr.final.MWF .* askadam_mcr.final.S0,     obj.bfile_set(bfile, obj.bidsfilter.MW_M0map     ));
+        write_vol(V(1), (1-askadam_mcr.final.MWF) .* askadam_mcr.final.S0, obj.bfile_set(bfile, obj.bidsfilter.FW_M0map     ));
+        write_vol(V(1), askadam_mcr.final.R2sMW,                           obj.bfile_set(bfile, obj.bidsfilter.MW_R2starmap ));
+        write_vol(V(1), askadam_mcr.final.R2sIW,                           obj.bfile_set(bfile, obj.bidsfilter.IAW_R2starmap));
+        write_vol(V(1), 1 ./ askadam_mcr.final.R1IEW,                      obj.bfile_set(bfile, obj.bidsfilter.FW_T1map     ));
+        write_vol(V(1), askadam_mcr.final.R1IEW,                           obj.bfile_set(bfile, obj.bidsfilter.FW_R1map     ));
+        write_vol(V(1), askadam_mcr.final.kIEWM,                           obj.bfile_set(bfile, obj.bidsfilter.FMW_exrate   ));
+        write_vol(V(1), askadam_mcr.mask,                                  obj.bfile_set(bfile, obj.bidsfilter.FitMask      ));
     end
 
 end

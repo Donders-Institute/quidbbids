@@ -166,11 +166,11 @@ methods
                 mpath   = path();
                 restore = onCleanup(@() path(mpath));
             end
+            [lastMsg, lastId] = lastwarn;   % Also store the last warning for ignoring certain annoying warnings
 
             % Get the work done
             cleanup = onCleanup(@obj.unlock);
             obj.lock()
-            [prevMsg, prevId] = lastwarn;
             obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
 
             % Restore rng settings because spm_coreg uses a legacy random number generator that crashes e.g. mwi_3cx_2R1R2s_dimwi
@@ -179,9 +179,9 @@ methods
             end
 
             % Ignore the SPM setting random 'state' and the SEPIA rmpath warnings (-> lastwarn is displayed by qsubget())
-            [~, id] = lastwarn;
-            if ismember(id, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound', 'MATLAB:MKDIR:DirectoryExists'})
-                lastwarn(prevMsg, prevId)
+            [~, newId] = lastwarn;
+            if ismember(newId, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound', 'MATLAB:MKDIR:DirectoryExists'})
+                lastwarn(lastMsg, lastId)
             end
 
             % Collect the requested workitem

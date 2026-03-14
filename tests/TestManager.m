@@ -38,9 +38,10 @@ classdef TestManager < BaseTest
 
         function testCreateTeam(testCase)
 
-            % Should throw an error if no worker can make a requested product
+            % Should not throw an error if a worker can make the requested product
+            testCase.mgr.coord.resumes.MEGREprepWorker.preferred = true;
             testCase.mgr.coord.products = ["rawMEGRE", "echo.*D(mag|phase)"];
-            testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error for known directly passed products")
+            testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error for known products")
             testCase.verifyNotEmpty(testCase.mgr.team, 'Manager team should not be empty')
 
             % Should not error if the preferred worker is set

@@ -29,14 +29,14 @@ methods (Access = protected)
                                               part     = '', ...
                                               desc     = 'MWI', ...
                                               suffix   = 'MWFmap');
-        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap, label = 'free2myelinwater', suffix = 'ExchRate');
-        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap, label = 'fitted', suffix = 'mask');
-        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap, label = 'myelinwater', suffix = 'M0Map');
-        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map, suffix = 'R2starmap');
-        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, label = 'freewater');
-        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map, suffix = 'T1map');
-        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map, suffix = 'R1map');
-        obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.FW_M0map, label = 'axonalwater', suffix = 'R2starmap');
+        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap,   label='free2myelinwater', suffix='ExchRate');
+        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap,   label='fitted',           suffix='mask');
+        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap,   label='myelinwater',      suffix='M0Map');
+        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map,                           suffix='R2starmap');
+        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, label='freewater');
+        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map,                           suffix='T1map');
+        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map,                           suffix='R1map');
+        obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.MW_R2starmap, label='axonalwater');
         
         % Create orthoslice variants of the bidsfilters
         for fn = string(fieldnames(obj.bidsfilter)')
@@ -57,7 +57,7 @@ methods
             workitem {mustBeTextScalar, mustBeNonempty}
         end
 
-        import qb.utils.spm_write_vol_gz
+        import qb.utils.write_vol
         import qb.utils.spm_vol
 
         % Check the input
@@ -156,24 +156,29 @@ methods
         % end
 
         % Estimate the MWI-MCR model
-        ws = warning('off', 'MATLAB:nearlySingularMatrix');     % Suppress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
-        warning('off', 'MWI:IdentifierFile:NotFound')
         obj.logger.info('--> Estimating the MWI-MCR model')
+        [lastMsg, lastId] = lastwarn;
+        ws = warning('off', 'MATLAB:nearlySingularMatrix');  % Suppress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
+        warning('off', 'MWI:IdentifierFile:NotFound')
         fitRes = mwi_3cx_2R1R2s_dimwi(algoPara, imgPara);
         warning(ws)
+        [~, newId] = lastwarn;
+        if ismember(newId, {'MATLAB:nearlySingularMatrix'})
+            lastwarn(lastMsg, lastId)
+        end
 
         % Extract and save the output data
         V(1).dim = [size(mask,1) size(mask,2) size(mask,3)];
         MWF = fitRes.S0_MW ./ (fitRes.S0_MW + fitRes.S0_EW + fitRes.S0_IW);
-        spm_write_vol_gz(V(1), MWF,                         obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])));
-        spm_write_vol_gz(V(1), fitRes.S0_MW,                obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])));
-        spm_write_vol_gz(V(1), fitRes.S0_IW + fitRes.S0_EW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])));
-        spm_write_vol_gz(V(1), fitRes.R2s_MW,               obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])));
-        spm_write_vol_gz(V(1), fitRes.R2s_IW,               obj.bfile_set(bfile, obj.bidsfilter.(['IAW_R2starmap' ortho])));
-        spm_write_vol_gz(V(1), fitRes.T1_IEW,               obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])));
-        spm_write_vol_gz(V(1), 1 ./ fitRes.T1_IEW,          obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])));
-        spm_write_vol_gz(V(1), fitRes.kiewm,                obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])));
-        spm_write_vol_gz(V(1), fitRes.mask_fitted,          obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])));
+        write_vol(V(1), MWF,                         obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])));
+        write_vol(V(1), fitRes.S0_MW,                obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])));
+        write_vol(V(1), fitRes.S0_IW + fitRes.S0_EW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])));
+        write_vol(V(1), fitRes.R2s_MW,               obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])));
+        write_vol(V(1), fitRes.R2s_IW,               obj.bfile_set(bfile, obj.bidsfilter.(['IAW_R2starmap' ortho])));
+        write_vol(V(1), fitRes.T1_IEW,               obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])));
+        write_vol(V(1), 1 ./ fitRes.T1_IEW,          obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])));
+        write_vol(V(1), fitRes.kiewm,                obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])));
+        write_vol(V(1), fitRes.mask_fitted,          obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])));
     end
 
 end

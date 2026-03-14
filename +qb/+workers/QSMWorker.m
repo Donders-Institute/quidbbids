@@ -30,12 +30,12 @@ methods (Access = protected)
                                            echo     = [], ...
                                            part     = '', ...          % SEPIA outputs images with an appended "part-phase" substring
                                            suffix   = 'R2starmap');
-        obj.bidsfilter.T2starmap  = setfields(obj.bidsfilter.R2starmap, suffix = 'T2starmap');
-        obj.bidsfilter.S0map      = setfields(obj.bidsfilter.R2starmap, suffix = 'S0map');
-        obj.bidsfilter.Chimap     = setfields(obj.bidsfilter.R2starmap, suffix = 'Chimap');
-        obj.bidsfilter.fieldmap   = setfields(obj.bidsfilter.R2starmap, suffix = 'fieldmap');
-        obj.bidsfilter.unwrapped  = setfields(obj.bidsfilter.R2starmap, part = 'phase', suffix = 'unwrapped');
-        obj.bidsfilter.localfmask = setfields(obj.bidsfilter.R2starmap, label = 'localfield', suffix = 'mask');
+        obj.bidsfilter.T2starmap  = setfields(obj.bidsfilter.R2starmap,                     suffix='T2starmap');
+        obj.bidsfilter.S0map      = setfields(obj.bidsfilter.R2starmap,                     suffix='S0map');
+        obj.bidsfilter.Chimap     = setfields(obj.bidsfilter.R2starmap,                     suffix='Chimap');
+        obj.bidsfilter.fieldmap   = setfields(obj.bidsfilter.R2starmap,                     suffix='fieldmap');
+        obj.bidsfilter.unwrapped  = setfields(obj.bidsfilter.R2starmap, part='phase',       suffix='unwrapped');
+        obj.bidsfilter.localfmask = setfields(obj.bidsfilter.R2starmap, label='localfield', suffix='mask');
     end
 
 end
@@ -90,7 +90,7 @@ methods
             input.TEFileList = {spm_file(spm_file(magfiles{n}, 'ext',''), 'ext','.json')};   % If given, then SEPIA requires non-BIDS "ConversionSoftware" field from dcm2niix
             bfile            = obj.bfile_set(magfiles{n}, setfield(obj.bidsfilter.R2starmap, suffix=''));  % Output basename; SEPIA adds suffixes of its own
             output           = extractBefore(bfile.path, bfile.extension);          % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
-            save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output) % Override SEPIA's TE values with what the bfile says (-> added by spm_file_merge_gz)
+            save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output) % Override SEPIA's TE values with what the bfile says (-> added by file_merge)
 
             % Get the SEPIA parameters
             switch workitem

@@ -15,6 +15,7 @@ qb.resetconfig              % Useful when running the development version
 %% ABRIM_MEGRE
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM_MEGRE'), "", "", "default")
 quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
+quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
 quidb.products = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
 quidb.resumes.QSMWorker.preferred = true;       % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
@@ -34,6 +35,7 @@ end
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "default")
 quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
 quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
+quidb.config.VFAprepWorker.denoising.method.value = "tMPPCA";
 quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
 

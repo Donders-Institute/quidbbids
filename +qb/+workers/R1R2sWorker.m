@@ -27,8 +27,8 @@ methods (Access = protected)
                                           part     = '', ...
                                           desc     = 'gacelleR1R2s', ...
                                           suffix   = 'R2starmap');
-        obj.bidsfilter.M0map     = setfield(obj.bidsfilter.R2starmap, suffix = 'M0Map');
-        obj.bidsfilter.R1map     = setfield(obj.bidsfilter.R2starmap, suffix = 'R1map');
+        obj.bidsfilter.M0map     = setfield(obj.bidsfilter.R2starmap, suffix='M0Map');
+        obj.bidsfilter.R1map     = setfield(obj.bidsfilter.R2starmap, suffix='R1map');
     end
 
 end
@@ -44,7 +44,7 @@ methods
             workitem {mustBeTextScalar, mustBeNonempty}
         end
 
-        import qb.utils.spm_write_vol_gz
+        import qb.utils.write_vol
         import qb.utils.spm_vol
 
         % Get the workitems we need from a colleague
@@ -85,9 +85,9 @@ methods
 
         % Save the output data
         V(1).dim = dims(1:3);
-        spm_write_vol_gz(V(1), askadam_R1R2s.final.R1,     obj.bfile_set(bfile, obj.bidsfilter.R1map    ));
-        spm_write_vol_gz(V(1), askadam_R1R2s.final.M0,     obj.bfile_set(bfile, obj.bidsfilter.M0map    ));
-        spm_write_vol_gz(V(1), askadam_R1R2s.final.R2star, obj.bfile_set(bfile, obj.bidsfilter.R2starmap));
+        write_vol(V(1), askadam_R1R2s.final.R1,     obj.bfile_set(bfile, obj.bidsfilter.R1map    ));
+        write_vol(V(1), askadam_R1R2s.final.M0,     obj.bfile_set(bfile, obj.bidsfilter.M0map    ));
+        write_vol(V(1), askadam_R1R2s.final.R2star, obj.bfile_set(bfile, obj.bidsfilter.R2starmap));
     end
 
 end

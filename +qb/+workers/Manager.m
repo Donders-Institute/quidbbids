@@ -69,16 +69,24 @@ methods
             obj.team = struct();
         end
 
+        if ~strlength(workitems)
+            return
+        end
+
         % Find and select one capable worker per workitem
         for workitem = string(workitems(:)')                % The workitem with optional regexp pattern
 
             % First put all capable workers in the team
             for name = fieldnames(obj.coord.resumes)'       % Iterate over all available workers
                 worker = obj.coord.resumes.(char(name));
-                makes = worker.makes();
-                match = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
+                makes  = worker.makes();
+                items  = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
                 % Add to the team if the worker is capable
-                for workitem_ = makes(match)                % Loop over the actual workitems (without optional regexp pattern)
+                for workitem_ = makes(items)                % Loop over the actual matching workitems (without optional regexp pattern)
+                    % Skip prepWorkers if there is no raw (anat) data for them
+                    if ~obj.has_rawdata(worker)
+                        continue
+                    end
                     if isfield(obj.team, workitem_)         % Append the worker to the list
                         if ~ismember(worker.name, obj.team.(workitem_).name)    % Check if we haven't already added this worker
                             obj.team.(workitem_)(end+1) = worker;
@@ -89,7 +97,7 @@ methods
                 end
             end
             if all(cellfun(@isempty, regexp(fieldnames(obj.team), "^" + workitem + "$")))
-                error('QuIDBBIDS:WorkItem:NotFound', 'Could not find a worker that can make: %s', workitem)
+                error('QuIDBBIDS:WorkItem:NoWorker', 'Could not find a worker that can make: %s', workitem)
             end
 
             % Then select one worker per workitem and recursively add the workers needed to make the workitem
@@ -100,9 +108,7 @@ methods
                     if length(obj.team.(workitem_)) > 1     % User cancelled the selection
                         return
                     end
-                    if ~isempty(obj.team.(workitem_).needs) % Recursively add upstream workers to the team
-                        obj.create_team(obj.team.(workitem_).needs, true)
-                    end
+                    obj.create_team(obj.team.(workitem_).needs, true)   % Recursively add upstream workers to the team
                 end
             end
 
@@ -193,8 +199,10 @@ methods
 
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value
+            ws = warning('off', 'MATLAB:DELETE:DeletedFileFromPackage');
+            restore = onCleanup(@() warning(ws));
             cleanup = onCleanup(@() qsublist('killall'));
-            batch = obj.getbatch();
+            batch = obj.getbatch();         % -> qsubfeval()
             if mislocked('qsublist') && obj.interactive
                 answer = questdlg(sprintf('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes, that may cause issues.\n\nCan I cleanup the bookkeeping?'), ...
                     'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Yes');
@@ -254,7 +262,7 @@ methods
         for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
             Worker = obj.team.(product).handle;
             name   = obj.team.(product).name;
-            jobIDs = containers.Map('KeyType','char', 'ValueType','char');
+            jobIDs = containers.Map(KeyType='char', ValueType='char');
             for subject = subjects
 
                 % Skip if we are not at the modality level, i.e. at the subject level while sessions are present
@@ -343,6 +351,26 @@ methods (Access = private)
     function subses = sub_ses(obj, subject)
         % Parses the sub-#_ses-# prefix from a BIDS.subjects item
         subses = replace(erase(subject.path, [obj.coord.BIDS.pth filesep]), filesep,'_');
+    end
+
+    function has_data = has_rawdata(obj, worker)
+        % Checks whether all raw input data for this (prep) worker is available
+        
+        has_data = true;
+        if isempty(dir(fullfile(obj.coord.BIDS.pth, 'sub-*')))
+            return      % -> Escape for unit-tests
+        end
+
+        if contains(worker.name, 'prepWorker')
+            worker_ = worker.handle(obj.coord.BIDS, struct(), obj.coord.config);
+            for workitem = worker.makes
+                if startsWith(workitem, 'raw') && isempty(bids.query(obj.coord.BIDS, 'data', worker_.bidsfilter.(workitem)))
+                    has_data = false;
+                    fprintf('No "%s" input data found for %s\n', workitem, worker.name)
+                    return
+                end
+            end
+        end
     end
 
     function selectworker(obj, workitem)

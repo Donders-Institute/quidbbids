@@ -10,6 +10,20 @@
     }
   },
 
+  "MEGREprepWorker": {
+    "denoising": {
+      "method": {"value": "", "description": "Denoising method. Options: '' (no denoising), 'MPPCA' (Marchenko–Pastur PCA), 'tMPPCA' (tensor Marchenko–Pastur PCA)."},
+      "kernel": {"value": [5,5,5], "description": "Size of the sliding window (patch) used for the PCA, specified as [x y z]."}
+    }
+  },
+
+  "VFAprepWorker": {
+    "denoising": {
+      "method": {"value": "", "description": "Denoising method. Options: '' (no denoising), 'MPPCA' (Marchenko–Pastur PCA), 'tMPPCA' (tensor Marchenko–Pastur PCA)."},
+      "kernel": {"value": [5,5,5], "description": "Size of the sliding window (patch) used for the PCA, specified as [x y z]."}
+    }
+  },
+
   "B1prepWorker": {
     "FWHM": {"value": 10, "description": "in mm, smoothing kernel for regularizing the B1 map"},
     "FAscaling": {"value": 800, "description": "Factor to scale the data to radians (800 is what SIEMENS seems to use on TFL B1-mapping)"}

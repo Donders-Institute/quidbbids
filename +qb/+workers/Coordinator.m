@@ -121,12 +121,17 @@ methods
 
         resumes = {};
         wfiles  = dir(fullfile(fileparts(which("qb.workers.Worker")), "*Worker*.m"))';
-        if ~isdeployed      % Add additional workers from the (custom/home) configfile folder
-            wfiles = [wfiles, dir(fullfile(fileparts(obj.configfile), "workers", "*Worker*.m"))'];
+        if ~isdeployed      % Add custom workers from the user config directory
+            wfiles = [wfiles, dir(fullfile(fileparts(qb.resetconfig(false)), "workers", "*Worker*.m"))'];
         end
+        fprintf("\nRegistering:\n")
         for wfile = wfiles
-            if ~strcmp(wfile.name, 'Worker.m')   % Exclude the abstract Worker class
-                worker = qb.workers.(erase(wfile.name, '.m'))(obj.BIDS, struct(name='',session=''), obj.config);
+            if ~strcmp(wfile.name, 'Worker.m')      % Exclude the abstract Worker class
+                if endsWith(wfile.folder, '+workers')
+                    worker = qb.workers.(erase(wfile.name, '.m'))(obj.BIDS, struct(name='',session=''), obj.config);
+                else                                % Custom workers in the user config directory should be on the MATLAB-path
+                    worker = feval(erase(wfile.name, '.m'), obj.BIDS, struct(name='',session=''), obj.config);
+                end
                 resumes.(worker.name).handle      = str2func(class(worker));
                 resumes.(worker.name).name        = worker.name;
                 resumes.(worker.name).description = worker.description;
@@ -134,6 +139,7 @@ methods
                 resumes.(worker.name).needs       = worker.needs(:)';
                 resumes.(worker.name).usesGPU     = worker.usesGPU;
                 resumes.(worker.name).preferred   = false;
+                fprintf('   - %s\n', worker.name)
             end
         end
 

@@ -39,8 +39,8 @@ classdef TestCoordinator < BaseTest
             testCase.coord.products = ["a", "b", "c"];
             testCase.verifyEmpty(testCase.coord.products, 'products should be empty')
             testCase.verifyWarning(@() setfield(testCase.coord, products = ["a", "b", "c"]), 'QuIDBBIDS:Products:Ambiguous', 'Should throw ambiguous product warning')
-            testCase.coord.products = ["R1map"; "echo.*Dmag"];
-            testCase.verifyEqual(testCase.coord.products, ["R1map", "echo.*Dmag"])
+            testCase.coord.products = ["R1map"; "ME.*Dmag"];
+            testCase.verifyEqual(testCase.coord.products, ["R1map", "ME.*Dmag"])
         end
 
         function testWorkitems(testCase)

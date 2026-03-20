@@ -6,7 +6,7 @@ classdef QSMWorker < qb.workers.Worker
 
 properties (Constant)
     description = ["I am your SEPIA expert that can make shiny QSM and R2-star images for you"] % Description of the work that is done
-    needs       = ["echos4Dmag", "echos4Dphase", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["ME4Dmag", "ME4Dphase", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -53,8 +53,8 @@ methods
 
         % Get preprocessed workitems from a colleague
         obj.workdir = replace(obj.workdir, "SEPIA", "QuIDBBIDS");       % SEPIA has it's own directory, temporarily put it back to what it was
-        magfiles    = obj.ask_team('echos4Dmag');
-        phasefiles  = obj.ask_team('echos4Dphase');
+        magfiles    = obj.ask_team('ME4Dmag');
+        phasefiles  = obj.ask_team('ME4Dphase');
         mask        = obj.ask_team('brainmask');
         obj.workdir = replace(obj.workdir, "QuIDBBIDS", "SEPIA");
 

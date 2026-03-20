@@ -9,7 +9,7 @@ properties (Constant)
                    "";
                    "Methods:"
                    "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"]
-    needs       = ["echos4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
+    needs       = ["ME4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
     usesGPU     = true
 end
 
@@ -48,13 +48,13 @@ methods
         import qb.utils.spm_vol
 
         % Get the workitems we need from a colleague
-        echos4Dmag = obj.ask_team('echos4Dmag');    % Multiple FA-images per run
+        ME4Dmag    = obj.ask_team('ME4Dmag');       % Multiple FA-images per run
         TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
         brainmask  = obj.ask_team('brainmask');     % Multiple FA-images per run
 
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
-        if length(echos4Dmag) < 2
-            obj.logger.exception('%s received data for only %d flip angles', obj.name, length(echos4Dmag))
+        if length(ME4Dmag) < 2
+            obj.logger.exception('%s received data for only %d flip angles', obj.name, length(ME4Dmag))
         end
         if length(TB1map_GRE) ~= 1          % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
             obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', TB1map_GRE{:}))
@@ -64,12 +64,12 @@ methods
         end
 
         % Load the data + metadata
-        V    = spm_vol(echos4Dmag{1});                          % For reading the 3D image dimensions
-        dims = [V(1).dim length(V) length(echos4Dmag)];
+        V    = spm_vol(ME4Dmag{1});                          % For reading the 3D image dimensions
+        dims = [V(1).dim length(V) length(ME4Dmag)];
         img  = single(NaN(dims));
         for n = 1:dims(5)
-            img(:,:,:,:,n) = spm_read_vols(spm_vol(echos4Dmag{n}));
-            bfile          = bids.File(echos4Dmag{n});          % For reading metadata, parsing entities, etc
+            img(:,:,:,:,n) = spm_read_vols(spm_vol(ME4Dmag{n}));
+            bfile          = bids.File(ME4Dmag{n});          % For reading metadata, parsing entities, etc
             FA(n)          = bfile.metadata.FlipAngle;
         end
         mask = spm_read_vols(spm_vol(char(brainmask))) & all(~isnan(img), [4 5]);

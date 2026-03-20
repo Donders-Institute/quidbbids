@@ -23,7 +23,7 @@ To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by provid
              name: "R1R2sWorker"
       description: [24×1 string]
             makes: ["R2starmap" "M0map" "R1map"]
-            needs: ["echos4Dmag" "TB1map_GRE" "brainmask"]
+            needs: ["ME4Dmag" "TB1map_GRE" "brainmask"]
           usesGPU: 1
         preferred: 0
 

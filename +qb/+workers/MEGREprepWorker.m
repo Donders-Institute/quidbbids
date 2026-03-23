@@ -214,7 +214,7 @@ methods (Static)
         if isfield(bfile.metadata, 'Denoised')
             obj.logger.warning('Denoising applied TWICE to "%s": This file was already denoised using "%s"', bfile.path, bfile.metadata.Denoised)
         end
-        bfile.metadata.Denoised = obj.config.(class(obj)).denoising.method;
+        bfile.metadata.Denoised = obj.config.(obj.name).denoising.method;
         obj.logger.info("-> Saving: %s", V(1).fname)
         qb.utils.write_vol(V, img, bfile)
     end

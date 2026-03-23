@@ -216,7 +216,7 @@ methods (Static)
         end
         bfile.metadata.Denoised = obj.config.(obj.name).denoising.method;
         obj.logger.info("-> Saving: %s", V(1).fname)
-        qb.utils.write_vol(V, img, bfile)
+        qb.utils.write_vol(V, img, bfile);
     end
 
 end

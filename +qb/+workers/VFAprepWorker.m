@@ -96,6 +96,7 @@ methods
         end
 
         % Get the work done. For now, only process mt-off images, in the future we could also include mt-on images
+        include = obj.config.General.BIDS.include;
         for bfilter = {setfields(obj.bidsfilter.rawMEVFA, suffix='VFA'), setfield(obj.bidsfilter.rawMEVFA, mt='off', suffix='MPM')}
             if all(cellfun('isempty', regexp(include.suffix, bfilter.suffix)))              % A bit of an ugly hack, for now
                 continue

@@ -81,12 +81,14 @@ methods
                 worker = obj.coord.resumes.(char(name));
                 makes  = worker.makes();
                 items  = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
+
+                % Skip prepWorkers if there is no raw (anat) data for them
+                if ~obj.has_rawdata(worker)
+                    continue
+                end
+                
                 % Add to the team if the worker is capable
                 for workitem_ = makes(items)                % Loop over the actual matching workitems (without optional regexp pattern)
-                    % Skip prepWorkers if there is no raw (anat) data for them
-                    if ~obj.has_rawdata(worker)
-                        continue
-                    end
                     if isfield(obj.team, workitem_)         % Append the worker to the list
                         if ~ismember(worker.name, obj.team.(workitem_).name)    % Check if we haven't already added this worker
                             obj.team.(workitem_)(end+1) = worker;

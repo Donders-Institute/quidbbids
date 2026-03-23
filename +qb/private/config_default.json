@@ -12,7 +12,7 @@
 
   "MEGREprepWorker": {
     "denoising": {
-      "method": {"value": "", "description": "Denoising method. Options: '' (no denoising), 'MPPCA' (Marchenko–Pastur PCA), 'tMPPCA' (tensor Marchenko–Pastur PCA)."},
+      "method": {"value": "", "description": "Denoising method. Options: '' (no denoising), 'MPPCA' (Marchenko–Pastur PCA), 'tMPPCA' (tensor Marchenko–Pastur PCA; this is however not useful fro MEGRE data)."},
       "kernel": {"value": [5,5,5], "description": "Size of the sliding window (patch) used for the PCA, specified as [x y z]."}
     }
   },

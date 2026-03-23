@@ -10,7 +10,7 @@ else
     testdata = 'P:\3032002.02\testdata';
 end
 addpath(fileparts(fileparts(mfilename('fullpath'))))
-qb.resetconfig              % Useful when running the development version
+qb.resetconfig;             % Useful when running the development version
 
 %% ABRIM_MEGRE
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM_MEGRE'), "", "", "default")

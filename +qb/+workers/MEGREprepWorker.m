@@ -32,7 +32,7 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        include = obj.config.General.BIDS.include;
+        include                  = obj.config.General.BIDS.include;
         obj.bidsfilter.rawMEGRE  = setfields(include, ...
                                           modality = 'anat', ...
                                           echo     = 1:999, ...
@@ -49,6 +49,11 @@ methods (Access = protected)
                                           part     = 'mag', ...
                                           desc     = 'ME4D');
         obj.bidsfilter.ME4Dphase = setfield(obj.bidsfilter.ME4Dmag, part='phase');
+        
+        % Constrain the raw input filters based on the BIDS include config
+        if all(cellfun('isempty', regexp(include.suffix, 'MEGRE')))
+            obj.bidsfilter.rawMEGRE = setfields(include, suffix='');    % MEGRE data is not to be included
+        end
     end
 
 end
@@ -70,7 +75,7 @@ methods
             obj.merge_echos()                                                                   % Processing step 2
             qb.workers.MEGREprepWorker.denoise_MPPCA(obj)                                       % Processing step 3
         else
-            obj.logger.info("No MEGRE data found for: " + obj.subject.name)
+            obj.logger.info("No raw MEGRE data found for: " + obj.subject.name)
         end
     end
 
@@ -205,12 +210,12 @@ methods (Static)
 
     function write_vol_denoised(obj, V, img)
         
-        bfile = bids.File(V.fname);
+        bfile = bids.File(V(1).fname);
         if isfield(bfile.metadata, 'Denoised')
             obj.logger.warning('Denoising applied TWICE to "%s": This file was already denoised using "%s"', bfile.path, bfile.metadata.Denoised)
         end
         bfile.metadata.Denoised = obj.config.(class(obj)).denoising.method;
-        obj.logger.info("-> Saving: %s", V.fname)
+        obj.logger.info("-> Saving: %s", V(1).fname)
         qb.utils.write_vol(V, img, bfile)
     end
 

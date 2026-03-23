@@ -541,7 +541,7 @@ methods (Access = private)
 
     function pth = statusfile(obj, ext)
         %WORKERPATH Returns a workdir statusfile named after the worker
-        pth = fullfile(replace(obj.subject.path, obj.BIDS.pth, obj.workdir), [obj.name ext]);
+        pth = fullfile(replace(obj.subject.path, obj.BIDS.pth, obj.workdir), obj.name + ext);
     end
 
     function config = flatvalues(obj, config)

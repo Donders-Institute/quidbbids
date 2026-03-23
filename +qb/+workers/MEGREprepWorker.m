@@ -153,7 +153,9 @@ methods (Static)
         %
         % NB: This method is shared with VFAprepWorker
 
-        denoising = obj.config.(class(obj)).denoising;
+        import qb.utils.spm_vol
+
+        denoising = obj.config.(obj.name).denoising;
         if ~strlength(denoising.method)
             return
         end
@@ -172,14 +174,14 @@ methods (Static)
                         bfilter.flip = char(flips(n));
                     end
                     magfile        = obj.query_ses(BIDSW, 'data', bfilter);
-                    V_m(n)         = spm_vol(char(magfile));
-                    V_p(n)         = spm_vol(char(strrep(magfile, 'part-mag', 'part-phase')));
-                    img(:,:,:,:,n) = spm_read_vols(V_m(n)) .* exp(1i * qb.utils.read_vols_phase(V_p(n)));   % Read phase data in radians
+                    V_m{n}         = spm_vol(char(magfile));
+                    V_p{n}         = spm_vol(char(strrep(magfile, 'part-mag', 'part-phase')));
+                    img(:,:,:,:,n) = spm_read_vols(V_m{n}) .* exp(1i * qb.utils.read_vols_phase(V_p{n}));   % Read phase data in radians
                 end
 
                 % Get the mask
                 mask = obj.query_ses(BIDSW, 'data', obj.bidsfilter.brainmask);
-                mask = spm_read_vols(spm_vol(mask));
+                mask = logical(spm_read_vols(spm_vol(char(mask))));
 
                 obj.logger.info('--> %s denoising: %s [..]', denoising.method, char(magfile))
                 switch denoising.method
@@ -194,8 +196,8 @@ methods (Static)
 
                 % Save the denoised data (in-place)
                 for n = size(flips,2):-1:1
-                    obj.write_vol_denoised(obj, V_m(n),   abs(img(:,:,:,:,n)))
-                    obj.write_vol_denoised(obj, V_p(n), angle(img(:,:,:,:,n)))
+                    obj.write_vol_denoised(obj, V_m{n},   abs(img(:,:,:,:,n)))
+                    obj.write_vol_denoised(obj, V_p{n}, angle(img(:,:,:,:,n)))
                 end
             end
         end
@@ -208,6 +210,7 @@ methods (Static)
             obj.logger.warning('Denoising applied TWICE to "%s": This file was already denoised using "%s"', bfile.path, bfile.metadata.Denoised)
         end
         bfile.metadata.Denoised = obj.config.(class(obj)).denoising.method;
+        obj.logger.info("-> Saving: %s", V.fname)
         qb.utils.write_vol(V, img, bfile)
     end
 

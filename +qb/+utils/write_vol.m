@@ -44,6 +44,9 @@ if isnumeric(V) && isvector(V)
     end
 end
 
+% For 4D data, just take the first (of all identical) volume, i.e. make sure we have a 3D vol
+V = V(1);
+
 % Ensure dim field is correct (e.g. if only voxel sizes are provided)
 if ~isfield(V, 'dim') || isempty(V.dim)
     V.dim = [size(Y, 1) size(Y, 2) size(Y, 3)];

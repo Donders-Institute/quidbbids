@@ -9,7 +9,7 @@ properties (Constant)
                    "Additionally it requires: ";
                    "    - a field map has already been computed per acquisition in order to reduce the search space of the minimisation problem";
                    "    - a common brain mask exists for the various acquisitions";
-                   "The Theorectical framework is described on Chan et al, Neuroimage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159"; 
+                   "The theoretical framework is described in Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159"; 
                    "Using as backend the code present on the repository https://github.com/kschan0214/mwi";
                    "";
                    "Methods:";

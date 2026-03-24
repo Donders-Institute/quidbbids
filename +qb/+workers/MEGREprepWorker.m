@@ -72,17 +72,17 @@ methods
         % Get the work done
         if ~isempty(obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawMEGRE))
             qb.workers.MEGREprepWorker.create_brainmask(obj, obj.BIDS, obj.bidsfilter.rawMEGRE) % Processing step 1
-            obj.merge_echos()                                                                   % Processing step 2
+            obj.merge_MEGREfiles()                                                              % Processing step 2
             qb.workers.MEGREprepWorker.denoise_MPPCA(obj)                                       % Processing step 3
         else
             obj.logger.verbose("No raw MEGRE data found for: " + obj.subject.name)
         end
     end
 
-    function merge_echos(obj)
-        %MERGE_ECHOS Implements processing step 2 (single flip angle)
+    function merge_MEGREfiles(obj)
+        %MERGE_MEGREFILES Implements processing step 2 (single flip angle)
         %
-        % Merge the raw 3D echos files for each acquisition protocol into 4D files
+        % Merge the raw 3D echos files for each acquisition protocol into 4D files (NB: the acq-label is disregarded in VFAprepWorker)
 
         import qb.utils.file_merge
 
@@ -137,7 +137,7 @@ methods (Static)
             mask = true;
             for echo1 = obj.query_ses(BIDS, 'data', bfilter, echo=1, run=char(run), part='mag')     % This will loop over flips (NB: and possibly more)
                 bfile = bids.File(char(echo1));
-                specs = setfield(obj.bidsfilter.brainmask, desc = sprintf('VFA%02d', bfile.metadata.FlipAngle));    % Add desc -> (flip)mask is a temporary file
+                specs = setfield(obj.bidsfilter.brainmask, desc=sprintf('VFA%02d', bfile.metadata.FlipAngle));    % Add desc -> (flip)mask is a temporary file
                 bfile = obj.bfile_set(bfile, specs);
                 [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
                 obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(echo1), bfile.path));        % [status,out] = system('echo $CUDA_VISIBLE_DEVICES') does not detect if pytorch was compiled with CUDA support

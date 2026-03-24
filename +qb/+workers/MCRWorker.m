@@ -5,7 +5,7 @@ classdef MCRWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Multi-compartment relaxometry worker, it combines complex multi-echo data (labeled either _MPM or _VFA) with corregistered B1 relative maps to compute myelin water fraction maps";
+    description = ["Multi-compartment relaxometry worker, it combines complex multi-echo data (labeled either _MPM or _VFA) with coregistered B1 relative maps to compute myelin water fraction maps";
                    "Additionally it requires: ";
                    "    - a field map has already been computed per acquisition in order to reduce the search space of the minimisation problem";
                    "    - a common brain mask exists for the various acquisitions";

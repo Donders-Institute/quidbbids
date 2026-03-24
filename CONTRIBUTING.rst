@@ -1,6 +1,6 @@
-=========================
-Contributing to QuIDBBIDS
-=========================
+==================
+Contributing guide
+==================
 
 Project organization
 --------------------

@@ -75,7 +75,7 @@ methods
             obj.merge_echos()                                                                   % Processing step 2
             qb.workers.MEGREprepWorker.denoise_MPPCA(obj)                                       % Processing step 3
         else
-            obj.logger.info("No raw MEGRE data found for: " + obj.subject.name)
+            obj.logger.verbose("No raw MEGRE data found for: " + obj.subject.name)
         end
     end
 

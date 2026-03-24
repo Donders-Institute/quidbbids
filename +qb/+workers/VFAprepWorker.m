@@ -98,17 +98,17 @@ methods
         % Get the work done. For now, only process mt-off images, in the future we could also include mt-on images
         include = obj.config.General.BIDS.include;
         for bfilter = {setfields(obj.bidsfilter.rawMEVFA, suffix='VFA'), setfield(obj.bidsfilter.rawMEVFA, mt='off', suffix='MPM')}
-            if all(cellfun('isempty', regexp(include.suffix, bfilter.suffix)))              % A bit of an ugly hack, for now
+            if all(cellfun('isempty', regexp(include.suffix, bfilter{1}.suffix)))              % A bit of an ugly hack, for now
                 continue
             end
-            if ~isempty(obj.query_ses(obj.BIDS, 'data', bfilter))
-                qb.workers.MEGREprepWorker.denoise_MPPCA(obj, bfilter)                      % Processing step 5
-                obj.create_syntheticT1_M0(bfilter)                                          % Processing step 1
-                obj.coreg_VFA_B1_2synthetic(bfilter)                                        % Processing step 2+5
-                qb.workers.MEGREprepWorker.create_brainmask(obj, obj.BIDSW_ses(), bfilter)  % Processing step 3
-                obj.merge_MEVFAfiles(bfilter)                                               % Processing step 4
+            if ~isempty(obj.query_ses(obj.BIDS, 'data', bfilter{1}))
+                qb.workers.MEGREprepWorker.denoise_MPPCA(obj, bfilter{1})                      % Processing step 5
+                obj.create_syntheticT1_M0(bfilter{1})                                          % Processing step 1
+                obj.coreg_VFA_B1_2synthetic(bfilter{1})                                        % Processing step 2+5
+                qb.workers.MEGREprepWorker.create_brainmask(obj, obj.BIDSW_ses(), bfilter{1})  % Processing step 3
+                obj.merge_MEVFAfiles(bfilter{1})                                               % Processing step 4
             else
-                obj.logger.info("No raw %s data found for: ", bfilter.suffix, obj.subject.name)
+                obj.logger.verbose("No raw %s data found for: ", bfilter{1}.suffix, obj.subject.name)
             end
         end
     end

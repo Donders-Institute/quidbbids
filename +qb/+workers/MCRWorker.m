@@ -16,7 +16,7 @@ properties (Constant)
                    "    - reads data";
                    "    - computes initial phase of each acquisition";
                    "    - (optional) extracts 3 Orthogonal slices to speed up computation";
-                   "    - runs ftting process using mwi_3cx_2R1R2s_dimwi -  there are various configuration options MCRWorker.algoPara";
+                   "    - runs fitting process using mwi_3cx_2R1R2s_dimwi - there are various configuration options MCRWorker.algoPara";
                    "    - saves relevant output";
                    "- "]
     needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns

@@ -8,7 +8,7 @@ properties
     BIDS                    % BIDS layout object from bids-matlab
     outputdir               % BIDSApp derivatives subdirectory where the output is stored
     workdir                 % Working directory for intermediate results
-    products                % The end productcs (workitems) requested by the user
+    products                % The end productcs (workitems) requested by the user, full list of possible products, see obj.workitems()
     resumes                 % The resumes of all available workers
     configfile              % Path to the active configuration file
     workflowfile            % Path to the active workflow file

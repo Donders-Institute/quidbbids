@@ -323,33 +323,26 @@ methods
 
                     % Coregister the B1-anat image to the M0 target image using Normalized Mutual Information (NMI)
                     Vref = spm_vol(char(M0ref));                    % Same space as synthetic T1
-                    Vin  = spm_vol(char(B1anat));
-                    x    = spm_coreg(Vref, Vin, struct(cost_fun='nmi'));
+                    VB1a = spm_vol(char(B1anat));
+                    x    = spm_coreg(Vref, VB1a, struct(cost_fun='nmi'));
+                    T    = VB1a.mat \ spm_matrix(x) * Vref.mat;     % Transformation from voxel coordinates in Vref to voxel coordinates in VB1a/B1anat
 
-                    % Reslice the FA-map to the M0/synthetic T1 space
-                    VB1 = spm_vol(char(B1famp));
-                    T   = VB1.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxel coordinates in Vref to voxel coordinates in VB1
-                    B1  = NaN(Vref.dim);
-                    for z = 1:Vref.dim(3)
-                        B1(:,:,z) = spm_slice_vol(VB1, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
+                    % Reslice the anat/FA-maps to the M0/synthetic T1 space
+                    VB1f = spm_vol(char(B1famp));
+                    for z = Vref.dim(3):-1:1
+                        B1_famp(:,:,z) = spm_slice_vol(VB1f, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
+                        B1_anat(:,:,z) = spm_slice_vol(VB1a, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                     end
 
                     % Save the resliced FA-map
                     bfile = obj.bfile_set(B1famp, obj.bidsfilter.TB1map_GRE);
                     obj.logger.verbose("-> Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
-                    write_vol(Vref, B1, bfile);
-
-                    % Reslice the anat-map to the M0/synthetic T1 space
-                    VB1    = spm_vol(char(B1anat));
-                    anatB1 = NaN(Vref.dim);
-                    for z = 1:Vref.dim(3)
-                        anatB1(:,:,z) = spm_slice_vol(VB1, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
-                    end
+                    write_vol(Vref, B1_famp, bfile);
 
                     % Save the resliced FA-anat
                     bfile = obj.bfile_set(B1anat, obj.bidsfilter.TB1anat_GRE);
                     obj.logger.verbose("-> Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
-                    write_vol(Vref, anatB1, bfile);
+                    write_vol(Vref, B1_anat, bfile);
 
                 end
 

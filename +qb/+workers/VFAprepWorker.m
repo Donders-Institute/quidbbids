@@ -65,6 +65,8 @@ methods (Access = protected)
                                             space    = obj.bidsfilter.syntheticT1.space, ...
                                             acq      = 'famp', ...
                                             suffix   = 'TB1map');
+        obj.bidsfilter.TB1anat_GRE = setfield(obj.bidsfilter.TB1map_GRE, acq='anat');
+
         parent                     = qb.workers.MEGREprepWorker(obj.BIDS, obj.subject, obj.config);
         obj.bidsfilter.brainmask   = parent.bidsfilter.brainmask;
         obj.bidsfilter.ME4Dmag     = parent.bidsfilter.ME4Dmag;
@@ -336,6 +338,19 @@ methods
                     bfile = obj.bfile_set(B1famp, obj.bidsfilter.TB1map_GRE);
                     obj.logger.verbose("-> Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
                     write_vol(Vref, B1, bfile);
+
+                    % Reslice the anat-map to the M0/synthetic T1 space
+                    VB1    = spm_vol(char(B1anat));
+                    anatB1 = NaN(Vref.dim);
+                    for z = 1:Vref.dim(3)
+                        anatB1(:,:,z) = spm_slice_vol(VB1, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
+                    end
+
+                    % Save the resliced FA-anat
+                    bfile = obj.bfile_set(B1anat, obj.bidsfilter.TB1anat_GRE);
+                    obj.logger.verbose("-> Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
+                    write_vol(Vref, anatB1, bfile);
+
                 end
 
             end

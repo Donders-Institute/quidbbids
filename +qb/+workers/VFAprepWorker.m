@@ -236,11 +236,8 @@ methods
                 if strlength(obj.config.(obj.name).denoising.method)
                     denoised_magf   = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='mag', id='temp'));
                     denoised_phasef = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='phase', id='temp'));
-                    if length(denoised_magf) ~= 1 || length(denoised_phasef) ~= 1
-                        obj.logger.exception("I expected one denoised image but found:" + sprintf("\n%s", denoised_magf{:}))
-                    end
-                    denoised_mag   = spm_read_vols(spm_vol(char(denoised_magf)));
-                    denoised_phase = read_vols_phase(spm_vol(char(denoised_phasef)));
+                    denoised_mag    = spm_read_vols(spm_vol(char(denoised_magf)));
+                    denoised_phase  = read_vols_phase(spm_vol(char(denoised_phasef)));
                     delete(denoised_magf{:}, denoised_phasef{:})
                 end
 

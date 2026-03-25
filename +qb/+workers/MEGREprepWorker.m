@@ -208,14 +208,14 @@ methods (Static)
 
                 % Save the denoised data (in-place)
                 for n = 1:size(flips,2)
-                    write_vol_denoised(obj, V_m{n},   abs(img(:,:,:,:,n)))
-                    write_vol_denoised(obj, V_p{n}, angle(img(:,:,:,:,n)))
+                    write_vol_denoised(V_m{n},   abs(img(:,:,:,:,n)))
+                    write_vol_denoised(V_p{n}, angle(img(:,:,:,:,n)))
                 end
 
             end
         end
 
-        function write_vol_denoised(obj, V, img)
+        function write_vol_denoised(V, img)
             bfile = bids.File(V(1).fname);
             if isfield(bfile.metadata, 'Denoised')
                 obj.logger.warning('Denoising applied TWICE to "%s": This file was already denoised using "%s"', bfile.path, bfile.metadata.Denoised)

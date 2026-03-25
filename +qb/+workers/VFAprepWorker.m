@@ -92,7 +92,7 @@ methods
         end
 
         import qb.utils.setfields
-        import qb.workers.MEGREprepWorker
+        import qb.workers.MEGREprepWorker.*
 
         if isempty(obj.bidsfilter.rawMEVFA.suffix)
             return
@@ -108,8 +108,8 @@ methods
                 obj.denoise_raw(bfilter{1})                                                 % Processing step 5a
                 obj.make_syntheticT1_M0(bfilter{1})                                         % Processing step 1
                 obj.coreg_VFA_B1_2synthetic(bfilter{1})                                     % Processing step 2+5b
-                MEGREprepWorker.create_brainmask(obj, obj.BIDSW_ses(), bfilter{1})          % Processing step 3
-                MEGREprepWorker.merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDSW_ses()) % Processing step 4
+                create_brainmask(obj, obj.BIDSW_ses(), bfilter{1})                          % Processing step 3
+                merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDSW_ses()) % Processing step 4
             else
                 obj.logger.verbose("No raw %s data found for: ", bfilter{1}.suffix, obj.subject.name)
             end
@@ -119,7 +119,7 @@ methods
     function denoise_raw(obj, bfilter)
         %DENOISE_RAW creates a temporary brainmask and denoises raw 5D data
 
-        import qb.workers.MEGREprepWorker
+        import qb.workers.MEGREprepWorker.*
 
         if ~strlength(obj.config.(obj.name).denoising.method)
             return
@@ -129,9 +129,9 @@ methods
         obj.bidsfilter.ME4Dmag.id   = 'temp';
         obj.bidsfilter.ME4Dphase.id = 'temp';
 
-        MEGREprepWorker.create_brainmask(obj, obj.BIDS, bfilter)
-        MEGREprepWorker.merge_MEVFAfiles(bfilter, obj.BIDS, false)
-        MEGREprepWorker.denoise_MPPCA(obj)
+        create_brainmask(obj, obj.BIDS, bfilter)
+        merge_MEVFAfiles(obj, bfilter, obj.BIDS, false)
+        denoise_MPPCA(obj)
 
         obj.bidsfilter.brainmask = rmfield(obj.bidsfilter.brainmask, 'id');
         obj.bidsfilter.ME4Dmag   = rmfield(obj.bidsfilter.ME4Dmag,   'id');

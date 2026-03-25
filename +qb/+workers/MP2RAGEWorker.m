@@ -78,7 +78,7 @@ methods
             Vin   = spm_vol(char(B1anat));
             x     = spm_coreg(INV2hdr, Vin, struct(cost_fun='nmi'));
             B1_   = spm_vol(char(B1famp));
-            T     = B1_.mat \ spm_matrix(x) * INV2hdr.mat;     % T = Mapping from voxels in INV2Ref to voxels in B1famp
+            T     = B1_.mat \ spm_matrix(x) * INV2hdr.mat;     % T = Mapping from voxels in INV2Ref to voxel coordinates in B1famp
             B1img = NaN(INV2hdr.dim);
             for z = 1:INV2hdr.dim(3)                           % Reslice the B1famp volume at the coordinates of each coregistered transverse slice of INV2Ref
                 B1img(:,:,z) = spm_slice_vol(B1_, T * spm_matrix([0 0 z]), INV2hdr.dim(1:2), 1);     % Using trilinear interpolation

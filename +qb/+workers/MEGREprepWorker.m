@@ -114,11 +114,11 @@ methods (Static)
                     
                     % Create the 4D mag and phase QSM/MCR input data
                     bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.ME4Dmag);
-                    obj.logger.verbose("-> Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
+                    obj.logger.info("-> Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
                     file_merge(magfiles(magidx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
 
                     bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.ME4Dphase);
-                    obj.logger.verbose("-> Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
+                    obj.logger.info("-> Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
                     file_merge(phasefiles(phaseidx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
                 end
             end
@@ -185,9 +185,9 @@ methods (Static)
                     if numel(flips)
                         bfilter.flip = flips(n);
                     end
-                    magfile        = obj.query_ses(BIDSW, 'data', bfilter);
-                    V_m{n}         = spm_vol(char(magfile));
-                    V_p{n}         = spm_vol(char(strrep(magfile, 'part-mag', 'part-phase')));
+                    magfile        = char(obj.query_ses(BIDSW, 'data', bfilter));
+                    V_m{n}         = spm_vol(magfile);
+                    V_p{n}         = spm_vol(strrep(magfile, 'part-mag', 'part-phase'));
                     img(:,:,:,:,n) = spm_read_vols(V_m{n}) .* exp(1i * qb.utils.read_vols_phase(V_p{n}));   % Read phase data in radians
                 end
 
@@ -195,7 +195,7 @@ methods (Static)
                 mask = obj.query_ses(BIDSW, 'data', obj.bidsfilter.brainmask);
                 mask = logical(spm_read_vols(spm_vol(char(mask))));
 
-                obj.logger.info('--> %s denoising: %s [..]', denoising.method, char(magfile))
+                obj.logger.info('--> %s denoising: %s [..]', denoising.method, spm_file(magfile,'filename'))
                 switch denoising.method
                     case 'MPPCA'
                         dim = num2cell(size(img));             % Dimensions: [x,y,z,TE,FA]
@@ -208,22 +208,22 @@ methods (Static)
 
                 % Save the denoised data (in-place)
                 for n = 1:size(flips,2)
-                    obj.write_vol_denoised(obj, V_m{n},   abs(img(:,:,:,:,n)))
-                    obj.write_vol_denoised(obj, V_p{n}, angle(img(:,:,:,:,n)))
+                    write_vol_denoised(obj, V_m{n},   abs(img(:,:,:,:,n)))
+                    write_vol_denoised(obj, V_p{n}, angle(img(:,:,:,:,n)))
                 end
+
             end
         end
-    end
 
-    function write_vol_denoised(obj, V, img)
-        
-        bfile = bids.File(V(1).fname);
-        if isfield(bfile.metadata, 'Denoised')
-            obj.logger.warning('Denoising applied TWICE to "%s": This file was already denoised using "%s"', bfile.path, bfile.metadata.Denoised)
+        function write_vol_denoised(obj, V, img)
+            bfile = bids.File(V(1).fname);
+            if isfield(bfile.metadata, 'Denoised')
+                obj.logger.warning('Denoising applied TWICE to "%s": This file was already denoised using "%s"', bfile.path, bfile.metadata.Denoised)
+            end
+            bfile.metadata.Denoised = obj.config.(obj.name).denoising.method;
+            obj.logger.info("-> Saving: %s", V(1).fname)
+            qb.utils.write_vol(V, img, bfile);
         end
-        bfile.metadata.Denoised = obj.config.(obj.name).denoising.method;
-        obj.logger.info("-> Saving: %s", V(1).fname)
-        qb.utils.write_vol(V, img, bfile);
     end
 
 end

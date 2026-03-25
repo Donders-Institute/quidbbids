@@ -108,8 +108,8 @@ methods
                 obj.denoise_raw(bfilter{1})                                                 % Processing step 5a
                 obj.make_syntheticT1_M0(bfilter{1})                                         % Processing step 1
                 obj.coreg_VFA_B1_2synthetic(bfilter{1})                                     % Processing step 2+5b
-                create_brainmask(obj, obj.BIDSW_ses(), bfilter{1})                          % Processing step 3
-                merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDSW_ses()) % Processing step 4
+                MEGREprepWorker.create_brainmask(obj, obj.BIDSW_ses(), bfilter{1})          % Processing step 3
+                MEGREprepWorker.merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDSW_ses()) % Processing step 4
             else
                 obj.logger.verbose("No raw %s data found for: ", bfilter{1}.suffix, obj.subject.name)
             end
@@ -129,9 +129,9 @@ methods
         obj.bidsfilter.ME4Dmag.id   = 'temp';
         obj.bidsfilter.ME4Dphase.id = 'temp';
 
-        create_brainmask(obj, obj.BIDS, bfilter)
-        merge_MEVFAfiles(bfilter, obj.BIDS, false)
-        denoise_MPPCA(obj)
+        MEGREprepWorker.create_brainmask(obj, obj.BIDS, bfilter)
+        MEGREprepWorker.merge_MEVFAfiles(bfilter, obj.BIDS, false)
+        MEGREprepWorker.denoise_MPPCA(obj)
 
         obj.bidsfilter.brainmask = rmfield(obj.bidsfilter.brainmask, 'id');
         obj.bidsfilter.ME4Dmag   = rmfield(obj.bidsfilter.ME4Dmag,   'id');
@@ -234,13 +234,14 @@ methods
 
                 % Get the denoised data (if applicable)
                 if strlength(obj.config.(obj.name).denoising.method)
-                    denoised_mag = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='mag', id='temp'));
-                    if length(denoised_mag) ~= 1
-                        obj.logger.exception("I expected one denoised image but found:" + sprintf("\n%s", denoised_mag{:}))
+                    denoised_magf   = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='mag', id='temp'));
+                    denoised_phasef = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='phase', id='temp'));
+                    if length(denoised_magf) ~= 1 || length(denoised_phasef) ~= 1
+                        obj.logger.exception("I expected one denoised image but found:" + sprintf("\n%s", denoised_magf{:}))
                     end
-                    denoised_mag   = spm_read_vols(spm_vol(char(denoised_mag)));
-                    denoised_phase = read_vols_phase(spm_vol(strrep(char(denoised_mag), 'part-mag', 'part-phase')));
-                    delete(denoised_mag{:}, denoised_phase{:})
+                    denoised_mag   = spm_read_vols(spm_vol(char(denoised_magf)));
+                    denoised_phase = read_vols_phase(spm_vol(char(denoised_phasef)));
+                    delete(denoised_magf{:}, denoised_phasef{:})
                 end
 
                 % Realign all FA images to their synthetic targets

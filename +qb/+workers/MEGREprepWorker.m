@@ -3,8 +3,7 @@ classdef MEGREprepWorker < qb.workers.Worker
 %
 % Processing steps:
 %
-% 1. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
-%    to produce a minimal output mask (for SEPIA)
+% 1. Create a brain mask using the echo-1_mag image
 % 2. Merge all echoes into a 4D file (for running the QSM workflows)
 % 3. Denoise the merged 4D file (optional)
 %
@@ -72,44 +71,10 @@ methods
         % Get the work done
         if ~isempty(obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawMEGRE))
             qb.workers.MEGREprepWorker.create_brainmask(obj, obj.BIDS, obj.bidsfilter.rawMEGRE) % Processing step 1
-            obj.merge_MEGREfiles()                                                              % Processing step 2
+            obj.merge_MEVFAfiles(obj, obj.bidsfilter.rawMEGRE, obj.BIDS, false)                 % Processing step 2
             qb.workers.MEGREprepWorker.denoise_MPPCA(obj)                                       % Processing step 3
         else
             obj.logger.verbose("No raw MEGRE data found for: " + obj.subject.name)
-        end
-    end
-
-    function merge_MEGREfiles(obj)
-        %MERGE_MEGREFILES Implements processing step 2 (single flip angle)
-        %
-        % Merge the raw 3D echos files for each acquisition protocol into 4D files (NB: the acq-label is disregarded in VFAprepWorker)
-
-        import qb.utils.file_merge
-
-        % Merge the 3D echos files into 4D files for all MEGRE acq/runs independently
-        bfilter = obj.bidsfilter.rawMEGRE;
-        for acq = obj.query_ses(obj.BIDS, 'acquisitions', bfilter)
-            bfilter.acq = char(acq);
-            for run = obj.query_ses(obj.BIDS, 'runs', bfilter)
-                bfilter.run = char(run);
-
-                % Get the mag/phase echo images for this flip angle & run
-                [magfiles,   magbfiles]   = obj.query_ses(obj.BIDS, 'data', bfilter, part='mag');
-                [phasefiles, phasebfiles] = obj.query_ses(obj.BIDS, 'data', bfilter, part='phase');
-
-                % Sort the mag/phase files by their echo index
-                [~, magidx]   = sort(cellfun(@(s) s.metadata.EchoNumber, magbfiles));
-                [~, phaseidx] = sort(cellfun(@(s) s.metadata.EchoNumber, phasebfiles));
-
-                % Create the 4D mag and phase images
-                bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.ME4Dmag);
-                obj.logger.verbose("-> Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
-                file_merge(magfiles(magidx), bfile.path, {'EchoNumber', 'EchoTime'}, false);
-
-                bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.ME4Dphase);
-                obj.logger.verbose("-> Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
-                file_merge(phasefiles(phaseidx), bfile.path, {'EchoNumber', 'EchoTime'}, false);
-            end
         end
     end
 
@@ -117,6 +82,48 @@ end
 
 
 methods (Static)
+    % NB: All static methods below are actually instance methods that are shared with VFAprepWorker
+
+    function merge_MEVFAfiles(obj, bfilter, BIDS, cleanup)
+        %MERGE_MEVFAFILES merges the 3D echos files for each acq/run/flip angle into 4D files
+
+        arguments
+            obj
+            bfilter struct
+            BIDS    struct
+            cleanup logical = true
+        end
+
+        import qb.utils.file_merge
+
+        % Process all acq/runs/flips independently and merge the (temp3D) echos files into 4D files
+        for acq = obj.query_ses(BIDS, 'acquisitions', bfilter)
+            bfilter.acq = char(acq);
+            for run = str2double(obj.query_ses(BIDS, 'runs', bfilter))
+                bfilter.run = run;
+                for flip = str2double(obj.query_ses(BIDS, 'flips', bfilter))
+                    bfilter.flip = flip;
+
+                    % Get the mag/phase echo images for this flip angle & run
+                    [magfiles,   magbfiles]   = obj.query_ses(BIDS, 'data',  bfilter, part='mag');
+                    [phasefiles, phasebfiles] = obj.query_ses(BIDS, 'data',  bfilter, part='phase');
+
+                    % Sort the mag/phase files by their echo index
+                    [~, magidx]   = sort(cellfun(@(s) s.metadata.EchoNumber, magbfiles));
+                    [~, phaseidx] = sort(cellfun(@(s) s.metadata.EchoNumber, phasebfiles));
+                    
+                    % Create the 4D mag and phase QSM/MCR input data
+                    bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.ME4Dmag);
+                    obj.logger.verbose("-> Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
+                    file_merge(magfiles(magidx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
+
+                    bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.ME4Dphase);
+                    obj.logger.verbose("-> Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
+                    file_merge(phasefiles(phaseidx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
+                end
+            end
+        end
+    end
 
     function create_brainmask(obj, BIDS, bfilter)
         %CREATE_BRAINMASK Implements processing step 1
@@ -128,35 +135,35 @@ methods (Static)
 
         import qb.utils.spm_vol
 
-        % Process all runs independently
-        for run = obj.query_ses(BIDS, 'runs', bfilter)
+        % Process all acq/runs independently
+        for acq = obj.query_ses(BIDS, 'acquisitions', bfilter)
+            bfilter.acq = char(acq);
+            for run = str2double(obj.query_ses(BIDS, 'runs', bfilter))
 
-            obj.logger.info("--> Creating brain mask for run: %s", string(run))
+                obj.logger.info("--> Creating brain mask for run: %i", run)
 
-            % Combine all (echo-1) masks to create a minimal brain mask (using mri_synthstrip)
-            mask = true;
-            for echo1 = obj.query_ses(BIDS, 'data', bfilter, echo=1, run=char(run), part='mag')     % This will loop over flips (NB: and possibly more)
-                bfile = bids.File(char(echo1));
-                specs = setfield(obj.bidsfilter.brainmask, desc=sprintf('VFA%02d', bfile.metadata.FlipAngle));    % Add desc -> (flip)mask is a temporary file
-                bfile = obj.bfile_set(bfile, specs);
-                [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
-                obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(echo1), bfile.path));        % [status,out] = system('echo $CUDA_VISIBLE_DEVICES') does not detect if pytorch was compiled with CUDA support
-                mask  = spm_read_vols(spm_vol(bfile.path)) & mask;
-                delete(bfile.path)                      % Delete the temporary mask file
+                % Combine all (echo-1) masks to create a minimal brain mask (using mri_synthstrip)
+                mask = true;
+                for echo1 = obj.query_ses(BIDS, 'data', bfilter, echo=1, run=run, part='mag')     % This will loop over flips (NB: and possibly more)
+                    bfile = bids.File(char(echo1));
+                    specs = setfield(obj.bidsfilter.brainmask, desc=sprintf('VFA%02d', bfile.metadata.FlipAngle));    % Add desc -> (flip)mask is a temporary file
+                    bfile = obj.bfile_set(bfile, specs);
+                    [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
+                    obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(echo1), bfile.path));        % [status,out] = system('echo $CUDA_VISIBLE_DEVICES') does not detect if pytorch was compiled with CUDA support
+                    mask  = spm_read_vols(spm_vol(bfile.path)) & mask;
+                    delete(bfile.path)                      % Delete the temporary mask file
+                end
+
+                % Save the combined mask
+                bfile = obj.bfile_set(echo1, obj.bidsfilter.brainmask);
+                obj.logger.info("-> Saving: %s", bfile.filename)
+                qb.utils.write_vol(spm_vol(char(echo1)), mask, bfile);
             end
-
-            % Save the combined mask
-            bfile = obj.bfile_set(echo1, obj.bidsfilter.brainmask);
-            obj.logger.info("-> Saving: %s", bfile.filename)
-            qb.utils.write_vol(spm_vol(char(echo1)), mask, bfile);
-
         end
     end
 
     function denoise_MPPCA(obj)
-        %DENOISE Implements processing step 3
-        %
-        % NB: This method is shared with VFAprepWorker
+        %DENOISE_MPPCA uses MPPCA or tMPPCA to denoise acq/run 4D (echo) or 5D (echo,flip) images in-place.
 
         import qb.utils.spm_vol
 
@@ -169,14 +176,14 @@ methods (Static)
         bfilter = obj.bidsfilter.ME4Dmag;
         for acq = obj.query_ses(BIDSW, 'acquisitions', bfilter)
             bfilter.acq = char(acq);
-            for run = obj.query_ses(BIDSW, 'runs', bfilter)
-                bfilter.run = char(run);
+            for run = str2double(obj.query_ses(BIDSW, 'runs', bfilter))
+                bfilter.run = run;
 
                 % Get the 4D mag/phase echo images for this acq, run & flip angle and combine them into complex values
-                flips = obj.query_ses(BIDSW, 'flips', bfilter);
+                flips = sort(str2double(obj.query_ses(BIDSW, 'flips', bfilter)));
                 for n = size(flips,2):-1:1
                     if numel(flips)
-                        bfilter.flip = char(flips(n));
+                        bfilter.flip = flips(n);
                     end
                     magfile        = obj.query_ses(BIDSW, 'data', bfilter);
                     V_m{n}         = spm_vol(char(magfile));
@@ -192,7 +199,7 @@ methods (Static)
                 switch denoising.method
                     case 'MPPCA'
                         dim = num2cell(size(img));             % Dimensions: [x,y,z,TE,FA]
-                        img = reshape(denoise(reshape(img,dim{1:3},[]), denoising.kernel, mask), dim{:});   % Denoise takes maximally 4D data only
+                        img = reshape(denoise(reshape(img,dim{1:3},[]), denoising.kernel, mask), dim{:});   % The denoise() tool takes maximally 4D data
                     case 'tMPPCA'
                         img = denoise_recursive_tensor(img, denoising.kernel, mask=mask);
                     otherwise
@@ -200,7 +207,7 @@ methods (Static)
                 end
 
                 % Save the denoised data (in-place)
-                for n = size(flips,2):-1:1
+                for n = 1:size(flips,2)
                     obj.write_vol_denoised(obj, V_m{n},   abs(img(:,:,:,:,n)))
                     obj.write_vol_denoised(obj, V_p{n}, angle(img(:,:,:,:,n)))
                 end

@@ -90,6 +90,7 @@ methods
         end
 
         import qb.utils.setfields
+        import qb.workers.MEGREprepWorker
 
         if isempty(obj.bidsfilter.rawMEVFA.suffix)
             return
@@ -102,18 +103,42 @@ methods
                 continue
             end
             if ~isempty(obj.query_ses(obj.BIDS, 'data', bfilter{1}))
-                qb.workers.MEGREprepWorker.denoise_MPPCA(obj, bfilter{1})                      % Processing step 5
-                obj.create_syntheticT1_M0(bfilter{1})                                          % Processing step 1
-                obj.coreg_VFA_B1_2synthetic(bfilter{1})                                        % Processing step 2+5
-                qb.workers.MEGREprepWorker.create_brainmask(obj, obj.BIDSW_ses(), bfilter{1})  % Processing step 3
-                obj.merge_MEVFAfiles(bfilter{1})                                               % Processing step 4
+                obj.denoise_raw(bfilter{1})                                                 % Processing step 5a
+                obj.make_syntheticT1_M0(bfilter{1})                                         % Processing step 1
+                obj.coreg_VFA_B1_2synthetic(bfilter{1})                                     % Processing step 2+5b
+                create_brainmask(obj, obj.BIDSW_ses(), bfilter{1})                          % Processing step 3
+                merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDSW_ses()) % Processing step 4
             else
                 obj.logger.verbose("No raw %s data found for: ", bfilter{1}.suffix, obj.subject.name)
             end
         end
     end
 
-    function create_syntheticT1_M0(obj, bfilter)
+    function denoise_raw(obj, bfilter)
+        %DENOISE_RAW creates a temporary brainmask and denoises raw 5D data
+
+        import qb.workers.MEGREprepWorker
+
+        if ~strlength(obj.config.(obj.name).denoising.method)
+            return
+        end
+
+        obj.bidsfilter.brainmask.id = 'temp';
+        obj.bidsfilter.ME4Dmag.id   = 'temp';
+        obj.bidsfilter.ME4Dphase.id = 'temp';
+
+        create_brainmask(obj, obj.BIDS, bfilter)
+        merge_MEVFAfiles(bfilter, obj.BIDS, false)
+        denoise_MPPCA(obj)
+
+        obj.bidsfilter.brainmask = rmfield(obj.bidsfilter.brainmask, 'id');
+        obj.bidsfilter.ME4Dmag   = rmfield(obj.bidsfilter.ME4Dmag,   'id');
+        obj.bidsfilter.ME4Dphase = rmfield(obj.bidsfilter.ME4Dphase, 'id');
+
+        delete(fullfile(obj.subject.path, bfilter.modality, '*_id-temp_*mask*'))
+    end
+
+    function make_syntheticT1_M0(obj, bfilter)
         %CREATE_SYNTHETICT1_M0 Implements processing step 1
         %
         % Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.
@@ -126,47 +151,57 @@ methods
 
         GRESignal = @(FlipAngle, TR, T1) sind(FlipAngle) .* (1-exp(-TR./T1)) ./ (1-(exp(-TR./T1)) .* cosd(FlipAngle));
 
-        % Process all runs independently
-        for run = obj.query_ses(obj.BIDS, 'runs', bfilter)
+        % Process all acq/runs independently
+        for acq = obj.query_ses(obj.BIDS, 'acquisitions', bfilter)
+            bfilter.acq = char(acq);
+            for run = str2double(obj.query_ses(obj.BIDS, 'runs', bfilter))
 
-            % Get the echo-1 magnitude files and metadata for all flip angles of this run
-            VFA_e1_filter = qb.utils.setfields(bfilter, echo=1, run=char(run), part='mag');
-            VFA_e1 = obj.query_ses(obj.BIDS, 'data', VFA_e1_filter);
-            if length(VFA_e1) <= 1
-                obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
+                % Get the echo-1 magnitude files and metadata for all flip angles of this acq/run
+                bfilter_e1 = qb.utils.setfields(bfilter, echo=1, run=run, part='mag');
+                VFA_e1 = obj.query_ses(obj.BIDS, 'data', bfilter_e1);
+                if length(VFA_e1) <= 1
+                    obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
+                end
+
+                % Define a reference volume, i.e. the first FA file (assume TR and nii-header identical for all MPM/VFAs of the same run)
+                Ve1 = spm_vol(VFA_e1{1});
+
+                % Compute T1 and M0 maps
+                obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1{1})
+                e1img = NaN([Ve1.dim length(VFA_e1)]);
+                for n = 1:length(VFA_e1)
+                    Ve1n = spm_vol(VFA_e1{n});
+                    if n == 1
+                        e1img(:,:,:,n) = spm_read_vols(Ve1n);
+                    else    % Coregister each VFA_e1 volume to the reference volume
+                        x = spm_coreg(Ve1, Ve1n, struct(cost_fun='ncc'));
+                        T = Ve1n.mat \ spm_matrix(x) * Ve1.mat;       % Transformation from voxel coordinates in Ve1 to voxel coordinates in Ve1n
+                        for z = 1:Ve1.dim(3)
+                            e1img(:,:,z,n) = spm_slice_vol(Ve1n, T * spm_matrix([0 0 z]), Ve1.dim(1:2), 1);     % Using trilinear interpolation
+                        end
+                    end
+                    metadata      = bids.File(VFA_e1{n}).metadata;
+                    flipangles(n) = metadata.FlipAngle;
+                end
+                [T1, M0] = despot1_mapping(e1img, flipangles, metadata.RepetitionTime);
+
+                % Save T1w-like images in the work directory
+                for n = 1:length(VFA_e1)
+                    T1w                    = M0 .* GRESignal(flipangles(n), metadata.RepetitionTime, T1);
+                    T1w(~isfinite(T1w))    = 0;
+                    bfile                  = obj.bfile_set(VFA_e1{n}, obj.bidsfilter.syntheticT1);
+                    bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
+                    obj.logger.verbose("-> Saving T1-like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
+                    write_vol(Ve1, T1w, bfile);
+                end
+
+                % Save the M0 volume as well
+                bfile                    = obj.bfile_set(Ve1.fname, obj.bidsfilter.M0map_echo1);
+                bfile.metadata.Sources   = strrep(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids::');
+                bfile.metadata.FlipAngle = flipangles;
+                obj.logger.verbose("-> Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
+                write_vol(Ve1, M0, bfile);
             end
-
-            % Get metadata from the first FA file (assume TR and nii-header identical for all MPM/VFAs of the same run)
-            Ve1 = spm_vol(VFA_e1{1});
-
-            % Compute T1 and M0 maps
-            obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1{1})
-            e1img = NaN([Ve1.dim length(VFA_e1)]);
-            for n = 1:length(VFA_e1)
-                e1img(:,:,:,n) = spm_read_vols(spm_vol(VFA_e1{n}));
-                metadata       = bids.File(VFA_e1{n}).metadata;
-                flipangles(n)  = metadata.FlipAngle;
-            end
-            [T1, M0] = despot1_mapping(e1img, flipangles, metadata.RepetitionTime);
-
-            % TODO: Iterate the computation with the input images realigned to the synthetic T1w images
-
-            % Save T1w-like images in the work directory
-            for n = 1:length(VFA_e1)
-                T1w                    = M0 .* GRESignal(flipangles(n), metadata.RepetitionTime, T1);
-                T1w(~isfinite(T1w))    = 0;
-                bfile                  = obj.bfile_set(VFA_e1{n}, obj.bidsfilter.syntheticT1);
-                bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
-                obj.logger.verbose("-> Saving T1-like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
-                write_vol(Ve1, T1w, bfile);
-            end
-
-            % Save the M0 volume as well
-            bfile                    = obj.bfile_set(Ve1.fname, obj.bidsfilter.M0map_echo1);
-            bfile.metadata.Sources   = strrep(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids::');
-            bfile.metadata.FlipAngle = flipangles;
-            obj.logger.verbose("-> Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
-            write_vol(Ve1, M0, bfile);
         end
     end
 
@@ -178,6 +213,7 @@ methods
 
         import qb.utils.write_vol
         import qb.utils.spm_vol
+        import qb.utils.read_vols_phase
         import qb.utils.setfields
 
         % Index the workdir layout (only for obj.subject)
@@ -187,141 +223,120 @@ methods
         B1famp = obj.ask_team('TB1map_angle');
         B1anat = obj.ask_team('TB1map_anat');
 
-        % Process all runs independently
-        for run = obj.query_ses(obj.BIDS, 'runs', bfilter)
+        % Process all acq/runs independently
+        for acq = obj.query_ses(obj.BIDS, 'acquisitions', bfilter)
+            bfilter.acq = char(acq);
+            for run = str2double(obj.query_ses(obj.BIDS, 'runs', bfilter))
 
-            VFA_e1_filter = setfields(bfilter, echo=1, run=char(run), part='mag');
+                bfilter_e1 = setfields(bfilter, echo=1, run=run, part='mag');
 
-            % Realign all FA images to their synthetic targets
-            for flip = obj.query_ses(obj.BIDS, 'flips', VFA_e1_filter)
-
-                % Get the raw echo-1 magnitude file for this flip angle of this run
-                VFA_e1 = obj.query_ses(obj.BIDS, 'data', VFA_e1_filter, 'flip',char(flip));
-
-                % Get the common synthetic FA target image
-                VFAref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.syntheticT1, run=char(run), flip=char(flip));
-                if length(VFAref) ~= 1
-                    obj.logger.exception("I expected one synthetic reference images, but found: " + sprintf("\n%s",VFAref{:}))
+                % Get the denoised data (if applicable)
+                if strlength(obj.config.(obj.name).denoising.method)
+                    denoised_mag = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='mag', id='temp'));
+                    if length(denoised_mag) ~= 1
+                        obj.logger.exception("I expected one denoised image but found:" + sprintf("\n%s", denoised_mag{:}))
+                    end
+                    denoised_mag   = spm_read_vols(spm_vol(char(denoised_mag)));
+                    denoised_phase = read_vols_phase(spm_vol(strrep(char(denoised_mag), 'part-mag', 'part-phase')));
+                    delete(denoised_mag{:}, denoised_phase{:})
                 end
 
-                % Coregister the VFA_e1 image to the synthetic target image using Normalized Cross-Correlation (NCC)
-                obj.logger.info("--> Coregistering VFA images using: " + VFA_e1)
-                Vref = spm_vol(char(VFAref));
-                Vin  = spm_vol(char(VFA_e1));
-                x    = spm_coreg(Vref, Vin, struct(cost_fun='ncc'));
+                % Realign all FA images to their synthetic targets
+                for flip = str2double(obj.query_ses(obj.BIDS, 'flips', bfilter_e1))
 
-                % Save all resliced echo images for this flip angle (they will be merged to a 4D-file later)
-                VFA_flip_filter = setfields(bfilter, flip=char(flip), run=char(run));
-                for echo = obj.query_ses(obj.BIDS, 'echos', VFA_flip_filter)
+                    % Get the raw echo-1 magnitude file for this flip angle of this run
+                    VFA_e1 = obj.query_ses(obj.BIDS, 'data', bfilter_e1, flip=flip);
 
-                    % Load the magnitude and phase data -> convert to complex data (to correctly resample phase-wraps)
-                    VFA_fe_m = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, echo=char(echo), part='mag');
-                    VFA_fe_p = obj.query_ses(obj.BIDS, 'data', VFA_flip_filter, echo=char(echo), part='phase');
-                    Vfe_m    = spm_vol(char(VFA_fe_m));             % Magnitude volume
-                    Vfe_p    = spm_vol(char(VFA_fe_p));             % Phase volume
-                    img_m    = spm_read_vols(Vfe_m);
-                    img_p    = qb.utils.read_vols_phase(Vfe_p);     % Read phase data in radians
-                    img      = cat(4, img_m .* cos(img_p), ...      % Real image part
-                                      img_m .* sin(img_p));         % Imag image part
-                    
-                    % Reslice the real and imag data to the synthetic target space (spm_slice_vol doesn't support complex data directly)
-                    T     = Vfe_m.mat \ spm_matrix(x) * Vref.mat;   % T = Transformation from voxels in Vref to voxels in Vfe
-                    img_r = NaN([Vref.dim 2]);                      % Preallocate resliced images
-                    for n = 1:size(img,4)
-
-                        % Avoid disk IO by temporarily replacing the memory mapped mag data with real/imag data
-                        Vfe_m.private     = struct();               % Clear private nifti object to allow overriding the memory map
-                        Vfe_m.private.dat = img(:,:,:,n);           % Override the memory map with real/imag data
-                        Vfe_m.dat         = img(:,:,:,n);           % Make sure that for gz-files ".dat" is also overridden
-
-                        for z = 1:Vref.dim(3)
-                            img_r(:,:,z,n) = spm_slice_vol(Vfe_m, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);    % Using trilinear interpolation (NB: the memory map of Vfe_m is used here)
-                        end
+                    % Get the common synthetic FA target image
+                    VFAref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.syntheticT1, acq=char(acq), run=run, flip=flip);
+                    if length(VFAref) ~= 1
+                        obj.logger.exception("I expected one synthetic reference images, but found:" + sprintf("\n%s",VFAref{:}))
                     end
 
-                    % Save the magnitude image
-                    bfile = obj.bfile_set(Vfe_m.fname, struct(space=obj.bidsfilter.syntheticT1.space, desc='temp3D'));  % Will be merged to desc=ME4D
-                    bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
-                    write_vol(Vref, hypot(img_r(:,:,:,1), img_r(:,:,:,2)), bfile);   % Numerically stable sqrt(Re.^2 + Im.^2)
+                    % Coregister the VFA_e1 image to the synthetic target image using Normalized Cross-Correlation (NCC)
+                    obj.logger.info("--> Coregistering VFA images using: " + VFA_e1)
+                    Vref = spm_vol(char(VFAref));
+                    Vin  = spm_vol(char(VFA_e1));
+                    x    = spm_coreg(Vref, Vin, struct(cost_fun='ncc'));
 
-                    % Save the phase image
-                    bfile = obj.bfile_set(Vfe_p.fname, struct(space=obj.bidsfilter.syntheticT1.space, desc='temp3D'));  % Will be merged to desc=ME4D
-                    bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
-                    write_vol(Vref, atan2(img_r(:,:,:,2), img_r(:,:,:,1)), bfile);   % Quadrant-correct phase in radians, range [-pi, pi]
+                    % Save all (denoised) resliced echo images for this flip angle (they will be merged to a 4D-file later)
+                    bfilter_flip = setfields(bfilter, flip=flip, run=run);
+                    for echo = str2double(obj.query_ses(obj.BIDS, 'echos', bfilter_flip))
+
+                        % Load the magnitude and phase data -> convert to complex data (to correctly resample phase-wraps)
+                        VFA_fe_m = obj.query_ses(obj.BIDS, 'data', bfilter_flip, echo=echo, part='mag');
+                        VFA_fe_p = obj.query_ses(obj.BIDS, 'data', bfilter_flip, echo=echo, part='phase');
+                        Vfe_m    = spm_vol(char(VFA_fe_m));             % Magnitude volume
+                        Vfe_p    = spm_vol(char(VFA_fe_p));             % Phase volume
+                        if strlength(obj.config.(obj.name).denoising.method)
+                            img_m = denoised_mag(:,:,:,echo,flip);
+                            img_p = denoised_phase(:,:,:,echo,flip);
+                        else
+                            img_m = spm_read_vols(Vfe_m);
+                            img_p = read_vols_phase(Vfe_p);             % Read phase data in radians
+                        end
+                        img = cat(4, img_m .* cos(img_p), ...           % Real image part
+                                     img_m .* sin(img_p));              % Imag image part
+                        
+                        % Reslice the real and imag data to the synthetic target space (spm_slice_vol doesn't support complex data directly)
+                        T     = Vfe_m.mat \ spm_matrix(x) * Vref.mat;   % T = Transformation from voxel coordinates in Vref to voxel coordinates in Vfe
+                        img_r = NaN([Vref.dim 2]);                      % Preallocate resliced images
+                        for n = 1:size(img,4)
+
+                            % Avoid disk IO by temporarily replacing the memory mapped mag data with real/imag data
+                            Vfe_m.private     = struct();               % Clear private nifti object to allow overriding the memory map
+                            Vfe_m.private.dat = img(:,:,:,n);           % Override the memory map with real/imag data
+                            Vfe_m.dat         = img(:,:,:,n);           % Make sure that for gz-files ".dat" is also overridden
+
+                            for z = 1:Vref.dim(3)
+                                img_r(:,:,z,n) = spm_slice_vol(Vfe_m, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);    % Using trilinear interpolation (NB: the memory map of Vfe_m is used here)
+                            end
+                        end
+
+                        % Save the magnitude image
+                        bfile = obj.bfile_set(Vfe_m.fname, struct(space=obj.bidsfilter.syntheticT1.space, desc='temp3D'));  % Will be merged to desc=ME4D
+                        bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
+                        write_vol(Vref, hypot(img_r(:,:,:,1), img_r(:,:,:,2)), bfile);   % Numerically stable sqrt(Re.^2 + Im.^2)
+
+                        % Save the phase image
+                        bfile = obj.bfile_set(Vfe_p.fname, struct(space=obj.bidsfilter.syntheticT1.space, desc='temp3D'));  % Will be merged to desc=ME4D
+                        bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
+                        write_vol(Vref, atan2(img_r(:,:,:,2), img_r(:,:,:,1)), bfile);   % Quadrant-correct phase in radians, range [-pi, pi]
+
+                    end
 
                 end
 
-            end
-
-            % Get the B1 images and the common M0 target image
-            M0ref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.M0map_echo1, run=char(run));
-            if length(M0ref) ~= 1
-                obj.logger.error("Unexpected M0map images found: %s", sprintf("\n%s", M0ref{:}))
-            end
-
-            % Coregister the FA-map to the M0/synthetic T1 space
-            if ~isempty(B1famp)
-                if length(B1famp) ~= 1 || length(B1anat) ~= 1
-                    obj.logger.error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}))
+                % Get the B1 images and the common M0 target image
+                M0ref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.M0map_echo1, acq=char(acq), run=run);
+                if length(M0ref) ~= 1
+                    obj.logger.error("Unexpected M0map images found: %s", sprintf("\n%s", M0ref{:}))
                 end
 
-                % Coregister the B1-anat image to the M0 target image using Normalized Mutual Information (NMI)
-                Vref = spm_vol(char(M0ref));                    % Same space as synthetic T1
-                Vin  = spm_vol(char(B1anat));
-                x    = spm_coreg(Vref, Vin, struct(cost_fun='nmi'));
+                % Coregister the FA-map to the M0/synthetic T1 space
+                if ~isempty(B1famp)
+                    if length(B1famp) ~= 1 || length(B1anat) ~= 1
+                        obj.logger.error("Unexpected B1 images found: %s", sprintf("\n%s", B1famp{:}, B1anat{:}))
+                    end
 
-                % Reslice the FA-map to the M0/synthetic T1 space
-                VB1 = spm_vol(char(B1famp));
-                T   = VB1.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxels in Vref to voxels in VB1
-                B1  = NaN(Vref.dim);
-                for z = 1:Vref.dim(3)
-                    B1(:,:,z) = spm_slice_vol(VB1, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
+                    % Coregister the B1-anat image to the M0 target image using Normalized Mutual Information (NMI)
+                    Vref = spm_vol(char(M0ref));                    % Same space as synthetic T1
+                    Vin  = spm_vol(char(B1anat));
+                    x    = spm_coreg(Vref, Vin, struct(cost_fun='nmi'));
+
+                    % Reslice the FA-map to the M0/synthetic T1 space
+                    VB1 = spm_vol(char(B1famp));
+                    T   = VB1.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxel coordinates in Vref to voxel coordinates in VB1
+                    B1  = NaN(Vref.dim);
+                    for z = 1:Vref.dim(3)
+                        B1(:,:,z) = spm_slice_vol(VB1, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
+                    end
+
+                    % Save the resliced FA-map
+                    bfile = obj.bfile_set(B1famp, obj.bidsfilter.TB1map_GRE);
+                    obj.logger.verbose("-> Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
+                    write_vol(Vref, B1, bfile);
                 end
-
-                % Save the resliced FA-map
-                bfile = obj.bfile_set(B1famp, obj.bidsfilter.TB1map_GRE);
-                obj.logger.verbose("-> Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
-                write_vol(Vref, B1, bfile);
-            end
-
-        end
-    end
-
-    function merge_MEVFAfiles(obj, bfilter)
-        %MERGE_MEVFAFILES Implements processing step 4
-        %
-        % Merge the 3D echos files for each flip angle into 4D files
-
-        import qb.utils.file_merge
-
-        % Index the workdir layout (only for obj.subject)
-        BIDSW = obj.BIDSW_ses();
-
-        % Process all runs independently
-        bfilter.desc = 'temp3D';
-        for run = obj.query_ses(BIDSW, 'runs', bfilter)
-            bfilter.run = char(run);
-
-            % Merge the temp3D echos files for each flip angle into 4D files
-            for flip = obj.query_ses(BIDSW, 'flips', bfilter)
-                bfilter.flip = char(flip);
-
-                % Get the mag/phase echo images for this flip angle & run
-                [magfiles,   magbfiles]   = obj.query_ses(BIDSW, 'data',  bfilter, part='mag');
-                [phasefiles, phasebfiles] = obj.query_ses(BIDSW, 'data',  bfilter, part='phase');
-
-                % Sort the mag/phase files by their echo index
-                [~, magidx]   = sort(cellfun(@(s) s.metadata.EchoNumber, magbfiles));
-                [~, phaseidx] = sort(cellfun(@(s) s.metadata.EchoNumber, phasebfiles));
-                
-                % Create the 4D mag and phase QSM/MCR input data
-                bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.ME4Dmag);
-                obj.logger.verbose("-> Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
-                file_merge(magfiles(magidx), bfile.path, {'EchoNumber', 'EchoTime'});
-
-                bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.ME4Dphase);
-                obj.logger.verbose("-> Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
-                file_merge(phasefiles(phaseidx), bfile.path, {'EchoNumber', 'EchoTime'});
 
             end
         end

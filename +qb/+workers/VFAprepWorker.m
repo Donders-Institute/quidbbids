@@ -100,7 +100,7 @@ methods
 
         % Get the work done. For now, only process mt-off images, in the future we could also include mt-on images
         include = obj.config.General.BIDS.include;
-        for bfilter = {setfields(obj.bidsfilter.rawMEVFA, suffix='VFA'), setfield(obj.bidsfilter.rawMEVFA, mt='off', suffix='MPM')}
+        for bfilter = {setfields(obj.bidsfilter.rawMEVFA, suffix='VFA'), setfields(obj.bidsfilter.rawMEVFA, mt='off', suffix='MPM')}
             if all(cellfun('isempty', regexp(include.suffix, bfilter{1}.suffix)))              % A bit of an ugly hack, for now
                 continue
             end
@@ -237,8 +237,8 @@ methods
                     denoised_magf   = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='mag', id='temp'));
                     denoised_phasef = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='phase', id='temp'));
                     for m = length(denoised_magf):-1:1
-                        denoised_mag(:,:,:,:,m)   = spm_read_vols(spm_vol(denoised_magf{m}));
-                        denoised_phase(:,:,:,:,m) = read_vols_phase(spm_vol(denoised_phasef{m}));
+                        denoised_mag(:,:,:,:,m)   = single(spm_read_vols(spm_vol(denoised_magf{m})));
+                        denoised_phase(:,:,:,:,m) = single(read_vols_phase(spm_vol(denoised_phasef{m})));
                     end
                     delete(denoised_magf{:}, denoised_phasef{:})
                 end

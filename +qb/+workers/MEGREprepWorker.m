@@ -188,7 +188,7 @@ methods (Static)
                     magfile        = char(obj.query_ses(BIDSW, 'data', bfilter));
                     V_m{n}         = spm_vol(magfile);
                     V_p{n}         = spm_vol(strrep(magfile, 'part-mag', 'part-phase'));
-                    img(:,:,:,:,n) = spm_read_vols(V_m{n}) .* exp(1i * qb.utils.read_vols_phase(V_p{n}));   % Read phase data in radians
+                    img(:,:,:,:,n) = single(spm_read_vols(V_m{n}) .* exp(1i * qb.utils.read_vols_phase(V_p{n})));   % Read phase data in radians
                 end
 
                 % Get the mask

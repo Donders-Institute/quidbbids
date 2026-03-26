@@ -287,8 +287,8 @@ methods
 
                             % Avoid disk IO by temporarily replacing the memory mapped mag data with real/imag data
                             Vfe_m.private     = struct();               % Clear private nifti object to allow overriding the memory map
-                            Vfe_m.private.dat = img(:,:,:,n);           % Override the memory map with real/imag data
-                            Vfe_m.dat         = img(:,:,:,n);           % Make sure that for gz-files ".dat" is also overridden
+                            Vfe_m.private.dat = double(img(:,:,:,n));   % Override the memory map with real/imag data
+                            Vfe_m.dat         = double(img(:,:,:,n));   % Make sure that for gz-files ".dat" is also overridden
 
                             for z = 1:Vref.dim(3)
                                 img_r(:,:,z,n) = spm_slice_vol(Vfe_m, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);    % Using trilinear interpolation (NB: the memory map of Vfe_m is used here)

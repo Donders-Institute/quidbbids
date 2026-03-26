@@ -160,7 +160,7 @@ methods
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this acq/run
                 bfilter_e1 = qb.utils.setfields(bfilter, echo=1, run=run, part='mag');
-                VFA_e1 = obj.query_ses(obj.BIDS, 'data', bfilter_e1);
+                VFA_e1     = obj.query_ses(obj.BIDS, 'data', bfilter_e1);
                 if length(VFA_e1) <= 1
                     obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
                 end
@@ -236,8 +236,10 @@ methods
                 if strlength(obj.config.(obj.name).denoising.method)
                     denoised_magf   = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='mag', id='temp'));
                     denoised_phasef = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='phase', id='temp'));
-                    denoised_mag    = spm_read_vols(spm_vol(char(denoised_magf)));
-                    denoised_phase  = read_vols_phase(spm_vol(char(denoised_phasef)));
+                    for m = length(denoised_magf):-1:1
+                        denoised_mag(:,:,:,:,m)   = spm_read_vols(spm_vol(denoised_magf{m}));
+                        denoised_phase(:,:,:,:,m) = read_vols_phase(spm_vol(denoised_phasef{m}));
+                    end
                     delete(denoised_magf{:}, denoised_phasef{:})
                 end
 
@@ -256,8 +258,8 @@ methods
                     % Coregister the VFA_e1 image to the synthetic target image using Normalized Cross-Correlation (NCC)
                     obj.logger.info("--> Coregistering VFA images using: " + VFA_e1)
                     Vref = spm_vol(char(VFAref));
-                    Vin  = spm_vol(char(VFA_e1));
-                    x    = spm_coreg(Vref, Vin, struct(cost_fun='ncc'));
+                    Ve1  = spm_vol(char(VFA_e1));
+                    x    = spm_coreg(Vref, Ve1, struct(cost_fun='ncc'));
 
                     % Save all (denoised) resliced echo images for this flip angle (they will be merged to a 4D-file later)
                     bfilter_flip = setfields(bfilter, flip=flip, run=run);

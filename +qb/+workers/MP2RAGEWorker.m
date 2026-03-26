@@ -75,13 +75,13 @@ methods
             MP2RAGE = obj.getMP2RAGE(INV1, INV2, obj.config.MP2RAGEWorker);
 
             % Realign & reslice the B1 reference image to the INV2 image
-            Vin   = spm_vol(char(B1anat));
-            x     = spm_coreg(INV2hdr, Vin, struct(cost_fun='nmi'));
-            B1_   = spm_vol(char(B1famp));
-            T     = B1_.mat \ spm_matrix(x) * INV2hdr.mat;     % T = Mapping from voxels in INV2Ref to voxel coordinates in B1famp
+            VB1a  = spm_vol(char(B1anat));
+            x     = spm_coreg(INV2hdr, VB1a, struct(cost_fun='nmi'));
+            VB1f  = spm_vol(char(B1famp));
+            T     = VB1f.mat \ spm_matrix(x) * INV2hdr.mat;     % T = Mapping from voxels in INV2Ref to voxel coordinates in B1famp
             B1img = NaN(INV2hdr.dim);
             for z = 1:INV2hdr.dim(3)                           % Reslice the B1famp volume at the coordinates of each coregistered transverse slice of INV2Ref
-                B1img(:,:,z) = spm_slice_vol(B1_, T * spm_matrix([0 0 z]), INV2hdr.dim(1:2), 1);     % Using trilinear interpolation
+                B1img(:,:,z) = spm_slice_vol(VB1f, T * spm_matrix([0 0 z]), INV2hdr.dim(1:2), 1);   % Using trilinear interpolation
             end
             B1img(isnan(B1img)) = 0;                           % Set voxels outside the FOV to zero
 

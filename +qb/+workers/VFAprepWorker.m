@@ -4,10 +4,8 @@ classdef VFAprepWorker < qb.workers.Worker
 % Processing steps:
 %
 % 0. Denoise the raw input data (optional)
-% 1. Pass echo-1_mag VFA/MPM images to despot1 to compute T1w-like target + S0 maps for each FA.
-%    The results are blurry but within the common GRE space, hence, iterate the computation
-%    with the input images that have been realigned to the target in the common space
-% 2. Coregister all VFA?MPM images to each T1w-like target image (using echo-1_mag),
+% 1. Pass coregistered echo-1_mag VFA/MPM images to despot1 to compute T1w-like target + S0 maps for each FA.
+% 2. Coregister all VFA/MPM images to each T1w-like target image (using echo-1_mag),
 %    coregister the B1 images as well to the M0 (which is also in the common GRE space)
 % 3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
 %    to produce a minimal output mask (for SEPIA)
@@ -19,9 +17,7 @@ classdef VFAprepWorker < qb.workers.Worker
 properties (Constant)
     description = ["I am a working class hero that will happily do the following pre-processing work for you:";
                    "";
-                   "1. Pass echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
-                   "   The results are blurry but within the common GRE space, hence, iterate the computation";
-                   "   with the input images that have been realigned to the target in the common space";
+                   "1. Pass coregistered echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
                    "2. Coregister all VFA/MPM images to each T1w-like target image (using echo-1_mag),";
                    "   coregister the B1 images as well to the M0 (which is also in the common GRE space)";
                    "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
@@ -129,6 +125,7 @@ methods
         obj.bidsfilter.ME4Dmag.id   = 'temp';
         obj.bidsfilter.ME4Dphase.id = 'temp';
 
+        cleanup = onCleanup(@() delete(fullfile(strrep(obj.subject.path, obj.BIDS.pth, obj.workdir), bfilter.modality, '*_id-temp_*mask.*')));
         create_brainmask(obj, obj.BIDS, bfilter)
         merge_MEVFAfiles(obj, bfilter, obj.BIDS, false)
         denoise_MPPCA(obj)
@@ -137,7 +134,6 @@ methods
         obj.bidsfilter.ME4Dmag   = rmfield(obj.bidsfilter.ME4Dmag,   'id');
         obj.bidsfilter.ME4Dphase = rmfield(obj.bidsfilter.ME4Dphase, 'id');
 
-        delete(fullfile(obj.subject.path, bfilter.modality, '*_id-temp_*mask*'))
     end
 
     function make_syntheticT1_M0(obj, bfilter)

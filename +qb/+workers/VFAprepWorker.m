@@ -133,7 +133,6 @@ methods
         obj.bidsfilter.brainmask = rmfield(obj.bidsfilter.brainmask, 'id');
         obj.bidsfilter.ME4Dmag   = rmfield(obj.bidsfilter.ME4Dmag,   'id');
         obj.bidsfilter.ME4Dphase = rmfield(obj.bidsfilter.ME4Dphase, 'id');
-
     end
 
     function make_syntheticT1_M0(obj, bfilter)
@@ -156,32 +155,37 @@ methods
 
                 % Get the echo-1 magnitude files and metadata for all flip angles of this acq/run
                 bfilter_e1 = qb.utils.setfields(bfilter, echo=1, run=run, part='mag');
-                VFA_e1     = obj.query_ses(obj.BIDS, 'data', bfilter_e1);
+                VFA_e1     = obj.query_ses(obj.BIDS, 'data',  bfilter_e1);
+                flips      = obj.query_ses(obj.BIDS, 'flips', bfilter_e1);
                 if length(VFA_e1) <= 1
                     obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
                 end
+                if length(VFA_e1) ~= length(flips)
+                    obj.logger.error("Number of VFA images found (%d) differs from the number of flipangles (%d)", length(VFA_e1), length(flips))
+                end
 
-                % Define a reference volume, i.e. the first FA file (assume TR and nii-header identical for all MPM/VFAs of the same run)
-                Ve1 = spm_vol(VFA_e1{1});
+                % Define a reference volume, i.e. the middle FA file (assume TR and nii-header identical for all MPM/VFAs of the same run)
+                flip = round(mean(str2double(flips)));
+                Vref = spm_vol(char(obj.query_ses(obj.BIDS, 'data', bfilter_e1, flip=flip)));
 
                 % Compute T1 and M0 maps
                 obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1{1})
-                e1img = NaN([Ve1.dim length(VFA_e1)]);
+                VFAimg = NaN([Vref.dim length(VFA_e1)]);
                 for n = 1:length(VFA_e1)
-                    Ve1n = spm_vol(VFA_e1{n});
-                    if n == 1
-                        e1img(:,:,:,n) = spm_read_vols(Ve1n);
+                    VFAn = spm_vol(VFA_e1{n});
+                    if strcmp(Vref.fname, VFAn.fname)
+                        VFAimg(:,:,:,n) = spm_read_vols(VFAn);
                     else    % Coregister each VFA_e1 volume to the reference volume
-                        x = spm_coreg(Ve1, Ve1n, struct(cost_fun='ncc'));
-                        T = Ve1n.mat \ spm_matrix(x) * Ve1.mat;       % Transformation from voxel coordinates in Ve1 to voxel coordinates in Ve1n
-                        for z = 1:Ve1.dim(3)
-                            e1img(:,:,z,n) = spm_slice_vol(Ve1n, T * spm_matrix([0 0 z]), Ve1.dim(1:2), 1);     % Using trilinear interpolation
+                        x = spm_coreg(Vref, VFAn, struct(cost_fun='nmi'));
+                        T = VFAn.mat \ spm_matrix(x) * Vref.mat;       % Transformation from voxel coordinates in Vref to voxel coordinates in VFAn
+                        for z = 1:Vref.dim(3)
+                            VFAimg(:,:,z,n) = spm_slice_vol(VFAn, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);     % Using trilinear interpolation
                         end
                     end
                     metadata      = bids.File(VFA_e1{n}).metadata;
                     flipangles(n) = metadata.FlipAngle;
                 end
-                [T1, M0] = despot1_mapping(e1img, flipangles, metadata.RepetitionTime);
+                [T1, M0] = despot1_mapping(VFAimg, flipangles, metadata.RepetitionTime);
 
                 % Save T1w-like images in the work directory
                 for n = 1:length(VFA_e1)
@@ -190,15 +194,15 @@ methods
                     bfile                  = obj.bfile_set(VFA_e1{n}, obj.bidsfilter.syntheticT1);
                     bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
                     obj.logger.verbose("-> Saving T1-like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
-                    write_vol(Ve1, T1w, bfile);
+                    write_vol(Vref, T1w, bfile);
                 end
 
                 % Save the M0 volume as well
-                bfile                    = obj.bfile_set(Ve1.fname, obj.bidsfilter.M0map_echo1);
+                bfile                    = obj.bfile_set(Vref.fname, obj.bidsfilter.M0map_echo1);
                 bfile.metadata.Sources   = strrep(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids::');
                 bfile.metadata.FlipAngle = flipangles;
                 obj.logger.verbose("-> Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
-                write_vol(Ve1, M0, bfile);
+                write_vol(Vref, M0, bfile);
             end
         end
     end
@@ -236,16 +240,14 @@ methods
                         denoised_mag(:,:,:,:,m)   = single(spm_read_vols(spm_vol(denoised_magf{m})));
                         denoised_phase(:,:,:,:,m) = single(read_vols_phase(spm_vol(denoised_phasef{m})));
                     end
-                    delete(denoised_magf{:}, denoised_phasef{:})
+                    cellfun(@delete, strrep(erase([denoised_magf, denoised_phasef],'.gz'), '.nii','.*'))
                 end
 
                 % Realign all FA images to their synthetic targets
                 for flip = str2double(obj.query_ses(obj.BIDS, 'flips', bfilter_e1))
 
-                    % Get the raw echo-1 magnitude file for this flip angle of this run
+                    % Get the common synthetic FA target image and the raw echo-1 magnitude file for this flip angle of this run
                     VFA_e1 = obj.query_ses(obj.BIDS, 'data', bfilter_e1, flip=flip);
-
-                    % Get the common synthetic FA target image
                     VFAref = obj.query_ses(BIDSW, 'data', obj.bidsfilter.syntheticT1, acq=char(acq), run=run, flip=flip);
                     if length(VFAref) ~= 1
                         obj.logger.exception("I expected one synthetic reference images, but found:" + sprintf("\n%s",VFAref{:}))
@@ -255,7 +257,8 @@ methods
                     obj.logger.info("--> Coregistering VFA images using: " + VFA_e1)
                     Vref = spm_vol(char(VFAref));
                     Ve1  = spm_vol(char(VFA_e1));
-                    x    = spm_coreg(Vref, Ve1, struct(cost_fun='ncc'));
+                    x    = spm_coreg(Vref, Ve1, struct(cost_fun='nmi'));
+                    T    = Ve1.mat \ spm_matrix(x) * Vref.mat;          % T = Transformation from voxel coordinates in Vref to voxel coordinates in Ve1/Vfe
 
                     % Save all (denoised) resliced echo images for this flip angle (they will be merged to a 4D-file later)
                     bfilter_flip = setfields(bfilter, flip=flip, run=run);
@@ -277,7 +280,6 @@ methods
                                      img_m .* sin(img_p));              % Imag image part
                         
                         % Reslice the real and imag data to the synthetic target space (spm_slice_vol doesn't support complex data directly)
-                        T     = Vfe_m.mat \ spm_matrix(x) * Vref.mat;   % T = Transformation from voxel coordinates in Vref to voxel coordinates in Vfe
                         img_r = NaN([Vref.dim 2]);                      % Preallocate resliced images
                         for n = 1:size(img,4)
 
@@ -285,7 +287,6 @@ methods
                             Vfe_m.private     = struct();               % Clear private nifti object to allow overriding the memory map
                             Vfe_m.private.dat = double(img(:,:,:,n));   % Override the memory map with real/imag data
                             Vfe_m.dat         = double(img(:,:,:,n));   % Make sure that for gz-files ".dat" is also overridden
-
                             for z = 1:Vref.dim(3)
                                 img_r(:,:,z,n) = spm_slice_vol(Vfe_m, T * spm_matrix([0 0 z]), Vref.dim(1:2), 1);    % Using trilinear interpolation (NB: the memory map of Vfe_m is used here)
                             end

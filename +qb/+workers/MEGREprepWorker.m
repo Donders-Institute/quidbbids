@@ -114,11 +114,11 @@ methods (Static)
                     
                     % Create the 4D mag and phase QSM/MCR input data
                     bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.ME4Dmag);
-                    obj.logger.info("-> Merging echo-1..%i mag images -> %s", length(magfiles), bfile.filename)
+                    obj.logger.info("-> Merging echo-1..%d mag images -> %s", length(magfiles), bfile.filename)
                     file_merge(magfiles(magidx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
 
                     bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.ME4Dphase);
-                    obj.logger.info("-> Merging echo-1..%i phase images -> %s", length(phasefiles), bfile.filename)
+                    obj.logger.info("-> Merging echo-1..%d phase images -> %s", length(phasefiles), bfile.filename)
                     file_merge(phasefiles(phaseidx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
                 end
             end
@@ -140,7 +140,7 @@ methods (Static)
             bfilter.acq = char(acq);
             for run = str2double(obj.query_ses(BIDS, 'runs', bfilter))
 
-                obj.logger.info("--> Creating brain mask for run: %i", run)
+                obj.logger.info("--> Creating brain mask for run: %d", run)
 
                 % Combine all (echo-1) masks to create a minimal brain mask (using mri_synthstrip)
                 mask = true;

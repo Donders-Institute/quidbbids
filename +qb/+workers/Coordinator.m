@@ -70,7 +70,7 @@ methods
         % Check if the product exist and force anything assigned to be stored as a string row
         for product = string(val(:)')
             if product~="" && all(cellfun(@isempty, regexp(obj.workitems(), "^" + product + "$")))
-                warning("QuIDBBIDS:Products:Ambiguous", "The '%s' product was not found, it must match any of:%s", product, sprintf(' "%s"', obj.workitems()))
+                warning("QuIDBBIDS:Products:Ambiguous", 'The "%s" product was not found, it must match any of:%s', product, sprintf(' "%s"', obj.workitems()))
                 return
             end
         end

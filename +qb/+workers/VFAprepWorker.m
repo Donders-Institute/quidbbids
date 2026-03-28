@@ -295,11 +295,17 @@ methods
                         % Save the magnitude image
                         bfile = obj.bfile_set(Vfe_m.fname, struct(space=obj.bidsfilter.syntheticT1.space, desc='temp3D'));  % Will be merged to desc=ME4D
                         bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
+                        if strlength(obj.config.(obj.name).denoising.method)
+                            bfile.metadata.Denoised = obj.config.(obj.name).denoising.method;
+                        end
                         write_vol(Vref, hypot(img_r(:,:,:,1), img_r(:,:,:,2)), bfile);   % Numerically stable sqrt(Re.^2 + Im.^2)
 
                         % Save the phase image
                         bfile = obj.bfile_set(Vfe_p.fname, struct(space=obj.bidsfilter.syntheticT1.space, desc='temp3D'));  % Will be merged to desc=ME4D
                         bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
+                        if strlength(obj.config.(obj.name).denoising.method)
+                            bfile.metadata.Denoised = obj.config.(obj.name).denoising.method;
+                        end
                         write_vol(Vref, atan2(img_r(:,:,:,2), img_r(:,:,:,1)), bfile);   % Quadrant-correct phase in radians, range [-pi, pi]
 
                     end

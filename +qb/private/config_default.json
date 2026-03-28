@@ -6,7 +6,7 @@
     "HPC": {"value": ["memreq",10e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu40g --gres=gpu:1\"]"},
     "useParallel": {"value": false, "description": "true = use parfeval for processing subjects in parallel (this option will be ignored if useHPC == true). NB: This may require a huge amount of working memory if many subjects are processed in parallel, so make sure to adjust the number of workers in parpool accordingly."},
     "BIDS": {
-      "include": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "VFA", "UNIT1", "MP2RAGE", "TB1TFL", "TB1RFM"]}, "description": "Raw BIDS data to include"}
+      "include": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "VFA", "MPM", "UNIT1", "MP2RAGE", "TB1TFL", "TB1RFM"]}, "description": "Raw BIDS data to include"}
     }
   },
 

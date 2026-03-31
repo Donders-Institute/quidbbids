@@ -1,9 +1,9 @@
 classdef MEGREprepWorker < qb.workers.Worker
 %MEGREPREPWORKER Performs preprocessing on raw MEGRE data to produce workitems that can be used by other workers
 %
-% Processing steps:
+% Preprocessing steps:
 %
-% 1. Create a brain mask using the echo-1_mag image
+% 1. Create a brain mask using the echo-1_mag image (for SEPIA)
 % 2. Merge all echoes into a 4D file (for running the QSM workflows)
 % 3. Denoise the merged 4D file (optional)
 %
@@ -11,12 +11,11 @@ classdef MEGREprepWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["I am a working class hero that will happily do the following pre-processing work for you:";
+    description = ["I do the following pre-processing work for you:";
                    "";
-                   "1. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
-                   "   to produce a minimal output mask (for SEPIA)";
+                   "1. Create a brain mask for each MEGRE acquisition using the echo-1_mag image. ";
                    "2. Merge all echoes into a 4D file (for running the QSM workflows)"
-                   "3. Denoise the merged 4D file (optional)"]
+                   "3. Denoise using (Tensor) MPPCA the merged 4D file (optional), - this is configurable with denoising.method & denoising.kernel"]
     needs       = "";       % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

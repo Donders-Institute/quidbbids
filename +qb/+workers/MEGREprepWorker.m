@@ -217,10 +217,11 @@ methods (Static)
 
         function write_vol_denoised(V, img)
             bfile = bids.File(V(1).fname);
-            if isfield(bfile.metadata, 'Denoised')
-                obj.logger.warning('Denoising applied TWICE to "%s": This file was already denoised using "%s"', bfile.path, bfile.metadata.Denoised)
+            if isfield(bfile.metadata, 'DenoisingMethod')
+                obj.logger.warning('Denoising applied TWICE to "%s": This file was already denoised using "%s"', bfile.path, bfile.metadata.DenoisingMethod)
             end
-            bfile.metadata.Denoised = obj.config.(obj.name).denoising.method;
+            bfile.metadata.DenoisingMethod = obj.config.(obj.name).denoising.method;
+            bfile.metadata.DenoisingKernel = obj.config.(obj.name).denoising.kernel;
             obj.logger.info("-> Saving: %s", V(1).fname)
             qb.utils.write_vol(V, img, bfile);
         end

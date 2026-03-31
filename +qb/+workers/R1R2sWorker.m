@@ -5,10 +5,12 @@ classdef R1R2sWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["I'm R2-D2, an astromech droid that can fix starships and, yes, generate precise R1- and R2-starmaps for all your neuro-navigation needs!";
+    description = ["I'm R2-D2, an astromech droid. I generate precise R1- and R2-starmaps for all your neuro-navigation needs!";
                    "";
-                   "Methods:"
-                   "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"]
+                   "Methods:";
+                   "- loads coregistered Multiecho GRE magnitude, relative B1 maps as well as a brain mask (for memory purposes)";
+                   "- uses Gacelle, K-s Chan et al., Imaging Neuroscience 2026 for simultaneous R1 and  R2-star mapping from variable flip angle multi-echo GRE data (MPM)";
+                   "there are various configuration options that are better referred to in https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html"]
     needs       = ["ME4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
     usesGPU     = true
 end

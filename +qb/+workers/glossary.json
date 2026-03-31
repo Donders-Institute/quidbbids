@@ -18,7 +18,7 @@
     "R2starmap": "Effective transverse relaxation rate (R2* = 1/T2*) map",
     "S0map": "Signal extrapolated to TE = 0 from multi-echo imaging",
     "T2starmap": "Effective transverse relaxation time (T2*) map",
-    "TB1map_GRE": "Transmit field (B1+) map derived from a GRE-based B1 mapping sequence",
+    "TB1map_GRE": "Relative Transmit field (B1+) map co-registered to the specific anatomical data of interest space",
     "TB1map_anat": "Anatomical image that comes with the transmit field (B1+) map",
     "TB1map_angle": "Flip angle map from transmit B1+ field mapping",
     "brainmask": "Binary mask of brain tissue",

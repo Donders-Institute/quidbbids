@@ -5,7 +5,7 @@ classdef R1R2sWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["I'm R2-D2, an astromech droid. generate precise R1- and R2-starmaps for all your neuro-navigation needs!";
+    description = ["I'm R2-D2, an astromech droid. I generate precise R1- and R2-starmaps for all your neuro-navigation needs!";
                    "";
                    "Methods:"
                    "- loads coregistered Multiecho GRE magnitude, relative B1 maps as well as a brain mask (for memory purposes)"]

@@ -73,7 +73,7 @@ mgr = quidb.manager();
 % mgr.start_workflow()
 
 % Then run the GPU part of the workflow
-quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1'};
+quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1 --constraint=nomig'};    % MIG/NOMIG -> Crashes with NVML errors on partitioned GPUs
 quidb.products = ["R1map", "R2starmap", "Chimap", "MWFmap"];
 mgr.start_workflow()
 

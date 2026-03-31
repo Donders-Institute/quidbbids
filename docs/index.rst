@@ -27,5 +27,6 @@
    tutorial
    screenshots
    CHANGELOG
+   contributing
    glossary
    

@@ -8,7 +8,7 @@ properties
     BIDS                    % BIDS layout object from bids-matlab
     outputdir               % BIDSApp derivatives subdirectory where the output is stored
     workdir                 % Working directory for intermediate results
-    products                % The end productcs (workitems) requested by the user
+    products                % The end products (workitems) requested by the user, full list of possible products, see obj.workitems()
     resumes                 % The resumes of all available workers
     configfile              % Path to the active configuration file
     workflowfile            % Path to the active workflow file
@@ -70,7 +70,7 @@ methods
         % Check if the product exist and force anything assigned to be stored as a string row
         for product = string(val(:)')
             if product~="" && all(cellfun(@isempty, regexp(obj.workitems(), "^" + product + "$")))
-                warning("QuIDBBIDS:Products:Ambiguous", "The '%s' product was not found, it must match any of:%s", product, sprintf(' "%s"', obj.workitems()))
+                warning("QuIDBBIDS:Products:Ambiguous", 'The "%s" product was not found, it must match any of:%s', product, sprintf(' "%s"', obj.workitems()))
                 return
             end
         end

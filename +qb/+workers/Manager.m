@@ -274,7 +274,7 @@ methods
 
                 % Ask the worker to fetch the product for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf("▶ Manager dispatched %s to make the '%s' product for %s/%s\n", name, product, subject.name, subject.session)
+                fprintf('▶ Manager dispatched %s to make the "%s" product for %s/%s\n', name, product, subject.name, subject.session)
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
                 elseif obj.coord.config.General.useParallel.value
@@ -312,7 +312,7 @@ methods
             target = bids.File(char(source));
             target.entities.tag = char(worker.config.General.tag);
             target.path = fullfile(obj.coord.outputdir, target.bids_path, target.filename);
-            worker.logger.info('-> Saving %s product as: %s', product, target.path)
+            worker.logger.info('-> Saving "%s" product as: %s', product, target.path)
             qb.utils.copybfile(source, target, obj.force)
         end
     end

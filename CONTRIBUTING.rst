@@ -1,6 +1,6 @@
-=========================
-Contributing to QuIDBBIDS
-=========================
+==================
+Contributing guide
+==================
 
 Project organization
 --------------------
@@ -12,7 +12,7 @@ Project organization
   - ``+workers/`` - A library of workers and related functions that constitute the core od the QuIDBBIDS framework
   - ``private/`` - Helper functions that are meant for internal use only
 
-* `dependencies/ <./dependencies>`_ - The Sphinx `RTD <https://quidbbids.readthedocs.io>`__ documentation repository
+* `dependencies/ <./dependencies>`_ - The QuIDBBIDS dependencies as `git submodules  <https://git-scm.com/book/en/v2/Git-Tools-Submodules>`__
 * `docs/ <./docs>`_ - The Sphinx `RTD <https://quidbbids.readthedocs.io>`__ documentation repository
 * `tests/ <./tests>`_ - The collection of (matlab.unittest) test modules for the `CI development <https://github.com/features/actions>`__ of QuIDBBIDS
 
@@ -23,9 +23,9 @@ The preferred way to contribute to the QuIDBBIDS code base or documentation is t
 i.e. fork the ``dev`` branch of the `main repository <https://github.com/Donders-Institute/quidbbids>`__, create a feature branch, and submit a pull request for the ``dev`` branch. 
 If you are unsure what that means, here is a set-up workflow you may wish to follow:
 
-0. Fork the `project repository <https://github.com/Donders-Institute/quidbbids>`_ on GitHub, by clicking on the “Fork” button near the top of the page — this will create a personal copy of the repository.
+1. Fork the `project repository <https://github.com/Donders-Institute/quidbbids>`_ on GitHub, by clicking on the “Fork” button near the top of the page — this will create a personal copy of the repository.
 
-1. Set up a clone of the repository on your local machine and connect it to both the “official” and your copy of the repository on GitHub:
+2. Set up a clone of the repository on your local machine and connect it to both the “official” and your copy of the repository on GitHub:
 
    .. code-block:: bash
 
@@ -34,7 +34,7 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
       $ git remote rename origin official
       $ git remote add origin git://github.com/[YOUR_GITHUB_USERNAME]/quidbbids
 
-2. In case you want to contribute to the RTD documentation, set up a Python virtual environment and install the built dependencies:
+3. In case you want to contribute to the RTD documentation, set up a Python virtual environment and install the built dependencies:
 
    .. code-block:: bash
 
@@ -42,7 +42,7 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
       $ source docs/venv/bin/activate   # On Linux, see the documentation for other operating systems
       $ pip install -r docs/requirements.txt
 
-3. When you wish to start working on your contribution, create a new branch:
+4. When you wish to start working on your contribution, create a new branch:
 
    .. code-block:: bash
 
@@ -55,7 +55,14 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
       $ git submodule update --remote --merge                     # This will update all submodules to their latest commit
       $ git submodule update --remote --merge dependencies/spm    # This will update the SPM submodule only
 
-4. When you are done with coding, you should then test, commit and push your work to GitHub:
+5. If your work requires a new software dependency that is available as a git repository then you can add it with:
+
+   .. code-block:: bash
+
+      $ git submodule add -b [BRANCH] [https://REPO_URL/PACKAGE.git] dependencies/[PACKAGE]
+      $ git commit -m "Add [PACKAGE] submodule in dependencies"
+
+6. When you are done with coding, you should then test, commit and push your work to GitHub:
 
    .. code-block:: bash
 

@@ -1,10 +1,9 @@
 classdef MEGREprepWorker < qb.workers.Worker
 %MEGREPREPWORKER Performs preprocessing on raw MEGRE data to produce workitems that can be used by other workers
 %
-% PreProcessing steps:
+% Preprocessing steps:
 %
-% 1. Create a brain mask using the echo-1_mag image. Combine the individual mask
-%    to produce a minimal output mask (for SEPIA)
+% 1. Create a brain mask using the echo-1_mag image (for SEPIA)
 % 2. Merge all echoes into a 4D file (for running the QSM workflows)
 % 3. Denoise the merged 4D file (optional)
 %

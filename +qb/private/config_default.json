@@ -1,6 +1,6 @@
 {
   "General": {
-    "version": {"value": "0.3.0-dev", "description": "QuIDBBIDS version that should match the version in project.json"},
+    "version": {"value": "0.3.0", "description": "QuIDBBIDS version that should match the version in project.json"},
     "tag": {"value": "", "description": "A custom tag that is added to the output products, e.g. to distinguish or compare the results when using different parameter settings. In such use cases, you could write a for loop that does: (1) updates the config parameter(s) and output tag, (2) delete the workitems that need to be re-computed from the work-folder (3) executes the workflow. In this way the work-items in the work-folder can be reused, while the output products are save with different tags in the output-folder"},
     "useHPC": {"value": false, "description": "Use HPC cluster (true/false)"},
     "HPC": {"value": ["memreq",10e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu40g --gres=gpu:1\"]"},

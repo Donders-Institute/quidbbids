@@ -26,8 +26,7 @@ for toolbox = dir(fullfile(rootdir, "dependencies"))'
     % Enable the add-onn or add the path to the dependency
     toolpath = fullfile(rootdir, "dependencies", toolbox.name);
     if toolbox.isdir && length(dir(fullfile(toolpath, '*'))) == 3   % Only a .git file is present if not initialized
-        warning('QuIDBBIDS:Dependency:MissingToolbox', ...
-            'Empty dependency: %s\nPossible solution:\ngit submodule update --init --recursive', toolpath)
+        warning('QuIDBBIDS:Dependency:MissingToolbox', 'Empty dependency: %s\nPossible solution:\ngit submodule update --init --recursive', toolpath)
         continue
     elseif any(strcmp(toolbox.name, ["sepia", "spm", "bids-matlab"]))
         addtoolbox(toolpath, false)     % Add the rootfolder only
@@ -38,6 +37,13 @@ for toolbox = dir(fullfile(rootdir, "dependencies"))'
         addtoolbox(toolpath, true)      % Add everything
     end
     
+end
+
+% Add the custom workers to the path
+workerpath = fullfile(fileparts(qb.resetconfig(false)), 'workers');
+if ~contains(path, workerpath)
+    disp("Adding path: " + workerpath)
+    addpath(workerpath)
 end
 
 

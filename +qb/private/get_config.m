@@ -34,10 +34,7 @@ arguments (Output)
 end
 
 % Create a default configfile if it does not exist
-config_default = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), "config_default.json");
-if ~isfile(config_default)
-    qb.resetconfig()
-end
+config_default = qb.resetconfig(false);
 
 % Write or read the study configuration data (create if needed)
 if nargin > 1 && ~isempty(fieldnames(config))   % Write JSON

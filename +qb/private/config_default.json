@@ -1,12 +1,26 @@
 {
   "General": {
-    "version": {"value": "0.2.3", "description": "QuIDBBIDS version that should match the version in project.json"},
+    "version": {"value": "0.3.0", "description": "QuIDBBIDS version that should match the version in project.json"},
     "tag": {"value": "", "description": "A custom tag that is added to the output products, e.g. to distinguish or compare the results when using different parameter settings. In such use cases, you could write a for loop that does: (1) updates the config parameter(s) and output tag, (2) delete the workitems that need to be re-computed from the work-folder (3) executes the workflow. In this way the work-items in the work-folder can be reused, while the output products are save with different tags in the output-folder"},
     "useHPC": {"value": false, "description": "Use HPC cluster (true/false)"},
     "HPC": {"value": ["memreq",10e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu40g --gres=gpu:1\"]"},
     "useParallel": {"value": false, "description": "true = use parfeval for processing subjects in parallel (this option will be ignored if useHPC == true). NB: This may require a huge amount of working memory if many subjects are processed in parallel, so make sure to adjust the number of workers in parpool accordingly."},
     "BIDS": {
-      "include": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "VFA", "UNIT1", "MP2RAGE", "TB1TFL", "TB1RFM"]}, "description": "Raw BIDS data to include"}
+      "include": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "VFA", "MPM", "UNIT1", "MP2RAGE", "TB1TFL", "TB1RFM"]}, "description": "Raw BIDS data to include"}
+    }
+  },
+
+  "MEGREprepWorker": {
+    "denoising": {
+      "method": {"value": "", "description": "Denoising method. Options: '' (no denoising), 'MPPCA' (Marchenko–Pastur PCA), 'tMPPCA' (tensor Marchenko–Pastur PCA; this is however not useful for MEGRE data)."},
+      "kernel": {"value": [5,5,5], "description": "Size of the sliding window (patch) used for the PCA, specified as [x y z]."}
+    }
+  },
+
+  "VFAprepWorker": {
+    "denoising": {
+      "method": {"value": "", "description": "Denoising method. Options: '' (no denoising), 'MPPCA' (Marchenko–Pastur PCA), 'tMPPCA' (tensor Marchenko–Pastur PCA)."},
+      "kernel": {"value": [5,5,5], "description": "Size of the sliding window (patch) used for the PCA, specified as [x y z]."}
     }
   },
 
@@ -18,7 +32,7 @@
   "MP2RAGEWorker": {
     "InvEff": {"value": 0.96, "description": "Inversion efficiency, Siemens default value"},
     "EchoSpacing": {"value": "", "description": "RepetitionTimeExcitation value in secs, default twice echo time when missing in JSON"},
-    "NumberShots": {"value": 176, "description": "Number of shots (NZslices) in inversion segment, also referred to as turbo factor; not usually in JSON. See: https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#numbershots-metadata-field"},
+    "NumberShots": {"value": "", "description": "Number of shots per readout block, also referred to as turbo factor; not usually in JSON. Standard correct computations is  SlicesPerSlab * [PartialFourierInSlice-0.5  0.5] See: https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#numbershots-metadata-field"},
     "Fingerprint": {"value": true, "description": "Enable MP2RAGE-based fingerprinting (preferred option for mapping R1 of long/CSF and short/fat T1 values), if false a look-up table approach is used"},
     "B1correctM0": {"value": 0, "description": "0 = no correction; 1/2/3 applies a left-right, front-back or up-down flipped transmit field as an approximation of the receive field. Only use this option if the anatomical data is well centered in the field of view (as provided by auto-align) and if the bias Field correction was enabled on the scanner"}
   },

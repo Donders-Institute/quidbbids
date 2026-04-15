@@ -5,7 +5,12 @@ classdef MP2RAGEWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["I am a working class hero that will happily do the following pre-processing work for you:"]
+    description = ["I'm an MP2RAGE worker and create M0 and R1 maps, but only if you have MP2RAGE and B1 map data!";
+                   "Computations are based on a dictionary matching approach described in the supplemental material of the paper Chan et al, Imaging Neuroscience, 2025 https://doi.org/10.1162/imag_a_00456";
+                   "This method, when compared to the original implementation described Marques et al, PLOSone, 2013 https://doi.org/10.1371/journal.pone.0069294 has significantly better performance for long T1 values";
+                   "Considerations:";
+                   "- Be careful at explicitly defining on the configuration parameters the NumberShots and (to a smaller extent) the EchoSpacing";
+                   "It uses the following repository https://github.com/JosePMarques/MP2RAGE-related-scripts/"]
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
@@ -20,16 +25,16 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.rawUNIT1    = setfields(obj.config.General.BIDS.include, modality = 'anat', suffix = 'UNIT1');
-        obj.bidsfilter.rawINV1     = setfields(obj.bidsfilter.rawUNIT1, inv = 1, suffix = 'MP2RAGE');
-        obj.bidsfilter.rawINV2     = setfield(obj.bidsfilter.rawINV1, inv = 2);
+        obj.bidsfilter.rawUNIT1    = setfields(obj.config.General.BIDS.include, modality='anat', suffix='UNIT1');
+        obj.bidsfilter.rawINV1     = setfields(obj.bidsfilter.rawUNIT1, inv=1, suffix='MP2RAGE');
+        obj.bidsfilter.rawINV2     = setfields(obj.bidsfilter.rawINV1,  inv=2);
         obj.bidsfilter.R1map       = struct(modality = 'anat', ...
                                             part     = '', ...
                                             space    = 'MP2RAGE', ...
                                             desc     = 'UNIT1corrected', ...
                                             suffix   = 'R1map');
-        obj.bidsfilter.M0map       = setfield(obj.bidsfilter.R1map, suffix = 'M0map');
-        obj.bidsfilter.MP2RAGE_T1w = setfield(obj.bidsfilter.R1map, suffix = 'T1w');
+        obj.bidsfilter.M0map       = setfield(obj.bidsfilter.R1map, suffix='M0map');
+        obj.bidsfilter.MP2RAGE_T1w = setfield(obj.bidsfilter.R1map, suffix='T1w');
     end
 
 end
@@ -45,7 +50,7 @@ methods
             workitem {mustBeTextScalar, mustBeNonempty}
         end
 
-        import qb.utils.spm_write_vol_gz
+        import qb.utils.write_vol
         import qb.utils.spm_vol
 
         % Get the B1 images from the team
@@ -59,9 +64,9 @@ methods
         for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawUNIT1)
 
             % Load the raw MP2RAGE headers & data (https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#unit1-images)
-            UNIT1 = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawUNIT1, 'run',char(run));      % bids-matlab doesn't understand this: 'part','(mag)?'
-            INV1  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV1,  'run',char(run));      % idem
-            INV2  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV2,  'run',char(run));      % idem
+            UNIT1 = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawUNIT1, run=char(run));      % bids-matlab doesn't understand this: part='(mag)?'
+            INV1  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV1,  run=char(run));      % idem
+            INV2  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV2,  run=char(run));      % idem
             if length(UNIT1) ~= 1 || length(INV1) ~= 1 || length(INV2) ~= 1
                 obj.logger.error("Expected one UNIT1, INV1 and INV2 file for run %s, but got %d, %d and %d files", char(run), length(UNIT1), length(INV1), length(INV2))
             end
@@ -75,13 +80,13 @@ methods
             MP2RAGE = obj.getMP2RAGE(INV1, INV2, obj.config.MP2RAGEWorker);
 
             % Realign & reslice the B1 reference image to the INV2 image
-            Vin   = spm_vol(char(B1anat));
-            x     = spm_coreg(INV2hdr, Vin, struct(cost_fun = 'nmi'));
-            B1_   = spm_vol(char(B1famp));
-            T     = B1_.mat \ spm_matrix(x) * INV2hdr.mat;     % T = Mapping from voxels in INV2Ref to voxels in B1famp
+            VB1a  = spm_vol(char(B1anat));
+            x     = spm_coreg(INV2hdr, VB1a, struct(cost_fun='nmi'));
+            VB1f  = spm_vol(char(B1famp));
+            T     = VB1f.mat \ spm_matrix(x) * INV2hdr.mat;     % T = Mapping from voxels in INV2Ref to voxel coordinates in B1famp
             B1img = NaN(INV2hdr.dim);
             for z = 1:INV2hdr.dim(3)                           % Reslice the B1famp volume at the coordinates of each coregistered transverse slice of INV2Ref
-                B1img(:,:,z) = spm_slice_vol(B1_, T * spm_matrix([0 0 z]), INV2hdr.dim(1:2), 1);     % Using trilinear interpolation
+                B1img(:,:,z) = spm_slice_vol(VB1f, T * spm_matrix([0 0 z]), INV2hdr.dim(1:2), 1);   % Using trilinear interpolation
             end
             B1img(isnan(B1img)) = 0;                           % Set voxels outside the FOV to zero
 
@@ -118,15 +123,15 @@ methods
             bfile.metadata.InversionEfficiency = MP2RAGE.InvEff;
             bfile.metadata.NumberShots         = MP2RAGE.NumberShots;
             bfile.metadata.EchoSpacing         = MP2RAGE.EchoSpacing;
-            spm_write_vol_gz(UNIhdr, R1map, bfile);
+            write_vol(UNIhdr, R1map, bfile);
 
             % Save the M0-map
             bfile = obj.bfile_set(bfile, obj.bidsfilter.M0map);
-            spm_write_vol_gz(UNIhdr, M0map, bfile);
+            write_vol(UNIhdr, M0map, bfile);
 
             % Save the corrected UNIT1
             bfile = obj.bfile_set(bfile, obj.bidsfilter.MP2RAGE_T1w);
-            spm_write_vol_gz(UNIhdr, UNIcorr, bfile);
+            write_vol(UNIhdr, UNIcorr, bfile);
 
         end
     end

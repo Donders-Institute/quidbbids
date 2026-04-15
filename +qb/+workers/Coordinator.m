@@ -8,7 +8,7 @@ properties
     BIDS                    % BIDS layout object from bids-matlab
     outputdir               % BIDSApp derivatives subdirectory where the output is stored
     workdir                 % Working directory for intermediate results
-    products                % The end productcs (workitems) requested by the user
+    products                % The end products (workitems) requested by the user, full list of possible products, see obj.workitems()
     resumes                 % The resumes of all available workers
     configfile              % Path to the active configuration file
     workflowfile            % Path to the active workflow file
@@ -70,7 +70,7 @@ methods
         % Check if the product exist and force anything assigned to be stored as a string row
         for product = string(val(:)')
             if product~="" && all(cellfun(@isempty, regexp(obj.workitems(), "^" + product + "$")))
-                warning("QuIDBBIDS:Products:Ambiguous", "The '%s' product was not found, it must match any of:%s", product, sprintf(' "%s"', obj.workitems()))
+                warning("QuIDBBIDS:Products:Ambiguous", 'The "%s" product was not found, it must match any of:%s', product, sprintf(' "%s"', obj.workitems()))
                 return
             end
         end
@@ -121,12 +121,17 @@ methods
 
         resumes = {};
         wfiles  = dir(fullfile(fileparts(which("qb.workers.Worker")), "*Worker*.m"))';
-        if ~isdeployed      % Add additional workers from the (custom/home) configfile folder
-            wfiles = [wfiles, dir(fullfile(fileparts(obj.configfile), "workers", "*Worker*.m"))'];
+        if ~isdeployed      % Add custom workers from the user config directory
+            wfiles = [wfiles, dir(fullfile(fileparts(qb.resetconfig(false)), "workers", "*Worker*.m"))'];
         end
+        fprintf("\nRegistering:\n")
         for wfile = wfiles
-            if ~strcmp(wfile.name, 'Worker.m')   % Exclude the abstract Worker class
-                worker = qb.workers.(erase(wfile.name, '.m'))(obj.BIDS, struct(name='',session=''), obj.config);
+            if ~strcmp(wfile.name, 'Worker.m')      % Exclude the abstract Worker class
+                if endsWith(wfile.folder, '+workers')
+                    worker = qb.workers.(erase(wfile.name, '.m'))(obj.BIDS, struct(name='',session=''), obj.config);
+                else                                % Custom workers in the user config directory should be on the MATLAB-path
+                    worker = feval(erase(wfile.name, '.m'), obj.BIDS, struct(name='',session=''), obj.config);
+                end
                 resumes.(worker.name).handle      = str2func(class(worker));
                 resumes.(worker.name).name        = worker.name;
                 resumes.(worker.name).description = worker.description;
@@ -134,6 +139,7 @@ methods
                 resumes.(worker.name).needs       = worker.needs(:)';
                 resumes.(worker.name).usesGPU     = worker.usesGPU;
                 resumes.(worker.name).preferred   = false;
+                fprintf('   - %s\n', worker.name)
             end
         end
 

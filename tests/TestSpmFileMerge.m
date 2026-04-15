@@ -1,5 +1,5 @@
 classdef TestSpmFileMerge < BaseTest
-    % TestSpmFileMerge - Unit tests for spm_file_merge_gz function
+    % TestSpmFileMerge - Unit tests for file_merge function
 
     properties
         TestData
@@ -55,7 +55,7 @@ classdef TestSpmFileMerge < BaseTest
             nrinputs   = length(testCase.NiftiFiles);
 
             % Execute function
-            V4 = qb.utils.spm_file_merge_gz(inputFiles, outputFile, [], false);
+            V4 = qb.utils.file_merge(inputFiles, outputFile, [], false);
 
             % Verify outputs
             testCase.assertEqual(length(V4), nrinputs);
@@ -97,7 +97,7 @@ classdef TestSpmFileMerge < BaseTest
             outputFile = fullfile(testCase.TempDir, 'merged_gzipped.nii.gz');
 
             % Execute function
-            V4 = qb.utils.spm_file_merge_gz(gzippedFiles, outputFile, [], true);
+            V4 = qb.utils.file_merge(gzippedFiles, outputFile, [], true);
 
             % Verify outputs
             testCase.assertTrue(isfile(outputFile), 'Output file should exist');
@@ -136,7 +136,7 @@ classdef TestSpmFileMerge < BaseTest
             metafields = {'EchoTime', 'RepetitionTime'};
 
             % Execute function
-            qb.utils.spm_file_merge_gz(Vin, outputFile, metafields);
+            qb.utils.file_merge(Vin, outputFile, metafields);
 
             % Verify JSON sidecar
             [pth, nm] = fileparts(outputFile);

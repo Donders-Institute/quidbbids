@@ -26,13 +26,13 @@ methods (Access = protected)
                                               part     = '', ...
                                               desc     = 'despot1S0', ...
                                               suffix   = 'R1map');
-        obj.bidsfilter.M0map_S0      = setfield(obj.bidsfilter.R1map_S0, suffix = 'M0map');
+        obj.bidsfilter.M0map_S0      = setfield(obj.bidsfilter.R1map_S0, suffix='M0map');
         obj.bidsfilter.meanR2starmap = struct(modality = 'anat', ...
                                               echo     = [], ...
                                               part     = '', ...
                                               desc     = 'mean', ...
                                               suffix   = 'R2starmap');
-        obj.bidsfilter.meanChimap    = setfield(obj.bidsfilter.meanR2starmap, suffix = 'Chimap');
+        obj.bidsfilter.meanChimap    = setfield(obj.bidsfilter.meanR2starmap, suffix='Chimap');
     end
 
 end
@@ -48,7 +48,7 @@ methods
             workitem {mustBeTextScalar, mustBeNonempty}
         end
 
-        import qb.utils.spm_write_vol_gz
+        import qb.utils.write_vol
         import qb.utils.spm_vol
 
         % Check the input
@@ -75,12 +75,12 @@ methods
         % Process all runs independently
         for run = obj.query_ses(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs
 
-            S0data     = obj.query_ses(BIDSWS, 'data',     S0filter,     'run', char(run));
-            R2stardata = obj.query_ses(BIDSWS, 'data',     R2starfilter, 'run', char(run));
-            Chidata    = obj.query_ses(BIDSWS, 'data',     Chifilter,    'run', char(run));
-            maskdata   = obj.query_ses(BIDSWS, 'data',     maskfilter,   'run', char(run));
-            meta       = obj.query_ses(BIDSWS, 'metadata', S0filter,     'run', char(run));
-            flips      = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), "UniformOutput", true);
+            S0data     = obj.query_ses(BIDSWS, 'data',     S0filter,     run=char(run));
+            R2stardata = obj.query_ses(BIDSWS, 'data',     R2starfilter, run=char(run));
+            Chidata    = obj.query_ses(BIDSWS, 'data',     Chifilter,    run=char(run));
+            maskdata   = obj.query_ses(BIDSWS, 'data',     maskfilter,   run=char(run));
+            meta       = obj.query_ses(BIDSWS, 'metadata', S0filter,     run=char(run));
+            flips      = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), UniformOutput=true);
 
             % Check the queries workitems
             if numel(unique([length(S0data), length(R2stardata), length(Chidata), length(maskdata)])) > 1
@@ -112,8 +112,8 @@ methods
             Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
             bfileR2s = obj.bfile_set(S0data{1}, obj.bidsfilter.meanR2starmap);
             bfileChi = obj.bfile_set(S0data{1}, obj.bidsfilter.meanChimap);
-            spm_write_vol_gz(V, R2smean.*mask, bfileR2s);
-            spm_write_vol_gz(V, Chimean.*mask, bfileChi);
+            write_vol(V, R2smean.*mask, bfileR2s);
+            write_vol(V, Chimean.*mask, bfileChi);
 
             % Compute the R1 and M0 maps using DESPOT1 (based on S0).     TODO: Adapt for using echo data as an alternative to S0
             bfile    = bids.File(S0data{1});                            % TODO: FIXME: Random
@@ -124,8 +124,8 @@ methods
             % Save the SCR output maps
             bfileR1 = obj.bfile_set(S0data{1}, obj.bidsfilter.R1map_S0);
             bfileM0 = obj.bfile_set(S0data{1}, obj.bidsfilter.M0map_S0);
-            spm_write_vol_gz(V, R1,       bfileR1);
-            spm_write_vol_gz(V, M0.*mask, bfileM0);
+            write_vol(V, R1,       bfileR1);
+            write_vol(V, M0.*mask, bfileM0);
 
         end
     end

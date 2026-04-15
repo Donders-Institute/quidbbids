@@ -31,7 +31,7 @@ properties
     outputdir       % Output directory for final results
     team            % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker resume
     force           % Force to start working, even if the subject is locked or existing results exist
-    bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), 'run',1)`
+    bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), run=1)`
     logger          % A logger object for keeping logs
 end
 
@@ -149,7 +149,12 @@ methods
             % Check if there is a GPU available
             if obj.usesGPU
                 if canUseGPU()
-                    obj.logger.info("%s is set-up to use GPU: %s (%s)", obj.name, gpuDevice().Name, gpuDevice().ComputeCapability)
+                    try
+                        obj.logger.info("%s is set-up to use GPU: %s (%s)", obj.name, gpuDevice().Name, gpuDevice().ComputeCapability)
+                    catch ME
+                        obj.logger.warning("%s\n%s", getReport(ME))
+                        validateGPU
+                    end
                 else
                     [status, out] = system('nvidia-smi --query-gpu=name --format=csv,noheader');
                     reason = 'but GPU acceleration is unavailable';
@@ -166,11 +171,11 @@ methods
                 mpath   = path();
                 restore = onCleanup(@() path(mpath));
             end
+            [lastMsg, lastId] = lastwarn;   % Also store the last warning for ignoring certain annoying warnings
 
             % Get the work done
             cleanup = onCleanup(@obj.unlock);
             obj.lock()
-            [prevMsg, prevId] = lastwarn;
             obj.get_work_done(workitem);     % This is where all the concrete methods are implemented
 
             % Restore rng settings because spm_coreg uses a legacy random number generator that crashes e.g. mwi_3cx_2R1R2s_dimwi
@@ -179,9 +184,9 @@ methods
             end
 
             % Ignore the SPM setting random 'state' and the SEPIA rmpath warnings (-> lastwarn is displayed by qsubget())
-            [~, id] = lastwarn;
-            if ismember(id, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound', 'MATLAB:MKDIR:DirectoryExists'})
-                lastwarn(prevMsg, prevId)
+            [~, newId] = lastwarn;
+            if ismember(newId, {'MATLAB:RandStream:ActivatingLegacyGenerators', 'MATLAB:rmpath:DirNotFound', 'MATLAB:MKDIR:DirectoryExists'})
+                lastwarn(lastMsg, lastId)
             end
 
             % Collect the requested workitem
@@ -541,7 +546,7 @@ methods (Access = private)
 
     function pth = statusfile(obj, ext)
         %WORKERPATH Returns a workdir statusfile named after the worker
-        pth = fullfile(replace(obj.subject.path, obj.BIDS.pth, obj.workdir), [regexp(class(obj), '[^.]+$', 'match', 'once') ext]);  % Only take the class basename, i.e. the last part after the dot
+        pth = fullfile(replace(obj.subject.path, obj.BIDS.pth, obj.workdir), obj.name + ext);
     end
 
     function config = flatvalues(obj, config)

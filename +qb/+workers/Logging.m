@@ -22,7 +22,7 @@ methods
         end
 
         obj.worker = worker;
-        obj.logdir = fullfile(obj.worker.outputdir, 'logs', regexp(class(worker), '[^.]+$', 'match', 'once'));   % Only take the class basename, i.e. the last part after the dot
+        obj.logdir = fullfile(obj.worker.outputdir, 'logs', worker.name);
     end
 
     function debug(obj, message, varargin)

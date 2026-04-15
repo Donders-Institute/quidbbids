@@ -2,7 +2,7 @@
 Quantitative Imaging Derived Biomarkers in BIDS
 ===============================================
 
-|Tests| |RTD| |GPLv3|
+|Tests| |RTD| |GPLv3| |Zenodo|
 
 .. raw:: html
 
@@ -38,3 +38,5 @@ QuIDBBIDS is a work-in-progress (WIP) that is being developed at the `Donders In
 .. |RTD| image:: https://readthedocs.org/projects/quidbbids/badge/?version=latest
    :target: https://quidbbids.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation status
+.. |Zenodo| image:: https://zenodo.org/badge/980550106.svg
+   :target: https://doi.org/10.5281/zenodo.18245651

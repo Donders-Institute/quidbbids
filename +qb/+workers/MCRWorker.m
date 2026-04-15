@@ -19,7 +19,7 @@ properties (Constant)
                    "    - runs fitting process using mwi_3cx_2R1R2s_dimwi - there are various configuration options MCRWorker.algoPara";
                    "    - saves relevant output";
                    "- "]
-    needs       = ["echos4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -39,14 +39,14 @@ methods (Access = protected)
                                               part     = '', ...
                                               desc     = 'MWI', ...
                                               suffix   = 'MWFmap');
-        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap, label = 'free2myelinwater', suffix = 'ExchRate');
-        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap, label = 'fitted', suffix = 'mask');
-        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap, label = 'myelinwater', suffix = 'M0Map');
-        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map, suffix = 'R2starmap');
-        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, label = 'freewater');
-        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map, suffix = 'T1map');
-        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map, suffix = 'R1map');
-        obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.FW_M0map, label = 'axonalwater', suffix = 'R2starmap');
+        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap,   label='free2myelinwater', suffix='ExchRate');
+        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap,   label='fitted',           suffix='mask');
+        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap,   label='myelinwater',      suffix='M0Map');
+        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map,                           suffix='R2starmap');
+        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, label='freewater');
+        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map,                           suffix='T1map');
+        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map,                           suffix='R1map');
+        obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.MW_R2starmap, label='axonalwater');
         
         % Create orthoslice variants of the bidsfilters
         for fn = string(fieldnames(obj.bidsfilter)')
@@ -67,7 +67,7 @@ methods
             workitem {mustBeTextScalar, mustBeNonempty}
         end
 
-        import qb.utils.spm_write_vol_gz
+        import qb.utils.write_vol
         import qb.utils.spm_vol
 
         % Check the input
@@ -76,7 +76,7 @@ methods
         end
 
         % Get the workitems we need from a colleague
-        echos4Dmag = obj.ask_team('echos4Dmag');    % Multiple FA-images per run
+        ME4Dmag    = obj.ask_team('ME4Dmag');       % Multiple FA-images per run
         unwrapped  = obj.ask_team('unwrapped');     % Multiple FA-images per run
         fieldmap   = obj.ask_team('fieldmap');      % Multiple FA-images per run
         localfmask = obj.ask_team('localfmask');    % Multiple FA-images per run
@@ -84,29 +84,29 @@ methods
 
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
         if numel(unique([length(unwrapped), length(fieldmap)])) > 1
-            obj.logger.exception('%s received an ambiguous number of echos4Dmag, unwrapped or fieldmaps:%s', obj.name, ...
+            obj.logger.exception('%s received an ambiguous number of ME4Dmag, unwrapped or fieldmaps:%s', obj.name, ...
                                  sprintf('\n%s', unwrapped{:}, fieldmap{:}))
         end
-        if length(echos4Dmag) < 2
-            obj.logger.exception('%s received data for only %d flip angles', obj.name, length(echos4Dmag))
+        if length(ME4Dmag) < 2
+            obj.logger.exception('%s received data for only %d flip angles', obj.name, length(ME4Dmag))
         end
         if length(TB1map_GRE) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
             obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', TB1map_GRE{:}))
         end
-        if length(localfmask) ~= length(echos4Dmag)
-            obj.logger.exception('%s expected %d brainmasks but got:%s', obj.name, length(echos4Dmag), sprintf(' %s', localfmask{:}))
+        if length(localfmask) ~= length(ME4Dmag)
+            obj.logger.exception('%s expected %d brainmasks but got:%s', obj.name, length(ME4Dmag), sprintf(' %s', localfmask{:}))
         end
 
         % Load the data + metadata
-        V              = spm_vol(echos4Dmag{1});                    % For reading the 3D image dimensions
-        dims           = [V(1).dim length(V) length(echos4Dmag)];   % Dimensions: [x,y,z,TE,FA]
+        V              = spm_vol(ME4Dmag{1});                    % For reading the 3D image dimensions
+        dims           = [V(1).dim length(V) length(ME4Dmag)];   % Dimensions: [x,y,z,TE,FA]
         img            = single(NaN(dims));
         unwrappedPhase = single(NaN(dims));
         totalField     = single(NaN(dims([1:3 5])));                % Dimensions: [x,y,z,FA]
         mask           = true;
         for n = 1:dims(5)
-            bfile                     = bids.File(echos4Dmag{n});   % For reading metadata, parsing entities, etc
-            img(:,:,:,:,n)            = spm_read_vols(spm_vol(echos4Dmag{n}));
+            bfile                     = bids.File(ME4Dmag{n});   % For reading metadata, parsing entities, etc
+            img(:,:,:,:,n)            = spm_read_vols(spm_vol(ME4Dmag{n}));
             unwrappedPhase(:,:,:,:,n) = spm_read_vols(spm_vol(unwrapped{n}));
             totalField(:,:,:,n)       = spm_read_vols(spm_vol(fieldmap{n}));
             mask                      = spm_read_vols(spm_vol(localfmask{n})) & mask;
@@ -166,24 +166,29 @@ methods
         % end
 
         % Estimate the MWI-MCR model
-        ws = warning('off', 'MATLAB:nearlySingularMatrix');     % Suppress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
-        warning('off', 'MWI:IdentifierFile:NotFound')
         obj.logger.info('--> Estimating the MWI-MCR model')
+        [lastMsg, lastId] = lastwarn;
+        ws = warning('off', 'MATLAB:nearlySingularMatrix');  % Suppress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
+        warning('off', 'MWI:IdentifierFile:NotFound')
         fitRes = mwi_3cx_2R1R2s_dimwi(algoPara, imgPara);
         warning(ws)
+        [~, newId] = lastwarn;
+        if ismember(newId, {'MATLAB:nearlySingularMatrix'})
+            lastwarn(lastMsg, lastId)
+        end
 
         % Extract and save the output data
         V(1).dim = [size(mask,1) size(mask,2) size(mask,3)];
         MWF = fitRes.S0_MW ./ (fitRes.S0_MW + fitRes.S0_EW + fitRes.S0_IW);
-        spm_write_vol_gz(V(1), MWF,                         obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])));
-        spm_write_vol_gz(V(1), fitRes.S0_MW,                obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])));
-        spm_write_vol_gz(V(1), fitRes.S0_IW + fitRes.S0_EW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])));
-        spm_write_vol_gz(V(1), fitRes.R2s_MW,               obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])));
-        spm_write_vol_gz(V(1), fitRes.R2s_IW,               obj.bfile_set(bfile, obj.bidsfilter.(['IAW_R2starmap' ortho])));
-        spm_write_vol_gz(V(1), fitRes.T1_IEW,               obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])));
-        spm_write_vol_gz(V(1), 1 ./ fitRes.T1_IEW,          obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])));
-        spm_write_vol_gz(V(1), fitRes.kiewm,                obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])));
-        spm_write_vol_gz(V(1), fitRes.mask_fitted,          obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])));
+        write_vol(V(1), MWF,                         obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])));
+        write_vol(V(1), fitRes.S0_MW,                obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])));
+        write_vol(V(1), fitRes.S0_IW + fitRes.S0_EW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])));
+        write_vol(V(1), fitRes.R2s_MW,               obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])));
+        write_vol(V(1), fitRes.R2s_IW,               obj.bfile_set(bfile, obj.bidsfilter.(['IAW_R2starmap' ortho])));
+        write_vol(V(1), fitRes.T1_IEW,               obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])));
+        write_vol(V(1), 1 ./ fitRes.T1_IEW,          obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])));
+        write_vol(V(1), fitRes.kiewm,                obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])));
+        write_vol(V(1), fitRes.mask_fitted,          obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])));
     end
 
 end

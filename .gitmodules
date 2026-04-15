@@ -38,3 +38,7 @@
 	path = dependencies/MEDI_toolbox
 	url = https://github.com/huawu02/MEDI_toolbox.git
 	branch = main
+[submodule "dependencies/Tensor-MP-PCA"]
+	path = dependencies/Tensor-MP-PCA
+	url = https://github.com/Neurophysics-CFIN/Tensor-MP-PCA.git
+	branch = main

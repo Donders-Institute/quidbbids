@@ -6,7 +6,7 @@ classdef B1prepWorker < qb.workers.Worker
 
 properties (Constant)
     description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"] % Description of the work that is done
-    needs       = []                % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ""                % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -20,14 +20,13 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.rawTB1map_famp = setfields(obj.config.General.BIDS.include, modality = 'fmap', acq = 'famp');
-        obj.bidsfilter.rawTB1map_anat = setfields(obj.bidsfilter.rawTB1map_famp, acq = 'anat');
-        obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawTB1map_famp, desc = 'corrected', space = 'raw', suffix = 'TB1map');
-        obj.bidsfilter.TB1map_anat    = setfields(obj.bidsfilter.TB1map_angle, acq = 'anat');
+        obj.bidsfilter.rawTB1map_famp = setfields(obj.config.General.BIDS.include, modality='fmap', acq='famp');
+        obj.bidsfilter.rawTB1map_anat = setfields(obj.bidsfilter.rawTB1map_famp, acq='anat');
+        obj.bidsfilter.TB1map_angle   = setfields(obj.bidsfilter.rawTB1map_famp, desc='corrected', space='raw', suffix='TB1map');
+        obj.bidsfilter.TB1map_anat    = setfields(obj.bidsfilter.TB1map_angle, acq='anat');
     end
-
+    
 end
-
 
 methods
 
@@ -65,7 +64,7 @@ methods
             % Save the scaled/regularized FA-map image & json file
             bfile = obj.bfile_set(bfile, obj.bidsfilter.TB1map_angle);
             obj.logger.verbose('-> Copying %s scaled/regularized B1 data to %s', FAVol.fname, bfile.filename)
-            qb.utils.spm_write_vol_gz(FAVol, FA, bfile);
+            qb.utils.write_vol(FAVol, FA, bfile);
 
             % Copy the normal anat image & json file
             if ~isempty(B1anat)

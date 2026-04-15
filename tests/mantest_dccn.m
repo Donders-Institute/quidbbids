@@ -10,11 +10,12 @@ else
     testdata = 'P:\3032002.02\testdata';
 end
 addpath(fileparts(fileparts(mfilename('fullpath'))))
-qb.resetconfig              % Useful when running the development version
+qb.resetconfig;             % Useful when running the development version
 
 %% ABRIM_MEGRE
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM_MEGRE'), "", "", "default")
 quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
+quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
 quidb.products = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
 quidb.resumes.QSMWorker.preferred = true;       % Optional, else GUI usage
 quidb.config.General.useHPC.value = true;
@@ -34,6 +35,7 @@ end
 quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "default")
 quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
 quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
+quidb.config.VFAprepWorker.denoising.method.value = "tMPPCA";
 quidb.config.General.useHPC.value = true;
 mgr = quidb.manager();
 
@@ -71,7 +73,7 @@ mgr = quidb.manager();
 % mgr.start_workflow()
 
 % Then run the GPU part of the workflow
-quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1'};
+quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1 --constraint=nomig'};    % MIG/NOMIG -> Crashes with NVML errors on partitioned GPUs
 quidb.products = ["R1map", "R2starmap", "Chimap", "MWFmap"];
 mgr.start_workflow()
 

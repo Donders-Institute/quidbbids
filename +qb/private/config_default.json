@@ -24,6 +24,11 @@
     }
   },
 
+  "QSIprepWorker": {
+    "QsiprepDir": {"value": "qsiprep", "description": "Name of the qsiprep directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
+    "QsireconDir": {"value": "qsirecon", "description": "Name of the qsirecon directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."}
+  },
+
   "B1prepWorker": {
     "FWHM": {"value": 10, "description": "in mm, smoothing kernel for regularizing the B1 map"},
     "FAscaling": {"value": 800, "description": "Factor to scale the data to radians (800 is what SIEMENS seems to use on TFL B1-mapping)"}

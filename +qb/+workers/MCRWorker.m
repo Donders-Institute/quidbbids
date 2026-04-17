@@ -5,21 +5,23 @@ classdef MCRWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Multi-compartment relaxometry worker, it combines complex multi-echo data (labeled either _MPM or _VFA) with coregistered B1 relative maps to compute myelin water fraction maps";
-                   "Additionally it requires: ";
+    description = ["Multi-compartment relaxometry worker, it combines complex multi-echo data (labeled either _MPM or _VFA) with coregistered"
+                   "B1 relative maps to compute myelin water fraction maps";
+                   "";
+                   "Additionally it requires:";
                    "    - a field map has already been computed per acquisition in order to reduce the search space of the minimisation problem";
                    "    - a common brain mask exists for the various acquisitions";
+                   "";
                    "The theoretical framework is described in Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159"; 
                    "Using as backend the code present on the repository https://github.com/kschan0214/mwi";
                    "";
                    "Methods:";
                    "    - reads data";
                    "    - computes initial phase of each acquisition";
-                   "    - (optional) extracts 3 Orthogonal slices to speed up computation";
+                   "    - (optional) extracts 3 orthogonal slices to speed up computation";
                    "    - runs fitting process using mwi_3cx_2R1R2s_dimwi - there are various configuration options MCRWorker.algoPara";
-                   "    - saves relevant output";
-                   "- "]
-    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
+                   "    - saves relevant output"]
+    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "QSI_theta", "QSI_icvf", "QSI_ff"]           % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -75,12 +77,15 @@ methods
             return
         end
 
-        % Get the workitems we need from a colleague
+        % Get the workitems we need from our colleagues
         ME4Dmag    = obj.ask_team('ME4Dmag');       % Multiple FA-images per run
         unwrapped  = obj.ask_team('unwrapped');     % Multiple FA-images per run
         fieldmap   = obj.ask_team('fieldmap');      % Multiple FA-images per run
         localfmask = obj.ask_team('localfmask');    % Multiple FA-images per run
         TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
+        QSI_theta  = obj.ask_team('QSI_theta');
+        QSI_icvf   = obj.ask_team('QSI_icvf');
+        QSI_ff     = obj.ask_team('QSI_ff');
 
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
         if numel(unique([length(unwrapped), length(fieldmap)])) > 1
@@ -160,6 +165,11 @@ methods
         imgPara.b0         = bfile.metadata.MagneticFieldStrength;
         imgPara.autosave   = false;
         imgPara.output_dir = char(obj.logger.logdir);
+        if ~isempty(QSI_theta) && ~isempty(QSI_icvf) && ~isempty(QSI_ff)
+            imgPara.theta = spm_read_vols(spm_vol(QSI_theta{1}));
+            imgPara.icvf  = spm_read_vols(spm_vol(QSI_icvf{1}));
+            imgPara.ff    = spm_read_vols(spm_vol(QSI_ff{1}));
+        end
         % imgPara.identifier  = obj.subject.name;     % TODO: Add when the MWI PR is accepted and released
         % if obj.subject.session
         %     imgPara.identifier = [imgPara.identifier '_' obj.subject.session];

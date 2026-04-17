@@ -29,7 +29,7 @@ classdef EditInclude < handle
             obj.BIDS            = BIDS;
             obj.IncludeOriginal = include;
             obj.IncludeCurrent  = include;
-            obj.NodeMap         = containers.Map();
+            obj.NodeMap         = dictionary();
             
             obj.buildGUI()
             obj.query(obj.IncludeCurrent)

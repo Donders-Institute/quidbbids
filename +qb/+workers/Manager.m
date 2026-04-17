@@ -264,7 +264,7 @@ methods
         for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
             Worker = obj.team.(product).handle;
             name   = obj.team.(product).name;
-            jobIDs = containers.Map(KeyType='char', ValueType='char');
+            jobIDs = dictionary();
             for subject = subjects
 
                 % Skip if we are not at the modality level, i.e. at the subject level while sessions are present
@@ -323,7 +323,7 @@ methods
         arguments
             obj
             workitem {mustBeTextScalar}
-            jobIDs   containers.Map
+            jobIDs   dictionary
         end
 
         % Launch a dashboard

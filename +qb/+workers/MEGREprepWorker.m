@@ -15,7 +15,8 @@ properties (Constant)
                    "";
                    "1. Create a brain mask for each MEGRE acquisition using the echo-1_mag image. ";
                    "2. Merge all echoes into a 4D file (for running the QSM workflows)"
-                   "3. Denoise using (Tensor) MPPCA the merged 4D file (optional), - this is configurable with denoising.method & denoising.kernel"]
+                   "3. Denoise using (Tensor) MPPCA the merged 4D file (optional) - this is configurable"
+                   "with denoising.method & denoising.kernel"]
     needs       = "";       % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
@@ -171,7 +172,7 @@ methods (Static)
             return
         end
 
-        BIDSW   = obj.BIDSW_ses();
+        BIDSW   = obj.BIDS_ses();
         bfilter = obj.bidsfilter.ME4Dmag;
         for acq = obj.query_ses(BIDSW, 'acquisitions', bfilter)
             bfilter.acq = char(acq);

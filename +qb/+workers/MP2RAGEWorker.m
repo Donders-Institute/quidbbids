@@ -6,11 +6,16 @@ classdef MP2RAGEWorker < qb.workers.Worker
 
 properties (Constant)
     description = ["I'm an MP2RAGE worker and create M0 and R1 maps, but only if you have MP2RAGE and B1 map data!";
-                   "Computations are based on a dictionary matching approach described in the supplemental material of the paper Chan et al, Imaging Neuroscience, 2025 https://doi.org/10.1162/imag_a_00456";
-                   "This method, when compared to the original implementation described Marques et al, PLOSone, 2013 https://doi.org/10.1371/journal.pone.0069294 has significantly better performance for long T1 values";
+                   "Computations are based on a dictionary matching approach described in the supplemental material";
+                   "of the paper Chan et al, Imaging Neuroscience, 2025 https://doi.org/10.1162/imag_a_00456.";
+                   "";
+                   "This method, when compared to the original implementation described by Marques et al, PLOSone, 2013";
+                   "https://doi.org/10.1371/journal.pone.0069294 has significantly better performance for long T1 values";
+                   "";
                    "Considerations:";
-                   "- Be careful at explicitly defining on the configuration parameters the NumberShots and (to a smaller extent) the EchoSpacing";
-                   "It uses the following repository https://github.com/JosePMarques/MP2RAGE-related-scripts/"]
+                   "- Be careful at defining the configuration parameters `NumberShots` and (to a smaller extent) `EchoSpacing`";
+                   "";
+                   "The code is based on: https://github.com/JosePMarques/MP2RAGE-related-scripts/"]
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

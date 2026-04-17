@@ -104,8 +104,8 @@ methods
                 obj.denoise_raw(bfilter{1})                                                 % Processing step 5a
                 obj.make_syntheticT1_M0(bfilter{1})                                         % Processing step 1
                 obj.coreg_VFA_B1_2synthetic(bfilter{1})                                     % Processing step 2+5b
-                create_brainmask(obj, obj.BIDSW_ses(), bfilter{1})                          % Processing step 3
-                merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDSW_ses()) % Processing step 4
+                create_brainmask(obj, obj.BIDS_ses(), bfilter{1})                          % Processing step 3
+                merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDS_ses()) % Processing step 4
             else
                 obj.logger.verbose("No raw %s data found for: ", bfilter{1}.suffix, obj.subject.name)
             end
@@ -219,7 +219,7 @@ methods
         import qb.utils.setfields
 
         % Index the workdir layout (only for obj.subject)
-        BIDSW = obj.BIDSW_ses();
+        BIDSW = obj.BIDS_ses();
 
         % Get the B1 images from the team
         B1famp = obj.ask_team('TB1map_angle');

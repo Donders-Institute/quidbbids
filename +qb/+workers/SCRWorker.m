@@ -70,7 +70,7 @@ methods
         B1 = spm_read_vols(spm_vol(char(B1map)));
 
         % Index the (special) SEPIA workdir layout (only for obj.subject)
-        BIDSWS = obj.BIDSW_ses(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
+        BIDSWS = obj.BIDS_ses(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
 
         % Process all runs independently
         for run = obj.query_ses(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs

@@ -25,13 +25,13 @@ end
 
 properties
     BIDS            % BIDS layout from bids-matlab (raw input data only)
-    subject         % The subject that will be worked on
-    config          % Configuration settings that are used to produce the work
+    subject         % The subject that will be worked on (i.e. an item from bids.layout().subjects)
+    config          % Configuration settings (as a struct) that are used to produce the work
     workdir         % Working directory for intermediate files
     outputdir       % Output directory for final results
     team            % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker resume
     force           % Force to start working, even if the subject is locked or existing results exist
-    bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), run=1)`
+    bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDS_ses, 'data', bidsfilter.(workitem), run=1)`
     logger          % A logger object for keeping logs
 end
 
@@ -130,7 +130,7 @@ methods
         end
 
         % See if we can collect the requested workitem
-        work = obj.query_ses(obj.BIDSW_ses(), 'data', obj.bidsfilter.(workitem));
+        work = obj.query_ses(obj.BIDS_ses(), 'data', obj.bidsfilter.(workitem));
         if isempty(work) || obj.force
 
             obj.logger.info("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path)
@@ -190,7 +190,7 @@ methods
             end
 
             % Collect the requested workitem
-            work = obj.query_ses(obj.BIDSW_ses(), 'data', obj.bidsfilter.(workitem));
+            work = obj.query_ses(obj.BIDS_ses(), 'data', obj.bidsfilter.(workitem));
             if ~isempty(work)
                 obj.done()
                 obj.logger.info(obj.name + " has finished working on: " + obj.subject.path)
@@ -335,10 +335,14 @@ methods
         subses = replace(erase(obj.subject.path, [obj.BIDS.pth filesep]), filesep,'_');
     end
 
-    function BIDSW = BIDSW_ses(obj, workdir)
-        %BIDSW_SES Gets a tolerant bids.layout() for the WORKDIR sub/ses data only (default: WORKDIR = obj.workdir)
+    function BIDS = BIDS_ses(obj, workdir, varargin)
+        %BIDS_SES Gets a tolerant (no schema validation) bids.layout() for the WORKDIR sub/ses data only (default: WORKDIR = obj.workdir)
         %
-        % Waits up to 60 seconds for the workdir BIDS initialization to be ready, allowing the HPC file system latency to settle
+        % Waits up to 60 seconds for the BIDS initialization to be ready, allowing the HPC file system latency to settle
+        %
+        % Usage:
+        %   BIDS = OBJ.BIDS_SES()                   % Uses obj.workdir as the BIDS directory
+        %   BIDS = OBJ.BIDS_SES(WORKDIR, VARGIN)    % Uses WORKDIR as the BIDS directory and passes VARGIN to bids.layout()
 
         if nargin < 2 || isempty(workdir)
             workdir = obj.workdir;
@@ -362,7 +366,7 @@ methods
         end
         [~,~] = mkdir(fullfile(workdir, subsesdir));        
 
-        BIDSW = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_derivatives',false, 'tolerant',true, 'verbose',false);
+        BIDS = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, varargin{:});
     end
 
     function [result, bfiles] = query_ses(obj, layout, query, varargin)

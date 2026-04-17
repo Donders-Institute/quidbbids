@@ -28,6 +28,7 @@ methods (Access = protected)
     
 end
 
+
 methods
 
     function get_work_done(obj, workitem)

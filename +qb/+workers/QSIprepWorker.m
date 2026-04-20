@@ -24,7 +24,7 @@ methods (Access = protected)
         obj.bidsfilter.derivNODDI_icvf = struct(modality='dwi', model='noddi', param='icvf', desc='', suffix='dwimap');
         obj.bidsfilter.derivNODDI_fdir = setfields(obj.bidsfilter.derivNODDI_icvf, param='direction');
         obj.bidsfilter.QSI_theta       = setfields(obj.bidsfilter.derivNODDI_icvf, param='theta', space='withinGRE');
-        obj.bidsfilter.QSI_ff          = setfields(obj.bidsfilter.QSI_theta, param='direction');
+        obj.bidsfilter.QSI_ff          = setfields(obj.bidsfilter.QSI_theta, param='fiberfraction');
         obj.bidsfilter.QSI_icvf        = setfields(obj.bidsfilter.derivNODDI_icvf, space=obj.bidsfilter.QSI_theta.space);
     end
     

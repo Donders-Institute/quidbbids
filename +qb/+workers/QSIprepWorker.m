@@ -1,5 +1,5 @@
 classdef QSIprepWorker < qb.workers.Worker
-%QSIPREPWORKER Performs preprocessing of qsiprep derivative data to produce QSI theta, ff and icvf workitems that can be used in the DI-MWI model.
+%QSIPREPWORKER Performs preprocessing of qsiprep derivative data to produce QSI theta, ff and (modulated) icvf workitems that can be used in the DI-MWI model.
 %
 % See also: qb.workers.MCRWorker, qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
@@ -21,7 +21,7 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.derivNODDI_icvf = struct(modality='dwi', model='noddi', param='icvf', desc='', suffix='dwimap');
+        obj.bidsfilter.derivNODDI_icvf = struct(modality='dwi', model='noddi', param='icvf', desc='modulated', suffix='dwimap');
         obj.bidsfilter.derivNODDI_fdir = setfields(obj.bidsfilter.derivNODDI_icvf, param='direction');
         obj.bidsfilter.QSI_theta       = setfields(obj.bidsfilter.derivNODDI_icvf, param='theta', space='withinGRE');
         obj.bidsfilter.QSI_ff          = setfields(obj.bidsfilter.QSI_theta, param='fiberfraction');
@@ -63,7 +63,7 @@ methods
         end
 
         % Get the QSIrecon derivative images
-        BIDSD = obj.BIDS_ses(fullfile(qsirecondir,'derivatives','qsirecon-NODDI'));
+        BIDSD = obj.BIDS_ses(fullfile(qsirecondir,'derivatives',['qsirecon-' obj.config.QSIprepWorker.Model]));
         icvf  = obj.query_ses(BIDSD, 'data', obj.bidsfilter.derivNODDI_icvf);
         fdir  = obj.query_ses(BIDSD, 'data', obj.bidsfilter.derivNODDI_fdir);
         if length(icvf) ~= length(fdir)
@@ -83,7 +83,10 @@ methods
         elseif length(T1src) > 1
             obj.logger.info('More than one T1w "ACPC" reference image found, using the first image: %s', T1src{1})
         end
-        T1tgt = obj.query_ses(obj.BIDS_ses(), 'data', struct(modality='anat', space='withinGRE', suffix='T1w'));
+        T1tgt = obj.ask_team('syntheticT1');
+        if isempty(T1tgt)
+            T1tgt = obj.query_ses(obj.BIDS, 'data', struct(modality='anat', suffix='T1w'));
+        end
         if length(T1tgt) > 1
             T1tgt = T1tgt(round(length(T1tgt)/2));      % If there are multiple T1w "withinGRE" images (flips), use the middle one
             obj.logger.info('More than one T1w "withinGRE" reference image found, using the middle image: %s', T1tgt{1})

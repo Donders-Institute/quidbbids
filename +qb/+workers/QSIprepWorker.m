@@ -91,7 +91,6 @@ methods
         Vtgt = spm_vol(T1tgt{1});
         Vsrc = spm_vol(T1src{1});
         x    = spm_coreg(Vtgt, Vsrc, struct(cost_fun='nmi'));
-        T    = Vsrc.mat \ spm_matrix(x) * Vtgt.mat;     % Transformation from voxel coordinates in Vtgt to voxel coordinates in Vsrc
 
         % Loop over the found icvf maps (and corresponding fdir maps) to compute the QSI_theta, QSI_ff and QSI_icvf workitems
         for n = 1:length(icvf)
@@ -107,6 +106,7 @@ methods
             theta = acos(abs(tensorprod(FDIR, b0dir, 4, 1)) ./ (vecnorm(FDIR,2,4) * norm(b0dir)));
 
             % Rotate the data to the "withinGRE" space (using trilinear interpolation)
+            T = Vicvf.mat \ spm_matrix(x) * Vtgt.mat;               % Transformation from voxel coordinates in Vtgt to voxel coordinates in Vicvf
             for z = Vtgt.dim(3):-1:1
                 ICVF(:,:,z) = spm_slice_vol(Vicvf, T * spm_matrix([0 0 z]), Vtgt.dim(1:2), 1);
             end

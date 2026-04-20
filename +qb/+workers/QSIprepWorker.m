@@ -1,14 +1,14 @@
-classdef QsiprepWorker < qb.workers.Worker
+classdef QSIprepWorker < qb.workers.Worker
 %QSIPREPWORKER Performs preprocessing of qsiprep derivative data to produce QSI theta, ff and icvf workitems that can be used in the DI-MWI model.
 %
 % See also: qb.workers.MCRWorker, qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
 properties (Constant)
-    description = ["I preprocess qsiprep derivative data to produce QSI theta, ff and icvf workitems that can be used";
-                   "in the DI-MWI model of the MCRWorker."]  % Description of the work that is done
+    description = ["I preprocess qsiprep derivative data (thus far only from NODDI) to produce QSI theta, ff and icvf";
+                   "workitems that can be used in the DI-MWI model of the MCRWorker."]  % Description of the work that is done
     needs       = ""                % List of workitems the worker needs. Workitems can contain regexp patterns
-    usesGPU     = true
+    usesGPU     = false
 end
 
 
@@ -44,7 +44,7 @@ methods
         function qsidir = get_qsidir(qsidir)
             if isempty(qsidir)
                 return
-            elseif ~fileparts(qsidir)
+            elseif isempty(fileparts(qsidir))
                 qsidir = fullfile(obj.BIDS.pth, 'derivatives', qsidir);
             end
             if ~isfolder(qsidir)
@@ -62,28 +62,28 @@ methods
             return
         end
 
-        % Get the QSIprep derivative images
-        BIDSD = obj.BIDS_ses(qsirecondir, index_derivatives=true);
+        % Get the QSIrecon derivative images
+        BIDSD = obj.BIDS_ses(fullfile(qsirecondir,'derivatives','qsirecon-NODDI'));
         icvf  = obj.query_ses(BIDSD, 'data', obj.bidsfilter.derivNODDI_icvf);
         fdir  = obj.query_ses(BIDSD, 'data', obj.bidsfilter.derivNODDI_fdir);
         if length(icvf) ~= length(fdir)
             obj.logger.warning('Unexpected number of qsirecon-files found: icvf=%d vs fdir=%d', length(icvf), length(fdir))
         end
         if isempty(icvf)
-            obj.logger.verbose('No qsirecon files found in: %s..', fullfile(qsirecondir, obj.subses()))
+            obj.logger.verbose('No qsirecon files found in: %s..', fullfile(qsirecondir, obj.sub_ses()))
             return
         end
 
         % Coregister the icvf and fdir maps to the "withinGRE" space (i.e. the space of the GRE images that are used in the DI-MWI model)
         BIDSD = obj.BIDS_ses(qsiprepdir, index_derivatives=true);
-        T1src = obj.query_ses(BIDSD, 'data', struct(modality='anat', space='ACPC', desc='preproc', suffix='T1w'));
+        T1src = bids.query(BIDSD, 'data', struct(sub=obj.sub, modality='anat', space='ACPC', desc='preproc', suffix='T1w'));
         if isempty(T1src)
-            obj.logger.error('No qsirecon T1w reference image found for: %s. Cannot coregister the "ACPC" files to the "withinGRE" space.', fullfile(qsiprepdir, obj.subses()))
+            obj.logger.error('No qsirecon T1w reference image found for: %s. Cannot coregister the "ACPC" files to the "withinGRE" space.', fullfile(qsiprepdir, obj.sub_ses()))
             return
         elseif length(T1src) > 1
             obj.logger.info('More than one T1w "ACPC" reference image found, using the first image: %s', T1src{1})
         end
-        T1tgt = obj.query_ses(obj.bids_ses(), 'data', struct(modality='anat', space='withinGRE', suffix='T1w'));
+        T1tgt = obj.query_ses(obj.BIDS_ses(), 'data', struct(modality='anat', space='withinGRE', suffix='T1w'));
         if length(T1tgt) > 1
             T1tgt = T1tgt(round(length(T1tgt)/2));      % If there are multiple T1w "withinGRE" images (flips), use the middle one
             obj.logger.info('More than one T1w "withinGRE" reference image found, using the middle image: %s', T1tgt{1})

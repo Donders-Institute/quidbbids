@@ -326,6 +326,10 @@ methods
             jobIDs   dictionary
         end
 
+        if ~jobIDs.numEntries
+            return
+        end
+
         % Launch a dashboard
         dashboard = qb.workers.Dashboard(obj.coord, workitem, jobIDs);
 

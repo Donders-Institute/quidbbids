@@ -70,7 +70,7 @@ Open MATLAB and follow these steps:
 
 .. code-block:: matlab
  
-      quidb = qb.QuIDBBIDS('/path/to/my_bids_dataset');
+      >> quidb = qb.QuIDBBIDS('/path/to/my_bids_dataset');
  
    This scans the dataset and discovers all subjects, sessions, and available data types.
 
@@ -78,7 +78,7 @@ Open MATLAB and follow these steps:
  
    .. code-block:: matlab
  
-      quidb.products = ["Chimap", "R2starmap"];
+      >> quidb.products = ["Chimap", "R2starmap"];
  
    But how do you know what products are available, and which workers can make them?
    Click below to find out.
@@ -165,22 +165,19 @@ Open MATLAB and follow these steps:
          The QuIDBBIDS configuration editor. Left panel: settings organised by worker.
          Right panel: description and editable value for the selected parameter.
 
-   
-
-    
-
 3. **Select the worker** — Since multiple workers can produce these maps, tell QuIDBBIDS
    which one to use. For standard MEGRE data, the ``QSMWorker`` (which uses SEPIA) is the
    right choice:
  
    .. code-block:: matlab
  
-      quidb.resumes.QSMWorker.preferred = true;
+      >> quidb.resumes.QSMWorker.preferred = true;
 
 4. **(Optional) Enable denoising** — For example, enable MPPCA denoising on the input images:
  
    .. code-block:: matlab
-    quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
+
+      >> quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
 
     You can browse all available settings with ``quidb.config``.
     
@@ -188,36 +185,31 @@ Open MATLAB and follow these steps:
  
    .. code-block:: matlab
  
-      mgr = quidb.manager();
-      mgr.start_workflow();
+      >> mgr = quidb.manager();
+      >> mgr.start_workflow();
 
    QuIDBBIDS will now process each subject in your dataset. It automatically handles all
    intermediate steps: creating brain masks, merging echoes, running SEPIA for phase
    unwrapping, background field removal, R2* fitting, and dipole inversion for QSM.  
 
 **Putting it all together** — here is the complete script:
+
 .. code-block:: matlab
  
    %% QuIDBBIDS 101 — Compute R2* and Chi maps from mGRE data
  
-   quidb = qb.QuIDBBIDS('/path/to/my_bids_dataset');
- 
-   quidb.products = ["Chimap", "R2starmap"];
-
-   quidb.resumes.QSMWorker.preferred = true;
- 
-   mgr = quidb.manager();
-
-   mgr.start_workflow();
+   >> quidb = qb.QuIDBBIDS('/path/to/my_bids_dataset');
+   >> quidb.products = ["Chimap", "R2starmap"];
+   >> quidb.resumes.QSMWorker.preferred = true;
+   >> mgr = quidb.manager();
+   >> mgr.start_workflow();
 
 .. tip::
  
    If you have access to a high-performance computing (HPC) cluster, you can enable parallel
    processing across subjects by adding::
  
-      quidb.config.General.useHPC.value = true;
-
-
+      >> quidb.config.General.useHPC.value = true;
 
 Exercise 3 — Inspect the results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -165,7 +165,8 @@ methods
                 end
 
                 % Define a reference volume, i.e. the middle FA file (assume TR and nii-header identical for all MPM/VFAs of the same run)
-                Vref = spm_vol(char(obj.query_ses(obj.BIDS, 'data', bfilter_e1, flip=median(categorical(str2double(flips), Ordinal=true)))));
+                flips = sort(str2double(flips));
+                Vref  = spm_vol(char(obj.query_ses(obj.BIDS, 'data', bfilter_e1, flip=flips(round(end/2)))));
 
                 % Compute T1 and M0 maps
                 obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1{1})

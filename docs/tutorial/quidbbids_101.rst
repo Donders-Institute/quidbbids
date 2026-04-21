@@ -1,17 +1,20 @@
 QuIDBBIDS 101 — First R2* and Chi Maps
 =======================================
-From raw multi-echo GRE data to quantitative maps in a few lines of code
+From bids dataset including multi-echo GRE data to quantitative maps in a few lines of code
 
-Objective
+Objectives
 ---------
 
 - Learning the basic workflow: **initialise -> configure -> run**.
 - Producing your first R2* and Chi maps from raw multi-echo GRE data.
 
-Tagret audience
+Target audience
 ---------------  
 - who is new to QuIDBBIDS
-- wants to compute R2* and Chi maps from raw multi-echo GRE data
+- interested in quickly obtaining qMRI maps for a whole study organised according to BIDS
+   - wants to compute R2* and QSM maps in a study raw multi-echo GRE dataset
+   - wants to compute R1 maps from MP2RAGE and B1 maps 
+   - wants to compute R1 and R2* maps from variable flip angle acquisitions 
 
 Estimated time
 ------------------  
@@ -19,9 +22,10 @@ About ---minutes
 
 Introduction
 ------------
-In this tutorial, we will go through a simple workflow : computing **R2* map** and a **Chi map** from raw MEGRE data. 
+In this tutorial, we will first go through a simple workflow : computing **R2* map** and a **Chi map** from raw MEGRE data. 
 We will use the ``R2starWorker`` and ``QSMWorker`` for this purpose, which are part of the QuIDBBIDS toolbox.
-Under the hood, QuIDBBIDS uses `SEPIA <https://sepia-documentation.readthedocs.io>`__ for the QSM processing pipeline.
+
+For this application, under the hood, QuIDBBIDS uses `SEPIA <https://sepia-documentation.readthedocs.io>`__ for the QSM processing pipeline.
 
 The key idea is that you tell QuIDBBIDS *what you want* (the output maps) and it figures out 
 *how to make them* by automatically assembling the right processing pipeline including brain masking, echo merging, phase unwrapping,

@@ -22,7 +22,15 @@
 .. toctree::
    :maxdepth: 3
    :hidden:
-   :caption: Miscellaneous
+   :caption: Tutorials
+
+   tutorial/quidbbids_101.rst
+   tutorial/quidbbids_102.rst
+
+.. toctree::
+   :maxdepth: 3
+   :hidden:
+   :caption: Miscellaneous  
 
    tutorial
    screenshots

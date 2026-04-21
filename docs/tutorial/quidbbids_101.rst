@@ -41,7 +41,7 @@ Introduction
 ------------
 In this tutorial, we will go through a simple workflow : computing **R2* map** and a **Chi map** from raw MEGRE data. 
 We will use the ``R2starWorker`` and ``QSMWorker`` for this purpose, which are part of the QuIDBBIDS toolbox.
-under the hood, QuIDBBIDS uses `SEPIA <https://sepia-documentation.readthedocs.io>`__ for the QSM processing pipeline.
+Under the hood, QuIDBBIDS uses `SEPIA <https://sepia-documentation.readthedocs.io>`__ for the QSM processing pipeline.
 
 The key idea is that you tell QuIDBBIDS *what you want* (the output maps) and it figures out 
 *how to make them* by automatically assembling the right processing pipeline including brain masking, echo merging, phase unwrapping,

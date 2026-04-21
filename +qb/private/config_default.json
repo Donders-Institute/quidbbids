@@ -25,9 +25,9 @@
   },
 
   "QSIprepWorker": {
-    "QsiprepDir": {"value": "qsiprep", "description": "Name of the qsiprep directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
-    "QsireconDir": {"value": "qsirecon", "description": "Name of the qsirecon directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
-    "Model": {"value": "NODDI", "description": "Diffusion model used for fitting in qsirecon. Currently only 'NODDI' is supported. Note: Corresponding output folders from qsirecon workflows are expected to be present in the qsirecon derivatives subdirectory."}
+    "QsiprepDir": {"value": "QSIPrep", "description": "Name of the QSIPrep directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
+    "QsireconDir": {"value": "QSIRecon", "description": "Name of the QSIRecon directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
+    "Model": {"value": "NODDI", "description": "Diffusion model used for fitting in QSIRecon. Currently only 'NODDI' is supported. Note: Corresponding output folders from QSIRecon workflows are expected to be present in the QSIRecon derivatives subdirectory."}
   },
 
   "B1prepWorker": {

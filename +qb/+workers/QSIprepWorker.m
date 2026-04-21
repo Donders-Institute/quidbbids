@@ -1,13 +1,34 @@
 classdef QSIprepWorker < qb.workers.Worker
-%QSIPREPWORKER Performs preprocessing of qsiprep derivative data to produce QSI theta, ff and (modulated) icvf workitems that can be used in the DI-MWI model.
-%
-% See also: qb.workers.MCRWorker, qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
+%QSIPREPWORKER Converts QSIRecon outputs (NODDI and MSMT-CSD) into QSI workitems for DI-MWI analysis
+% See also: qb.workers.MCRWorker, qb.workers.Worker, qb.QuIDBBIDS
 
 
 properties (Constant)
-    description = ["I preprocess qsiprep derivative data (thus far only from NODDI) to produce QSI theta, ff and icvf";
-                   "workitems that can be used in the DI-MWI model of the MCRWorker."]  % Description of the work that is done
-    needs       = ""                % List of workitems the worker needs. Workitems can contain regexp patterns
+    description = ["Preprocessing of QSIRecon derivative data to generate QSI model parameters for DI-MWI analysis";
+                   "This worker converts QSIRecon outputs (NODDI and MSMT-CSD models) into standardized QSI workitems representing";
+                   "fiber/neurite theta (polar angle relative to B0), fiber fraction (ff), and intracellular volume fraction (icvf).";
+                   "The generated maps are coregistered to MEGRE/VFA space for use in downstream DI-MWI modeling.";
+                   "";
+                   "Supported methods:";
+                   "";
+                   "NODDI - Neurite Orientation Dispersion and Density Imaging (Zhang et al., 2012)";
+                   "  Requires: QSIRecon workflow with `--recon-spec amico_noddi` (produces 'icvf' and 'direction' maps)";
+                   "  Outputs:  QSI_theta (smallest polar angle between the neurite orientation and the B0 field)";
+                   "            QSI_ff (set to 1 for all voxels, since NODDI models a single neurite population per voxel)";
+                   "            QSI_icvf (modulated, i.e. the product of NODDI icvf and tissue fraction for compatibility with MCR model)";
+                   "";
+                   "MRtrix - Constrained Spherical Deconvolution (Jeurissen et al., 2014)";
+                   "  Requires: QSIRecon workflow with any of the `mrtrix` reconstruction specifications that produces FOD maps,";
+                   "            plus installation of MRtrix3 (fod2fixel and fixel2voxel), plus the `NODDI` reconstruction (as described above)";
+                   "  Outputs:  QSI_theta (smallest polar angles between fixel directions and B0 field)";
+                   "            QSI_ff (Apparent Fiber Density as a proxy for fiber fraction)";
+                   "            QSI_icvf (modulated, i.e. the product of NODDI icvf and tissue fraction for compatibility with MCR model)";
+                   "";
+                   "Important notes:";
+                   "  - This worker does NOT run QSIRecon itself; QSIRecon derivatives must be precomputed";
+                   "  - QSIPrep/QSIRecon output directories must be configured in the config file or else the downstream MW model estimations";
+                   "    will be performed without the diffusion information (which may lead to suboptimal results)."]  % Description of the work that is done
+    needs       = "syntheticT1"                % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -55,7 +76,7 @@ methods
 
         import qb.utils.spm_vol
 
-        % Get the qsiprep and qsirecon directories
+        % Get the QSIPrep and QSIRecon directories
         qsiprepdir  = get_qsidir(obj.config.QSIprepWorker.QsiprepDir);
         qsirecondir = get_qsidir(obj.config.QSIprepWorker.QsireconDir);
         if isempty(qsiprepdir) || isempty(qsirecondir)
@@ -63,14 +84,14 @@ methods
         end
 
         % Get the QSIrecon derivative images
-        BIDSD = obj.BIDS_ses(fullfile(qsirecondir,'derivatives',['qsirecon-' obj.config.QSIprepWorker.Model]));
+        BIDSD = obj.BIDS_ses(fullfile(qsirecondir,'derivatives',['QSIRecon-' obj.config.QSIprepWorker.Model]));
         icvf  = obj.query_ses(BIDSD, 'data', obj.bidsfilter.derivNODDI_icvf);
         fdir  = obj.query_ses(BIDSD, 'data', obj.bidsfilter.derivNODDI_fdir);
         if length(icvf) ~= length(fdir)
-            obj.logger.warning('Unexpected number of qsirecon-files found: icvf=%d vs fdir=%d', length(icvf), length(fdir))
+            obj.logger.warning('Unexpected number of QSIRecon-files found: icvf=%d vs fdir=%d', length(icvf), length(fdir))
         end
         if isempty(icvf)
-            obj.logger.verbose('No qsirecon files found in: %s..', fullfile(qsirecondir, obj.sub_ses()))
+            obj.logger.verbose('No QSIRecon files found in: %s..', fullfile(qsirecondir, obj.sub_ses()))
             return
         end
 
@@ -78,7 +99,7 @@ methods
         BIDSD = obj.BIDS_ses(qsiprepdir, index_derivatives=true);
         T1src = bids.query(BIDSD, 'data', struct(sub=obj.sub, modality='anat', space='ACPC', desc='preproc', suffix='T1w'));
         if isempty(T1src)
-            obj.logger.error('No qsirecon T1w reference image found for: %s. Cannot coregister the "ACPC" files to the "withinGRE" space.', fullfile(qsiprepdir, obj.sub_ses()))
+            obj.logger.error('No QSIRecon T1w reference image found for: %s. Cannot coregister the "ACPC" files to the "withinGRE" space.', fullfile(qsiprepdir, obj.sub_ses()))
             return
         elseif length(T1src) > 1
             obj.logger.info('More than one T1w "ACPC" reference image found, using the first image: %s', T1src{1})
@@ -89,7 +110,7 @@ methods
         end
         if length(T1tgt) > 1
             T1tgt = T1tgt(round(length(T1tgt)/2));      % If there are multiple T1w "withinGRE" images (flips), use the middle one
-            obj.logger.info('More than one T1w "withinGRE" reference image found, using the middle image: %s', T1tgt{1})
+            obj.logger.info('More than one T1w "withinGRE" reference image found, using: %s', T1tgt{1})
         end
         Vtgt = spm_vol(T1tgt{1});
         Vsrc = spm_vol(T1src{1});

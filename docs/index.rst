@@ -24,8 +24,9 @@
    :hidden:
    :caption: Tutorials
 
-   tutorial/quidbbids_101.rst
-   tutorial/quidbbids_102.rst
+   tutorial/tutorialdata
+   tutorial/quidbbids_101
+   tutorial/quidbbids_102
 
 .. toctree::
    :maxdepth: 3

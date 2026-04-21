@@ -17,26 +17,6 @@ Estimated time
 ------------------  
 About ---minutes
 
-Prerequisites
-------------------
-Install QuIDBBIDS(and its dependencies), in your MATLAB environment,
-you can find the installation instruction on the :doc:`/installation` page 
-
-.. note::
- 
-   Make sure that the QuIDBBIDS folder (without subfolders) is on your MATLAB path.
-   You can verify this by typing ``qb.QuIDBBIDS`` in the MATLAB command window — it
-   should not return an error.
-
-You will also need a BIDS formatted dataset that contains multi-echo GRE (MEGRE) data magnitude and phase images.
-If you don't have one, you can use the test dataset provided ....
-
-.. tip::
- 
-   You can use `BIDScoin <https://bidscoin.readthedocs.io>`__ to convert your raw DICOM
-   data to BIDS format.
-
-
 Introduction
 ------------
 In this tutorial, we will go through a simple workflow : computing **R2* map** and a **Chi map** from raw MEGRE data. 

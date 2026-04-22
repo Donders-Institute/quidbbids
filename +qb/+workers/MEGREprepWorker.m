@@ -194,8 +194,16 @@ methods (Static)
                 % Get the mask
                 mask = obj.query_ses(BIDSW, 'data', obj.bidsfilter.brainmask);
                 mask = logical(spm_read_vols(spm_vol(char(mask))));
+                % ensures that voxels that have zero intensity at any time point are excluded from the mask
+                Zeroimage = (min(abs(img),[],4)~=0);
+                if length(size(Zeroimage)) ==5
+                   Zeroimage = ( min(abs(Zeroimage),[],5)   ~=0);
+                end
+                mask = logical(Zeroimage.*mask);
 
                 obj.logger.info('--> %s denoising: %s [..]', denoising.method, spm_file(magfile,'filename'))
+
+                
                 switch denoising.method
                     case 'MPPCA'
                         dim = num2cell(size(img));             % Dimensions: [x,y,z,TE,FA]

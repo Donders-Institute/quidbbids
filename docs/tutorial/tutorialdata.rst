@@ -12,8 +12,11 @@ you can find the installation instruction on the :doc:`/installation` page
    You can verify this by typing ``qb.QuIDBBIDS`` in the MATLAB command window — it
    should not return an error.
 
-You will also need a BIDS formatted dataset that contains multi-echo GRE (MEGRE) data magnitude and phase images.
-If you don't have one, you can download the tutorial dataset using:
+BIDS formatted data
+-------------------
+
+To run QuIDBBIDS tutorials you will need a BIDS formatted dataset that contains multi-echo GRE (MEGRE) and/or variable
+flip angle (VFA) data magnitude and phase images. If you don't have one, you can download the tutorial dataset using:
 
 .. code-block:: matlab
 
@@ -21,4 +24,5 @@ If you don't have one, you can download the tutorial dataset using:
 
 .. tip::
  
-   If you want to use your own non-BIDS dataset, you can use `BIDScoin <https://bidscoin.readthedocs.io>`__ to convert it to the BIDS format.
+   If you want to use your own non-BIDS dataset, you can use `BIDScoin <https://bidscoin.readthedocs.io>`__ to convert
+   it to the BIDS format.

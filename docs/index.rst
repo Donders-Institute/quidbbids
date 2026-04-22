@@ -33,7 +33,6 @@
    :hidden:
    :caption: Miscellaneous  
 
-   tutorial
    screenshots
    CHANGELOG
    contributing

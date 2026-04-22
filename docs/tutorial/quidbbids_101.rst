@@ -1,9 +1,9 @@
 QuIDBBIDS 101 — First R2* and Chi Maps
 =======================================
-From bids dataset including multi-echo GRE data to quantitative maps in a few lines of code
+From BIDS dataset including multi-echo GRE data to quantitative maps in a few lines of code
 
 Objectives
----------
+----------
 
 - Learning the basic workflow: **initialise -> configure -> run**.
 - Producing your first R2* and Chi maps from raw multi-echo GRE data.
@@ -11,10 +11,11 @@ Objectives
 Target audience
 ---------------  
 - who is new to QuIDBBIDS
-- interested in quickly obtaining qMRI maps for a whole study organised according to BIDS
-   - wants to compute R2* and QSM maps in a study raw multi-echo GRE dataset
-   - wants to compute R1 maps from MP2RAGE and B1 maps 
-   - wants to compute R1 and R2* maps from variable flip angle acquisitions 
+- interested in quickly obtaining qMRI maps, such as:
+
+   - R2* and QSM maps in a study raw multi-echo GRE dataset
+   - R1 maps from MP2RAGE and B1 maps 
+   - R1 and R2* maps from variable flip angle acquisitions 
 
 Estimated time
 ------------------  
@@ -22,7 +23,7 @@ About ---minutes
 
 Introduction
 ------------
-In this tutorial, we will first go through a simple workflow : computing **R2* map** and a **Chi map** from raw MEGRE data. 
+In this tutorial, we will first go through a simple workflow: computing **R2* map** and a **Chi map** from raw MEGRE data. 
 We will use the ``R2starWorker`` and ``QSMWorker`` for this purpose, which are part of the QuIDBBIDS toolbox.
 
 For this application, under the hood, QuIDBBIDS uses `SEPIA <https://sepia-documentation.readthedocs.io>`__ for the QSM processing pipeline.
@@ -74,9 +75,9 @@ Open MATLAB and follow these steps:
 
 .. code-block:: matlab
  
-      >> quidb = qb.QuIDBBIDS('/path/to/my_bids_dataset');
+   >> quidb = qb.QuIDBBIDS('/path/to/my_bids_dataset');
  
-   This scans the dataset and discovers all subjects, sessions, and available data types.
+This scans the dataset and discovers all subjects, sessions, and available data types.
 
 2. **Tell it what you want** — Request R2* and Chi maps as output products:
  
@@ -144,7 +145,7 @@ Open MATLAB and follow these steps:
               R1R2sWorker: [1×1 struct]
                 MCRWorker: [1×1 struct]
                 QSMWorker: [1×1 struct]
- 
+
       Drill down into any worker to see its settings. Each setting has a ``value`` and a
       ``description``:
  
@@ -183,7 +184,7 @@ Open MATLAB and follow these steps:
 
       >> quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
 
-    You can browse all available settings with ``quidb.config``.
+   You can browse all available settings with ``quidb.config``.
     
 5. **Run!** — Create the manager and start the workflow:
  
@@ -237,16 +238,15 @@ Exercise 3 — Inspect the results
 2. **View the maps** — Open the results in your favourite NIfTI viewer. For example, using
    FSLeyes from the terminal:
 
-
 3. **(Optional) Generate a QC report** — If you have
    `BIDScoin <https://bidscoin.readthedocs.io>`__ installed, you can generate slice-overview
    reports to quickly check all subjects:
  
-   .. code-block:: bash
+   .. code-block:: console
  
-      cd /path/to/my_bids_dataset
-      slicereport derivatives/QuIDBBIDS/ anat/*R2starmap* -r report_R2starmap --options i 5 50
-      slicereport derivatives/QuIDBBIDS/ anat/*Chimap*    -r report_Chimap    --options i -0.15 0.3
+      $ cd /path/to/my_bids_dataset
+      $ slicereport derivatives/QuIDBBIDS/ anat/*R2starmap* -r report_R2starmap --options i 5 50
+      $ slicereport derivatives/QuIDBBIDS/ anat/*Chimap*    -r report_Chimap    --options i -0.15 0.3
 
 What's next?
 ------------

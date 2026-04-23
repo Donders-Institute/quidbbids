@@ -158,7 +158,9 @@ methods
                 VFA_e1     = obj.query_ses(obj.BIDS, 'data',  bfilter_e1);
                 flips      = obj.query_ses(obj.BIDS, 'flips', bfilter_e1);
                 if length(VFA_e1) <= 1
-                    obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
+                    %obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
+                    obj.logger.info("Skipping acq-%s: need at least two flip angles for despot1, found %d", char(acq), length(VFA_e1))
+                    continue
                 end
                 if length(VFA_e1) ~= length(flips)
                     obj.logger.error("Number of VFA images found (%d) differs from the number of flipangles (%d)", length(VFA_e1), length(flips))
@@ -170,6 +172,7 @@ methods
 
                 % Compute T1 and M0 maps
                 obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1{1})
+                flipangles = [];
                 VFAimg = NaN([Vref.dim length(VFA_e1)]);
                 for n = 1:length(VFA_e1)
                     VFAn = spm_vol(VFA_e1{n});
@@ -231,6 +234,11 @@ methods
             for run = str2double(obj.query_ses(obj.BIDS, 'runs', bfilter))
 
                 bfilter_e1 = setfields(bfilter, echo=1, run=run, part='mag');
+                
+                % Skip acquisitions with fewer than 2 flip angles (no synthetic T1 was produced in step 1)
+                if length(obj.query_ses(obj.BIDS, 'flips', bfilter_e1)) <= 1
+                    continue
+                end
 
                 % Get the denoised data (if applicable)
                 if strlength(obj.config.(obj.name).denoising.method)

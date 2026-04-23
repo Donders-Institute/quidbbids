@@ -165,7 +165,8 @@ methods
                 end
 
                 % Define a reference volume, i.e. the middle FA file (assume TR and nii-header identical for all MPM/VFAs of the same run)
-                flip = round(mean(str2double(flips)));
+                flips_sorted = sort(str2double(flips));
+                flip = flips_sorted(round(length(flips)/2));
                 Vref = spm_vol(char(obj.query_ses(obj.BIDS, 'data', bfilter_e1, flip=flip)));
 
                 % Compute T1 and M0 maps

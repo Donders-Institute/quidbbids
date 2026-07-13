@@ -7,6 +7,7 @@ Project organization
 
 * `+qb/ <./+qb>`__ - The main namespace with the core packages and functions:
 
+  - ``+GUI/`` - The code for the graphical user interface (GUI) of QuIDBBIDS
   - ``+MP2RAGE/`` - The `MP2RAGE related scripts <https://github.com/Donders-Institute/MP2RAGE-related-scripts>`__ used in QuIDBBIDS
   - ``+utils/`` - A collection of useful helper tools
   - ``+workers/`` - A library of workers and related functions that constitute the core od the QuIDBBIDS framework

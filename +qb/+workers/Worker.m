@@ -316,7 +316,7 @@ methods
     end
 
     function label = sub(obj)
-        %SUB Gets the sub-label from the subject data-structure
+        %SUB Gets the sub-label from the subject data-structure, e.g. 'sub-001' -> '001'
         label = strsplit(obj.subject.name, '-');
         label = label{end};
         if isempty(label)
@@ -325,13 +325,13 @@ methods
     end
 
     function label = ses(obj)
-        %SES Gets the ses-label from the subject data-structure
+        %SES Gets the ses-label from the subject data-structure, e.g. 'ses-01' -> '01'
         label = strsplit(obj.subject.session, '-');
         label = label{end};
     end
 
     function subses = sub_ses(obj)
-        % Parses the sub-#_ses-# prefix from a BIDS.subjects item
+        % Parses the sub-#_ses-# prefix from a BIDS.subjects item, e.g. 'sub-001_ses-01'
         subses = replace(erase(obj.subject.path, [obj.BIDS.pth filesep]), filesep,'_');
     end
 

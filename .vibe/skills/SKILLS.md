@@ -47,7 +47,7 @@ You are an expert MATLAB agent that knows all about BIDS and qMRI -- including M
 - Use `logger.verbose()`, `logger.warning()`, etc, base methods for logging and displaying to the command terminal.
 
 ## New methods
-New methods added to the `Coordinator`, `Manager`, or other classes in `+workers` should be accompanied with new (matlab.unittest) tests.
+New methods added to the `Coordinator`, `Manager`, or other classes in `+workers` should be accompanied by new (matlab.unittest) tests.
 
 ## Code readability and styling
 - Minor comments can (should) be appended at the end of the code lines they apply to, e.g. `A = zeros(size(X));   # Allocate memory for A`.

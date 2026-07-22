@@ -21,7 +21,7 @@ properties (Constant)
                    "    - (optional) extracts 3 orthogonal slices to speed up computation";
                    "    - runs fitting process using mwi_3cx_2R1R2s_dimwi - there are various configuration options MCRWorker.algoPara";
                    "    - saves relevant output"]
-    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "QSI_theta", "QSI_icvf", "QSI_ff"]           % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "DWI_theta", "DWI_icvf", "DWI_ff"]           % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -83,9 +83,9 @@ methods
         fieldmap   = obj.ask_team('fieldmap');      % Multiple FA-images per run
         localfmask = obj.ask_team('localfmask');    % Multiple FA-images per run
         TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
-        QSI_theta  = obj.ask_team('QSI_theta');
-        QSI_icvf   = obj.ask_team('QSI_icvf');
-        QSI_ff     = obj.ask_team('QSI_ff');
+        DWI_theta  = obj.ask_team('DWI_theta');
+        DWI_icvf   = obj.ask_team('DWI_icvf');
+        DWI_ff     = obj.ask_team('DWI_ff');
 
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
         if numel(unique([length(unwrapped), length(fieldmap)])) > 1
@@ -107,7 +107,7 @@ methods
         dims           = [V(1).dim length(V) length(ME4Dmag)];   % Dimensions: [x,y,z,TE,FA]
         img            = single(NaN(dims));
         unwrappedPhase = single(NaN(dims));
-        totalField     = single(NaN(dims([1:3 5])));                % Dimensions: [x,y,z,FA]
+        totalField     = single(NaN(dims([1:3 5])));             % Dimensions: [x,y,z,FA]
         mask           = true;
         for n = 1:dims(5)
             bfile                     = bids.File(ME4Dmag{n});   % For reading metadata, parsing entities, etc
@@ -165,18 +165,20 @@ methods
         imgPara.b0         = bfile.metadata.MagneticFieldStrength;
         imgPara.autosave   = false;
         imgPara.output_dir = char(obj.logger.logdir);
-        if ~isempty(QSI_theta) && ~isempty(QSI_icvf) && ~isempty(QSI_ff)
-            imgPara.theta = spm_read_vols(spm_vol(QSI_theta{1}));
-            imgPara.icvf  = spm_read_vols(spm_vol(QSI_icvf{1}));
-            imgPara.ff    = spm_read_vols(spm_vol(QSI_ff{1}));
+        if ~isempty(DWI_theta) && ~isempty(DWI_icvf) && ~isempty(DWI_ff)
+            obj.logger.info('--> Estimating the DI-MWI-MCR model')
+            imgPara.theta = spm_read_vols(spm_vol(DWI_theta{1}));
+            imgPara.icvf  = spm_read_vols(spm_vol(DWI_icvf{1}));
+            imgPara.ff    = spm_read_vols(spm_vol(DWI_ff{1}));
+        else
+            obj.logger.info('--> Estimating the MWI-MCR model (without diffusion priors)')
         end
         % imgPara.identifier  = obj.subject.name;     % TODO: Add when the MWI PR is accepted and released
         % if obj.subject.session
         %     imgPara.identifier = [imgPara.identifier '_' obj.subject.session];
         % end
 
-        % Estimate the MWI-MCR model
-        obj.logger.info('--> Estimating the MWI-MCR model')
+        % Estimate the DI-MWI-MCR model
         [lastMsg, lastId] = lastwarn;
         ws = warning('off', 'MATLAB:nearlySingularMatrix');  % Suppress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
         warning('off', 'MWI:IdentifierFile:NotFound')

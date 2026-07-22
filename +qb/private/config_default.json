@@ -24,10 +24,16 @@
     }
   },
 
-  "QSIprepWorker": {
-    "QsiprepDir": {"value": "QSIPrep", "description": "Name of the QSIPrep directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
-    "QsireconDir": {"value": "QSIRecon", "description": "Name of the QSIRecon directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
-    "Model": {"value": "NODDI", "description": "Diffusion model used for fitting in QSIRecon. Currently only 'NODDI' is supported. Note: Corresponding output folders from QSIRecon workflows are expected to be present in the QSIRecon derivatives subdirectory."}
+  "DWIprepWorker": {
+    "MRtrixEnv": {"value": "module load mrtrix3", "description": "Environment variables to be set before executing the MRtrix commands."},
+    "QSIprepDir": {"value": "QSIPrep", "description": "Name of the QSIPrep derivatives directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
+    "NODDIDir": {"value": "QSIRecon-NODDI", "description": "Name of the QSIRecon derivatives directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
+    "MRtrix3Dir": {"value": "QSIRecon-MRtrix3_act-None", "description": "Name of the QSIRecon derivatives directory where the MRtrix3 FOD maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
+    "Model": {"value": "MRtrix3", "description": "Diffusion model used for fitting in QSIRecon. Currently only 'NODDI' and 'MRtrix3' are supported. Note: Corresponding output folders from QSIRecon workflows are expected to be present in the QSIRecon derivatives subdirectory."},
+    "BFilterICVF": {"value": {"modality":"dwi", "model":"noddi", "desc":"", "suffix":"dwimap", "param":"icvf"}, "description": "BIDS filter for the NODDI icvf map. This is used to query the (QSIRecon) derivative files."},
+    "BFilterFDir": {"value": {"modality":"dwi", "model":"noddi", "desc":"", "suffix":"dwimap", "param":"direction"}, "description": "BIDS filter for the NODDI direction map. This is used to query the (QSIRecon) derivative files."},
+    "BFilterFOD": {"value": {"modality":"dwi", "param":"fod", "label":"WM", "suffix":"dwimap", "extension":".mif.gz"}, "description": "BIDS filter for the MRtrix3 FOD map. This is used to query the (QSIRecon) derivative files."},
+    "NrFixels": {"value": 3, "description": "Maximum number of fixels (peaks/fiber populations) to be used in the DI-MWI model."}
   },
 
   "B1prepWorker": {

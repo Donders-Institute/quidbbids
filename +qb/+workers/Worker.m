@@ -335,6 +335,35 @@ methods
         subses = replace(erase(obj.subject.path, [obj.BIDS.pth filesep]), filesep,'_');
     end
 
+    function BIDS = BIDS_sub(obj, workdir, varargin)
+        %BIDS_SUB Gets a tolerant (no schema validation) bids.layout() for the WORKDIR sub data only (default: WORKDIR = obj.workdir)
+        %
+        % Waits up to 60 seconds for the BIDS initialization to be ready, allowing the HPC file system latency to settle
+        %
+        % Usage:
+        %   BIDS = OBJ.BIDS_SUB()                   % Uses obj.workdir as the BIDS directory
+        %   BIDS = OBJ.BIDS_SUB(WORKDIR, VARGIN)    % Uses WORKDIR as the BIDS directory and passes VARGIN to bids.layout()
+
+        if nargin < 2 || isempty(workdir)
+            workdir = obj.workdir;
+        end
+        
+        % Check for the BIDS layout to be ready (HPC file system latency workaround)
+        start = tic;
+        while ~isfile(fullfile(workdir, 'dataset_description.json')) && toc(start) < 60
+            pause(5);
+        end
+        if toc(start) >= 60
+            obj.logger.warning('BIDS layout %s did not become available within 60 seconds', workdir)
+        end
+
+        % Make sure the sub/ses dir exists or bids.layout will error
+        filter.sub = {obj.sub()};
+        [~,~] = mkdir(fullfile(workdir, "sub-" + obj.sub()));
+
+        BIDS = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, varargin{:});
+    end
+
     function BIDS = BIDS_ses(obj, workdir, varargin)
         %BIDS_SES Gets a tolerant (no schema validation) bids.layout() for the WORKDIR sub/ses data only (default: WORKDIR = obj.workdir)
         %
@@ -369,6 +398,72 @@ methods
         BIDS = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, varargin{:});
     end
 
+    function [result, bfiles] = query_sub(obj, layout, query, varargin)
+        %QUERY_SUB A thin wrapper around bids.query that adds an additional filter for the current subject. It
+        % also ensures that the output is always formatted as a row.
+        %
+        % Inputs:
+        %   LAYOUT - BIDS directory name or BIDS structure (from bids.layout) to query
+        %   QUERY  - The type of query to perform (e.g., 'data', 'metadata', 'runs', etc.)
+        %   FILTER - (optional) Either a struct, named-values, or name-value pairs specifying additional filters for the
+        %            query (i.e. as in bids.query), or a struct followed by the name-value pairs. It's possible to use
+        %            regular as well as range expressions in the queried values. To exclude an entity, use '' or [].
+        %
+        % Output:
+        %   RESULT - The result of the bids.query with the subject filter applied. NB: always a row cell array
+        %   BFILES - The associated bids.File objects. NB: For this to work, QUERY must be 'data'
+        %
+        % Usage:
+        %   RESULT = OBJ.QUERY_SUB(LAYOUT, QUERY, [FILTER])
+        %   RESULT = OBJ.QUERY_SUB(LAYOUT, QUERY, struct(name1=value1, name2=value2, ...))
+        %   RESULT = OBJ.QUERY_SUB(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
+        %   RESULT = OBJ.QUERY_SUB(LAYOUT, QUERY, struct(name1=value1), name2=value2, ...)
+        %
+        % See also: bids.query, obj.query_ses
+
+        % Parse the filter input
+        bfilter = struct();
+        if ~isempty(varargin) && isstruct(varargin{1})
+            bfilter = varargin{1};
+            varargin(1) = [];
+        end
+        if mod(length(varargin),2) ~= 0
+            obj.logger.exception('QUERY_SUB expects the FILTER to be either a struct, or name-value pairs or a struct followed by name-value pairs')
+        end
+
+        % Check if there is any data to query
+        if ~isfield(layout, 'subjects') || ~isfield(layout.subjects, 'name') || ~ismember(obj.subject.name, {layout.subjects.name})
+            result = {};
+            bfiles = {};
+            return
+        end
+
+        % Do the query with the subject + any additional filters added
+        result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), varargin{:}));
+
+        % Postprocess the query result (i.e. fix the quirky bids.query behavior)
+        switch query
+            case {'metadata', 'dependencies'}
+                if isscalar(result) && ~iscell(result)
+                    result = {result};  % Always return a cell array
+                end
+        end
+        if size(result,2)==0 || size(result,1)>1
+            result = result';           % Always return a row array
+        end
+
+        if nargout > 1
+            bfiles = cell(size(result));
+            if strcmp(query, 'data')
+                for n = 1:numel(result)
+                    bfiles{n} = bids.File(result{n});
+                end
+            else
+                obj.logger.warning("The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
+            end
+        end
+    end
+
     function [result, bfiles] = query_ses(obj, layout, query, varargin)
         %QUERY_SES A thin wrapper around bids.query that adds an additional filter for the current subject and session. It
         % also ensures that the output is always formatted as a row.
@@ -390,7 +485,7 @@ methods
         %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
         %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, struct(name1=value1), name2=value2, ...)
         %
-        % See also: bids.query
+        % See also: bids.query, obj.query_sub
 
         % Parse the filter input
         bfilter = struct();

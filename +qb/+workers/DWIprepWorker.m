@@ -88,7 +88,7 @@ methods
             obj.logger.warning('One or more of the QSIPrep/QSIRecon directories are missing. Cannot generate DWI workitems for DI-MWI analysis.')
             return
         end
-        QSIprep = obj.BIDS_ses(qsiprepdir);
+        QSIprep = obj.BIDS_sub(qsiprepdir);
         NODDI   = obj.BIDS_ses(NODDIdir);
         if strcmp(obj.config.DWIprepWorker.Model, 'MRtrix3')
             MRtrix = obj.BIDS_ses(MRtrixdir);
@@ -112,7 +112,7 @@ methods
 
                 % Estimate the coregistration from the qsiprep space to the "withinGRE" space (i.e. the space of the GRE images that are used in the DI-MWI model)
                 if ~exist('T', 'var')
-                    T1src = obj.query_ses(QSIprep, 'data', struct(sub=obj.sub, modality='anat', space='ACPC', desc='preproc', suffix='T1w'));
+                    T1src = obj.query_sub(QSIprep, 'data', struct(sub=obj.sub, modality='anat', space='ACPC', desc='preproc', suffix='T1w'));
                     if isempty(T1src)
                         obj.logger.error('No QSIRecon T1w reference image found for: %s. Cannot coregister the "ACPC" files to the "withinGRE" space.', fullfile(qsiprepdir, obj.sub_ses()))
                         return

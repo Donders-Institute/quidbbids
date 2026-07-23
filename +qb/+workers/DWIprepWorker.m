@@ -101,7 +101,6 @@ methods
                 % Query the NODDI icvf and fdir files for the current acquisition and run
                 icvf = obj.query_ses(NODDI, 'data', obj.config.DWIprepWorker.BFilterICVF, acq=char(acq), run=char(run));
                 fdir = obj.query_ses(NODDI, 'data', obj.config.DWIprepWorker.BFilterFDir, acq=char(acq), run=char(run));
-                fod  = fdir;
                 if isempty(icvf)
                     obj.logger.verbose('No QSIRecon acq-%s_run-%s icvf-files found in: %s..', char(acq), char(run), fullfile(NODDIdir, obj.sub_ses()))
                     continue
@@ -144,7 +143,7 @@ methods
                     case 'MRtrix3'
                         % Query MRtrix FOD from QSIRecon derivatives
                         fod  = obj.query_ses(MRtrix, 'data', obj.config.DWIprepWorker.BFilterFOD, acq=char(acq), run=char(run));
-                        fdir = fod;
+                        fdir = replace(fod, '.mif', '.nii');
                         if length(fod) ~= 1
                             obj.logger.error('Expected one MRtrix3 FOD file for acq-%s_run-%s but found %d', char(acq), char(run), length(fod));
                             continue
@@ -209,7 +208,7 @@ methods
                 % Save the DWI_icvf, DWI_theta and DWI_ff images & json files
                 write_vol_qsi(icvf{1}, obj.bidsfilter.DWI_icvf, ICVF, 'volume fraction (icvf)')
                 write_vol_qsi(fdir{1}, obj.bidsfilter.DWI_theta, THETA, 'polar angle (theta)')
-                write_vol_qsi(fod{1}, obj.bidsfilter.DWI_ff, FFRAC, 'fiber fraction (ff)')
+                write_vol_qsi(fdir{1}, obj.bidsfilter.DWI_ff, FFRAC, 'fiber fraction (ff)')
 
             end
         end

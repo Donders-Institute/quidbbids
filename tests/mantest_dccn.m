@@ -6,7 +6,13 @@ end
 
 % MANTEST_DCCN is a manual test script that performs integration test runs on various DCCN datasets
 
-clear classes   %#ok<CLCLS>
+% Clear QuIDBBIDS classes from cache to ensure that the latest code is used
+qbfiles = [dir(fullfile(fileparts(fileparts(mfilename('fullpath'))), '+qb', '**', '*.m'));
+           dir(fullfile(fileparts(mfilename('fullpath')), '*.m'))];
+for f = 1:length(qbfiles)
+    clear(qbfiles(f).name(1:end-2))
+end
+
 if isunix
     restoredefaultpath
     addpath('/home/common/matlab/sepia/sepia_1.2.2.6')

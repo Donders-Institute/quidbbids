@@ -156,7 +156,7 @@ methods
                         nrfixels = obj.config.DWIprepWorker.NrFixels;
                         obj.run_command(sprintf('%s; fod2fixel %s %s -maxnum %d -nii -afd afd.nii', obj.config.DWIprepWorker.MRtrixEnv, fod{1}, fixels, nrfixels));
                         
-                        % Load peak directions and AFDs, and reorganize the fixel data into 4D volumes where the 4th dimension corresponds to the fixel number (1 to nrfixels)
+                        % Load fixel directions and AFDs, and reorganize the data into 4D volumes where the 4th dimension corresponds to the fixel number (1 to nrfixels)
                         index = spm_read_vols(spm_vol(fullfile(fixels, 'index.nii')));          % Dimensions: [x y z 2] where the 4th dimension contains [numfixelsvox fixelindex]
                         AFDs  = zeros([size(index(:,:,:,1)) nrfixels]);                         % Dimensions: [x y z nrfixels]
                         FDIRs = zeros([size(index(:,:,:,1)) nrfixels 3]);                       % Dimensions: [x y z nrfixels 3]

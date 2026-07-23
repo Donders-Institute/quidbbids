@@ -101,6 +101,7 @@ methods
                 % Query the NODDI icvf and fdir files for the current acquisition and run
                 icvf = obj.query_ses(NODDI, 'data', obj.config.DWIprepWorker.BFilterICVF, acq=char(acq), run=char(run));
                 fdir = obj.query_ses(NODDI, 'data', obj.config.DWIprepWorker.BFilterFDir, acq=char(acq), run=char(run));
+                fod  = fdir;
                 if isempty(icvf)
                     obj.logger.verbose('No QSIRecon acq-%s_run-%s icvf-files found in: %s..', char(acq), char(run), fullfile(NODDIdir, obj.sub_ses()))
                     continue
@@ -142,7 +143,8 @@ methods
 
                     case 'MRtrix3'
                         % Query MRtrix FOD from QSIRecon derivatives
-                        fod = obj.query_ses(MRtrix, 'data', obj.config.DWIprepWorker.BFilterFOD, acq=char(acq), run=char(run));
+                        fod  = obj.query_ses(MRtrix, 'data', obj.config.DWIprepWorker.BFilterFOD, acq=char(acq), run=char(run));
+                        fdir = fod;
                         if length(fod) ~= 1
                             obj.logger.error('Expected one MRtrix3 FOD file for acq-%s_run-%s but found %d', char(acq), char(run), length(fod));
                             continue
@@ -165,10 +167,10 @@ methods
                         [x, y, z] = ind2sub(size(index(:,:,:,1)), find(index(:,:,:,1)));        % Get the voxel coordinates of all non-empty fixels
                         for i = 1:length(x)
                             fnum = index(x(i), y(i), z(i), 1);                                  % Get the number of fixels in the current voxel
-                            fidx = index(x(i), y(i), z(i), 2);                                  % Get the fixel index for the current voxel
+                            fidx = index(x(i), y(i), z(i), 2);                                  % Get the zero-based fixel index for the current voxel
                             for n = 1:fnum
-                                AFDs(x(i), y(i), z(i), n)     = AFD_(fidx + n - 1);             % Store the AFD for the current fixel
-                                FDIRs(x(i), y(i), z(i), n, :) = FDIR_(fidx + n - 1, :);         % Store the fiber direction for the current fixel
+                                AFDs(x(i), y(i), z(i), n)     = AFD_(fidx + n);                 % Store the AFD for the current fixel
+                                FDIRs(x(i), y(i), z(i), n, :) = FDIR_(fidx + n, :);             % Store the fiber direction for the current fixel
                             end
                         end
                         
@@ -207,7 +209,7 @@ methods
                 % Save the DWI_icvf, DWI_theta and DWI_ff images & json files
                 write_vol_qsi(icvf{1}, obj.bidsfilter.DWI_icvf, ICVF, 'volume fraction (icvf)')
                 write_vol_qsi(fdir{1}, obj.bidsfilter.DWI_theta, THETA, 'polar angle (theta)')
-                write_vol_qsi(icvf{1}, obj.bidsfilter.DWI_ff, FFRAC, 'fiber fraction (ff)')
+                write_vol_qsi(fod{1}, obj.bidsfilter.DWI_ff, FFRAC, 'fiber fraction (ff)')
 
             end
         end

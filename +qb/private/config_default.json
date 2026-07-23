@@ -110,10 +110,10 @@
       "T1mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"},
       "advancedStarting": {"value": "default", "description": "initial guesses for multi-comp S0. 'default' = estimated S0 and T2s IEW from data; 'robust' = estimated S0 from data only; otherwise fixed starting points for 3T"},
       "DIMWI": {
-        "isVic":    {"value": false, "description": "true = use DIMWI to account for intra-axonal volume fraction; false = no DIMWI"},
-        "isR2sEW":  {"value": false, "description": "true = use DIMWI to account for extra-axonal R2*; false = no DIMWI"},
-        "isFreqMW": {"value": false, "description": "true = use DIMWI to account for myelin water frequency shift; false = no DIMWI"},
-        "isFreqIW": {"value": false, "description": "true = use DIMWI to account for intra-axonal frequency shift; false = no DIMWI"}
+        "isVic":    {"value": true, "description": "true = use DIMWI to account for intra-axonal volume fraction; false = no DIMWI"},
+        "isR2sEW":  {"value": true, "description": "true = use DIMWI to account for extra-axonal R2*; false = no DIMWI"},
+        "isFreqMW": {"value": true, "description": "true = use DIMWI to account for myelin water frequency shift; false = no DIMWI"},
+        "isFreqIW": {"value": true, "description": "true = use DIMWI to account for intra-axonal frequency shift; false = no DIMWI"}
       }
     },
     "imgPara": {

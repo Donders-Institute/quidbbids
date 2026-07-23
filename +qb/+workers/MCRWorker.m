@@ -165,13 +165,17 @@ methods
         imgPara.b0         = bfile.metadata.MagneticFieldStrength;
         imgPara.autosave   = false;
         imgPara.output_dir = char(obj.logger.logdir);
-        if ~isempty(DWI_theta) && ~isempty(DWI_icvf) && ~isempty(DWI_ff)
+        if isempty(DWI_theta) || isempty(DWI_icvf) || isempty(DWI_ff)
+            obj.logger.info('--> Estimating the MWI-MCR model (without diffusion priors)')
+            algoPara.DIMWI.isVic    = false;
+            algoPara.DIMWI.isR2sEW  = false;
+            algoPara.DIMWI.isFreqMW = false;
+            algoPara.DIMWI.isFreqIW = false;
+        else
             obj.logger.info('--> Estimating the DI-MWI-MCR model')
             imgPara.theta = spm_read_vols(spm_vol(DWI_theta{1}));
             imgPara.icvf  = spm_read_vols(spm_vol(DWI_icvf{1}));
             imgPara.ff    = spm_read_vols(spm_vol(DWI_ff{1}));
-        else
-            obj.logger.info('--> Estimating the MWI-MCR model (without diffusion priors)')
         end
         % imgPara.identifier  = obj.subject.name;     % TODO: Add when the MWI PR is accepted and released
         % if obj.subject.session

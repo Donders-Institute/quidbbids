@@ -206,16 +206,19 @@ methods
 
         % Extract and save the output data
         V(1).dim = [size(mask,1) size(mask,2) size(mask,3)];
-        MWF = fitRes.S0_MW ./ (fitRes.S0_MW + fitRes.S0_EW + fitRes.S0_IW);
-        write_vol(V(1), MWF,                         obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])));
-        write_vol(V(1), fitRes.S0_MW,                obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])));
-        write_vol(V(1), fitRes.S0_IW + fitRes.S0_EW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])));
-        write_vol(V(1), fitRes.R2s_MW,               obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])));
-        write_vol(V(1), fitRes.R2s_IW,               obj.bfile_set(bfile, obj.bidsfilter.(['IAW_R2starmap' ortho])));
-        write_vol(V(1), fitRes.T1_IEW,               obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])));
-        write_vol(V(1), 1 ./ fitRes.T1_IEW,          obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])));
-        write_vol(V(1), fitRes.kiewm,                obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])));
-        write_vol(V(1), fitRes.mask_fitted,          obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])));
+        if ~isfield(fitRes, 'S0_IEW')
+            fitRes.S0_IEW = fitRes.S0_EW + fitRes.S0_IW;
+        end
+        MWF = fitRes.S0_MW ./ (fitRes.S0_MW + fitRes.S0_IEW);
+        write_vol(V(1), MWF,                obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])));
+        write_vol(V(1), fitRes.S0_MW,       obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])));
+        write_vol(V(1), fitRes.S0_IEW,      obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])));
+        write_vol(V(1), fitRes.R2s_MW,      obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])));
+        write_vol(V(1), fitRes.R2s_IW,      obj.bfile_set(bfile, obj.bidsfilter.(['IAW_R2starmap' ortho])));
+        write_vol(V(1), fitRes.T1_IEW,      obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])));
+        write_vol(V(1), 1 ./ fitRes.T1_IEW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])));
+        write_vol(V(1), fitRes.kiewm,       obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])));
+        write_vol(V(1), fitRes.mask_fitted, obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])));
     end
 
 end

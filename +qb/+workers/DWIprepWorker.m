@@ -139,7 +139,6 @@ methods
                     case 'NODDI'
                         AFDs  = ones(Vtgt.dim);                     % NODDI models a single neurite population per voxel, so the fiber fraction is set to 1 for all voxels
                         FDIRs = spm_read_vols(spm_vol(fdir{1}));    % The fiber directions in world coordinates (size: [X Y Z 3])
-                        FDIRs = permute(FDIRs, [1 2 3 5 4]);        % Reshape to [X Y Z 1 3], i.e. to the same format as the MRtrix3 fixel directions (FDIRs)
 
                     case 'MRtrix3'
                         % Query MRtrix FOD from QSIRecon derivatives
@@ -167,6 +166,7 @@ methods
                         AFDs  = spm_read_vols(spm_vol(afd));
                         FDIRs = spm_read_vols(spm_vol(dirs));
                         FDIRs = reshape(FDIRs, size(FDIRs,1), size(FDIRs,2), size(FDIRs,3), 3, nrfixels); % Put the fixel number in 5th dimension, the 4th = [x y z]
+                        rmdir(fixels, 's')
                         
                     otherwise
                         obj.logger.error('Unsupported QSIRecon method specified in config: %s. Supported methods are: "NODDI" and "MRtrix3".', obj.config.DWIprepWorker.Model)

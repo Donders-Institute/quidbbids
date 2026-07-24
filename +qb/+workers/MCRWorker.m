@@ -178,7 +178,7 @@ methods
             ff    = spm_read_vols(spm_vol(DWI_ff{1}));
             if endsWith(workitem, 'ortho')
                 imgPara.icvf  = obj.orthoslice(icvf(sel{:}));
-                for n = size(theta,5):-1:1    % Loop backwards to preallocate the memory
+                for n = size(theta,4):-1:1    % Loop backwards to preallocate the memory
                     imgPara.theta(:,:,:,n) = obj.orthoslice(theta(sel{:},n));
                     imgPara.ff(:,:,:,n)    = obj.orthoslice(ff(sel{:},n));
                 end

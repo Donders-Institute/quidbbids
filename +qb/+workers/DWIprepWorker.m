@@ -157,15 +157,15 @@ methods
                         end
                         nrfixels = obj.config.DWIprepWorker.NrFixels;
                         afd  = fullfile(fixels, 'afd.nii');
-                        fdir = fullfile(fixels, 'directions.nii');
+                        dirs = fullfile(fixels, 'directions.nii');
                         obj.run_command(sprintf(['%s; fod2fixel %s %s -maxnum %d -nii -afd afd.nii;' ...
-                                                '     fixel2voxel % none %s --force;' ... 
+                                                '     fixel2voxel %s none %s --force;' ... 
                                                 '     fixel2peaks %s %s --force'], ...
                                                 obj.config.DWIprepWorker.MRtrixEnv, fod{1}, fixels, nrfixels, ...
                                                 afd, afd, ...
-                                                fixels, fdir));
+                                                fixels, dirs));
                         AFDs  = spm_read_vols(spm_vol(afd));
-                        FDIRs = spm_read_vols(spm_vol(fdir));
+                        FDIRs = spm_read_vols(spm_vol(dirs));
                         FDIRs = reshape(FDIRs, size(FDIRs,1), size(FDIRs,2), size(FDIRs,3), 3, nrfixels); % Put the fixel number in 5th dimension, the 4th = [x y z]
                         
                     otherwise

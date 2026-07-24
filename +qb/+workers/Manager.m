@@ -389,7 +389,7 @@ methods (Access = private)
 
         % Check if any of the workers is preferred. If not ask the user and make the worker preferred
         if obj.interactive && ~any([workers.preferred])
-            chosen = qb.GUI.askuser(workers, workitem);
+            chosen = qb.GUI.selectworker(workers, workitem);
             if chosen
                 workers(chosen).preferred = true;
             else

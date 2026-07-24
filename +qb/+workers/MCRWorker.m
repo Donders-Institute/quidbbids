@@ -173,9 +173,20 @@ methods
             algoPara.DIMWI.isFreqIW = false;
         else
             obj.logger.info('--> Estimating the DI-MWI-MCR model')
-            imgPara.theta = spm_read_vols(spm_vol(DWI_theta{1}));
-            imgPara.icvf  = spm_read_vols(spm_vol(DWI_icvf{1}));
-            imgPara.ff    = spm_read_vols(spm_vol(DWI_ff{1}));
+            theta = spm_read_vols(spm_vol(DWI_theta{1}));
+            icvf  = spm_read_vols(spm_vol(DWI_icvf{1}));
+            ff    = spm_read_vols(spm_vol(DWI_ff{1}));
+            if endsWith(workitem, 'ortho')
+                imgPara.icvf  = obj.orthoslice(icvf(sel{:}));
+                for n = size(theta,5):-1:1    % Loop backwards to preallocate the memory
+                    imgPara.theta(:,:,:,n) = obj.orthoslice(theta(sel{:},n));
+                    imgPara.ff(:,:,:,n)    = obj.orthoslice(ff(sel{:},n));
+                end
+            else
+                imgPara.icvf  = icvf;
+                imgPara.theta = theta;
+                imgPara.ff    = ff;
+            end
         end
         % imgPara.identifier  = obj.subject.name;     % TODO: Add when the MWI PR is accepted and released
         % if obj.subject.session

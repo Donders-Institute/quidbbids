@@ -19,7 +19,8 @@ properties (Constant)
                    "";
                    "MRtrix3 - Constrained Spherical Deconvolution (Jeurissen et al., 2014)";
                    "  Requires: QSIRecon workflow with any of the `mrtrix` reconstruction specifications that produces FOD maps,";
-                   "            plus installation of MRtrix3 (fod2fixel), plus the `NODDI` reconstruction (as described above)";
+                   "            plus installation of MRtrix3 (fod2fixel, fixel2voxel, fixel2peaks), plus the `NODDI` reconstruction";
+                   "            (as described above)";
                    "  Outputs:  DWI_theta (smallest polar angles between fixel directions and the B0 field)";
                    "            DWI_ff (derived from the Apparent Fiber Density, as a proxy for fiber fraction)";
                    "            DWI_icvf (from NODDI, as described above)";
@@ -149,29 +150,23 @@ methods
                             continue
                         end
                         
-                        % Execute MRtrix to compute fixels from the FOD
+                        % Execute MRtrix commands to compute fixels from the FOD and convert the data into 4D volumes
                         fixels = fullfile(fileparts(fod{1}), 'fixels');
                         if isfolder(fixels)
                             rmdir(fixels, 's')
                         end
                         nrfixels = obj.config.DWIprepWorker.NrFixels;
-                        obj.run_command(sprintf('%s; fod2fixel %s %s -maxnum %d -nii -afd afd.nii', obj.config.DWIprepWorker.MRtrixEnv, fod{1}, fixels, nrfixels));
-                        
-                        % Load fixel directions and AFDs, and reorganize the data into 4D volumes where the 4th dimension corresponds to the fixel number (1 to nrfixels)
-                        index = spm_read_vols(spm_vol(fullfile(fixels, 'index.nii')));          % Dimensions: [x y z 2] where the 4th dimension contains [numfixelsvox fixelindex]
-                        AFDs  = zeros([size(index(:,:,:,1)) nrfixels]);                         % Dimensions: [x y z nrfixels]
-                        FDIRs = zeros([size(index(:,:,:,1)) nrfixels 3]);                       % Dimensions: [x y z nrfixels 3]
-                        AFD_  = spm_read_vols(spm_vol(fullfile(fixels, 'afd.nii')));            % Dimensions: [n 1]
-                        FDIR_ = spm_read_vols(spm_vol(fullfile(fixels, 'directions.nii')));     % Dimensions: [n 3]
-                        [x, y, z] = ind2sub(size(index(:,:,:,1)), find(index(:,:,:,1)));        % Get the voxel coordinates of all non-empty fixels
-                        for i = 1:length(x)
-                            fnum = index(x(i), y(i), z(i), 1);                                  % Get the number of fixels in the current voxel
-                            fidx = index(x(i), y(i), z(i), 2);                                  % Get the zero-based fixel index for the current voxel
-                            for n = 1:fnum
-                                AFDs(x(i), y(i), z(i), n)     = AFD_(fidx + n);                 % Store the AFD for the current fixel
-                                FDIRs(x(i), y(i), z(i), n, :) = FDIR_(fidx + n, :);             % Store the fiber direction for the current fixel
-                            end
-                        end
+                        afd  = fullfile(fixels, 'afd.nii');
+                        fdir = fullfile(fixels, 'directions.nii');
+                        obj.run_command(sprintf(['%s; fod2fixel %s %s -maxnum %d -nii -afd afd.nii;' ...
+                                                '     fixel2voxel % none %s --force;' ... 
+                                                '     fixel2peaks %s %s --force'], ...
+                                                obj.config.DWIprepWorker.MRtrixEnv, fod{1}, fixels, nrfixels, ...
+                                                afd, afd, ...
+                                                fixels, fdir));
+                        AFDs  = spm_read_vols(spm_vol(afd));
+                        FDIRs = spm_read_vols(spm_vol(fdir));
+                        FDIRs = reshape(FDIRs, size(FDIRs,1), size(FDIRs,2), size(FDIRs,3), 3, nrfixels); % Put the fixel number in 5th dimension, the 4th = [x y z]
                         
                     otherwise
                         obj.logger.error('Unsupported QSIRecon method specified in config: %s. Supported methods are: "NODDI" and "MRtrix3".', obj.config.DWIprepWorker.Model)
@@ -183,14 +178,14 @@ methods
                     ICVF(:,:,z) = spm_slice_vol(Vicvf, T * spm_matrix([0 0 z]), Vtgt.dim(1:2), 1);  % Rotate and reslice the data using trilinear interpolation
                 end
                 for f = size(AFDs,4): -1: 1
-                    FDIR = FDIRs(:,:,:,f,:);            % The fiber direction in world coordinates (size: [X Y Z 1 3])
-                    AFD  = AFDs(:,:,:,f);               % The fiber fraction (size: [X Y Z])
+                    FDIR = FDIRs(:,:,:,:,f);            % The fiber direction in world coordinates
+                    AFD  = AFDs(:,:,:,f);               % The fiber fraction
 
                     % Compute the (smallest) polar angle (theta) between the fiber direction and the B0 field using: θ = acos( |f⋅b| / (|f| |b|) )
                     % b0dir = repmat(shiftdim([0; 0; 1], -4), Vicvf.dim);   % B0-field in world coordinates (assuming the B0 field is always along the z-axis in the subject's native space)
-                    % theta = acos(abs(dot(FDIR, b0dir, 5)) ./ (vecnorm(FDIR,2,5) .* vecnorm(b0dir,2,5))); % The absolute value is taken to make it agnostic to the sign of the fiber direction, i.e. within [0, pi/2].
+                    % theta = acos(abs(dot(FDIR, b0dir, 4)) ./ (vecnorm(FDIR,2,4) .* vecnorm(b0dir,2,4))); % The absolute value is taken to make it agnostic to the sign of the fiber direction, i.e. within [0, pi/2].
                     b0dir = [0; 0; 1];                                      % Compute the above two lines more efficiently, i.e. without broadcasting b0dir
-                    theta = acos(abs(tensorprod(FDIR, b0dir, 5, 1)) ./ (vecnorm(FDIR,2,5) * norm(b0dir)));
+                    theta = acos(abs(tensorprod(FDIR, b0dir, 4, 1)) ./ (vecnorm(FDIR,2,4) * norm(b0dir)));
 
                     Vicvf.private      = struct();      % Clear private nifti object to allow overriding the memory map, i.e. re/misuse Vicvf to save the rotated theta map
                     Vicvf.private.dat  = theta;         % Override the memory map

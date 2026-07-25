@@ -4,7 +4,7 @@ classdef DWIprepWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Preprocessing of QSIRecon derivative data to generate DWI model parameters for DI-MWI analysis.";
+    description = ["Preprocesses QSIRecon derivative data to generate DWI model parameters for DI-MWI analysis.";
                    "This worker converts QSIRecon outputs (NODDI and MSMT-CSD models) into standardized workitems representing";
                    "fiber/neurite theta (polar angle relative to B0), fiber fraction (ff), and intracellular volume fraction (icvf).";
                    "The generated maps are coregistered to MEGRE/VFA space for use in downstream DI-MWI modeling.";

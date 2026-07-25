@@ -5,7 +5,28 @@ classdef QSMWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["I am your SEPIA expert that can make shiny QSM and R2-star images for you"] % Description of the work that is done
+    description = ["Quantitative Susceptibility Mapping (QSM) and R2* relaxometry worker using the SEPIA toolbox.";
+                   "";
+                   "QSMWorker performs QSM reconstruction and R2* mapping from multi-echo GRE magnitude and phase data.";
+                   "QSM is a post-processing technique that converts MRI phase data into quantitative susceptibility maps,";
+                   "enabling the study of tissue magnetic properties such as iron content, calcium, and myelin.";
+                   "";
+                   "The SEPIA toolbox (Susceptibility and Phase Imaging Application) provides a comprehensive pipeline";
+                   "for QSM reconstruction, including phase unwrapping, background field removal, and susceptibility inversion.";
+                   "";
+                   "Processing Steps:";
+                   "------------------";
+                   "";
+                   "1. Phase Unwrapping: Resolves phase wraps in the multi-echo phase data";
+                   "2. Background Field Removal: Separates local tissue phase from background field contributions";
+                   "3. Susceptibility Inversion: Converts local field maps to susceptibility maps";
+                   "4. R2* Mapping: Computes R2* relaxation rate maps from multi-echo magnitude decay";
+                   "";
+                   ".. note::";
+                   "";
+                   "   SEPIA has its own working directory structure. QSMWorker temporarily switches to the";
+                   "   SEPIA directory for processing and renames output files to ensure BIDS compatibility.";
+                   "   The SEPIA toolbox must be installed and configured."] % Description of the work that is done
     needs       = ["ME4Dmag", "ME4Dphase", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

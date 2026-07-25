@@ -5,26 +5,30 @@ classdef MCR_GPUWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Multi-compartment relaxometry worker, it combines complex multi-echo data (labeled either _MPM or _VFA) with coregistered B1 relative maps to compute myelin water fraction maps";
+    description = ["GPU-accelerated Multi-Compartment Relaxometry (MCR) worker for efficient myelin water imaging (MWI) analysis.";
                    "";
-                   "Additionally it requires:";
-                   "-------------------------";
+                   "MCR_GPUWorker implements the MCR framework on GPU hardware, combining complex multi-echo GRE data (VFA or MPM)";
+                   "with coregistered B1 transmit field maps to estimate myelin water fraction (MWF) and other quantitative";
+                   "microstructural parameters.";
                    "";
-                   "- a field map has already been computed per acquisition in order to reduce the search space of the minimisation problem";
-                   "- a common brain mask exists for the various acquisitions";
+                   "Theoretical Framework:";
+                   "----------------------";
                    "";
-                   "The theoretical framework is described in Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159"; 
-                   "Using as backend the code present on the repository https://gacelle.readthedocs.io/en/latest/supported_models/MCRMWI.html";
+                   "The MCR model is based on the quantitative framework described in:";
+                   "Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159";
                    "";
-                   "Methods:";
-                   "--------";
+                   "GPU implementation is provided by the Gacelle toolbox:";
+                   "https://gacelle.readthedocs.io/en/latest/supported_models/MCRMWI.html";
                    "";
-                   "- reads data";
-                   "- computes initial phase of each acquisition";
-                   "- runs fitting process using gpuMCRMWI - there are various configuration options MCR_GPUWorker.fitting";
-                   "- saves relevant output";
+                   "Reference:";
+                   "-----------";
+                   "Gacelle et al., Imaging Neuroscience 2026 (under review), https://arxiv.org/abs/2511.22094";
                    "";
-                   "Gacelle, et al., Imaging Neuroscience 2026 under review https://arxiv.org/abs/2511.22094"]
+                   ".. note::";
+                   "";
+                   "   MCR_GPUWorker provides significant speed improvements over MCRWorker,";
+                   "   particularly for high-resolution datasets or when processing multiple subjects.";
+                   "   Requires GPU hardware with CUDA support."]
     needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = true
 end

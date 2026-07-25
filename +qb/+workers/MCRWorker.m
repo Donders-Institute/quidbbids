@@ -5,26 +5,31 @@ classdef MCRWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Multi-compartment relaxometry worker, it combines complex multi-echo data (labeled either _MPM or _VFA) with coregistered"
-                   "B1 relative maps to compute myelin water fraction maps";
+    description = ["Multi-Compartment Relaxometry (MCR) worker for myelin water imaging (MWI) and Diffusion-Informed MWI (DI-MWI) analysis.";
                    "";
-                   "Additionally it requires:";
-                   "-------------------------";
+                   "MCRWorker implements the MCR framework, combining complex multi-echo GRE data (VFA or MPM acquisitions)";
+                   "with coregistered B1 transmit field maps to estimate myelin water fraction (MWF) and other quantitative microstructural";
+                   "parameters. The model simultaneously fits T1, T2*, and proton density across multiple compartments (myelin water,";
+                   "intra/extra-axonal water, and free water) while accounting for B1 inhomogeneities and field map inhomogeneities.";
                    "";
-                   "- a field map has already been computed per acquisition in order to reduce the search space of the minimisation problem";
-                   "- a common brain mask exists for the various acquisitions";
+                   "Theoretical Framework:";
+                   "----------------------";
                    "";
-                   "The theoretical framework is described in Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159"; 
-                   "Using as backend the code present on the repository https://github.com/kschan0214/mwi";
+                   "The MCR model is based on the quantitative framework described in:";
+                   "Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159";
                    "";
-                   "Methods:";
-                   "--------";
+                   "Implementation uses the MWI toolbox: https://github.com/kschan0214/mwi";
                    "";
-                   "- reads data";
-                   "- computes initial phase of each acquisition";
-                   "- (optional) extracts 3 orthogonal slices to speed up computation";
-                   "- runs fitting process using mwi_3cx_2R1R2s_dimwi - there are various configuration options MCRWorker.algoPara";
-                   "- saves relevant output"]
+                   ".. note::";
+                   "";
+                   "   MCRWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors (DWI_theta,";
+                   "   DWI_icvf, DWI_ff) are available from DWIprepWorker, the DI-MWI model incorporates fiber orientation";
+                   "   and compartment fraction information to improve parameter estimation specificity.";
+                   "";
+                   ".. tip::";
+                   "";
+                   "   The ``ortho`` products are just 3 orthogonal slices (to speed up computation) and can be used";
+                   "   for a fast and shallow quality control."]
     needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "DWI_theta", "DWI_icvf", "DWI_ff"]           % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

@@ -6,7 +6,11 @@ This section describes all available workers in QuIDBBIDS.
 B1prepWorker
 ~~~~~~~~~~~~
 
-I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)
+Performs B1 field mapping preprocessing to generate regularized flip-angle maps for MRI bias correction.
+
+B1prepWorker processes raw B1 mapping data (acquired with acq-famp and acq-anat protocols) to produce
+scaled and regularized transmit field (B1+) maps in degrees. The regularization uses a complex smoothing
+approach that preserves tissue boundaries while reducing salt-and-pepper noise.
 
 Properties
 ----------
@@ -27,7 +31,7 @@ Properties
 DWIprepWorker
 ~~~~~~~~~~~~~
 
-Preprocessing of QSIRecon derivative data to generate DWI model parameters for DI-MWI analysis.
+Preprocesses QSIRecon derivative data to generate DWI model parameters for DI-MWI analysis.
 This worker converts QSIRecon outputs (NODDI and MSMT-CSD models) into standardized workitems representing
 fiber/neurite theta (polar angle relative to B0), fiber fraction (ff), and intracellular volume fraction (icvf).
 The generated maps are coregistered to MEGRE/VFA space for use in downstream DI-MWI modeling.
@@ -82,26 +86,31 @@ Properties
 MCRWorker
 ~~~~~~~~~
 
-Multi-compartment relaxometry worker, it combines complex multi-echo data (labeled either _MPM or _VFA) with coregistered
-B1 relative maps to compute myelin water fraction maps
+Multi-Compartment Relaxometry (MCR) worker for myelin water imaging (MWI) and Diffusion-Informed MWI (DI-MWI) analysis.
 
-Additionally it requires:
--------------------------
+MCRWorker implements the MCR framework, combining complex multi-echo GRE data (VFA or MPM acquisitions)
+with coregistered B1 transmit field maps to estimate myelin water fraction (MWF) and other quantitative microstructural
+parameters. The model simultaneously fits T1, T2*, and proton density across multiple compartments (myelin water,
+intra/extra-axonal water, and free water) while accounting for B1 inhomogeneities and field map inhomogeneities.
 
-- a field map has already been computed per acquisition in order to reduce the search space of the minimisation problem
-- a common brain mask exists for the various acquisitions
+Theoretical Framework:
+----------------------
 
-The theoretical framework is described in Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159
-Using as backend the code present on the repository https://github.com/kschan0214/mwi
+The MCR model is based on the quantitative framework described in:
+Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159
 
-Methods:
---------
+Implementation uses the MWI toolbox: https://github.com/kschan0214/mwi
 
-- reads data
-- computes initial phase of each acquisition
-- (optional) extracts 3 orthogonal slices to speed up computation
-- runs fitting process using mwi_3cx_2R1R2s_dimwi - there are various configuration options MCRWorker.algoPara
-- saves relevant output
+.. note::
+
+   MCRWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors (DWI_theta,
+   DWI_icvf, DWI_ff) are available from DWIprepWorker, the DI-MWI model incorporates fiber orientation
+   and compartment fraction information to improve parameter estimation specificity.
+
+.. tip::
+
+   The ``ortho`` products are just 3 orthogonal slices (to speed up computation) and can be used
+   for a fast and shallow quality control.
 
 Properties
 ----------
@@ -122,26 +131,30 @@ Properties
 MCR_GPUWorker
 ~~~~~~~~~~~~~
 
-Multi-compartment relaxometry worker, it combines complex multi-echo data (labeled either _MPM or _VFA) with coregistered B1 relative maps to compute myelin water fraction maps
+GPU-accelerated Multi-Compartment Relaxometry (MCR) worker for efficient myelin water imaging (MWI) analysis.
 
-Additionally it requires:
--------------------------
+MCR_GPUWorker implements the MCR framework on GPU hardware, combining complex multi-echo GRE data (VFA or MPM)
+with coregistered B1 transmit field maps to estimate myelin water fraction (MWF) and other quantitative
+microstructural parameters.
 
-- a field map has already been computed per acquisition in order to reduce the search space of the minimisation problem
-- a common brain mask exists for the various acquisitions
+Theoretical Framework:
+----------------------
 
-The theoretical framework is described in Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159
-Using as backend the code present on the repository https://gacelle.readthedocs.io/en/latest/supported_models/MCRMWI.html
+The MCR model is based on the quantitative framework described in:
+Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159
 
-Methods:
---------
+GPU implementation is provided by the Gacelle toolbox:
+https://gacelle.readthedocs.io/en/latest/supported_models/MCRMWI.html
 
-- reads data
-- computes initial phase of each acquisition
-- runs fitting process using gpuMCRMWI - there are various configuration options MCR_GPUWorker.fitting
-- saves relevant output
+Reference:
+-----------
+Gacelle et al., Imaging Neuroscience 2026 (under review), https://arxiv.org/abs/2511.22094
 
-Gacelle, et al., Imaging Neuroscience 2026 under review https://arxiv.org/abs/2511.22094
+.. note::
+
+   MCR_GPUWorker provides significant speed improvements over MCRWorker,
+   particularly for high-resolution datasets or when processing multiple subjects.
+   Requires GPU hardware with CUDA support.
 
 Properties
 ----------
@@ -162,12 +175,32 @@ Properties
 MEGREprepWorker
 ~~~~~~~~~~~~~~~
 
-I do the following pre-processing work for you:
+Performs preprocessing on raw Multi-Echo Gradient Recalled Echo (MEGRE) data for QSM and relaxometry workflows.
 
-- Create a brain mask for each MEGRE acquisition using the echo-1_mag image.
-- Merge all echoes into a 4D file (for running the QSM workflows)
-- Denoise using (Tensor) MPPCA the merged 4D file (optional) - this is configurable
-  with denoising.method & denoising.kernel
+MEGREprepWorker prepares MEGRE acquisitions by performing essential preprocessing steps required for
+subsequent Quantitative Susceptibility Mapping (QSM) and relaxometry analysis. MEGRE is a GRE sequence
+with multiple echo times that allows for both magnitude and phase contrast optimization.
+
+Processing Steps:
+------------------
+
+1. Brain Mask Generation:
+   Creates a brain mask for each MEGRE acquisition using the echo-1 magnitude image as input to
+   mri_synthstrip (FreeSurfer). Individual masks are combined to produce a minimal output mask
+   suitable for QSM processing.
+
+2. Multi-Echo Merging:
+   Merges all echo images (magnitude and phase) for each acquisition into 4D NIfTI files.
+   This format is required by downstream QSM workflows (e.g., SEPIA) that process multi-echo data.
+
+3. Denoising (Optional):
+   Applies (Tensor) MPPCA denoising to the merged 4D files to improve signal-to-noise ratio.
+   Configurable via denoising.method ('MPPCA' or 'tMPPCA') and denoising.kernel parameters.
+
+.. note::
+
+   The brain mask generation uses mri_synthstrip which requires FreeSurfer to be installed and configured.
+   Denoising is applied in-place to the merged 4D files when enabled.
 
 Properties
 ----------
@@ -188,18 +221,30 @@ Properties
 MP2RAGEWorker
 ~~~~~~~~~~~~~
 
-I'm an MP2RAGE worker and create M0 and R1 maps, but only if you have MP2RAGE and B1 map data!
-Computations are based on a dictionary matching approach described in the supplemental material
-of the paper Chan et al, Imaging Neuroscience, 2025 https://doi.org/10.1162/imag_a_00456.
+Magnetization Prepared 2 Rapid Gradient Echo (MP2RAGE) worker for T1 and M0 mapping.
 
-This method, when compared to the original implementation described by Marques et al, PLOSone, 2013
-https://doi.org/10.1371/journal.pone.0069294 has significantly better performance for long T1 values
+MP2RAGEWorker processes MP2RAGE acquisitions to generate quantitative R1 (1/T1) and magnetization (M0) maps.
+MP2RAGE is a 3D T1-weighted imaging sequence that acquires two contrast-weighted images (INV1 and INV2)
+at different inversion times, along with a UNIT1 image, enabling robust T1 quantification.
+
+Methods:
+---------
+
+This implementation uses a dictionary matching approach that offers significantly improved performance
+for long T1 values compared to the original implementation. The method is described in:
+
+Chan et al., Imaging Neuroscience, 2025, https://doi.org/10.1162/imag_a_00456 (supplemental material)
+
+Original MP2RAGE T1 mapping method:
+Marques et al., PLoS ONE, 2013, https://doi.org/10.1371/journal.pone.0069294
+
+The dictionary matching code is based on: https://github.com/JosePMarques/MP2RAGE-related-scripts/
 
 .. note::
 
-   Be careful at defining the configuration parameters ``NumberShots`` and (to a smaller extent) ``EchoSpacing``
-
-The code is based on: https://github.com/JosePMarques/MP2RAGE-related-scripts/
+   Accurate T1 estimation requires careful configuration of ``NumberShots`` (number of slices in
+   the inversion segment) and ``EchoSpacing`` (TR of the GRE readout). Incorrect values may lead
+   to systematic biases in T1 estimates, particularly at high field strengths.
 
 Properties
 ----------
@@ -220,7 +265,28 @@ Properties
 QSMWorker
 ~~~~~~~~~
 
-I am your SEPIA expert that can make shiny QSM and R2-star images for you
+Quantitative Susceptibility Mapping (QSM) and R2* relaxometry worker using the SEPIA toolbox.
+
+QSMWorker performs QSM reconstruction and R2* mapping from multi-echo GRE magnitude and phase data.
+QSM is a post-processing technique that converts MRI phase data into quantitative susceptibility maps,
+enabling the study of tissue magnetic properties such as iron content, calcium, and myelin.
+
+The SEPIA toolbox (Susceptibility and Phase Imaging Application) provides a comprehensive pipeline
+for QSM reconstruction, including phase unwrapping, background field removal, and susceptibility inversion.
+
+Processing Steps:
+------------------
+
+1. Phase Unwrapping: Resolves phase wraps in the multi-echo phase data
+2. Background Field Removal: Separates local tissue phase from background field contributions
+3. Susceptibility Inversion: Converts local field maps to susceptibility maps
+4. R2* Mapping: Computes R2* relaxation rate maps from multi-echo magnitude decay
+
+.. note::
+
+   SEPIA has its own working directory structure. QSMWorker temporarily switches to the
+   SEPIA directory for processing and renames output files to ensure BIDS compatibility.
+   The SEPIA toolbox must be installed and configured.
 
 Properties
 ----------
@@ -241,16 +307,33 @@ Properties
 R1R2sWorker
 ~~~~~~~~~~~
 
-This worker generates precise R1- and R2-starmaps from MPM and VFA multiecho data using one single model
+Joint R1 and R2* mapping worker using GPU-accelerated estimation for multi-echo GRE data.
+
+R1R2sWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip Angle (VFA) and
+Multi-Parameter Mapping (MPM) multi-echo GRE data using a joint estimation model. The simultaneous fitting
+of R1 and R2* parameters improves accuracy by accounting for the interdependence of these relaxation
+parameters, particularly important at high field strengths where both T1 and T2* effects are significant.
+
+Theoretical Framework:
+----------------------
+
+The joint R1-R2* estimation is implemented using the Gacelle toolbox:
+Gacelle, K. S. Chan et al., Imaging Neuroscience 2026
+
+Documentation: https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html
 
 Methods:
---------
+---------
 
-- loads coregistered Multiecho GRE magnitude, relative B1 maps as well as a brain mask (for memory purposes)
-- uses Gacelle, K-s Chan et al., Imaging Neuroscience 2026 for simultaneous R1 and R2-star mapping from
-  variable flip angle multi-echo GRE data (VFA or MPM)
+- Loads coregistered multi-echo GRE magnitude data, B1 transmit field maps, and brain masks
+- Performs joint estimation of R1 and R2* using gpuJointR1R2starMapping
+- Accounts for B1 inhomogeneities in the fitting process
 
-There are various configuration options that are referred to in https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html
+.. note::
+
+   The joint estimation approach is particularly advantageous when T1 and T2* are correlated,
+   such as in white matter where myelin water has distinct relaxation properties.
+   Requires GPU hardware with CUDA support.
 
 Properties
 ----------
@@ -271,12 +354,30 @@ Properties
 SCRWorker
 ~~~~~~~~~
 
-Single Compartment Relaxometry worker, this worker combines the separately computed S0, Chi and R2* maps into a single S0, R1 and R2* map 
+Single Compartment Relaxometry (SCR) worker for combined relaxometry and susceptibility analysis.
+
+SCRWorker combines separately computed Quantitative Susceptibility Mapping (QSM) outputs with
+relaxometry data to generate consolidated parameter maps. SCR provides a simplified model that
+assumes a single tissue compartment, suitable for applications where multi-compartment modeling
+is not required or when computational efficiency is prioritized.
 
 Methods:
---------
-- Compute weighted means of the R2-star & Chi-maps over the different flip-angles
-- Compute R1- & M0-maps based on despot1 with S0 estimates (current implementation assumes constant TR for the various flip angles)
+---------
+
+1. R2* and Chi Map Averaging:
+   Computes weighted means of R2* and susceptibility (Chi) maps across different flip angles.
+   The weighting uses S0^2 to emphasize voxels with higher signal intensity.
+
+2. R1 and M0 Mapping:
+   Estimates R1 (1/T1) and M0 (proton density) maps using the DESPOT1 (Driven Equilibrium Single
+   Pulse Observation of T1) method with S0 estimates from QSM processing.
+   The current implementation assumes a constant TR across all flip angles.
+
+.. note::
+
+   The SCR model is appropriate for tissues with relatively homogeneous microstructure or when
+   the primary goal is to obtain average parameter values rather than compartment-specific estimates.
+   For myelin water imaging, consider using MCRWorker or MCR_GPUWorker instead.
 
 Properties
 ----------
@@ -297,16 +398,42 @@ Properties
 VFAprepWorker
 ~~~~~~~~~~~~~
 
-I am a working class hero that will happily do the following pre-processing work for you:
+Variable Flip Angle (VFA) and Multi-Parameter Mapping (MPM) preprocessing worker for multi-echo GRE data.
 
-- Pass coregistered echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.
-- Coregister all VFA/MPM images to each T1w-like target image (using echo-1_mag),
-  coregister the B1 images as well to the M0 (which is also in the common GRE space)
-- Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask
-  to produce a minimal output mask (for SEPIA)
-- Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows)
+VFAprepWorker performs comprehensive preprocessing of VFA and MPM acquisitions to prepare data for
+downstream QSM, SCR, and MCR workflows. VFA/MPM are multi-echo GRE sequences acquired at different
+flip angles that enable quantitative parameter mapping and improve SNR through signal averaging.
 
-If only VFA data is available, then steps 1 and 2 are skipped
+Processing Steps:
+------------------
+
+0. Denoising (Optional):
+   Applies MPPCA or tMPPCA denoising to raw input data before further processing.
+   Configurable via denoising.method and denoising.kernel parameters.
+
+1. Synthetic T1 and M0 Generation:
+   Passes coregistered echo-1 magnitude images to DESPOT1 to compute T1-weighted synthetic
+   reference images and S0 (proton density) maps for each flip angle. These synthetic images
+   serve as targets for coregistration in the common GRE space.
+
+2. Coregistration:
+   Coregisters all VFA/MPM images to their corresponding synthetic T1 targets using echo-1 magnitude
+   images as reference. B1 transmit field maps are also coregistered to the M0 maps, which share
+   the same common GRE space.
+
+3. Brain Mask Generation:
+   Creates a brain mask for each flip angle using the echo-1 magnitude image. Individual masks
+   are combined (via logical AND) to produce a minimal output mask suitable for SEPIA QSM processing.
+
+4. Multi-Echo Merging:
+   Merges all echo images for each flip angle into 4D NIfTI files (separately for magnitude and phase).
+   This format is required by downstream QSM, SCR, and MCR workflows.
+
+.. note::
+
+   If only VFA data is available (without MPM), steps 1 and 2 (synthetic T1 generation and coregistration)
+   are skipped. VFAprepWorker automatically detects available data types from the BIDS configuration.
+   Processing is performed independently for each acquisition, run, and flip angle combination.
 
 Properties
 ----------

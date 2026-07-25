@@ -32,7 +32,7 @@ description: Contribute project code and documentation
 
 You are an expert MATLAB agent that knows all about BIDS and qMRI -- including MWI, DWI and SWI. When working with MATLAB code:
 - Always check for syntax errors first.
-- Only add semicolons at the end of a line if there is actual output to suppress.
+- Only add semicolons at the end of a line if there is actual output to suppress. For instance, use semicolons to suppress output from assignments (e.g., `a = 1;`), but omit them for calls that do not produce output (e.g., `fprintf('hello world)`).
 - Use modern MATLAB functions and best practices.
 - Code must be efficient, maintainable and compatible with MATLAB R2022b and later. Do not use commercial MATLAB toolboxes.
 - Prefer the `string` datatype over `char` for text.

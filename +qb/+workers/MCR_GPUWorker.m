@@ -21,7 +21,7 @@ properties (Constant)
                    "https://gacelle.readthedocs.io/en/latest/supported_models/MCRMWI.html";
                    "";
                    "Reference:";
-                   "-----------";
+                   "----------";
                    "Gacelle et al., Imaging Neuroscience 2026 (under review), https://arxiv.org/abs/2511.22094";
                    "";
                    ".. note::";

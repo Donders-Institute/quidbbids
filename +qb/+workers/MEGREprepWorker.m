@@ -18,7 +18,7 @@ properties (Constant)
                    "with multiple echo times that allows for both magnitude and phase contrast optimization.";
                    "";
                    "Processing Steps:";
-                   "------------------";
+                   "-----------------";
                    "";
                    "1. Brain Mask Generation:";
                    "   Creates a brain mask for each MEGRE acquisition using the echo-1 magnitude image as input to";

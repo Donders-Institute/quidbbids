@@ -32,15 +32,15 @@ DWIprepWorker
 ~~~~~~~~~~~~~
 
 Preprocesses QSIRecon derivative data to generate DWI model parameters for DI-MWI analysis.
-This worker converts QSIRecon outputs (NODDI and MSMT-CSD models) into standardized workitems representing
+DWIprepWorker converts QSIRecon outputs (NODDI and MSMT-CSD models) into standardized workitems representing
 fiber/neurite theta (polar angle relative to B0), fiber fraction (ff), and intracellular volume fraction (icvf).
 The generated maps are coregistered to MEGRE/VFA space for use in downstream DI-MWI modeling.
 
 Supported methods:
 ------------------
 
-NODDI - Neurite Orientation Dispersion and Density Imaging (Zhang et al., 2012)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+NODDI - Neurite Orientation Dispersion and Density Imaging
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Requires: QSIRecon workflow with ``--recon-spec amico_noddi`` (produces ``icvf`` and ``direction`` maps)
 - Outputs:
@@ -49,8 +49,8 @@ NODDI - Neurite Orientation Dispersion and Density Imaging (Zhang et al., 2012)
   - DWI_ff (set to 1 for all voxels, since NODDI models a single neurite population per voxel)
   - DWI_icvf (non-modulated, i.e. not corrected for GM/CSF partial voluming effects)
 
-MRtrix3 - Constrained Spherical Deconvolution (Jeurissen et al., 2014)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+MRtrix3 - Constrained Spherical Deconvolution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Requires: QSIRecon workflow with any of the ``mrtrix`` reconstruction specifications that produces FOD maps,
   plus installation of MRtrix3 (fod2fixel, fixel2voxel, fixel2peaks), plus the ``NODDI`` reconstruction
@@ -61,10 +61,16 @@ MRtrix3 - Constrained Spherical Deconvolution (Jeurissen et al., 2014)
   - DWI_ff (derived from the Apparent Fiber Density, as a proxy for fiber fraction)
   - DWI_icvf (from NODDI, as described above)
 
+References:
+^^^^^^^^^^^
+
+- Zhang et al., NeuroImage, 2012 (NODDI)
+- Jeurissen et al., 2014 (MRtrix3)
+
 .. note::
 
-   This worker does NOT run QSIRecon itself; QSIRecon derivatives must be precomputed.
-   QSIPrep/QSIRecon output directories must be configured in the config file or else the downstream MW model estimations
+   DWIprepWorker does NOT run QSIRecon itself; QSIRecon derivatives must be precomputed.
+   QSIPrep/QSIRecon output directories must be configured in the config file or else the downstream DI-MWI model estimations
    will be performed without the diffusion information (which may lead to suboptimal results).
 
 Properties
@@ -147,7 +153,7 @@ GPU implementation is provided by the Gacelle toolbox:
 https://gacelle.readthedocs.io/en/latest/supported_models/MCRMWI.html
 
 Reference:
------------
+----------
 Gacelle et al., Imaging Neuroscience 2026 (under review), https://arxiv.org/abs/2511.22094
 
 .. note::
@@ -182,7 +188,7 @@ subsequent Quantitative Susceptibility Mapping (QSM) and relaxometry analysis. M
 with multiple echo times that allows for both magnitude and phase contrast optimization.
 
 Processing Steps:
-------------------
+-----------------
 
 1. Brain Mask Generation:
    Creates a brain mask for each MEGRE acquisition using the echo-1 magnitude image as input to
@@ -228,7 +234,7 @@ MP2RAGE is a 3D T1-weighted imaging sequence that acquires two contrast-weighted
 at different inversion times, along with a UNIT1 image, enabling robust T1 quantification.
 
 Methods:
----------
+--------
 
 This implementation uses a dictionary matching approach that offers significantly improved performance
 for long T1 values compared to the original implementation. The method is described in:
@@ -275,7 +281,7 @@ The SEPIA toolbox (Susceptibility and Phase Imaging Application) provides a comp
 for QSM reconstruction, including phase unwrapping, background field removal, and susceptibility inversion.
 
 Processing Steps:
-------------------
+-----------------
 
 1. Phase Unwrapping: Resolves phase wraps in the multi-echo phase data
 2. Background Field Removal: Separates local tissue phase from background field contributions
@@ -323,7 +329,7 @@ Gacelle, K. S. Chan et al., Imaging Neuroscience 2026
 Documentation: https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html
 
 Methods:
----------
+--------
 
 - Loads coregistered multi-echo GRE magnitude data, B1 transmit field maps, and brain masks
 - Performs joint estimation of R1 and R2* using gpuJointR1R2starMapping
@@ -362,7 +368,7 @@ assumes a single tissue compartment, suitable for applications where multi-compa
 is not required or when computational efficiency is prioritized.
 
 Methods:
----------
+--------
 
 1. R2* and Chi Map Averaging:
    Computes weighted means of R2* and susceptibility (Chi) maps across different flip angles.
@@ -405,7 +411,7 @@ downstream QSM, SCR, and MCR workflows. VFA/MPM are multi-echo GRE sequences acq
 flip angles that enable quantitative parameter mapping and improve SNR through signal averaging.
 
 Processing Steps:
-------------------
+-----------------
 
 0. Denoising (Optional):
    Applies MPPCA or tMPPCA denoising to raw input data before further processing.

@@ -21,7 +21,7 @@ properties (Constant)
                    "Documentation: https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html";
                    "";
                    "Methods:";
-                   "---------";
+                   "--------";
                    "";
                    "- Loads coregistered multi-echo GRE magnitude data, B1 transmit field maps, and brain masks";
                    "- Performs joint estimation of R1 and R2* using gpuJointR1R2starMapping";

@@ -5,15 +5,15 @@ classdef DWIprepWorker < qb.workers.Worker
 
 properties (Constant)
     description = ["Preprocesses QSIRecon derivative data to generate DWI model parameters for DI-MWI analysis.";
-                   "This worker converts QSIRecon outputs (NODDI and MSMT-CSD models) into standardized workitems representing";
+                   "DWIprepWorker converts QSIRecon outputs (NODDI and MSMT-CSD models) into standardized workitems representing";
                    "fiber/neurite theta (polar angle relative to B0), fiber fraction (ff), and intracellular volume fraction (icvf).";
                    "The generated maps are coregistered to MEGRE/VFA space for use in downstream DI-MWI modeling.";
                    "";
                    "Supported methods:";
                    "------------------";
                    "";
-                   "NODDI - Neurite Orientation Dispersion and Density Imaging (Zhang et al., 2012)";
-                   "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^";
+                   "NODDI - Neurite Orientation Dispersion and Density Imaging";
+                   "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^";
                    "";
                    "- Requires: QSIRecon workflow with ``--recon-spec amico_noddi`` (produces ``icvf`` and ``direction`` maps)";
                    "- Outputs:";
@@ -22,8 +22,8 @@ properties (Constant)
                    "  - DWI_ff (set to 1 for all voxels, since NODDI models a single neurite population per voxel)";
                    "  - DWI_icvf (non-modulated, i.e. not corrected for GM/CSF partial voluming effects)";
                    "";
-                   "MRtrix3 - Constrained Spherical Deconvolution (Jeurissen et al., 2014)";
-                   "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^";
+                   "MRtrix3 - Constrained Spherical Deconvolution";
+                   "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^";
                    "";
                    "- Requires: QSIRecon workflow with any of the ``mrtrix`` reconstruction specifications that produces FOD maps,";
                    "  plus installation of MRtrix3 (fod2fixel, fixel2voxel, fixel2peaks), plus the ``NODDI`` reconstruction";
@@ -34,10 +34,16 @@ properties (Constant)
                    "  - DWI_ff (derived from the Apparent Fiber Density, as a proxy for fiber fraction)";
                    "  - DWI_icvf (from NODDI, as described above)";
                    "";
+                   "References:";
+                   "^^^^^^^^^^^";
+                   "";
+                   "- Zhang et al., NeuroImage, 2012 (NODDI)";
+                   "- Jeurissen et al., 2014 (MRtrix3)";
+                   "";
                    ".. note::";
                    "";
-                   "   This worker does NOT run QSIRecon itself; QSIRecon derivatives must be precomputed.";
-                   "   QSIPrep/QSIRecon output directories must be configured in the config file or else the downstream MW model estimations";
+                   "   DWIprepWorker does NOT run QSIRecon itself; QSIRecon derivatives must be precomputed.";
+                   "   QSIPrep/QSIRecon output directories must be configured in the config file or else the downstream DI-MWI model estimations";
                    "   will be performed without the diffusion information (which may lead to suboptimal results)."]  % Description of the work that is done
     needs       = "syntheticT1"                % List of workitems (excluding derivative data) the worker needs. Workitems can contain regexp patterns
     usesGPU     = false

@@ -22,7 +22,7 @@ properties (Constant)
                    "flip angles that enable quantitative parameter mapping and improve SNR through signal averaging.";
                    "";
                    "Processing Steps:";
-                   "------------------";
+                   "-----------------";
                    "";
                    "0. Denoising (Optional):";
                    "   Applies MPPCA or tMPPCA denoising to raw input data before further processing.";

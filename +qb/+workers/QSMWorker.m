@@ -15,7 +15,7 @@ properties (Constant)
                    "for QSM reconstruction, including phase unwrapping, background field removal, and susceptibility inversion.";
                    "";
                    "Processing Steps:";
-                   "------------------";
+                   "-----------------";
                    "";
                    "1. Phase Unwrapping: Resolves phase wraps in the multi-echo phase data";
                    "2. Background Field Removal: Separates local tissue phase from background field contributions";

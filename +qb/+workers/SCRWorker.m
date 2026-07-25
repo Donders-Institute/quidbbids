@@ -13,7 +13,7 @@ properties (Constant)
                    "is not required or when computational efficiency is prioritized.";
                    "";
                    "Methods:";
-                   "---------";
+                   "--------";
                    "";
                    "1. R2* and Chi Map Averaging:";
                    "   Computes weighted means of R2* and susceptibility (Chi) maps across different flip angles.";

@@ -12,7 +12,7 @@ properties (Constant)
                    "at different inversion times, along with a UNIT1 image, enabling robust T1 quantification.";
                    "";
                    "Methods:";
-                   "---------";
+                   "--------";
                    "";
                    "This implementation uses a dictionary matching approach that offers significantly improved performance";
                    "for long T1 values compared to the original implementation. The method is described in:";

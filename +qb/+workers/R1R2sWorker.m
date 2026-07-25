@@ -5,33 +5,33 @@ classdef R1R2sWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Joint R1 and R2* mapping worker using GPU-accelerated estimation for multi-echo GRE data.";
-                   "";
-                   "R1R2sWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip Angle (VFA) and";
-                   "Multi-Parameter Mapping (MPM) multi-echo GRE data using a joint estimation model. The simultaneous fitting";
-                   "of R1 and R2* parameters improves accuracy by accounting for the interdependence of these relaxation";
-                   "parameters, particularly important at high field strengths where both T1 and T2* effects are significant.";
-                   "";
-                   "Theoretical Framework:";
-                   "----------------------";
-                   "";
-                   "The joint R1-R2* estimation is implemented using the Gacelle toolbox:";
-                   "Gacelle, K. S. Chan et al., Imaging Neuroscience 2026";
-                   "";
-                   "Documentation: https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html";
-                   "";
-                   "Methods:";
-                   "--------";
-                   "";
-                   "- Loads coregistered multi-echo GRE magnitude data, B1 transmit field maps, and brain masks";
-                   "- Performs joint estimation of R1 and R2* using gpuJointR1R2starMapping";
-                   "- Accounts for B1 inhomogeneities in the fitting process";
-                   "";
-                   ".. note::";
-                   "";
-                   "   The joint estimation approach is particularly advantageous when T1 and T2* are correlated,";
-                   "   such as in white matter where myelin water has distinct relaxation properties.";
-                   "   Requires GPU hardware with CUDA support."]
+    description = ["Joint R1 and R2* mapping worker using GPU-accelerated estimation for multi-echo GRE data."
+                   ""
+                   "R1R2sWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip Angle (VFA) and"
+                   "Multi-Parameter Mapping (MPM) multi-echo GRE data using a joint estimation model. The simultaneous fitting"
+                   "of R1 and R2* parameters improves accuracy by accounting for the interdependence of these relaxation"
+                   "parameters, particularly important at high field strengths where both T1 and T2* effects are significant."
+                   ""
+                   "Theoretical Framework:"
+                   "----------------------"
+                   ""
+                   "The joint R1-R2* estimation is implemented using the Gacelle toolbox:"
+                   "Gacelle, K. S. Chan et al., Imaging Neuroscience 2026"
+                   ""
+                   "Documentation: https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html"
+                   ""
+                   "Methods:"
+                   "--------"
+                   ""
+                   "- Loads coregistered multi-echo GRE magnitude data, B1 transmit field maps, and brain masks"
+                   "- Performs joint estimation of R1 and R2* using gpuJointR1R2starMapping"
+                   "- Accounts for B1 inhomogeneities in the fitting process"
+                   ""
+                   ".. note::"
+                   ""
+                   "   The joint estimation approach is particularly advantageous when T1 and T2* are correlated,"
+                   "   such as in white matter where myelin water has distinct relaxation properties."
+                   "   Requires GPU hardware with CUDA support."]   % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
     usesGPU     = true
 end

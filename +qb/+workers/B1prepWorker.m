@@ -5,11 +5,11 @@ classdef B1prepWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Performs B1 field mapping preprocessing to generate regularized flip-angle maps for MRI bias correction.";
-                   "";
-                   "B1prepWorker processes raw B1 mapping data (acquired with acq-famp and acq-anat protocols) to produce";
-                   "scaled and regularized transmit field (B1+) maps in degrees. The regularization uses a complex smoothing";
-                   "approach that preserves tissue boundaries while reducing salt-and-pepper noise."] % Description of the work that is done
+    description = ["Performs B1 field mapping preprocessing to generate regularized flip-angle maps for MRI bias correction."
+                   ""
+                   "B1prepWorker processes raw B1 mapping data (acquired with acq-famp and acq-anat protocols) to produce"
+                   "scaled and regularized transmit field (B1+) maps in degrees. The regularization uses a complex smoothing"
+                   "approach that preserves tissue boundaries while reducing salt-and-pepper noise."] % Description should be in ReStructuredText format
     needs       = ""                % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

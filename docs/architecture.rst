@@ -33,4 +33,6 @@ implementing new methods in Worker modules, as illustrated below.
   requested. Throughout execution, standardized logs ensure traceability and reproducibility.
 
 The QuIDBBIDS workflow is designed to be modular and flexible, allowing users to easily customize and extend
-the processing workflow.
+the processing workflow by adding new Worker modules or customizing existing ones. This architecture resembles
+a plugin-based microservices approach, where each worker operates independently while collaborating to achieve the
+desired outcome.

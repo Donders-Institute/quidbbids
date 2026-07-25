@@ -15,42 +15,42 @@ classdef VFAprepWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Variable Flip Angle (VFA) and Multi-Parameter Mapping (MPM) preprocessing worker for multi-echo GRE data.";
-                   "";
-                   "VFAprepWorker performs comprehensive preprocessing of VFA and MPM acquisitions to prepare data for";
-                   "downstream QSM, SCR, and MCR workflows. VFA/MPM are multi-echo GRE sequences acquired at different";
-                   "flip angles that enable quantitative parameter mapping and improve SNR through signal averaging.";
-                   "";
-                   "Processing Steps:";
-                   "-----------------";
-                   "";
-                   "0. Denoising (Optional):";
-                   "   Applies MPPCA or tMPPCA denoising to raw input data before further processing.";
-                   "   Configurable via denoising.method and denoising.kernel parameters.";
-                   "";
-                   "1. Synthetic T1 and M0 Generation:";
-                   "   Passes coregistered echo-1 magnitude images to DESPOT1 to compute T1-weighted synthetic";
-                   "   reference images and S0 (proton density) maps for each flip angle. These synthetic images";
-                   "   serve as targets for coregistration in the common GRE space.";
-                   "";
-                   "2. Coregistration:";
-                   "   Coregisters all VFA/MPM images to their corresponding synthetic T1 targets using echo-1 magnitude";
-                   "   images as reference. B1 transmit field maps are also coregistered to the M0 maps, which share";
-                   "   the same common GRE space.";
-                   "";
-                   "3. Brain Mask Generation:";
-                   "   Creates a brain mask for each flip angle using the echo-1 magnitude image. Individual masks";
-                   "   are combined (via logical AND) to produce a minimal output mask suitable for SEPIA QSM processing.";
-                   "";
-                   "4. Multi-Echo Merging:";
-                   "   Merges all echo images for each flip angle into 4D NIfTI files (separately for magnitude and phase).";
-                   "   This format is required by downstream QSM, SCR, and MCR workflows.";
-                   "";
-                   ".. note::";
-                   "";
-                   "   If only VFA data is available (without MPM), steps 1 and 2 (synthetic T1 generation and coregistration)";
-                   "   are skipped. VFAprepWorker automatically detects available data types from the BIDS configuration.";
-                   "   Processing is performed independently for each acquisition, run, and flip angle combination."]
+    description = ["Variable Flip Angle (VFA) and Multi-Parameter Mapping (MPM) preprocessing worker for multi-echo GRE data."
+                   ""
+                   "VFAprepWorker performs comprehensive preprocessing of VFA and MPM acquisitions to prepare data for"
+                   "downstream QSM, SCR, and MCR workflows. VFA/MPM are multi-echo GRE sequences acquired at different"
+                   "flip angles that enable quantitative parameter mapping and improve SNR through signal averaging."
+                   ""
+                   "Processing Steps:"
+                   "-----------------"
+                   ""
+                   "0. Denoising (Optional):"
+                   "   Applies MPPCA or tMPPCA denoising to raw input data before further processing."
+                   "   Configurable via denoising.method and denoising.kernel parameters."
+                   ""
+                   "1. Synthetic T1 and M0 Generation:"
+                   "   Passes coregistered echo-1 magnitude images to DESPOT1 to compute T1-weighted synthetic"
+                   "   reference images and S0 (proton density) maps for each flip angle. These synthetic images"
+                   "   serve as targets for coregistration in the common GRE space."
+                   ""
+                   "2. Coregistration:"
+                   "   Coregisters all VFA/MPM images to their corresponding synthetic T1 targets using echo-1 magnitude"
+                   "   images as reference. B1 transmit field maps are also coregistered to the M0 maps, which share"
+                   "   the same common GRE space."
+                   ""
+                   "3. Brain Mask Generation:"
+                   "   Creates a brain mask for each flip angle using the echo-1 magnitude image. Individual masks"
+                   "   are combined (via logical AND) to produce a minimal output mask suitable for SEPIA QSM processing."
+                   ""
+                   "4. Multi-Echo Merging:"
+                   "   Merges all echo images for each flip angle into 4D NIfTI files (separately for magnitude and phase)."
+                   "   This format is required by downstream QSM, SCR, and MCR workflows."
+                   ""
+                   ".. note::"
+                   ""
+                   "   If only VFA data is available (without MPM), steps 1 and 2 (synthetic T1 generation and coregistration)"
+                   "   are skipped. VFAprepWorker automatically detects available data types from the BIDS configuration."
+                   "   Processing is performed independently for each acquisition, run, and flip angle combination."]   % Description should be in ReStructuredText format
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

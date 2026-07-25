@@ -5,30 +5,30 @@ classdef SCRWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Single Compartment Relaxometry (SCR) worker for combined relaxometry and susceptibility analysis.";
-                   "";
-                   "SCRWorker combines separately computed Quantitative Susceptibility Mapping (QSM) outputs with";
-                   "relaxometry data to generate consolidated parameter maps. SCR provides a simplified model that";
-                   "assumes a single tissue compartment, suitable for applications where multi-compartment modeling";
-                   "is not required or when computational efficiency is prioritized.";
-                   "";
-                   "Methods:";
-                   "--------";
-                   "";
-                   "1. R2* and Chi Map Averaging:";
-                   "   Computes weighted means of R2* and susceptibility (Chi) maps across different flip angles.";
-                   "   The weighting uses S0^2 to emphasize voxels with higher signal intensity.";
-                   "";
-                   "2. R1 and M0 Mapping:";
-                   "   Estimates R1 (1/T1) and M0 (proton density) maps using the DESPOT1 (Driven Equilibrium Single";
-                   "   Pulse Observation of T1) method with S0 estimates from QSM processing.";
-                   "   The current implementation assumes a constant TR across all flip angles.";
-                   "";
-                   ".. note::";
-                   "";
-                   "   The SCR model is appropriate for tissues with relatively homogeneous microstructure or when";
-                   "   the primary goal is to obtain average parameter values rather than compartment-specific estimates.";
-                   "   For myelin water imaging, consider using MCRWorker or MCR_GPUWorker instead."]
+    description = ["Single Compartment Relaxometry (SCR) worker for combined relaxometry and susceptibility analysis."
+                   ""
+                   "SCRWorker combines separately computed Quantitative Susceptibility Mapping (QSM) outputs with"
+                   "relaxometry data to generate consolidated parameter maps. SCR provides a simplified model that"
+                   "assumes a single tissue compartment, suitable for applications where multi-compartment modeling"
+                   "is not required or when computational efficiency is prioritized."
+                   ""
+                   "Methods:"
+                   "--------"
+                   ""
+                   "1. R2* and Chi Map Averaging:"
+                   "   Computes weighted means of R2* and susceptibility (Chi) maps across different flip angles."
+                   "   The weighting uses S0^2 to emphasize voxels with higher signal intensity."
+                   ""
+                   "2. R1 and M0 Mapping:"
+                   "   Estimates R1 (1/T1) and M0 (proton density) maps using the DESPOT1 (Driven Equilibrium Single"
+                   "   Pulse Observation of T1) method with S0 estimates from QSM processing."
+                   "   The current implementation assumes a constant TR across all flip angles."
+                   ""
+                   ".. note::"
+                   ""
+                   "   The SCR model is appropriate for tissues with relatively homogeneous microstructure or when"
+                   "   the primary goal is to obtain average parameter values rather than compartment-specific estimates."
+                   "   For myelin water imaging, consider using MCRWorker or MCR_GPUWorker instead."]   % Description should be in ReStructuredText format
     needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "TB1map_GRE"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

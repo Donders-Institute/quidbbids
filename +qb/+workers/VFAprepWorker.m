@@ -17,12 +17,12 @@ classdef VFAprepWorker < qb.workers.Worker
 properties (Constant)
     description = ["I am a working class hero that will happily do the following pre-processing work for you:";
                    "";
-                   "1. Pass coregistered echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
-                   "2. Coregister all VFA/MPM images to each T1w-like target image (using echo-1_mag),";
-                   "   coregister the B1 images as well to the M0 (which is also in the common GRE space)";
-                   "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
-                   "   to produce a minimal output mask (for SEPIA)";
-                   "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows"
+                   "- Pass coregistered echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
+                   "- Coregister all VFA/MPM images to each T1w-like target image (using echo-1_mag),";
+                   "  coregister the B1 images as well to the M0 (which is also in the common GRE space)";
+                   "- Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
+                   "  to produce a minimal output mask (for SEPIA)";
+                   "- Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows)";
                    "";
                    "If only VFA data is available, then steps 1 and 2 are skipped"]
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns

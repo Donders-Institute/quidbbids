@@ -12,8 +12,9 @@ properties (Constant)
                    "This method, when compared to the original implementation described by Marques et al, PLOSone, 2013";
                    "https://doi.org/10.1371/journal.pone.0069294 has significantly better performance for long T1 values";
                    "";
-                   "Considerations:";
-                   "- Be careful at defining the configuration parameters `NumberShots` and (to a smaller extent) `EchoSpacing`";
+                   ".. note::";
+                   "";
+                   "   Be careful at defining the configuration parameters ``NumberShots`` and (to a smaller extent) ``EchoSpacing``";
                    "";
                    "The code is based on: https://github.com/JosePMarques/MP2RAGE-related-scripts/"]
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns

@@ -80,7 +80,7 @@ Coding guidelines
 
 Please check that your contribution complies with the following rules before submitting a pull request:
 
-* Workers (i.e. ``+qb/+workers/*Worker.m`` files that inherit from the ``Worker`` class) should have informative help texts and a clear resume with bidsfilters and description. Also, the worker must be described in the Sphinx RTD documentation
+* Workers (i.e. ``+qb/+workers/*Worker.m`` files that inherit from the ``Worker`` class) should have informative help texts and a clear resume with bidsfilters and description. Run `qb.utils.gen_workerdocs()` to update the Sphinx RTD worker documentation
 * New methods added to the ``Coordinator``, ``Manager``, or to other classes in ``+worker`` should be accompanied with new (matlab.unittest) tests
 * To improve code readability, minor comments can (should) be appended at the end of the code lines they apply to (even if that means right scrolling)
 * Horizontal space is not limited, so multi-line readability is preferred, e.g. the vertical alignment of ``=`` operators (i.e. padded horizontally with whitespaces)

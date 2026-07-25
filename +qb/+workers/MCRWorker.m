@@ -9,18 +9,22 @@ properties (Constant)
                    "B1 relative maps to compute myelin water fraction maps";
                    "";
                    "Additionally it requires:";
-                   "    - a field map has already been computed per acquisition in order to reduce the search space of the minimisation problem";
-                   "    - a common brain mask exists for the various acquisitions";
+                   "-------------------------";
+                   "";
+                   "- a field map has already been computed per acquisition in order to reduce the search space of the minimisation problem";
+                   "- a common brain mask exists for the various acquisitions";
                    "";
                    "The theoretical framework is described in Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159"; 
                    "Using as backend the code present on the repository https://github.com/kschan0214/mwi";
                    "";
                    "Methods:";
-                   "    - reads data";
-                   "    - computes initial phase of each acquisition";
-                   "    - (optional) extracts 3 orthogonal slices to speed up computation";
-                   "    - runs fitting process using mwi_3cx_2R1R2s_dimwi - there are various configuration options MCRWorker.algoPara";
-                   "    - saves relevant output"]
+                   "--------";
+                   "";
+                   "- reads data";
+                   "- computes initial phase of each acquisition";
+                   "- (optional) extracts 3 orthogonal slices to speed up computation";
+                   "- runs fitting process using mwi_3cx_2R1R2s_dimwi - there are various configuration options MCRWorker.algoPara";
+                   "- saves relevant output"]
     needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "DWI_theta", "DWI_icvf", "DWI_ff"]           % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

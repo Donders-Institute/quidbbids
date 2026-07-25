@@ -617,23 +617,23 @@ classdef ConfigEditor < handle
             end
 
             % Search across all nodes in tree
-            fprintf('Searching for pattern: "%s"\n', pattern); % Debug
+            fprintf('Searching for pattern: "%s"\n', pattern) % Debug
             roots = obj.RootNodes;
             for r = 1:numel(roots)
                 obj.collectMatchingNodes(roots(r), pattern);
             end
 
             % Show what we found
-            fprintf('Found %d matches:\n', numel(obj.SearchMatches));
+            fprintf('Found %d matches:\n', numel(obj.SearchMatches))
             for i = 1:numel(obj.SearchMatches)
                 node = obj.SearchMatches{i};
                 if obj.isLeaf(node.NodeData)
                     % For leaf nodes, show the value
                     valueStr = obj.valueToStringForDisplay(node.NodeData.value);
-                    fprintf('  Match %d: %s = %s\n', i, node.Text, valueStr);
+                    fprintf('  Match %d: %s = %s\n', i, node.Text, valueStr)
                 else
                     % For non-leaf nodes, just show the key
-                    fprintf('  Match %d: %s (non-editable)\n', i, node.Text);
+                    fprintf('  Match %d: %s (non-editable)\n', i, node.Text)
                 end
             end
             

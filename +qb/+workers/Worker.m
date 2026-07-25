@@ -12,7 +12,7 @@ classdef (Abstract) Worker < handle
 
 
 properties (Abstract, Constant)
-    description     % Description of the work that is done
+    description     % String that describes the work that is done. The formatting should be in ReStructuredText
     needs           % List of workitems (excluding raw data) the worker needs. Workitems can contain regexp patterns
     usesGPU         % Logical flag indicating if the worker can use GPU resources
 end

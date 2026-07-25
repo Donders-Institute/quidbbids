@@ -97,6 +97,9 @@ classdef TestWorkers < BaseTest
                     testCase.verifyClass(worker.description, 'string', 'description should be a string')
                 end
             end
+
+            % Test that the workers documentation can be generated
+            testCase.verifyWarningFree(@() qb.utils.gen_workerdocs())
         end
 
         function testSubSesMethods(testCase)

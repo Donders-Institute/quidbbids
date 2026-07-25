@@ -8,8 +8,10 @@ properties (Constant)
     description = ["This worker generates precise R1- and R2-starmaps from MPM and VFA multiecho data using one single model";
                    "";
                    "Methods:";
+                   "--------";
+                   "";
                    "- loads coregistered Multiecho GRE magnitude, relative B1 maps as well as a brain mask (for memory purposes)";
-                   "- uses Gacelle, K-s Chan et al., Imaging Neuroscience 2026 for simultaneous R1 and R2-star mapping from"
+                   "- uses Gacelle, K-s Chan et al., Imaging Neuroscience 2026 for simultaneous R1 and R2-star mapping from";
                    "  variable flip angle multi-echo GRE data (VFA or MPM)";
                    "";
                    "There are various configuration options that are referred to in https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html"]

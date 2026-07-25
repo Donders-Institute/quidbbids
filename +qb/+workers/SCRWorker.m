@@ -6,7 +6,9 @@ classdef SCRWorker < qb.workers.Worker
 
 properties (Constant)
     description = ["Single Compartment Relaxometry worker, this worker combines the separately computed S0, Chi and R2* maps into a single S0, R1 and R2* map ";
-                   "Methods:"
+                   "";
+                   "Methods:";
+                   "--------";
                    "- Compute weighted means of the R2-star & Chi-maps over the different flip-angles";
                    "- Compute R1- & M0-maps based on despot1 with S0 estimates (current implementation assumes constant TR for the various flip angles)"]
     needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "TB1map_GRE"]   % List of workitems the worker needs. Workitems can contain regexp patterns

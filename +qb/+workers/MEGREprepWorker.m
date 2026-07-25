@@ -13,10 +13,10 @@ classdef MEGREprepWorker < qb.workers.Worker
 properties (Constant)
     description = ["I do the following pre-processing work for you:";
                    "";
-                   "1. Create a brain mask for each MEGRE acquisition using the echo-1_mag image. ";
-                   "2. Merge all echoes into a 4D file (for running the QSM workflows)"
-                   "3. Denoise using (Tensor) MPPCA the merged 4D file (optional) - this is configurable"
-                   "with denoising.method & denoising.kernel"]
+                   "- Create a brain mask for each MEGRE acquisition using the echo-1_mag image.";
+                   "- Merge all echoes into a 4D file (for running the QSM workflows)";
+                   "- Denoise using (Tensor) MPPCA the merged 4D file (optional) - this is configurable";
+                   "  with denoising.method & denoising.kernel"]
     needs       = "";       % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

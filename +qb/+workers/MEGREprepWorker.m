@@ -214,6 +214,7 @@ methods (Static)
                 % Get the mask
                 mask = obj.query_ses(BIDSW, 'data', obj.bidsfilter.brainmask);
                 mask = logical(spm_read_vols(spm_vol(char(mask))));
+                mask = mask & ~any(img, [4 5]);  % Ensures that voxels that have zero intensity at any time point are excluded from the mask. TODO: Check with Jose's unmerged patch-2 branch
 
                 obj.logger.info('--> %s denoising: %s [..]', denoising.method, spm_file(magfile,'filename'))
                 switch denoising.method

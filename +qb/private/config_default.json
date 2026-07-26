@@ -1,6 +1,6 @@
 {
   "General": {
-    "version": {"value": "0.3.0", "description": "QuIDBBIDS version that should match the version in project.json"},
+    "version": {"value": "0.4.0", "description": "QuIDBBIDS version that should match the version in project.json"},
     "tag": {"value": "", "description": "A custom tag that is added to the output products, e.g. to distinguish or compare the results when using different parameter settings. In such use cases, you could write a for loop that does: (1) updates the config parameter(s) and output tag, (2) delete the workitems that need to be re-computed from the work-folder (3) executes the workflow. In this way the work-items in the work-folder can be reused, while the output products are save with different tags in the output-folder"},
     "useHPC": {"value": false, "description": "Use HPC cluster (true/false)"},
     "HPC": {"value": ["memreq",10e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu40g --gres=gpu:1\"]"},
@@ -22,6 +22,18 @@
       "method": {"value": "", "description": "Denoising method. Options: '' (no denoising), 'MPPCA' (Marchenko–Pastur PCA), 'tMPPCA' (tensor Marchenko–Pastur PCA)."},
       "kernel": {"value": [5,5,5], "description": "Size of the sliding window (patch) used for the PCA, specified as [x y z]."}
     }
+  },
+
+  "DWIprepWorker": {
+    "MRtrixEnv": {"value": "module load mrtrix3", "description": "Environment variables to be set before executing the MRtrix commands."},
+    "QSIprepDir": {"value": "qsiprep", "description": "Name of the QSIPrep derivatives directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
+    "NODDIDir": {"value": "qsirecon-NODDI", "description": "Name of the QSIRecon derivatives directory where the NODDI icvf and direction maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
+    "MRtrix3Dir": {"value": "qsirecon-MRtrix3_act-None", "description": "Name of the QSIRecon derivatives directory where the MRtrix3 FOD maps are stored. NB: This should match the basename in the BIDS derivative directory or a fullpath directory if it is not in the default derivatives folder."},
+    "Model": {"value": "MRtrix3", "description": "Diffusion model used for fitting in QSIRecon. Currently only 'NODDI' and 'MRtrix3' are supported. Note: Corresponding output folders from QSIRecon workflows are expected to be present in the QSIRecon derivatives subdirectory."},
+    "BFilterICVF": {"value": {"modality":"dwi", "model":"noddi", "desc":"", "suffix":"dwimap", "param":"icvf"}, "description": "BIDS filter for the NODDI icvf map. This is used to query the (QSIRecon) derivative files."},
+    "BFilterFDir": {"value": {"modality":"dwi", "model":"noddi", "desc":"", "suffix":"dwimap", "param":"direction"}, "description": "BIDS filter for the NODDI direction map. This is used to query the (QSIRecon) derivative files."},
+    "BFilterFOD": {"value": {"modality":"dwi", "param":"fod", "label":"WM", "suffix":"dwimap", "extension":".mif.gz"}, "description": "BIDS filter for the MRtrix3 FOD map. This is used to query the (QSIRecon) derivative files."},
+    "NrFixels": {"value": 3, "description": "Maximum number of fixels (peaks/fiber populations) to be used in the DI-MWI model."}
   },
 
   "B1prepWorker": {
@@ -98,10 +110,10 @@
       "T1mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"},
       "advancedStarting": {"value": "default", "description": "initial guesses for multi-comp S0. 'default' = estimated S0 and T2s IEW from data; 'robust' = estimated S0 from data only; otherwise fixed starting points for 3T"},
       "DIMWI": {
-        "isVic":    {"value": false, "description": "true = use DIMWI to account for intra-axonal volume fraction; false = no DIMWI"},
-        "isR2sEW":  {"value": false, "description": "true = use DIMWI to account for extra-axonal R2*; false = no DIMWI"},
-        "isFreqMW": {"value": false, "description": "true = use DIMWI to account for myelin water frequency shift; false = no DIMWI"},
-        "isFreqIW": {"value": false, "description": "true = use DIMWI to account for intra-axonal frequency shift; false = no DIMWI"}
+        "isVic":    {"value": true, "description": "true = use DIMWI to account for intra-axonal volume fraction; false = no DIMWI"},
+        "isR2sEW":  {"value": true, "description": "true = use DIMWI to account for extra-axonal R2*; false = no DIMWI"},
+        "isFreqMW": {"value": true, "description": "true = use DIMWI to account for myelin water frequency shift; false = no DIMWI"},
+        "isFreqIW": {"value": true, "description": "true = use DIMWI to account for intra-axonal frequency shift; false = no DIMWI"}
       }
     },
     "imgPara": {

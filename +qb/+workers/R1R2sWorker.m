@@ -5,12 +5,33 @@ classdef R1R2sWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["This worker generates precise R1- and R2-starmaps from MPM and VFA multiecho data using one single model";
-                   "";
-                   "Methods:";
-                   "- loads coregistered Multiecho GRE magnitude, relative B1 maps as well as a brain mask (for memory purposes)";
-                   "- uses Gacelle, K-s Chan et al., Imaging Neuroscience 2026 for simultaneous R1 and  R2-star mapping from variable flip angle multi-echo GRE data (VFA or MPM)";
-                   "there are various configuration options that are better referred to in https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html"]
+    description = ["Joint R1 and R2* mapping worker using GPU-accelerated estimation for multi-echo GRE data."
+                   ""
+                   "R1R2sWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip Angle (VFA) and"
+                   "Multi-Parameter Mapping (MPM) multi-echo GRE data using a joint estimation model. The simultaneous fitting"
+                   "of R1 and R2* parameters improves accuracy by accounting for the interdependence of these relaxation"
+                   "parameters, particularly important at high field strengths where both T1 and T2* effects are significant."
+                   ""
+                   "Theoretical Framework:"
+                   "----------------------"
+                   ""
+                   "The joint R1-R2* estimation is implemented using the Gacelle toolbox:"
+                   "Gacelle, K. S. Chan et al., Imaging Neuroscience 2026"
+                   ""
+                   "Documentation: https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html"
+                   ""
+                   "Methods:"
+                   "--------"
+                   ""
+                   "- Loads coregistered multi-echo GRE magnitude data, B1 transmit field maps, and brain masks"
+                   "- Performs joint estimation of R1 and R2* using gpuJointR1R2starMapping"
+                   "- Accounts for B1 inhomogeneities in the fitting process"
+                   ""
+                   ".. note::"
+                   ""
+                   "   The joint estimation approach is particularly advantageous when T1 and T2* are correlated,"
+                   "   such as in white matter where myelin water has distinct relaxation properties."
+                   "   Requires GPU hardware with CUDA support."]   % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
     usesGPU     = true
 end
@@ -41,7 +62,7 @@ methods
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
 
-        arguments (Input)
+        arguments
             obj
             workitem {mustBeTextScalar, mustBeNonempty}
         end

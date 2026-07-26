@@ -11,11 +11,32 @@ classdef MEGREprepWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["I do the following pre-processing work for you:";
-                   "";
-                   "1. Create a brain mask for each MEGRE acquisition using the echo-1_mag image. ";
-                   "2. Merge all echoes into a 4D file (for running the QSM workflows)"
-                   "3. Denoise using (Tensor) MPPCA the merged 4D file (optional), - this is configurable with denoising.method & denoising.kernel"]
+    description = ["Performs preprocessing on raw Multi-Echo Gradient Recalled Echo (MEGRE) data for QSM and relaxometry workflows."
+                   ""
+                   "MEGREprepWorker prepares MEGRE acquisitions by performing essential preprocessing steps required for"
+                   "subsequent Quantitative Susceptibility Mapping (QSM) and relaxometry analysis. MEGRE is a GRE sequence"
+                   "with multiple echo times that allows for both magnitude and phase contrast optimization."
+                   ""
+                   "Processing Steps:"
+                   "-----------------"
+                   ""
+                   "1. Brain Mask Generation:"
+                   "   Creates a brain mask for each MEGRE acquisition using the echo-1 magnitude image as input to"
+                   "   mri_synthstrip (FreeSurfer). Individual masks are combined to produce a minimal output mask"
+                   "   suitable for QSM processing."
+                   ""
+                   "2. Multi-Echo Merging:"
+                   "   Merges all echo images (magnitude and phase) for each acquisition into 4D NIfTI files."
+                   "   This format is required by downstream QSM workflows (e.g., SEPIA) that process multi-echo data."
+                   ""
+                   "3. Denoising (Optional):"
+                   "   Applies (Tensor) MPPCA denoising to the merged 4D files to improve signal-to-noise ratio."
+                   "   Configurable via denoising.method ('MPPCA' or 'tMPPCA') and denoising.kernel parameters."
+                   ""
+                   ".. note::"
+                   ""
+                   "   The brain mask generation uses mri_synthstrip which requires FreeSurfer to be installed and configured."
+                   "   Denoising is applied in-place to the merged 4D files when enabled."] % Description should be in ReStructuredText format
     needs       = "";       % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
@@ -62,7 +83,7 @@ methods
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
 
-        arguments (Input)
+        arguments
             obj
             workitem {mustBeTextScalar, mustBeNonempty}
         end
@@ -171,7 +192,7 @@ methods (Static)
             return
         end
 
-        BIDSW   = obj.BIDSW_ses();
+        BIDSW   = obj.BIDS_ses();
         bfilter = obj.bidsfilter.ME4Dmag;
         for acq = obj.query_ses(BIDSW, 'acquisitions', bfilter)
             bfilter.acq = char(acq);
@@ -193,6 +214,7 @@ methods (Static)
                 % Get the mask
                 mask = obj.query_ses(BIDSW, 'data', obj.bidsfilter.brainmask);
                 mask = logical(spm_read_vols(spm_vol(char(mask))));
+                mask = mask & ~any(img, [4 5]);  % Ensures that voxels that have zero intensity at any time point are excluded from the mask. TODO: Check with Jose's unmerged patch-2 branch
 
                 obj.logger.info('--> %s denoising: %s [..]', denoising.method, spm_file(magfile,'filename'))
                 switch denoising.method

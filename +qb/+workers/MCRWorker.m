@@ -5,21 +5,32 @@ classdef MCRWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Multi-compartment relaxometry worker, it combines complex multi-echo data (labeled either _MPM or _VFA) with coregistered B1 relative maps to compute myelin water fraction maps";
-                   "Additionally it requires: ";
-                   "    - a field map has already been computed per acquisition in order to reduce the search space of the minimisation problem";
-                   "    - a common brain mask exists for the various acquisitions";
-                   "The theoretical framework is described in Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159"; 
-                   "Using as backend the code present on the repository https://github.com/kschan0214/mwi";
-                   "";
-                   "Methods:";
-                   "    - reads data";
-                   "    - computes initial phase of each acquisition";
-                   "    - (optional) extracts 3 Orthogonal slices to speed up computation";
-                   "    - runs fitting process using mwi_3cx_2R1R2s_dimwi - there are various configuration options MCRWorker.algoPara";
-                   "    - saves relevant output";
-                   "- "]
-    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
+    description = ["Multi-Compartment Relaxometry (MCR) worker for myelin water imaging (MWI) and Diffusion-Informed MWI (DI-MWI) analysis."
+                   ""
+                   "MCRWorker implements the MCR framework, combining complex multi-echo GRE data (VFA or MPM acquisitions)"
+                   "with coregistered B1 transmit field maps to estimate myelin water fraction (MWF) and other quantitative microstructural"
+                   "parameters. The model simultaneously fits T1, T2*, and proton density across multiple compartments (myelin water,"
+                   "intra/extra-axonal water, and free water) while accounting for B1 inhomogeneities and field map inhomogeneities."
+                   ""
+                   "Theoretical Framework:"
+                   "----------------------"
+                   ""
+                   "The MCR model is based on the quantitative framework described in:"
+                   "Chan et al., NeuroImage, 2020, https://doi.org/10.1016/j.neuroimage.2020.117159"
+                   ""
+                   "Implementation uses the MWI toolbox: https://github.com/kschan0214/mwi"
+                   ""
+                   ".. note::"
+                   ""
+                   "   MCRWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors (DWI_theta,"
+                   "   DWI_icvf, DWI_ff) are available from DWIprepWorker, the DI-MWI model incorporates fiber orientation"
+                   "   and compartment fraction information to improve parameter estimation specificity."
+                   ""
+                   ".. tip::"
+                   ""
+                   "   The ``ortho`` products are just 3 orthogonal slices (to speed up computation) and can be used"
+                   "   for a fast and shallow quality control."]    % Description should be in ReStructuredText format
+    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "DWI_theta", "DWI_icvf", "DWI_ff"]           % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -62,7 +73,7 @@ methods
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
 
-        arguments (Input)
+        arguments
             obj
             workitem {mustBeTextScalar, mustBeNonempty}
         end
@@ -75,12 +86,15 @@ methods
             return
         end
 
-        % Get the workitems we need from a colleague
+        % Get the workitems we need from our colleagues
         ME4Dmag    = obj.ask_team('ME4Dmag');       % Multiple FA-images per run
         unwrapped  = obj.ask_team('unwrapped');     % Multiple FA-images per run
         fieldmap   = obj.ask_team('fieldmap');      % Multiple FA-images per run
         localfmask = obj.ask_team('localfmask');    % Multiple FA-images per run
         TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
+        DWI_theta  = obj.ask_team('DWI_theta');
+        DWI_icvf   = obj.ask_team('DWI_icvf');
+        DWI_ff     = obj.ask_team('DWI_ff');
 
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
         if numel(unique([length(unwrapped), length(fieldmap)])) > 1
@@ -102,7 +116,7 @@ methods
         dims           = [V(1).dim length(V) length(ME4Dmag)];   % Dimensions: [x,y,z,TE,FA]
         img            = single(NaN(dims));
         unwrappedPhase = single(NaN(dims));
-        totalField     = single(NaN(dims([1:3 5])));                % Dimensions: [x,y,z,FA]
+        totalField     = single(NaN(dims([1:3 5])));             % Dimensions: [x,y,z,FA]
         mask           = true;
         for n = 1:dims(5)
             bfile                     = bids.File(ME4Dmag{n});   % For reading metadata, parsing entities, etc
@@ -160,13 +174,35 @@ methods
         imgPara.b0         = bfile.metadata.MagneticFieldStrength;
         imgPara.autosave   = false;
         imgPara.output_dir = char(obj.logger.logdir);
+        if isempty(DWI_theta) || isempty(DWI_icvf) || isempty(DWI_ff)
+            obj.logger.info('--> Estimating the MWI-MCR model (without diffusion priors)')
+            algoPara.DIMWI.isVic    = false;
+            algoPara.DIMWI.isR2sEW  = false;
+            algoPara.DIMWI.isFreqMW = false;
+            algoPara.DIMWI.isFreqIW = false;
+        else
+            obj.logger.info('--> Estimating the DI-MWI-MCR model')
+            theta = spm_read_vols(spm_vol(DWI_theta{1}));
+            icvf  = spm_read_vols(spm_vol(DWI_icvf{1}));
+            ff    = spm_read_vols(spm_vol(DWI_ff{1}));
+            if endsWith(workitem, 'ortho')
+                imgPara.icvf  = obj.orthoslice(icvf(sel{:}));
+                for n = size(theta,4):-1:1    % Loop backwards to preallocate the memory
+                    imgPara.theta(:,:,:,n) = obj.orthoslice(theta(sel{:},n));
+                    imgPara.ff(:,:,:,n)    = obj.orthoslice(ff(sel{:},n));
+                end
+            else
+                imgPara.icvf  = icvf;
+                imgPara.theta = theta;
+                imgPara.ff    = ff;
+            end
+        end
         % imgPara.identifier  = obj.subject.name;     % TODO: Add when the MWI PR is accepted and released
         % if obj.subject.session
         %     imgPara.identifier = [imgPara.identifier '_' obj.subject.session];
         % end
 
-        % Estimate the MWI-MCR model
-        obj.logger.info('--> Estimating the MWI-MCR model')
+        % Estimate the DI-MWI-MCR model
         [lastMsg, lastId] = lastwarn;
         ws = warning('off', 'MATLAB:nearlySingularMatrix');  % Suppress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
         warning('off', 'MWI:IdentifierFile:NotFound')
@@ -179,16 +215,19 @@ methods
 
         % Extract and save the output data
         V(1).dim = [size(mask,1) size(mask,2) size(mask,3)];
-        MWF = fitRes.S0_MW ./ (fitRes.S0_MW + fitRes.S0_EW + fitRes.S0_IW);
-        write_vol(V(1), MWF,                         obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])));
-        write_vol(V(1), fitRes.S0_MW,                obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])));
-        write_vol(V(1), fitRes.S0_IW + fitRes.S0_EW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])));
-        write_vol(V(1), fitRes.R2s_MW,               obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])));
-        write_vol(V(1), fitRes.R2s_IW,               obj.bfile_set(bfile, obj.bidsfilter.(['IAW_R2starmap' ortho])));
-        write_vol(V(1), fitRes.T1_IEW,               obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])));
-        write_vol(V(1), 1 ./ fitRes.T1_IEW,          obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])));
-        write_vol(V(1), fitRes.kiewm,                obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])));
-        write_vol(V(1), fitRes.mask_fitted,          obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])));
+        if ~isfield(fitRes, 'S0_IEW')
+            fitRes.S0_IEW = fitRes.S0_EW + fitRes.S0_IW;
+        end
+        MWF = fitRes.S0_MW ./ (fitRes.S0_MW + fitRes.S0_IEW);
+        write_vol(V(1), MWF,                obj.bfile_set(bfile, obj.bidsfilter.(['MWFmap'        ortho])));
+        write_vol(V(1), fitRes.S0_MW,       obj.bfile_set(bfile, obj.bidsfilter.(['MW_M0map'      ortho])));
+        write_vol(V(1), fitRes.S0_IEW,      obj.bfile_set(bfile, obj.bidsfilter.(['FW_M0map'      ortho])));
+        write_vol(V(1), fitRes.R2s_MW,      obj.bfile_set(bfile, obj.bidsfilter.(['MW_R2starmap'  ortho])));
+        write_vol(V(1), fitRes.R2s_IW,      obj.bfile_set(bfile, obj.bidsfilter.(['IAW_R2starmap' ortho])));
+        write_vol(V(1), fitRes.T1_IEW,      obj.bfile_set(bfile, obj.bidsfilter.(['FW_T1map'      ortho])));
+        write_vol(V(1), 1 ./ fitRes.T1_IEW, obj.bfile_set(bfile, obj.bidsfilter.(['FW_R1map'      ortho])));
+        write_vol(V(1), fitRes.kiewm,       obj.bfile_set(bfile, obj.bidsfilter.(['FMW_exrate'    ortho])));
+        write_vol(V(1), fitRes.mask_fitted, obj.bfile_set(bfile, obj.bidsfilter.(['FitMask'       ortho])));
     end
 
 end

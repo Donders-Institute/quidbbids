@@ -5,12 +5,30 @@ classdef MP2RAGEWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["I'm an MP2RAGE worker and create M0 and R1 maps, but only if you have MP2RAGE and B1 map data!";
-                   "Computations are based on a dictionary matching approach described in the supplemental material of the paper Chan et al, Imaging Neuroscience, 2025 https://doi.org/10.1162/imag_a_00456";
-                   "This method, when compared to the original implementation described Marques et al, PLOSone, 2013 https://doi.org/10.1371/journal.pone.0069294 has significantly better performance for long T1 values";
-                   "Considerations:";
-                   "- Be careful at explicitly defining on the configuration parameters the NumberShots and (to a smaller extent) the EchoSpacing";
-                   "It uses the following repository https://github.com/JosePMarques/MP2RAGE-related-scripts/"]
+    description = ["Magnetization Prepared 2 Rapid Gradient Echo (MP2RAGE) worker for T1 and M0 mapping."
+                   ""
+                   "MP2RAGEWorker processes MP2RAGE acquisitions to generate quantitative R1 (1/T1) and magnetization (M0) maps."
+                   "MP2RAGE is a 3D T1-weighted imaging sequence that acquires two contrast-weighted images (INV1 and INV2)"
+                   "at different inversion times, along with a UNIT1 image, enabling robust T1 quantification."
+                   ""
+                   "Methods:"
+                   "--------"
+                   ""
+                   "This implementation uses a dictionary matching approach that offers significantly improved performance"
+                   "for long T1 values compared to the original implementation. The method is described in:"
+                   ""
+                   "Chan et al., Imaging Neuroscience, 2025, https://doi.org/10.1162/imag_a_00456 (supplemental material)"
+                   ""
+                   "Original MP2RAGE T1 mapping method:"
+                   "Marques et al., PLoS ONE, 2013, https://doi.org/10.1371/journal.pone.0069294"
+                   ""
+                   "The dictionary matching code is based on: https://github.com/JosePMarques/MP2RAGE-related-scripts/"
+                   ""
+                   ".. note::"
+                   ""
+                   "   Accurate T1 estimation requires careful configuration of ``NumberShots`` (number of slices in"
+                   "   the inversion segment) and ``EchoSpacing`` (TR of the GRE readout). Incorrect values may lead"
+                   "   to systematic biases in T1 estimates, particularly at high field strengths."]    % Description should be in ReStructuredText format
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
@@ -45,7 +63,7 @@ methods
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
 
-        arguments (Input)
+        arguments
             obj
             workitem {mustBeTextScalar, mustBeNonempty}
         end
@@ -100,7 +118,7 @@ methods
             else
 
                 INV1img               = qb.MP2RAGE.correctINV1INV2(spm_read_vols(INV1hdr), INV2img, UNIimg, 0);
-                [~, M0map, R1map]     = qb.MP2RAGE.dictmatching(MP2RAGE, INV1img, INV2img, B1img, [0.002, 0.005], 1, B1img ~= 0);
+                [~, M0map, R1map]     = qb.MP2RAGE.dictmatching(MP2RAGE, single(real(INV1img)), single(real(INV2img)), single(real(B1img)), [0.002, 0.005], 1, B1img ~= 0);
                 [Intensity, T1vector] = qb.MP2RAGE.lookuptable(2, MP2RAGE.TR, MP2RAGE.TIs, MP2RAGE.FlipDegrees, MP2RAGE.NumberShots, MP2RAGE.EchoSpacing, 'normal', MP2RAGE.InvEff);
                 UNIcorr = reshape(interp1(T1vector, Intensity, 1./R1map(:)), size(R1map));
                 UNIcorr(isnan(UNIcorr)) = -0.5;

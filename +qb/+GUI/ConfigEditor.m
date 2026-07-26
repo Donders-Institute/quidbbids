@@ -304,11 +304,11 @@ classdef ConfigEditor < handle
                 bidsdir = fileparts(fileparts(fileparts(fileparts(obj.ConfigFile))));   % ConfigFile is normally in bidsdir/derivatives/QuIDBBIDS/code/config.json
                 if isempty(fieldnames(obj.BIDS)) && isfolder(bidsdir)
                     w = helpdlg('Scanning BIDS dataset with the inclusion filter...', 'Please wait'); pause(0.1)    % Give time to render the dialog
-                    obj.BIDS = bids.layout(char(bidsdir), 'use_schema', true, ...
-                                                          'index_derivatives', false, ...
-                                                          'filter', obj.Config.General.BIDS.include.value, ...
-                                                          'tolerant', true, ...
-                                                          'verbose', true);
+                    obj.BIDS = bids.layout(char(bidsdir), use_schema        = true, ...
+                                                          index_derivatives = false, ...
+                                                          filter            = obj.Config.General.BIDS.include.value, ...
+                                                          tolerant          = true, ...
+                                                          verbose           = true);
                     if isvalid(w), close(w), end
                 end
                 if ~isempty(fieldnames(obj.BIDS))
@@ -319,11 +319,11 @@ classdef ConfigEditor < handle
                     obj.ValField.Value = jsonencode(newVal);
                     if ~isequal(obj.Config.General.BIDS.include.value.modality, newVal.modality) || isfield(newVal, 'sub') || isfield(newVal, 'ses')
                         w = helpdlg('Re-scanning BIDS dataset with the new inclusion filter...', 'Please wait'); pause(0.1) % Give time to render the dialog
-                        obj.BIDS = bids.layout(char(bidsdir), 'use_schema', true, ...
-                                                              'index_derivatives', false, ...
-                                                              'filter', newVal, ...
-                                                              'tolerant', true, ...
-                                                              'verbose', true);
+                        obj.BIDS = bids.layout(char(bidsdir), use_schema        = true, ...
+                                                              index_derivatives = false, ...
+                                                              filter            = newVal, ...
+                                                              tolerant          = true, ...
+                                                              verbose           = true);
                         if isvalid(w), close(w), end
                     end
                 end
@@ -617,23 +617,23 @@ classdef ConfigEditor < handle
             end
 
             % Search across all nodes in tree
-            fprintf('Searching for pattern: "%s"\n', pattern); % Debug
+            fprintf('Searching for pattern: "%s"\n', pattern) % Debug
             roots = obj.RootNodes;
             for r = 1:numel(roots)
                 obj.collectMatchingNodes(roots(r), pattern);
             end
 
             % Show what we found
-            fprintf('Found %d matches:\n', numel(obj.SearchMatches));
+            fprintf('Found %d matches:\n', numel(obj.SearchMatches))
             for i = 1:numel(obj.SearchMatches)
                 node = obj.SearchMatches{i};
                 if obj.isLeaf(node.NodeData)
                     % For leaf nodes, show the value
                     valueStr = obj.valueToStringForDisplay(node.NodeData.value);
-                    fprintf('  Match %d: %s = %s\n', i, node.Text, valueStr);
+                    fprintf('  Match %d: %s = %s\n', i, node.Text, valueStr)
                 else
                     % For non-leaf nodes, just show the key
-                    fprintf('  Match %d: %s (non-editable)\n', i, node.Text);
+                    fprintf('  Match %d: %s (non-editable)\n', i, node.Text)
                 end
             end
             

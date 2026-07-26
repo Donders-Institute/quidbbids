@@ -100,7 +100,7 @@ methods
                 else
                     description = '';
                 end
-                fprintf('%-*s : %s\n', 20, item, description);
+                fprintf('%-*s : %s\n', 20, item, description)
             end
         end
     end

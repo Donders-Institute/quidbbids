@@ -264,7 +264,7 @@ methods
         for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
             Worker = obj.team.(product).handle;
             name   = obj.team.(product).name;
-            jobIDs = containers.Map(KeyType='char', ValueType='char');
+            jobIDs = dictionary();
             for subject = subjects
 
                 % Skip if we are not at the modality level, i.e. at the subject level while sessions are present
@@ -323,7 +323,11 @@ methods
         arguments
             obj
             workitem {mustBeTextScalar}
-            jobIDs   containers.Map
+            jobIDs   dictionary
+        end
+
+        if ~jobIDs.numEntries
+            return
         end
 
         % Launch a dashboard
@@ -385,7 +389,7 @@ methods (Access = private)
 
         % Check if any of the workers is preferred. If not ask the user and make the worker preferred
         if obj.interactive && ~any([workers.preferred])
-            chosen = qb.GUI.askuser(workers, workitem);
+            chosen = qb.GUI.selectworker(workers, workitem);
             if chosen
                 workers(chosen).preferred = true;
             else

@@ -21,7 +21,7 @@ methods
         arguments
             coord    qb.workers.Coordinator
             workitem {mustBeTextScalar}
-            jobIDs   containers.Map
+            jobIDs   dictionary
         end
         
         obj.coord    = coord;
@@ -41,12 +41,12 @@ methods
         %WORK_DONE Returns a list of jobID keys (subject_session names) that have completed and writes their diary to disk
         
         completed = obj.completed;
-        if isempty(obj.jobIDs.keys)
+        if ~obj.jobIDs.numEntries
             return
         end
         
         ws = warning('off', 'FieldTrip:qsub:jobNotAvailable');
-        for subses = string(obj.jobIDs.keys)
+        for subses = obj.jobIDs.keys'
             
             % Skip if the job was already found as completed
             if ismember(subses, completed)
@@ -91,7 +91,7 @@ methods
         
         subjects = string.empty();
         for worker = dir(fullfile(obj.coord.outputdir, 'logs', '*Worker'))'
-            for subses = string(obj.jobIDs.keys)
+            for subses = obj.jobIDs.keys'
 
                 logfile = fullfile(obj.coord.outputdir, 'logs', worker.name, sprintf('%s_%s.log', subses, level_));
                 if isfile(logfile) && dir(logfile).bytes > 0

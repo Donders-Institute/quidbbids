@@ -15,16 +15,42 @@ classdef VFAprepWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["I am a working class hero that will happily do the following pre-processing work for you:";
-                   "";
-                   "1. Pass coregistered echo-1_mag images to despot1 to compute T1w-like target + S0 maps for each FA.";
-                   "2. Coregister all VFA/MPM images to each T1w-like target image (using echo-1_mag),";
-                   "   coregister the B1 images as well to the M0 (which is also in the common GRE space)";
-                   "3. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
-                   "   to produce a minimal output mask (for SEPIA)";
-                   "4. Merge all echoes for each flip angle into 4D files (for running the QSM and SCR/MCR workflows"
-                   "";
-                   "If only VFA data is available, then steps 1 and 2 are skipped"]
+    description = ["Variable Flip Angle (VFA) and Multi-Parameter Mapping (MPM) preprocessing worker for multi-echo GRE data."
+                   ""
+                   "VFAprepWorker performs comprehensive preprocessing of VFA and MPM acquisitions to prepare data for"
+                   "downstream QSM, SCR, and MCR workflows. VFA/MPM are multi-echo GRE sequences acquired at different"
+                   "flip angles that enable quantitative parameter mapping and improve SNR through signal averaging."
+                   ""
+                   "Processing Steps:"
+                   "-----------------"
+                   ""
+                   "0. Denoising (Optional):"
+                   "   Applies MPPCA or tMPPCA denoising to raw input data before further processing."
+                   "   Configurable via denoising.method and denoising.kernel parameters."
+                   ""
+                   "1. Synthetic T1 and M0 Generation:"
+                   "   Passes coregistered echo-1 magnitude images to DESPOT1 to compute T1-weighted synthetic"
+                   "   reference images and S0 (proton density) maps for each flip angle. These synthetic images"
+                   "   serve as targets for coregistration in the common GRE space."
+                   ""
+                   "2. Coregistration:"
+                   "   Coregisters all VFA/MPM images to their corresponding synthetic T1 targets using echo-1 magnitude"
+                   "   images as reference. B1 transmit field maps are also coregistered to the M0 maps, which share"
+                   "   the same common GRE space."
+                   ""
+                   "3. Brain Mask Generation:"
+                   "   Creates a brain mask for each flip angle using the echo-1 magnitude image. Individual masks"
+                   "   are combined (via logical AND) to produce a minimal output mask suitable for SEPIA QSM processing."
+                   ""
+                   "4. Multi-Echo Merging:"
+                   "   Merges all echo images for each flip angle into 4D NIfTI files (separately for magnitude and phase)."
+                   "   This format is required by downstream QSM, SCR, and MCR workflows."
+                   ""
+                   ".. note::"
+                   ""
+                   "   If only VFA data is available (without MPM), steps 1 and 2 (synthetic T1 generation and coregistration)"
+                   "   are skipped. VFAprepWorker automatically detects available data types from the BIDS configuration."
+                   "   Processing is performed independently for each acquisition, run, and flip angle combination."]   % Description should be in ReStructuredText format
     needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
@@ -82,7 +108,7 @@ methods
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
 
-        arguments (Input)
+        arguments
             obj
             workitem {mustBeTextScalar, mustBeNonempty}
         end
@@ -104,8 +130,8 @@ methods
                 obj.denoise_raw(bfilter{1})                                                 % Processing step 5a
                 obj.make_syntheticT1_M0(bfilter{1})                                         % Processing step 1
                 obj.coreg_VFA_B1_2synthetic(bfilter{1})                                     % Processing step 2+5b
-                create_brainmask(obj, obj.BIDSW_ses(), bfilter{1})                          % Processing step 3
-                merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDSW_ses()) % Processing step 4
+                create_brainmask(obj, obj.BIDS_ses(), bfilter{1})                          % Processing step 3
+                merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDS_ses()) % Processing step 4
             else
                 obj.logger.verbose("No raw %s data found for: ", bfilter{1}.suffix, obj.subject.name)
             end
@@ -158,18 +184,21 @@ methods
                 VFA_e1     = obj.query_ses(obj.BIDS, 'data',  bfilter_e1);
                 flips      = obj.query_ses(obj.BIDS, 'flips', bfilter_e1);
                 if length(VFA_e1) <= 1
-                    obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
+                    %obj.logger.error("Need at least two different flip angles to compute T1 and S0 maps, found:" + VFA_e1)
+                    obj.logger.info("Skipping acq-%s: need at least two flip angles for despot1, found %d", char(acq), length(VFA_e1))
+                    continue
                 end
                 if length(VFA_e1) ~= length(flips)
                     obj.logger.error("Number of VFA images found (%d) differs from the number of flipangles (%d)", length(VFA_e1), length(flips))
                 end
 
                 % Define a reference volume, i.e. the middle FA file (assume TR and nii-header identical for all MPM/VFAs of the same run)
-                flip = round(mean(str2double(flips)));
-                Vref = spm_vol(char(obj.query_ses(obj.BIDS, 'data', bfilter_e1, flip=flip)));
+                flips = sort(str2double(flips));
+                Vref  = spm_vol(char(obj.query_ses(obj.BIDS, 'data', bfilter_e1, flip=flips(round(end/2)))));
 
                 % Compute T1 and M0 maps
                 obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1{1})
+                flipangles = [];
                 VFAimg = NaN([Vref.dim length(VFA_e1)]);
                 for n = 1:length(VFA_e1)
                     VFAn = spm_vol(VFA_e1{n});
@@ -219,7 +248,7 @@ methods
         import qb.utils.setfields
 
         % Index the workdir layout (only for obj.subject)
-        BIDSW = obj.BIDSW_ses();
+        BIDSW = obj.BIDS_ses();
 
         % Get the B1 images from the team
         B1famp = obj.ask_team('TB1map_angle');
@@ -231,6 +260,11 @@ methods
             for run = str2double(obj.query_ses(obj.BIDS, 'runs', bfilter))
 
                 bfilter_e1 = setfields(bfilter, echo=1, run=run, part='mag');
+                
+                % Skip acquisitions with fewer than 2 flip angles (no synthetic T1 was produced in step 1)
+                if length(obj.query_ses(obj.BIDS, 'flips', bfilter_e1)) <= 1
+                    continue
+                end
 
                 % Get the denoised data (if applicable)
                 if strlength(obj.config.(obj.name).denoising.method)

@@ -1,7 +1,7 @@
-function chosen = askuser(workers, workitem)
+function chosen = selectworker(workers, workitem)
     %ASKUSER GUI for selecting one worker from several candidates.
     %
-    % chosen = askuser(workers, workitem)
+    % chosen = selectworker(workers, workitem)
     % 
     % Inputs: 
     %   workers  - Array of worker structs (as used in create_team)

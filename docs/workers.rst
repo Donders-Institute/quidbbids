@@ -1,7 +1,9 @@
 Workers
 =======
 
-This section describes all available workers in QuIDBBIDS.
+This section describes all available workers in QuIDBBIDS. Workers are used to process BIDS
+data and make workitems (output products) in a peer-to-peer network, orchestrated by the
+QuIDBBIDS manager.
 
 B1prepWorker
 ~~~~~~~~~~~~
@@ -16,11 +18,8 @@ Properties
 ----------
 
 .. list-table::
-   :header-rows: 1
    :widths: 25 75
 
-   - - Property
-     - Value
    - - ``needs``
      - 
    - - ``makes``
@@ -77,11 +76,8 @@ Properties
 ----------
 
 .. list-table::
-   :header-rows: 1
    :widths: 25 75
 
-   - - Property
-     - Value
    - - ``needs``
      - syntheticT1
    - - ``makes``
@@ -122,11 +118,8 @@ Properties
 ----------
 
 .. list-table::
-   :header-rows: 1
    :widths: 25 75
 
-   - - Property
-     - Value
    - - ``needs``
      - ME4Dmag, unwrapped, TB1map_GRE, fieldmap, localfmask, DWI_theta, DWI_icvf, DWI_ff
    - - ``makes``
@@ -166,11 +159,8 @@ Properties
 ----------
 
 .. list-table::
-   :header-rows: 1
    :widths: 25 75
 
-   - - Property
-     - Value
    - - ``needs``
      - ME4Dmag, unwrapped, TB1map_GRE, fieldmap, localfmask
    - - ``makes``
@@ -212,11 +202,8 @@ Properties
 ----------
 
 .. list-table::
-   :header-rows: 1
    :widths: 25 75
 
-   - - Property
-     - Value
    - - ``needs``
      - 
    - - ``makes``
@@ -256,11 +243,8 @@ Properties
 ----------
 
 .. list-table::
-   :header-rows: 1
    :widths: 25 75
 
-   - - Property
-     - Value
    - - ``needs``
      - TB1map_anat, TB1map_angle
    - - ``makes``
@@ -298,11 +282,8 @@ Properties
 ----------
 
 .. list-table::
-   :header-rows: 1
    :widths: 25 75
 
-   - - Property
-     - Value
    - - ``needs``
      - ME4Dmag, ME4Dphase, brainmask
    - - ``makes``
@@ -345,11 +326,8 @@ Properties
 ----------
 
 .. list-table::
-   :header-rows: 1
    :widths: 25 75
 
-   - - Property
-     - Value
    - - ``needs``
      - ME4Dmag, TB1map_GRE, brainmask
    - - ``makes``
@@ -389,11 +367,8 @@ Properties
 ----------
 
 .. list-table::
-   :header-rows: 1
    :widths: 25 75
 
-   - - Property
-     - Value
    - - ``needs``
      - S0map, R2starmap, Chimap, localfmask, TB1map_GRE
    - - ``makes``
@@ -445,11 +420,8 @@ Properties
 ----------
 
 .. list-table::
-   :header-rows: 1
    :widths: 25 75
 
-   - - Property
-     - Value
    - - ``needs``
      - TB1map_anat, TB1map_angle
    - - ``makes``

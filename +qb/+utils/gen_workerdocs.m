@@ -13,8 +13,15 @@ function gen_workerdocs()
     config = struct();
     config.General.BIDS.include = struct('suffix', {{''}}, 'modality', {{''}}, 'acq', {{''}});
     
-    % Get all worker resumes (replicate Coordinator.get_resumes logic without creating derivatives)
-    resumes = struct();
+    % Write header
+    fid = fopen(output_file, 'w', 'n', 'UTF-8');
+    fprintf(fid, 'Workers\n');
+    fprintf(fid, '=======\n\n');
+    fprintf(fid, 'This section describes all available workers in QuIDBBIDS. Workers are used to process BIDS\n');
+    fprintf(fid, 'data and make workitems (output products) in a peer-to-peer network, orchestrated by the\n');
+    fprintf(fid, 'QuIDBBIDS manager.\n\n');
+
+    % For each worker write an entry using the class properties
     for wfile = dir(fullfile(worker_dir, "*Worker*.m"))'
         if strcmp(wfile.name, 'Worker.m')
             continue  % Exclude the abstract Worker class
@@ -24,54 +31,28 @@ function gen_workerdocs()
         else
             worker = feval(erase(wfile.name, '.m'), BIDS, struct('name','','session',''), config);
         end
-        resumes.(worker.name).handle = str2func(class(worker));
-        resumes.(worker.name).name = worker.name;
-        resumes.(worker.name).description = worker.description;
-        resumes.(worker.name).makes = worker.makes();
-        resumes.(worker.name).needs = worker.needs(:)';
-        resumes.(worker.name).usesGPU = worker.usesGPU;
-    end
-
-    % Write header
-    fid = fopen(output_file, 'w', 'n', 'UTF-8');
-    fprintf(fid, 'Workers\n');
-    fprintf(fid, '=======\n\n');
-    fprintf(fid, 'This section describes all available workers in QuIDBBIDS.\n\n');
-
-    % For each worker write an entry using the resume data from Coordinator
-    for name = string(fieldnames(resumes))'
-        resume = resumes.(name);
 
         % Write worker header
-        fprintf(fid, '%s\n', name);
-        fprintf(fid, '%s\n\n', repmat('~', 1, strlength(name)));
+        fprintf(fid, '%s\n', worker.name);
+        fprintf(fid, '%s\n\n', repmat('~', 1, strlength(worker.name)));
 
-        % Format description (string array to paragraphs)
-        for line = resume.description
-            fprintf(fid, '%s\n', line);
-        end
-        fprintf(fid, '\n');
+        % Add class description (already formatted in ReStructuredText)
+        fprintf(fid, '%s\n', worker.description{:}, '');
 
-        % Format properties as list table
+        % Add remaining class properties as a list table
         fprintf(fid, 'Properties\n');
         fprintf(fid, '----------\n\n');
         fprintf(fid, '.. list-table::\n');
-        fprintf(fid, '   :header-rows: 1\n');
         fprintf(fid, '   :widths: 25 75\n\n');
-        fprintf(fid, '   - - Property\n');
-        fprintf(fid, '     - Value\n');
-
-        % Add properties from resume
         fprintf(fid, '   - - ``needs``\n');
-        fprintf(fid, '     - %s\n', strjoin(resume.needs, ', '));
+        fprintf(fid, '     - %s\n', strjoin(worker.needs, ', '));
         fprintf(fid, '   - - ``makes``\n');
-        fprintf(fid, '     - %s\n', strjoin(resume.makes, ', '));
+        fprintf(fid, '     - %s\n', strjoin(worker.makes(), ', '));
         fprintf(fid, '   - - ``usesGPU``\n');
-        fprintf(fid, '     - %s\n', string(resume.usesGPU));
+        fprintf(fid, '     - %s\n\n', string(worker.usesGPU));
 
-        fprintf(fid, '\n');
     end
 
     fclose(fid);
-    fprintf('Writing worker documentation to: %s\n', output_file)
+    disp("Writing worker documentation to: " + output_file)
 end

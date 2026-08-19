@@ -126,7 +126,7 @@ methods
         end
         fprintf("\nRegistering:\n")
         for wfile = wfiles
-            if ~strcmp(wfile.name, 'Worker.m')      % Exclude the abstract Worker class
+            if ~(strcmp(wfile.name, 'Worker.m') || startsWith(wfile.name, '.'))     % Exclude the abstract Worker class and hidden files
                 if endsWith(wfile.folder, '+workers')
                     worker = qb.workers.(erase(wfile.name, '.m'))(obj.BIDS, struct(name='',session=''), obj.config);
                 else                                % Custom workers in the user config directory should be on the MATLAB-path

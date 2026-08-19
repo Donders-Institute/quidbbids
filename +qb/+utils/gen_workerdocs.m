@@ -23,8 +23,8 @@ function gen_workerdocs()
 
     % For each worker write an entry using the class properties
     for wfile = dir(fullfile(worker_dir, "*Worker*.m"))'
-        if strcmp(wfile.name, 'Worker.m')
-            continue  % Exclude the abstract Worker class
+        if strcmp(wfile.name, 'Worker.m') || startsWith(wfile.name, '.')  % Exclude the abstract Worker class and hidden files
+            continue
         end
         if endsWith(wfile.folder, '+workers')
             worker = qb.workers.(erase(wfile.name, '.m'))(BIDS, struct('name','','session',''), config);

@@ -31,11 +31,6 @@ classdef EditInclude < handle
             obj.IncludeCurrent  = include;
             obj.NodeMap         = dictionary();
             
-            obj.buildGUI()
-            obj.query(obj.IncludeCurrent)
-        end
-        
-        function buildGUI(obj)
             % Build the GUI and file tree from the root directory
 
             % Create figure
@@ -81,16 +76,16 @@ classdef EditInclude < handle
             obj.Tree             = uitree(treeGrid);
             obj.Tree.Tooltip     = 'Tree view of the BIDS data structure. Green arrows indicate included files/folders';
 
-            % Build tree structure
+            % Build the BIDS tree structure (without sidecars and hidden files)
             for file = dir(fullfile(obj.BIDS.pth, "**", "*"))'
-                if file.isdir || (startsWith(file.name, 'sub-') && endsWith(file.name, '.json'))
+                if file.isdir || (startsWith(file.name, 'sub-') && endsWith(file.name, '.json')) || startsWith(file.name, '.')
                     continue
                 end
                 obj.addNodeToTree(fullfile(file.folder, file.name), obj.Tree)
             end
 
             % Find and tag the included files
-            obj.query(obj.IncludeCurrent)
+            obj.tagTree()
         end
         
         function addNodeToTree(obj, fullPath, parentNode)
@@ -110,13 +105,6 @@ classdef EditInclude < handle
             end
         end
         
-        function tagTree(obj, included)
-            % Tags tree nodes based on included BIDS file list
-            for node = obj.Tree.Children'
-                obj.tagNode(node, included)
-            end
-        end
-
         function tagNode(obj, node, included)
             % Recursively tag a node and its children
             
@@ -133,20 +121,23 @@ classdef EditInclude < handle
                 obj.tagNode(node.Children(i), included)
             end
         end
+
+        function tagTree(obj)
+            % Queries the BIDS folder and tags the tree based on the IncludeCurrent filter
+            included = string(bids.query(obj.BIDS, 'data', obj.IncludeCurrent));
+            for node = obj.Tree.Children'
+                obj.tagNode(node, included)
+            end
+        end
         
         function onInputChanged(obj)
             % Callback when input field changes
             try
                 obj.IncludeCurrent = qb.utils.jsondecode(strjoin(obj.InputField.Value, newline));
-                obj.query(obj.IncludeCurrent)
+                obj.tagTree()
             catch ME
                 uialert(obj.Fig, sprintf('Invalid JSON format: %s', ME.message), 'Parse Error')
             end
-        end
-
-        function query(obj, include)
-            % Queries the BIDS folder and tags the tree based on the include filter
-            obj.tagTree(string(bids.query(obj.BIDS, 'data', include)))
         end
         
         function onCancel(obj)
@@ -159,7 +150,7 @@ classdef EditInclude < handle
             % Callback for Reset button
             obj.InputField.Value = jsonencode(obj.IncludeOriginal, 'PrettyPrint',true);
             obj.IncludeCurrent   = obj.IncludeOriginal;
-            obj.query(obj.IncludeCurrent)
+            obj.tagTree()
         end
         
         function onDone(obj)

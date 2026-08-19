@@ -92,7 +92,6 @@ methods
         subjects = string.empty();
         for worker = dir(fullfile(obj.coord.outputdir, 'logs', '*Worker'))'
             for subses = obj.jobIDs.keys'
-
                 logfile = fullfile(obj.coord.outputdir, 'logs', worker.name, sprintf('%s_%s.log', subses, level_));
                 if isfile(logfile) && dir(logfile).bytes > 0
                     subjects(end+1) = subses;                   %#ok<AGROW>

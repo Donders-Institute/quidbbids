@@ -28,7 +28,7 @@ properties (Constant)
                    ""
                    ".. tip::"
                    ""
-                   "   The ``ortho`` products are just 3 orthogonal slices (to speed up computation) and can be used"
+                   "   The ``ortho`` deliverables are just 3 orthogonal slices (to speed up computation) and can be used"
                    "   for a fast and shallow quality control."]    % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "DWItheta", "DWIicvf", "DWIff"]           % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false

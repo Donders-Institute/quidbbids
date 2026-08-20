@@ -2,7 +2,7 @@ Workers
 =======
 
 This section describes all available workers in QuIDBBIDS. Workers are used to process BIDS
-data and make workitems (output products) in a peer-to-peer network, orchestrated by the
+data and make workitems (deliverables) in a peer-to-peer network, orchestrated by the
 QuIDBBIDS manager.
 
 B1prepWorker
@@ -111,7 +111,7 @@ Implementation uses the MWI toolbox: https://github.com/kschan0214/mwi
 
 .. tip::
 
-   The ``ortho`` products are just 3 orthogonal slices (to speed up computation) and can be used
+   The ``ortho`` deliverables are just 3 orthogonal slices (to speed up computation) and can be used
    for a fast and shallow quality control.
 
 Properties

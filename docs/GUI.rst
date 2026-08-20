@@ -12,8 +12,8 @@ MATLAB's command window:
 
 .. code-block:: matlab
 
-   >> quidb = qb.QuIDBBIDS('/path/to/bids/dataset');        % Initialize QuIDBBIDS coordinator
-   >> quidb.products = ["R1map", "R2starmap", "MWFmap"];    % Specify the output items
+   >> quidb = qb.QuIDBBIDS('/path/to/bids/dataset');           % Initialize QuIDBBIDS coordinator
+   >> quidb.deliverables = ["R1map", "R2starmap", "MWFmap"];   % Specify the output items
 
 After that, as described below, two GUIs can be used.
 

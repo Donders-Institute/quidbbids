@@ -29,7 +29,7 @@ if ismember("ABRIM_MEGRE", datasets)
     quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM_MEGRE'), "", "", "default")
     quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
     quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
-    quidb.products = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
+    quidb.deliverables = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
     quidb.resumes.QSMWorker.preferred = true;       % Optional, else GUI usage
     quidb.config.General.useHPC.value = true;
     quidb.config.General.tag.value = "manualtest";
@@ -56,12 +56,12 @@ if ismember("MCR-MWI_VFA", datasets)
 
     % First run the non-GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',48*36e2};
-    quidb.products = "MWFmap_ortho";
+    quidb.deliverables = "MWFmap_ortho";
     mgr.start_workflow()
 
     % Then run the GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',10*36e2, 'options','--partition=gpu --gres=gpu:1'};
-    quidb.products = ["R1map", "R2starmap", "Chimap", "MWFmap"];
+    quidb.deliverables = ["R1map", "R2starmap", "Chimap", "MWFmap"];
     mgr.start_workflow()
 
     % Make QC reports
@@ -86,12 +86,12 @@ if ismember("Hamburg_MPM", datasets)
     mgr = quidb.manager();
 
     % First run the non-GPU part of the workflow
-    % quidb.products = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.products = p;
+    % quidb.deliverables = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.deliverables = p;
     % mgr.start_workflow()
 
     % Then run the GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1 --constraint=nomig'};    % MIG/NOMIG -> Crashes with NVML errors on partitioned GPUs
-    quidb.products = ["R1map", "R2starmap", "Chimap", "MWFmap"];
+    quidb.deliverables = ["R1map", "R2starmap", "Chimap", "MWFmap"];
     mgr.start_workflow()
 
     % Make QC reports

@@ -1,5 +1,5 @@
 classdef Manager < handle
-%MANAGER Manages the entire workflow to make the end products that the user wants
+%MANAGER Manages the entire workflow to make the deliverables that the user wants
 %
 % This class defines the common interface and base functionality for interacting with the user,
 % composing workflows, setting config parameters, creating a team of workers from the pool, and
@@ -8,16 +8,16 @@ classdef Manager < handle
 % Workflow:
 %   0. User initializes the workflow and calls Manager
 %   1. Manager loads an existing workflow from the output directory (if present) and asks user
-%      what products to make
-%   2. Manager assembles a team that can make the products (and asks the user for help if needed)
+%      what deliverables to make
+%   2. Manager assembles a team that can make the deliverables (and asks the user for help if needed)
 %   3. Manager lets the user tweak the config parameters and saves it all back in the output folder
 %   4. Manager puts the team to work (subject by subject or in parallel):
-%       a. For each end product, the manager asks the responsible team worker to produce it
+%       a. For each end deliverable, the manager asks the responsible team worker to produce it
 %       b. If this worker needs a workitem to get the work done, he/she will ask another
 %          team worker to produce it. In turn, that worker can ask other team workers to
 %          produce their workitems -- all the way up until only raw BIDS data items are needed
 %   5. Manager monitors the progress of the workers and informs the user until all work is done
-%   6. Manager fetches the end products and copies them to the output directory
+%   6. Manager fetches the deliverables and copies them to the output directory
 %
 % Limitation:
 %   In the workflow, each workitem is always made by the same worker, i.e. it is not possible to
@@ -29,7 +29,7 @@ classdef Manager < handle
 
 
 properties
-    team = struct.empty()   % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+    team = struct.empty()   % The resumes of the workers that will produce the deliverables: team.(workitem) -> worker resume
     coord                   % The coordinator that help the manager with administrative tasks
     force = false           % Force workers to start working, even if the subject is locked or existing results exist
     interactive = true      % If true, the manager will ask the user for help when needed (false = useful for automated testing)
@@ -50,7 +50,7 @@ methods
     end
 
     function create_team(obj, workitems, recurse_)
-        %CREATE_TEAM Selects workers from the pool that together are capable of making the WORKITEMS (products).
+        %CREATE_TEAM Selects workers from the pool that together are capable of making the WORKITEMS (deliverables).
         %
         % Asks the user for help if needed. The assembled team is stored in the TEAM property, which is a struct
         % with fields corresponding to the workitems and value corresponding to the resume of the worker that will
@@ -60,7 +60,7 @@ methods
 
         arguments
             obj
-            workitems {mustBeText} = obj.coord.products
+            workitems {mustBeText} = obj.coord.deliverables
             recurse_ logical       = false
         end
 
@@ -174,7 +174,7 @@ methods
     end
 
     function start_workflow(obj, subjects)
-        %START_WORKFLOW For each end product, asks the responsible team worker to fetch it. Logs the screen output in a diary.
+        %START_WORKFLOW For each deliverable, asks the responsible team worker to fetch it. Logs the screen output in a diary.
         %
         % Inputs:
         %   SUBJECTS - String array with subject names for which the workflow should be executed. Default is all subjects in the BIDS layout
@@ -194,8 +194,8 @@ methods
         diary(fullfile(logdir, 'diary_workflow.txt'))
         diary_off = onCleanup(@() diary('off'));
 
-        if ~strlength(obj.coord.products)
-            disp('❌ The list of products is empty, there is nothing to do')
+        if ~strlength(obj.coord.deliverables)
+            disp('❌ The list of deliverables is empty, there is nothing to do')
             return
         end
 
@@ -245,7 +245,7 @@ methods
         end
 
         % Check if our team is up-to-date
-        if ~all(isfield(obj.team, obj.coord.products))
+        if ~all(isfield(obj.team, obj.coord.deliverables))
             disp("🔄 Manager updates the team")
             obj.create_team()
         end
@@ -261,7 +261,7 @@ methods
 
         % Block the start button in the GUI (if any) and initialize the workers
         fprintf("\n============= Starting workflow at %s =============\n", datetime('now'))
-        for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
+        for product = obj.coord.deliverables      % TODO: sort such that MEGREprepWorker deliverables (if any) are fetched first
             Worker = obj.team.(product).handle;
             name   = obj.team.(product).name;
             jobIDs = dictionary();
@@ -272,11 +272,11 @@ methods
                     continue
                 end
 
-                % Ask the worker to fetch the product for this subject
+                % Ask the worker to fetch the deliverable for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf('▶ Manager dispatched %s to make the "%s" product for %s/%s\n', name, product, subject.name, subject.session)
+                fprintf('▶ Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)
                 if obj.coord.config.General.useHPC.value
-                    jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
+                    jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: deliverables are passed directly instead of calling fetch()
                 elseif obj.coord.config.General.useParallel.value
                     jobIDs(obj.sub_ses(subject)) = parfeval(Worker, 0, args{:}, product);
                 else
@@ -288,7 +288,7 @@ methods
             % Monitor the progress of the workers until all work is done and report any errors or warnings
             obj.monitor_progress(product, jobIDs)
 
-            % Copy the end products to the output directory
+            % Copy the deliverables to the output directory
             obj.copy_to_outputdir(Worker(args{:}), product, subjects)
         end
 
@@ -297,7 +297,7 @@ methods
     end
 
     function copy_to_outputdir(obj, worker, product, subjects)
-        %COPY_TO_OUTPUTDIR Copies the product files from the workdir to the outputdir
+        %COPY_TO_OUTPUTDIR Copies the deliverables from the workdir to the outputdir
 
         arguments
             obj
@@ -312,7 +312,7 @@ methods
             target = bids.File(char(source));
             target.entities.tag = char(worker.config.General.tag);
             target.path = fullfile(obj.coord.outputdir, target.bids_path, target.filename);
-            worker.logger.info('-> Saving "%s" product as: %s', product, target.path)
+            worker.logger.info('-> Saving "%s" deliverable as: %s', product, target.path)
             qb.utils.copybfile(source, target, obj.force)
         end
     end

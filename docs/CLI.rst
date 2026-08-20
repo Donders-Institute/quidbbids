@@ -13,7 +13,7 @@ To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by provid
 .. code-block:: matlab
 
    >> quidb = qb.QuIDBBIDS('/path/to/bids/dataset');       % Initialize QuIDBBIDS coordinator
-   >> quidb.workitems                                      % See e.g. what QuIDBBIDS can make
+   >> quidb.catalog                                        % See e.g. what QuIDBBIDS can make
       Chimap               : Magnetic susceptibility map derived from phase or quantitative susceptibility mapping (QSM) reconstruction
       FMW_exrate           : Exchange rate map in Free <-> Myelin Water analysis
       [...]                : [...]
@@ -27,8 +27,8 @@ To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by provid
           usesGPU: 1
         preferred: 0
 
-   >> quidb.products = ["R1map", "R2starmap", "MWFmap"];   % Specify the output items
-   >> quidb.resumes.R2R1R2sWorker.preferred = true;        % Specify the worker that makes the R1/R2starmap
+   >> quidb.deliverables = ["R1map", "R2starmap", "MWFmap"];   % Specify the output items
+   >> quidb.resumes.R2R1R2sWorker.preferred = true;            % Specify the worker that makes the R1/R2starmap
 
 Edit settings and options
 -------------------------

@@ -34,18 +34,18 @@ classdef TestCoordinator < BaseTest
         end
 
         function testProducts(testCase)
-            % Check that products is a valid string row
-            testCase.verifyEmpty(testCase.coord.products, 'products should be empty')
-            testCase.coord.products = ["a", "b", "c"];
-            testCase.verifyEmpty(testCase.coord.products, 'products should be empty')
-            testCase.verifyWarning(@() setfield(testCase.coord, products = ["a", "b", "c"]), 'QuIDBBIDS:Products:Ambiguous', 'Should throw ambiguous product warning')
-            testCase.coord.products = ["R1map"; "ME.*Dmag"];
-            testCase.verifyEqual(testCase.coord.products, ["R1map", "ME.*Dmag"])
+            % Check that deliverables is a valid string row
+            testCase.verifyEmpty(testCase.coord.deliverables, 'deliverables should be empty')
+            testCase.coord.deliverables = ["a", "b", "c"];
+            testCase.verifyEmpty(testCase.coord.deliverables, 'deliverables should be empty')
+            testCase.verifyWarning(@() setfield(testCase.coord, deliverables = ["a", "b", "c"]), 'QuIDBBIDS:Deliverables:Ambiguous', 'Should throw ambiguous deliverable warning')
+            testCase.coord.deliverables = ["R1map"; "ME.*Dmag"];
+            testCase.verifyEqual(testCase.coord.deliverables, ["R1map", "ME.*Dmag"])
         end
 
         function testWorkitems(testCase)
             % Should return all unique workitems across resumes
-            items = testCase.coord.workitems();
+            items = testCase.coord.catalog();
             testCase.verifyClass(items, 'string', "workitems should be a string array")
             testCase.verifyGreaterThanOrEqual(numel(items), 0, "Should have zero or more workitems")
             testCase.verifyEqual(numel(items), numel(unique(items)), "Workitems should be unique")

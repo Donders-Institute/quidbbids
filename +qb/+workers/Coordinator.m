@@ -8,7 +8,7 @@ properties
     BIDS                    % BIDS layout object from bids-matlab
     outputdir               % BIDSApp derivatives subdirectory where the output is stored
     workdir                 % Working directory for intermediate results
-    products                % The end products (workitems) requested by the user, full list of possible products, see obj.workitems()
+    deliverables            % The end products (workitems) requested by the user, for full list of possible deliverables, see obj.catalog()
     resumes                 % The resumes of all available workers
     configfile              % Path to the active configuration file
     workflowfile            % Path to the active workflow file
@@ -59,31 +59,31 @@ methods
         obj.workflowfile = regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat");
         obj.config       = obj.get_config();
         obj.resumes      = obj.get_resumes();
-        obj.products     = "";      % NB: This has to be called after get_resumes() because set.products() needs to know the workitems
+        obj.deliverables     = "";      % NB: This has to be called after get_resumes() because set.deliverables() needs to know the workitems
         glossfile = fullfile(fileparts(mfilename('fullpath')), 'glossary.json');
         if isfile(glossfile)
             obj.glossary = jsondecode(fileread(glossfile));
         end
     end
 
-    function set.products(obj, val)
-        % Check if the product exist and force anything assigned to be stored as a string row
+    function set.deliverables(obj, val)
+        % Check if the deliverable exist and force anything assigned to be stored as a string row
         for product = string(val(:)')
-            if product~="" && all(cellfun(@isempty, regexp(obj.workitems(), "^" + product + "$")))
-                warning("QuIDBBIDS:Products:Ambiguous", 'The "%s" product was not found, it must match any of:%s', product, sprintf(' "%s"', obj.workitems()))
+            if product~="" && all(cellfun(@isempty, regexp(obj.catalog(), "^" + product + "$")))
+                warning("QuIDBBIDS:Deliverables:Ambiguous", 'The "%s" deliverable was not found, it must match any of:%s', product, sprintf(' "%s"', obj.catalog()))
                 return
             end
         end
-        obj.products = string(val(:)');
-        obj.products(obj.products=="") = [];
+        obj.deliverables = string(val(:)');
+        obj.deliverables(obj.deliverables=="") = [];
     end
 
     function choose_products(obj)
-        obj.products = qb.ChooseProducts(obj.coord.resumes);
+        obj.deliverables = qb.ChooseProducts(obj.coord.resumes);
     end
 
-    function items = workitems(obj)
-        %WORKITEMS Gets or displays a list of all the workitems the workers can make
+    function items = catalog(obj)
+        %CATALOG Gets or displays a list of all the workitems the workers can make
 
         makes = [];
         for name = fieldnames(obj.resumes)'

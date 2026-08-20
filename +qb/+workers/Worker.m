@@ -66,7 +66,7 @@ methods
             outputdir {mustBeTextScalar} = ''   % Output directory for final results
             team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
             force     (1,1) logical = false     % Force to start working, even if the subject is locked or existing results exist
-            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
+            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the deliverable). Default = ''
         end
 
         obj.BIDS      = BIDS;

@@ -8,7 +8,7 @@ which processed data is stored. QuIDBBIDS uses this folder to store its two outp
 1. ``./derivatives/QuIDBBIDS_work``. In here all temporary files and workitems are stored that are
    produced during execution of the workflow. All items are reused or reproduced if the workflow is
    re-executed. This folder can be deleted after processing is finished.
-2. ``./derivatives/QuIDBBIDS``. In here all final output files (products) are stored, organized according 
+2. ``./derivatives/QuIDBBIDS``. In here all final output files (deliverables) are stored, organized according 
    to BIDS derivatives specification. This folder should be kept after processing is finished.
 
 Next to the output files, in the ``QuIDBBIDS`` folder you can find two subfolders with additional data:

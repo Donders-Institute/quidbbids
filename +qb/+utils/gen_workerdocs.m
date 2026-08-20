@@ -18,7 +18,7 @@ cleanup = onCleanup(@() fclose(fid));
 fprintf(fid, 'Workers\n');
 fprintf(fid, '=======\n\n');
 fprintf(fid, 'This section describes all available workers in QuIDBBIDS. Workers are used to process BIDS\n');
-fprintf(fid, 'data and make workitems (output products) in a peer-to-peer network, orchestrated by the\n');
+fprintf(fid, 'data and make workitems (deliverables) in a peer-to-peer network, orchestrated by the\n');
 fprintf(fid, 'QuIDBBIDS manager.\n\n');
 
 % For each worker write an entry using the class properties

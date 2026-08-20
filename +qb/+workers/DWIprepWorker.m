@@ -18,9 +18,9 @@ properties (Constant)
                    "- Requires: QSIRecon workflow with ``--recon-spec amico_noddi`` (produces ``icvf`` and ``direction`` maps)"
                    "- Outputs:"
                    ""
-                   "  - DWI_theta (smallest polar angle between the neurite orientation and the B0 field)"
-                   "  - DWI_ff (set to 1 for all voxels, since NODDI models a single neurite population per voxel)"
-                   "  - DWI_icvf (non-modulated, i.e. not corrected for GM/CSF partial voluming effects)"
+                   "  - DWItheta (smallest polar angle between the neurite orientation and the B0 field)"
+                   "  - DWIff (set to 1 for all voxels, since NODDI models a single neurite population per voxel)"
+                   "  - DWIicvf (non-modulated, i.e. not corrected for GM/CSF partial voluming effects)"
                    ""
                    "MRtrix3 - Constrained Spherical Deconvolution"
                    "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
@@ -30,9 +30,9 @@ properties (Constant)
                    "  (as described above)"
                    "- Outputs:"
                    ""
-                   "  - DWI_theta (smallest polar angles between fixel directions and the B0 field)"
-                   "  - DWI_ff (derived from the Apparent Fiber Density, as a proxy for fiber fraction)"
-                   "  - DWI_icvf (from NODDI, as described above)"
+                   "  - DWItheta (smallest polar angles between fixel directions and the B0 field)"
+                   "  - DWIff (derived from the Apparent Fiber Density, as a proxy for fiber fraction)"
+                   "  - DWIicvf (from NODDI, as described above)"
                    ""
                    "References:"
                    "^^^^^^^^^^^"
@@ -59,9 +59,12 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.DWI_theta = struct(modality='dwi', space='withinGRE', param='theta', suffix='dwimap');
-        obj.bidsfilter.DWI_icvf  = setfields(obj.bidsfilter.DWI_theta, param='icvf');
-        obj.bidsfilter.DWI_ff    = setfields(obj.bidsfilter.DWI_theta, param='fiberfraction');
+        obj.bidsfilter.derivICVF = obj.config.DWIprepWorker.BFilterICVF;
+        obj.bidsfilter.derivFDir = obj.config.DWIprepWorker.BFilterFDir;
+        obj.bidsfilter.derivFOD  = obj.config.DWIprepWorker.BFilterFOD;
+        obj.bidsfilter.DWItheta  = struct(modality='dwi', space='withinGRE', param='theta', suffix='dwimap');
+        obj.bidsfilter.DWIicvf   = setfields(obj.bidsfilter.DWItheta, param='icvf');
+        obj.bidsfilter.DWIff     = setfields(obj.bidsfilter.DWItheta, param='fiberfraction');
     end
     
 end
@@ -111,13 +114,13 @@ methods
             MRtrix = obj.BIDS_ses(MRtrixdir);
         end
 
-        % Compute the DWI_theta, DWI_ff and DWI_icvf workitems
+        % Compute the DWItheta, DWIff and DWIicvf workitems
         for acq = obj.query_ses(NODDI, 'acquisitions')
             for run = str2double(obj.query_ses(NODDI, 'runs'))
                 
                 % Query the NODDI icvf and fdir files for the current acquisition and run
-                icvf = obj.query_ses(NODDI, 'data', obj.config.DWIprepWorker.BFilterICVF, acq=char(acq), run=char(run));
-                fdir = obj.query_ses(NODDI, 'data', obj.config.DWIprepWorker.BFilterFDir, acq=char(acq), run=char(run));
+                icvf = obj.query_ses(NODDI, 'data', obj.bidsfilter.derivICVF, acq=char(acq), run=char(run));
+                fdir = obj.query_ses(NODDI, 'data', obj.bidsfilter.derivFDir, acq=char(acq), run=char(run));
                 if isempty(icvf)
                     obj.logger.verbose('No QSIRecon acq-%s_run-%s icvf-files found in: %s..', char(acq), char(run), fullfile(NODDIdir, obj.sub_ses()))
                     continue
@@ -138,6 +141,7 @@ methods
                     end
                     T1tgt = obj.ask_team('syntheticT1');
                     if isempty(T1tgt)
+                        obj.logger.info('No synthetic T1w target image found for: %s. Using the raw T1w image as the target for coregistration.', obj.sub_ses())
                         T1tgt = obj.query_ses(obj.BIDS, 'data', struct(modality='anat', suffix='T1w'));
                     end
                     if length(T1tgt) > 1
@@ -158,7 +162,7 @@ methods
 
                     case 'MRtrix3'
                         % Query MRtrix FOD from QSIRecon derivatives
-                        fod  = obj.query_ses(MRtrix, 'data', obj.config.DWIprepWorker.BFilterFOD, acq=char(acq), run=char(run));
+                        fod  = obj.query_ses(MRtrix, 'data', obj.bidsfilter.derivFOD, acq=char(acq), run=char(run));
                         fdir = replace(fod, '.mif', '.nii');
                         if length(fod) ~= 1
                             obj.logger.error('Expected one MRtrix3 FOD file for acq-%s_run-%s but found %d', char(acq), char(run), length(fod));
@@ -189,7 +193,7 @@ methods
                         return
                 end
 
-                % Compute the DWI_icvf, DWI_theta and DWI_ff maps in the "withinGRE" space
+                % Compute the DWIicvf, DWItheta and DWIff maps in the "withinGRE" space
                 for z = Vtgt.dim(3):-1:1
                     ICVF(:,:,z) = spm_slice_vol(Vicvf, T * spm_matrix([0 0 z]), Vtgt.dim(1:2), 1);  % Rotate and reslice the data using trilinear interpolation
                 end
@@ -216,10 +220,10 @@ methods
                     end
                 end
 
-                % Save the DWI_icvf, DWI_theta and DWI_ff images & json files
-                write_vol_qsi(icvf{1}, obj.bidsfilter.DWI_icvf, ICVF, 'volume fraction (icvf)')
-                write_vol_qsi(fdir{1}, obj.bidsfilter.DWI_theta, THETA, 'polar angle (theta)')
-                write_vol_qsi(fdir{1}, obj.bidsfilter.DWI_ff, FFRAC, 'fiber fraction (ff)')
+                % Save the DWIicvf, DWItheta and DWIff images & json files
+                write_vol_qsi(icvf{1}, obj.bidsfilter.DWIicvf, ICVF, 'volume fraction (icvf)')
+                write_vol_qsi(fdir{1}, obj.bidsfilter.DWItheta, THETA, 'polar angle (theta)')
+                write_vol_qsi(fdir{1}, obj.bidsfilter.DWIff, FFRAC, 'fiber fraction (ff)')
 
             end
         end

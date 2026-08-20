@@ -44,9 +44,9 @@ NODDI - Neurite Orientation Dispersion and Density Imaging
 - Requires: QSIRecon workflow with ``--recon-spec amico_noddi`` (produces ``icvf`` and ``direction`` maps)
 - Outputs:
 
-  - DWI_theta (smallest polar angle between the neurite orientation and the B0 field)
-  - DWI_ff (set to 1 for all voxels, since NODDI models a single neurite population per voxel)
-  - DWI_icvf (non-modulated, i.e. not corrected for GM/CSF partial voluming effects)
+  - DWItheta (smallest polar angle between the neurite orientation and the B0 field)
+  - DWIff (set to 1 for all voxels, since NODDI models a single neurite population per voxel)
+  - DWIicvf (non-modulated, i.e. not corrected for GM/CSF partial voluming effects)
 
 MRtrix3 - Constrained Spherical Deconvolution
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -56,9 +56,9 @@ MRtrix3 - Constrained Spherical Deconvolution
   (as described above)
 - Outputs:
 
-  - DWI_theta (smallest polar angles between fixel directions and the B0 field)
-  - DWI_ff (derived from the Apparent Fiber Density, as a proxy for fiber fraction)
-  - DWI_icvf (from NODDI, as described above)
+  - DWItheta (smallest polar angles between fixel directions and the B0 field)
+  - DWIff (derived from the Apparent Fiber Density, as a proxy for fiber fraction)
+  - DWIicvf (from NODDI, as described above)
 
 References:
 ^^^^^^^^^^^
@@ -81,7 +81,7 @@ Properties
    - - ``needs``
      - syntheticT1
    - - ``makes``
-     - DWI_theta, DWI_icvf, DWI_ff
+     - derivICVF, derivFDir, derivFOD, DWItheta, DWIicvf, DWIff
    - - ``usesGPU``
      - false
 
@@ -105,8 +105,8 @@ Implementation uses the MWI toolbox: https://github.com/kschan0214/mwi
 
 .. note::
 
-   MCRWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors (DWI_theta,
-   DWI_icvf, DWI_ff) are available from DWIprepWorker, the DI-MWI model incorporates fiber orientation
+   MCRWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors (DWItheta,
+   DWIicvf, DWIff) are available from DWIprepWorker, the DI-MWI model incorporates fiber orientation
    and compartment fraction information to improve parameter estimation specificity.
 
 .. tip::
@@ -121,7 +121,7 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - ME4Dmag, unwrapped, TB1map_GRE, fieldmap, localfmask, DWI_theta, DWI_icvf, DWI_ff
+     - ME4Dmag, unwrapped, TB1map_GRE, fieldmap, localfmask, DWItheta, DWIicvf, DWIff
    - - ``makes``
      - MWFmap, FMW_exrate, FitMask, MW_M0map, MW_R2starmap, FW_M0map, FW_T1map, FW_R1map, IAW_R2starmap, MWFmap_ortho, FMW_exrate_ortho, FitMask_ortho, MW_M0map_ortho, MW_R2starmap_ortho, FW_M0map_ortho, FW_T1map_ortho, FW_R1map_ortho, IAW_R2starmap_ortho
    - - ``usesGPU``

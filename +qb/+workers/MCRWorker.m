@@ -22,15 +22,15 @@ properties (Constant)
                    ""
                    ".. note::"
                    ""
-                   "   MCRWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors (DWI_theta,"
-                   "   DWI_icvf, DWI_ff) are available from DWIprepWorker, the DI-MWI model incorporates fiber orientation"
+                   "   MCRWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors (DWItheta,"
+                   "   DWIicvf, DWIff) are available from DWIprepWorker, the DI-MWI model incorporates fiber orientation"
                    "   and compartment fraction information to improve parameter estimation specificity."
                    ""
                    ".. tip::"
                    ""
                    "   The ``ortho`` products are just 3 orthogonal slices (to speed up computation) and can be used"
                    "   for a fast and shallow quality control."]    % Description should be in ReStructuredText format
-    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "DWI_theta", "DWI_icvf", "DWI_ff"]           % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "DWItheta", "DWIicvf", "DWIff"]           % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -92,9 +92,9 @@ methods
         fieldmap   = obj.ask_team('fieldmap');      % Multiple FA-images per run
         localfmask = obj.ask_team('localfmask');    % Multiple FA-images per run
         TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
-        DWI_theta  = obj.ask_team('DWI_theta');
-        DWI_icvf   = obj.ask_team('DWI_icvf');
-        DWI_ff     = obj.ask_team('DWI_ff');
+        DWItheta   = obj.ask_team('DWItheta');
+        DWIicvf    = obj.ask_team('DWIicvf');
+        DWIff      = obj.ask_team('DWIff');
 
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
         if numel(unique([length(unwrapped), length(fieldmap)])) > 1
@@ -174,7 +174,7 @@ methods
         imgPara.b0         = bfile.metadata.MagneticFieldStrength;
         imgPara.autosave   = false;
         imgPara.output_dir = char(obj.logger.logdir);
-        if isempty(DWI_theta) || isempty(DWI_icvf) || isempty(DWI_ff)
+        if isempty(DWItheta) || isempty(DWIicvf) || isempty(DWIff)
             obj.logger.info('--> Estimating the MWI-MCR model (without diffusion priors)')
             algoPara.DIMWI.isVic    = false;
             algoPara.DIMWI.isR2sEW  = false;
@@ -182,9 +182,9 @@ methods
             algoPara.DIMWI.isFreqIW = false;
         else
             obj.logger.info('--> Estimating the DI-MWI-MCR model')
-            theta = spm_read_vols(spm_vol(DWI_theta{1}));
-            icvf  = spm_read_vols(spm_vol(DWI_icvf{1}));
-            ff    = spm_read_vols(spm_vol(DWI_ff{1}));
+            theta = spm_read_vols(spm_vol(DWItheta{1}));
+            icvf  = spm_read_vols(spm_vol(DWIicvf{1}));
+            ff    = spm_read_vols(spm_vol(DWIff{1}));
             if endsWith(workitem, 'ortho')
                 imgPara.icvf  = obj.orthoslice(icvf(sel{:}));
                 for n = size(theta,4):-1:1    % Loop backwards to preallocate the memory

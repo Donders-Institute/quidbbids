@@ -99,7 +99,7 @@ methods
                 end
             end
             if all(cellfun(@isempty, regexp(fieldnames(obj.team), "^" + workitem + "$")))
-                error('QuIDBBIDS:WorkItem:NoWorker', 'Could not find a worker that can make: %s', workitem)
+                error('QuIDBBIDS:WorkItem:NoWorker', 'Could not find a worker + input data for making: %s', workitem)
             end
 
             % Then select one worker per workitem and recursively add the workers needed to make the workitem
@@ -372,7 +372,7 @@ methods (Access = private)
             for workitem = worker.makes
                 if startsWith(workitem, 'raw') && isempty(bids.query(obj.coord.BIDS, 'data', worker_.bidsfilter.(workitem)))
                     has_data = false;
-                    fprintf('No "%s" input data found for %s\n', workitem, worker.name)
+                    fprintf('⚠ No "%s" input data found for %s\n', workitem, worker.name)
                     return
                 end
             end

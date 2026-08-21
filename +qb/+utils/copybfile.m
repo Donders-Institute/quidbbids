@@ -26,7 +26,7 @@ end
 
 % Copy the data and metadata to the destination
 if isfile(target.path) && ~force
-    fprintf('File already exists at destination: %s. Use force=true to overwrite\n', target.path)
+    fprintf('⚠ File already exists at destination: %s. Use force=true to overwrite\n', target.path)
 else
     [~,~] = mkdir(fileparts(target.path));
     copyfile(source.path, target.path)

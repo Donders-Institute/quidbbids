@@ -26,7 +26,7 @@ function [ver, latest] = version()
                 latest = erase(rel.tag_name, "v"|"V");
             end
         catch ME
-            fprintf('Could not retrieve the latest release version:\n%s', ME.message)
+            fprintf('⚠ Could not retrieve the latest release version:\n%s', ME.message)
             latest = '0.0.0-unknown';
         end
     end

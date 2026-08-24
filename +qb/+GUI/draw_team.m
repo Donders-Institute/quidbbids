@@ -1,16 +1,16 @@
 function draw_team(team, deliverables)
 %DRAW_TEAM Draw dependency graph with workers and workitems
 %
-%   draw_team(TEAM) displays a bipartite graph where:
-%     - Blue nodes represent workers (labelled by their NAME property)
-%     - Green nodes represent workitems
-%     - Purple nodes represent deliverables (final requested workitems)
-%     - Edges from workers to workitems show what each worker produces (makes)
-%     - Edges from workitems to workers show what each worker needs
-%     - Edges in deliverable upstream subtrees are thicker
+% draw_team(TEAM) displays a bipartite graph where:
+%   - Blue nodes represent workers (labelled by their NAME property)
+%   - Green nodes represent workitems
+%   - Orange nodes represent deliverables (final requested workitems)
+%   - Edges from workers to workitems show what each worker produces (makes)
+%   - Edges from workitems to workers show what each worker needs
+%   - Edges in deliverable upstream subtrees are thicker
 %
 % Inputs:
-%   TEAM - Struct as created by Manager.create_team()
+%   TEAM         - Struct as created by Manager.create_team()
 %   DELIVERABLES - Row vector of deliverable workitem names (default: fieldnames(team))
 
 arguments
@@ -75,7 +75,7 @@ for d = deliverableNodeIdx
     inDeliverableTree(bfsearch(upstreamG, d)) = true;
 end
 
-% Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(purple)
+% Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange)
 nodeTypes = ones(length(nodes), 1);
 nodeTypes(nWorkers+1:end) = 2;
 nodeTypes(deliverableNodeIdx) = 3;
@@ -91,7 +91,7 @@ H = plot(workflow, ...
          LineWidth    = 1.5, ...
          ArrowSize    = 10, ...
          Interpreter  = 'none');
-colormap([0 0 1; 0 1 0; 0.7 0 0.7])
+colormap([0 0 1; 0 1 0; 1 0.6 0])
 title('Workflow graph')
 
 % Highlight edges in deliverable subtrees
@@ -104,6 +104,6 @@ highlight(H, ...
 hold on
 plot(NaN, NaN, 'o', MarkerFaceColor = [0 0 1])
 plot(NaN, NaN, 'o', MarkerFaceColor = [0 1 0])
-plot(NaN, NaN, 'o', MarkerFaceColor = [0.7 0 0.7])
+plot(NaN, NaN, 'o', MarkerFaceColor = [1 0.6 0])
 legend('', 'Workers', 'Workitems', 'Deliverables', Location='northeast')
 hold off

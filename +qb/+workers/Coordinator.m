@@ -59,7 +59,7 @@ methods
         obj.workflowfile = regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat");
         obj.config       = obj.get_config();
         obj.resumes      = obj.get_resumes();
-        obj.deliverables     = "";      % NB: This has to be called after get_resumes() because set.deliverables() needs to know the workitems
+        obj.deliverables = "";      % NB: This has to be called after get_resumes() because set.deliverables() needs to know the workitems
         glossfile = fullfile(fileparts(mfilename('fullpath')), 'glossary.json');
         if isfile(glossfile)
             obj.glossary = jsondecode(fileread(glossfile));

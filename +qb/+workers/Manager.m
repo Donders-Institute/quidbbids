@@ -115,6 +115,12 @@ methods
             end
 
         end
+
+        % Plot the team workflow graph
+        if ~recurse_
+            qb.GUI.draw_team(obj.team, obj.coord.deliverables)
+        end
+
     end
 
     function members = team_members(obj)

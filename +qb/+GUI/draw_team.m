@@ -14,8 +14,13 @@ function draw_team(team, deliverables)
 %   DELIVERABLES - Row vector of deliverable workitem names (default: fieldnames(team))
 
 arguments
-    team (1,1)         struct
+    team         (1,1) struct
     deliverables (1,:) string
+end
+
+if isempty(fieldnames(team))
+    disp('⚠ No team data found, cannot draw workflow graph')
+    return
 end
 
 % Collect all unique workers and workitems
@@ -32,8 +37,7 @@ end
 workers = workers(idx);
 workitems = unique(workitems);
 
-% Build edges: [source_idx, target_idx] (edge goes from workitem to worker)
-% Special rule: if a worker makes a workitem starting with 'raw' or 'deriv', treat it as a need
+% Build edges = [source_idx, target_idx]. NB: if a worker makes a workitem starting with 'raw' or 'deriv', treat it as a source
 edges = [];
 nWorkers = length(workerNames);
 for i = 1:nWorkers
@@ -41,11 +45,9 @@ for i = 1:nWorkers
     % Edges from worker to workitems it makes (except raw workitems)
     for m = workers{i}.makes
         if ~isempty(m) && ismember(m, workitems)
-            if startsWith(m, ["raw", "deriv"])
-                % Treat as need: edge from workitem to worker
+            if startsWith(m, ["raw", "deriv"])      % Treat make as a source: edge from workitem to worker
                 edges(end+1, :) = [nWorkers + find(workitems == m, 1), i];
-            else
-                % Normal make: edge from worker to workitem
+            else                                    % Normal make: edge from worker to workitem
                 edges(end+1, :) = [i, nWorkers + find(workitems == m, 1)];
             end
         end
@@ -59,11 +61,11 @@ for i = 1:nWorkers
     end
 end
 
-% Create the workflow graph
-workflow = digraph(edges(:,1), edges(:,2));
-
 % Build node lists for the graph (workers come first, then workitems)
 nodes = [workerNames workitems];
+
+% Create the workflow graph
+workflow = digraph(edges(:,1), edges(:,2), [], nodes);
 
 % Identify edges in upstream subtree of deliverables using graph traversal
 deliverableNodeIdx = nWorkers + find(ismember(workitems, deliverables));
@@ -81,28 +83,27 @@ nodeTypes(deliverableNodeIdx) = 3;
 % Plot the workflow graph
 markerSizes = 10 * ones(length(nodes), 1);
 markerSizes(1:nWorkers) = 12;
-h = plot(workflow, ...
-    Layout       = 'layered', ...
-    NodeLabel    = nodes, ...
-    NodeCData    = nodeTypes, ...
-    MarkerSize   = markerSizes, ...
-    NodeFontSize = 8, ...
-    LineWidth    = 1.5, ...
-    ArrowSize    = 10, ...
-    Interpreter  = 'none');
+H = plot(workflow, ...
+         Layout       = 'layered', ...
+         NodeCData    = nodeTypes, ...
+         MarkerSize   = markerSizes, ...
+         NodeFontSize = 8, ...
+         LineWidth    = 1.5, ...
+         ArrowSize    = 10, ...
+         Interpreter  = 'none');
 colormap([0 0 1; 0 1 0; 0.7 0 0.7])
+title('Workflow graph')
 
 % Highlight edges in deliverable subtrees
-hold on
-highlight(h, ...
-    edges(inDeliverableTree(edges(:, 2)), 1), ...
-    edges(inDeliverableTree(edges(:, 2)), 2), ...
-    EdgeColor=[0.5 0.5 0.5], LineWidth=3)
+highlight(H, ...
+          edges(inDeliverableTree(edges(:, 2)), 1), ...
+          edges(inDeliverableTree(edges(:, 2)), 2), ...
+          EdgeColor=[0.5 0.5 0.5], LineWidth=3)
 
-% Add legend
+% Add a custom legend
+hold on
 plot(NaN, NaN, 'o', MarkerFaceColor = [0 0 1])
 plot(NaN, NaN, 'o', MarkerFaceColor = [0 1 0])
 plot(NaN, NaN, 'o', MarkerFaceColor = [0.7 0 0.7])
-legend('', 'Workers', 'Workitems', 'Deliverables', Location = 'northeast')
-
-title('Workflow graph')
+legend('', 'Workers', 'Workitems', 'Deliverables', Location='northeast')
+hold off

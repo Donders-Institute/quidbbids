@@ -118,7 +118,7 @@ methods
 
         % Plot the team workflow graph
         if ~recurse_
-            qb.GUI.draw_team(obj.team, obj.coord.deliverables)
+            qb.GUI.draw_workflow(obj.team, obj.coord.deliverables)
         end
 
     end

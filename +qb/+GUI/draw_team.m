@@ -1,7 +1,7 @@
-function draw_team(team, deliverables)
-%DRAW_TEAM Draw dependency graph with workers and workitems
+function draw_workflow(team, deliverables)
+%DRAW_WORKFLOW Draw dependency graph with workers and workitems
 %
-% draw_team(TEAM) displays a bipartite graph where:
+% draw_workflow(TEAM) displays a bipartite graph where:
 %   - Blue nodes represent workers (labelled by their NAME property)
 %   - Green nodes represent workitems
 %   - Orange nodes represent deliverables (final requested workitems)
@@ -69,29 +69,27 @@ workflow = digraph(edges(:,1), edges(:,2), [], nodes);
 
 % Identify edges in upstream subtree of deliverables using graph traversal
 deliverableNodeIdx = nWorkers + find(ismember(workitems, deliverables));
-upstreamG = flipedge(workflow);
+upstream = flipedge(workflow);
 inDeliverableTree = false(size(nodes));
 for d = deliverableNodeIdx
-    inDeliverableTree(bfsearch(upstreamG, d)) = true;
+    inDeliverableTree(bfsearch(upstream, d)) = true;
 end
 
 % Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange)
-nodeTypes = ones(length(nodes), 1);
-nodeTypes(nWorkers+1:end) = 2;
+nodeTypes                     = ones(size(nodes));
+nodeTypes(nWorkers+1:end)     = 2;
 nodeTypes(deliverableNodeIdx) = 3;
 
 % Plot the workflow graph
-markerSizes = 10 * ones(length(nodes), 1);
-markerSizes(1:nWorkers) = 12;
 H = plot(workflow, ...
          Layout       = 'layered', ...
          NodeCData    = nodeTypes, ...
-         MarkerSize   = markerSizes, ...
+         MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...
          NodeFontSize = 8, ...
          LineWidth    = 1.5, ...
          ArrowSize    = 10, ...
          Interpreter  = 'none');
-colormap([0 0 1; 0 1 0; 1 0.6 0])
+colormap([0 0 1; 0 1 0; 1 0.6 0])     % blue, green, orange
 title('Workflow graph')
 
 % Highlight edges in deliverable subtrees
@@ -102,8 +100,8 @@ highlight(H, ...
 
 % Add a custom legend
 hold on
-plot(NaN, NaN, 'o', MarkerFaceColor = [0 0 1])
-plot(NaN, NaN, 'o', MarkerFaceColor = [0 1 0])
-plot(NaN, NaN, 'o', MarkerFaceColor = [1 0.6 0])
+plot(NaN, NaN, 'o', MarkerFaceColor = 'blue')
+plot(NaN, NaN, 'o', MarkerFaceColor = 'green')
+plot(NaN, NaN, 'o', MarkerFaceColor = [1 0.6 0])    % orange
 legend('', 'Workers', 'Workitems', 'Deliverables', Location='northeast')
 hold off

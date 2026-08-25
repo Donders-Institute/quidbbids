@@ -13,6 +13,13 @@ QuIDBBIDS architecture
    ``2``, and ``4`` into a team and directs them to process the input data (“anat” and “fmap”), collaboratively
    producing workitems ``1–6``. Finally, the manager initiates a controller to verify successful completion.
 
+.. figure:: ./_static/workflow_graph.png
+   :width: 90%
+
+   A QuIDBBIDS workflow instantiation with user-specified deliverables ``Chimap``, ``R2starmap``, and ``R1map``
+   that are collaboratively produced by a team of workers (blue nodes). Raw input data (green nodes prefixed with
+   ``raw*``, e.g., ``rawMEGRE``) appear at the top, and the output deliverables (orange nodes) at the bottom.
+
 Configuration editor
 --------------------
 

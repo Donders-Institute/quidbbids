@@ -58,11 +58,11 @@ function chosen = selectworker(workers, workitem)
     info = uitextarea(fig, 'Position', [margin + rbWidth + spacing, figHeight - margin - 100, infoWidth, 100], 'Editable', 'off');
 
     % --- Add required Workitems table - start with minimal height
-    tblNeeds = uitable(fig, 'ColumnName', {'Required items',''}, 'RowName', [], 'ColumnWidth', {120, 'auto'}, ...
+    tblNeeds = uitable(fig, 'ColumnName', {'Needs',''}, 'RowName', [], 'ColumnWidth', {120, 'auto'}, ...
                     'Position', [margin + rbWidth + spacing, margin + minTableHeight + spacing, infoWidth, minTableHeight]);
 
     % --- Add produced Workitems table - start with minimal height
-    tblMakes = uitable(fig, 'ColumnName', {'Produced items',''}, 'RowName', [], 'ColumnWidth', {120, 'auto'}, ...
+    tblMakes = uitable(fig, 'ColumnName', {'Makes',''}, 'RowName', [], 'ColumnWidth', {120, 'auto'}, ...
                     'Position', [margin + rbWidth + spacing, margin, infoWidth, minTableHeight]);
 
     % Select first worker by default
@@ -87,8 +87,17 @@ function chosen = selectworker(workers, workitem)
                                 w.name, w.preferred, w.usesGPU, join(w.description, newline)));
 
         % Tables data
-        tblNeeds.Data = makeTableData(w.needs);
-        tblMakes.Data = makeTableData(w.makes());
+        input = strings(1,0);
+        makes = strings(1,0);
+        for witem = w.makes()
+            if startsWith(witem, ["raw", "deriv"])  % Swap makes to needs for raw/deriv workitems, since they should already be present in the BIDS dataset
+                input(end+1) = witem;   %#ok<AGROW>
+            else
+                makes(end+1) = witem;   %#ok<AGROW>
+            end
+        end
+        tblNeeds.Data = makeTableData([input, w.needs]);
+        tblMakes.Data = makeTableData(makes);
 
         % Recalculate infoWidth based on current figure width
         infoWidth = fig.Position(3) - 2*margin - rbWidth - spacing;

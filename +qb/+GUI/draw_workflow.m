@@ -75,10 +75,11 @@ for d = deliverableNodeIdx
     inDeliverableTree(bfsearch(upstream, d)) = true;
 end
 
-% Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange)
-nodeTypes                     = ones(size(nodes));
-nodeTypes(nWorkers+1:end)     = 2;
+% Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange), 4=raw/deriv(grey)
+nodeTypes = ones(size(nodes));
+nodeTypes(nWorkers+1:end) = 2;
 nodeTypes(deliverableNodeIdx) = 3;
+nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 4;
 
 % Plot the workflow graph
 H = plot(workflow, ...
@@ -89,7 +90,7 @@ H = plot(workflow, ...
          LineWidth    = 1.5, ...
          ArrowSize    = 10, ...
          Interpreter  = 'none');
-colormap([0 0 1; 0 1 0; 1 0.6 0])     % blue, green, orange
+colormap([0 0 1; 0 1 0; 1 0.6 0; 0.7 0.7 0.7])  % blue, green, orange, grey
 title('Workflow graph')
 
 % Highlight edges in deliverable subtrees
@@ -100,8 +101,9 @@ highlight(H, ...
 
 % Add a custom legend
 hold on
-plot(NaN, NaN, 'o', MarkerFaceColor = 'blue')
-plot(NaN, NaN, 'o', MarkerFaceColor = 'green')
-plot(NaN, NaN, 'o', MarkerFaceColor = [1 0.6 0])    % orange
-legend('', 'Workers', 'Workitems', 'Deliverables', Location='northeast')
+plot(NaN, NaN, 'o', MarkerFaceColor=[0.7 0.7 0.7])  % grey
+plot(NaN, NaN, 'o', MarkerFaceColor='blue')
+plot(NaN, NaN, 'o', MarkerFaceColor='green')
+plot(NaN, NaN, 'o', MarkerFaceColor=[1 0.6 0])      % orange
+legend('', 'Input data', 'Workers', 'Workitems', 'Deliverables', Location='northeast')
 hold off

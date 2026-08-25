@@ -32,7 +32,17 @@ implementing new methods in Worker modules, as illustrated below.
   recursively when their outputs are needed, and existing items are reused unless forced recomputation is
   requested. Throughout execution, standardized logs ensure traceability and reproducibility.
 
+Below is a real-world workflow example, illustrating how the right-hand side of the above architecture diagram
+materializes in practice.
+
+.. figure:: ./_static/workflow_graph.png
+   :width: 90%
+
+   A QuIDBBIDS workflow instantiation with user-specified deliverables ``Chimap``, ``R2starmap``, and ``R1map``
+   that are collaboratively produced by a team of workers (blue nodes). Raw input data (green nodes prefixed with
+   ``raw*``, e.g., ``rawMEGRE``) appear at the top, and the output deliverables (orange nodes) at the bottom.
+
 The QuIDBBIDS workflow is designed to be modular and flexible, allowing users to easily customize and extend
 the processing workflow by adding new Worker modules or customizing existing ones. This architecture resembles
-a plugin-based microservices approach, where each worker operates independently while collaborating to achieve the
-desired outcome.
+a plugin-based microservices approach, where each worker operates independently while collaborating to deliver the
+desired output items.

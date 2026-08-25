@@ -11,9 +11,9 @@ which processed data is stored. QuIDBBIDS uses this folder to store its two outp
 2. ``./derivatives/QuIDBBIDS``. In here all final output files (deliverables) are stored, organized according 
    to BIDS derivatives specification. This folder should be kept after processing is finished.
 
-Next to the output files, in the ``QuIDBBIDS`` folder you can find two subfolders with additional data:
+Next to the output files, in the ``QuIDBBIDS`` folder you can find two subfolders with meta data:
 
-1. ``code/config.json``. A copy of the default configuration file with the actual settings that 
+1. ``code``. A (copy of the default) configuration and workflow files with the actual settings that 
    were used to produce the data. This is important for reproducibility of results.
 2. ``logs``. A folder that contains worker specific log files, including error messages if any 
    issues were encountered.

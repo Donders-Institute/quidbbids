@@ -116,9 +116,13 @@ methods
 
         end
 
-        % Plot the team workflow graph
+        % Plot and save the team workflow graph
         if ~recurse_
             qb.GUI.draw_workflow(obj.team, obj.coord.deliverables)
+            H = findall(groot, Tag='workflow_graph');
+            if isvalid(H)
+                saveas(H(1), regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
+            end
         end
 
     end
@@ -284,7 +288,7 @@ methods
 
                 % Ask the worker to fetch the deliverable for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf('▶  Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)
+                fprintf('▶  Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)  % Spaces are added to deal with the wide Unicode character
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: deliverables are passed directly instead of calling fetch()
                 elseif obj.coord.config.General.useParallel.value

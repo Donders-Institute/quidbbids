@@ -19,7 +19,7 @@ arguments
 end
 
 if isempty(fieldnames(team))
-    disp('⚠  No team data found, cannot draw workflow graph')
+    disp('⚠  No team data found, cannot draw workflow graph')  % Spaces are added to deal with the wide Unicode character
     return
 end
 
@@ -58,7 +58,7 @@ for i = 1:nWorkers
 end
 
 % Build node lists for the graph (workers come first, then workitems)
-nodes = [workerNames workitems];
+nodes = ["  " + workerNames, " " + workitems];  % Add spaces as node labels overlap with markers in the digraph plot
 
 % Create the workflow graph
 workflow = digraph(edges(:,1), edges(:,2), [], nodes);
@@ -72,9 +72,9 @@ for d = deliverableNodeIdx
 end
 
 % Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange), 4=raw/deriv(grey)
-nodeTypes = ones(size(nodes));
-nodeTypes(nWorkers+1:end) = 2;
-nodeTypes(deliverableNodeIdx) = 3;
+nodeTypes                                                           = ones(size(nodes));
+nodeTypes(nWorkers+1:end)                                           = 2;
+nodeTypes(deliverableNodeIdx)                                       = 3;
 nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 4;
 
 % Plot the workflow graph
@@ -85,21 +85,26 @@ H = plot(workflow, ...
          NodeFontSize = 8, ...
          LineWidth    = 1.5, ...
          ArrowSize    = 10, ...
-         Interpreter  = 'none');
-colormap([0 0 1; 0 1 0; 1 0.6 0; 0.7 0.7 0.7])  % blue, green, orange, grey
+         Interpreter  = 'none', ...
+         Tag          = 'workflow_graph');
+blue   = [0.16 0.5 0.73];   % = RTD blue #2980B9
+green  = [0 0.8 0];
+orange = [1 0.6 0];
+grey   = [0.7 0.7 0.7];
+colormap([blue; green; orange; grey])
 title('Workflow graph')
 
 % Highlight edges in deliverable subtrees
 highlight(H, ...
           edges(inDeliverableTree(edges(:, 2)), 1), ...
           edges(inDeliverableTree(edges(:, 2)), 2), ...
-          EdgeColor=[0.5 0.5 0.5], LineWidth=3)
+          EdgeColor=[0.5 0.5 0.5], LineWidth=3)     % highlight makes the specified EdgeColor lighter
 
 % Add a custom legend
 hold on
-plot(NaN, NaN, 'o', MarkerFaceColor=[0.7 0.7 0.7])  % grey
-plot(NaN, NaN, 'o', MarkerFaceColor='blue')
-plot(NaN, NaN, 'o', MarkerFaceColor='green')
-plot(NaN, NaN, 'o', MarkerFaceColor=[1 0.6 0])      % orange
-legend('', 'Input data', 'Workers', 'Workitems', 'Deliverables', Location='northeast')
+plot(NaN, NaN, 'o', MarkerFaceColor=grey)
+plot(NaN, NaN, 'o', MarkerFaceColor=blue)
+plot(NaN, NaN, 'o', MarkerFaceColor=green)
+plot(NaN, NaN, 'o', MarkerFaceColor=orange)
+legend('', 'Raw data', 'Workers', 'Workitems', 'Deliverables', Location='best')
 hold off

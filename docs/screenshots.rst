@@ -5,7 +5,7 @@ QuIDBBIDS architecture
 ----------------------
 
 .. figure:: ./_static/workflow_diagram.png
-   :width: 90%
+   :width: 80%
 
    Overview of the QuIDBBIDS workflow. The user specifies the data and desired workitems (``4*`` and ``6*``)
    to the coordinator. The coordinator inspects the worker pool, interacts with the user to edit settings
@@ -14,10 +14,9 @@ QuIDBBIDS architecture
    producing workitems ``1–6``. Finally, the manager initiates a controller to verify successful completion.
 
 .. figure:: ./_static/workflow_graph.png
-   :width: 90%
 
    A QuIDBBIDS workflow instantiation with user-specified deliverables ``Chimap``, ``R2starmap``, and ``R1map``
-   that are collaboratively produced by a team of workers (blue nodes). Raw input data (green nodes prefixed with
+   that are collaboratively produced by a team of workers (blue nodes). Raw input data (grey nodes prefixed with
    ``raw*``, e.g., ``rawMEGRE``) appear at the top, and the output deliverables (orange nodes) at the bottom.
 
 Configuration editor
@@ -33,7 +32,7 @@ QuIDBBIDS data
 --------------
 
 .. figure:: ./_static/BIDS_data.png
-   :width: 80%
+   :width: 75%
 
    Example of the raw input (bottom) and the corresponding QuIDBBIDS output data structure (top), showing
    how file and directory names, data formats, and metadata sidecar files are organized in accordance with the

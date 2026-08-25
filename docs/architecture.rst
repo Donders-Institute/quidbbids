@@ -6,6 +6,7 @@ Manager, Worker, and Controller — designed to minimize workflow and BIDS-relat
 implementing new methods in Worker modules, as illustrated below.
 
 .. figure:: ./_static/workflow_diagram.png
+   :width: 80%
 
    QuIDBBIDS Workflow Architecture. The user specifies the data and desired workitems (``4*`` and ``6*``)
    to the coordinator. The coordinator inspects the worker pool, interacts with the user to edit settings
@@ -36,11 +37,13 @@ Below is a real-world workflow example, illustrating how the right-hand side of 
 materializes in practice.
 
 .. figure:: ./_static/workflow_graph.png
-   :width: 90%
 
-   A QuIDBBIDS workflow instantiation with user-specified deliverables ``Chimap``, ``R2starmap``, and ``R1map``
-   that are collaboratively produced by a team of workers (blue nodes). Raw input data (green nodes prefixed with
-   ``raw*``, e.g., ``rawMEGRE``) appear at the top, and the output deliverables (orange nodes) at the bottom.
+   A basic workflow instantiation with user-specified deliverables ``Chimap``, ``R2starmap``, and ``R1map``
+   that are collaboratively produced by a team of workers (blue nodes). Raw input data (grey nodes prefixed with
+   ``raw*``, e.g., ``rawMEGRE``) appear at the top, and the output deliverables (orange nodes) at the bottom. The
+   raw data are read from the user-provided BIDS dataset, while the intermediate workitems (green nodes) are
+   saved in the derivative ``QuIDBBIDS_work`` folder. Finally, the specified output deliverables are stored in the
+   ``QuIDBBIDS`` derivative folder.
 
 The QuIDBBIDS workflow is designed to be modular and flexible, allowing users to easily customize and extend
 the processing workflow by adding new Worker modules or customizing existing ones. This architecture resembles

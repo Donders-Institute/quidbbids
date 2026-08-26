@@ -32,7 +32,7 @@ classdef TestQuIDBBIDS < BaseTest
         end
 
         function testGetconfig(testCase)
-            configfile = fullfile(testCase.TmpDir, 'code', 'QuIDBBIDS', 'config.json');
+            configfile = fullfile(testCase.TmpDir, 'derivatives', 'QuIDBBIDS', 'code', 'config.json');
             testCase.assertFalse(isfile(configfile), sprintf('Configfile "%s" should not yet exist', configfile))
 
             % Test if settings are created correctly

@@ -29,16 +29,16 @@ methods
     function obj = QuIDBBIDS(bidsdir, outputdir, workdir, configfile)
         % Initializes the concrete QuIDBBIDS Coordinator class for a given BIDS dataset
         %
-        % OBJ = QuIDBBIDS(BIDSDIR, DERIVDIR, CONFIGFILE)
+        % OBJ = QuIDBBIDS(BIDSDIR, OUTPUTDIR, CONFIGFILE)
         %
         % Inputs:
         %   BIDSDIR    - Path to the root BIDS dataset directory. Default = user dialogue
-        %   DERIVDIR   - Path to the QuIDBBIDS derivatives directory where output will be written.
+        %   OUTPUTDIR  - Path to the QuIDBBIDS derivatives directory where output will be written.
         %                Default: [BIDSDIR]/derivatives/QuIDBBIDS
-        %   WORKDIR    - Working directory for intermediate results. Default: outputdir/QuIDBBIDS_work.
+        %   WORKDIR    - Working directory for intermediate results. Default: [BIDSDIR]/derivatives/QuIDBBIDS_work.
         %   CONFIGFILE - Path to the configuration file with workflow settings. Passing 'default' uses the
         %                default config from the QuIDBBIDS folder in your HOME directory as default.
-        %                Default: [BIDSDIR]/code/QuIDBBIDS/config.json
+        %                Default: [OUTPUTDIR]/code/config.json
         %
         % Usage:
         %   quidb = qb.QuIDBBIDS();             % Select BIDS root directory via GUI
@@ -62,6 +62,9 @@ methods
             if isequal(bidsdir, 0) || strlength(bidsdir) == 0
                 error('You must provide a BIDS input directory')
             end
+        end
+        if strlength(outputdir) == 0
+            outputdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS");  % See also: Coordinator constructor
         end
 
         % Check for the latest QuIDBBIDS version
@@ -97,7 +100,7 @@ methods
         % Get or create the configuration settings
         default = strcmp(configfile, "default");
         if strlength(configfile) == 0 || default
-            configfile = fullfile(bidsdir, "code", "QuIDBBIDS", "config.json");  % A bit of a hack because obj is not yet fully constructed
+            configfile = fullfile(outputdir, "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
             if default && isfile(configfile)
                 disp("🔧 Deleting existing config file: " + configfile)
                 delete(configfile)
@@ -194,7 +197,7 @@ end
 methods (Access = private)
 
     function add_metadata(obj, outputdir)
-        % Adds project metadata to the QuIDBBIDS output folder
+        % Adds QuIDBBIDS metadata to the dataset_description file
 
         arguments
             obj

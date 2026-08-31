@@ -28,32 +28,28 @@ workers     = {};
 workerNames = strings(1,0);
 workitems   = strings(1,0);
 for item = string(fieldnames(team))'
-    w = team.(item);
-    workers{end+1} = w;
-    workerNames(end+1) = w.name;
-    workitems = [workitems w.makes(w.makes ~= "") w.needs(w.needs ~= "")];
+    worker             = team.(item);
+    workers{end+1}     = worker;
+    workerNames(end+1) = worker.name;
+    workitems          = [workitems worker.makes() worker.needs];
 end
 [workerNames, idx] = unique(workerNames, 'stable');
-workers = workers(idx);
-workitems = unique(workitems);
+workers            = workers(idx);
+workitems          = unique(workitems(workitems ~= ""));
 
 % Build edges = [source_idx, target_idx]
-edges = [];
+edges    = [];
 nWorkers = length(workerNames);
 for i = 1:nWorkers
     
-    % Edges from worker to workitems it makes (except raw workitems)
-    for m = workers{i}.makes
-        if ~isempty(m) && ismember(m, workitems)
-            edges(end+1, :) = [i, nWorkers + find(workitems == m, 1)];
-        end
+    % Edges from worker to workitems it makes
+    for item = workers{i}.makes
+        edges(end+1, :) = [i, nWorkers + find(workitems == item)];
     end
     
     % Edges from workitems it needs to worker
-    for n = workers{i}.needs
-        if ~isempty(n) && ismember(n, workitems)
-            edges(end+1, :) = [nWorkers + find(workitems == n, 1), i];
-        end
+    for item = workers{i}.needs
+        edges(end+1, :) = [nWorkers + find(workitems == item), i];
     end
 end
 

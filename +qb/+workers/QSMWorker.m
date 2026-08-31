@@ -42,7 +42,7 @@ methods (Access = protected)
 
         % SEPIA should have a directory of its own (we cannot control it's output very well)
         obj.workdir = replace(obj.workdir, "QuIDBBIDS", "SEPIA");
-        if ~isempty(obj.workdir) && ~isfolder(obj.workdir)
+        if ~isempty(obj.workdir) && ~isfile(fullfile(obj.workdir, 'dataset_description.json'))
             bids.init(char(obj.workdir), 'is_derivative', true)
         end
 

@@ -37,7 +37,7 @@ properties (Constant)
                    ""
                    "   The brain mask generation uses mri_synthstrip which requires FreeSurfer to be installed and configured."
                    "   Denoising is applied in-place to the merged 4D files when enabled."] % Description should be in ReStructuredText format
-    needs       = "";       % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = "rawMEGRE";   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 

@@ -76,21 +76,21 @@ methods
         % Find and select one capable worker per workitem
         for workitem = string(workitems(:)')                % The workitem with optional regexp pattern
 
+            % Filter out the raw/deriv workitems
+            if startsWith(workitem, ["raw", "deriv"])
+                continue
+            end
+
             % First put all capable workers in the team
             for name = fieldnames(obj.coord.resumes)'       % Iterate over all available workers
                 worker = obj.coord.resumes.(char(name));
                 makes  = worker.makes();
                 items  = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
 
-                % Skip prepWorkers if there is no raw (anat) data for them
-                if ~obj.has_rawdata(worker)
-                    continue
-                end
-                
                 % Add to the team if the worker is capable
                 for workitem_ = makes(items)                % Loop over the actual matching workitems (without optional regexp pattern)
                     if isfield(obj.team, workitem_)         % Append the worker to the list
-                        if ~ismember(worker.name, obj.team.(workitem_).name)    % Check if we haven't already added this worker
+                        if ~ismember(worker.name, [obj.team.(workitem_).name])    % Check if we haven't already added this worker
                             obj.team.(workitem_)(end+1) = worker;
                         end
                     else                                    % Or create a new list
@@ -205,6 +205,10 @@ methods
             return
         end
 
+        % Save the config and workflow data, so that the workflow can be resumed later
+        obj.coord.get_config(obj.coord.config);
+        obj.coord.save_workflow()
+
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value
             ws = warning('off', 'MATLAB:DELETE:DeletedFileFromPackage');
@@ -280,7 +284,7 @@ methods
 
                 % Ask the worker to fetch the deliverable for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf('▶ Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)
+                fprintf('▶  Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: deliverables are passed directly instead of calling fetch()
                 elseif obj.coord.config.General.useParallel.value
@@ -365,26 +369,6 @@ methods (Access = private)
         subses = replace(erase(subject.path, [obj.coord.BIDS.pth filesep]), filesep,'_');
     end
 
-    function has_data = has_rawdata(obj, worker)
-        % Checks whether all raw input data for this (prep) worker is available
-        
-        has_data = true;
-        if isempty(dir(fullfile(obj.coord.BIDS.pth, 'sub-*')))
-            return      % -> Escape for unit-tests
-        end
-
-        if contains(worker.name, 'prepWorker')
-            worker_ = worker.handle(obj.coord.BIDS, struct(), obj.coord.config);
-            for workitem = worker.makes
-                if startsWith(workitem, 'raw') && isempty(bids.query(obj.coord.BIDS, 'data', worker_.bidsfilter.(workitem)))
-                    has_data = false;
-                    fprintf('⚠ No "%s" input data found for %s\n', workitem, worker.name)
-                    return
-                end
-            end
-        end
-    end
-
     function selectworker(obj, workitem)
         % Helper function for CREATE_TEAM to select a worker for this (non-regexp) workitem and make him/her the "preferred worker"
 
@@ -393,13 +377,17 @@ methods (Access = private)
             return
         end
 
-        % Check if any of the workers is preferred. If not ask the user and make the worker preferred
-        if obj.interactive && ~any([workers.preferred])
-            chosen = qb.GUI.selectworker(workers, workitem);
-            if chosen
-                workers(chosen).preferred = true;
-            else
-                return
+        % Check if there is exactly one preferred worker. If not, ask the user to select one.
+        if obj.interactive
+            if sum([workers.preferred]) > 1
+                error('QuIDBBIDS:Workers:MultiplePreferred', "Found multiple preferred workers for workitem '%s'", workitem)
+            elseif ~any([workers.preferred])
+                chosen = qb.GUI.selectworker(workers, workitem);
+                if chosen
+                    workers(chosen).preferred = true;
+                else
+                    return
+                end
             end
         end
 

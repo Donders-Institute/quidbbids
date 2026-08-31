@@ -32,7 +32,7 @@ function chosen = selectworker(workers, workitem)
     maxTableHeight = 250;       % Maximum table height
 
     % Create figure
-    fig = uifigure('Name', "Choose the Worker that should make your """ + workitem + """", 'Position', [100 100 figWidth figHeight], 'Visible', 'off');
+    fig = uifigure('Name', "Choose the Worker that should make your """ + workitem + """", 'Position', [100 100 figWidth figHeight]);
 
     % --- Worker radiobutton group (left)
     rbHeight = figHeight - 2*margin - 2*spacing - 2*btnHeight;
@@ -71,8 +71,9 @@ function chosen = selectworker(workers, workitem)
     updateInfo(bg.SelectedObject.Text)
 
     % Wait for user
-    uiwait(helpdlg({"There are multiple workers that can produce: " + workitem, "Please select the one you want to use"}, "Create team"))
-    fig.Visible = 'on';
+    dlg = helpdlg({"There are multiple workers that can produce: " + workitem, "Please select the one you want to use"}, "Create team");
+    set(dlg, 'WindowStyle', 'modal')
+    uiwait(dlg)
     uiwait(fig)
 
     % -----------------------
@@ -87,17 +88,8 @@ function chosen = selectworker(workers, workitem)
                                 w.name, w.preferred, w.usesGPU, join(w.description, newline)));
 
         % Tables data
-        input = strings(1,0);
-        makes = strings(1,0);
-        for witem = w.makes()
-            if startsWith(witem, ["raw", "deriv"])  % Swap makes to needs for raw/deriv workitems, since they should already be present in the BIDS dataset
-                input(end+1) = witem;   %#ok<AGROW>
-            else
-                makes(end+1) = witem;   %#ok<AGROW>
-            end
-        end
-        tblNeeds.Data = makeTableData([input, w.needs]);
-        tblMakes.Data = makeTableData(makes);
+        tblNeeds.Data = makeTableData(w.needs);
+        tblMakes.Data = makeTableData(w.makes());
 
         % Recalculate infoWidth based on current figure width
         infoWidth = fig.Position(3) - 2*margin - rbWidth - spacing;

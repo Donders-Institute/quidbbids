@@ -51,7 +51,7 @@ properties (Constant)
                    "   If only VFA data is available (without MPM), steps 1 and 2 (synthetic T1 generation and coregistration)"
                    "   are skipped. VFAprepWorker automatically detects available data types from the BIDS configuration."
                    "   Processing is performed independently for each acquisition, run, and flip angle combination."]   % Description should be in ReStructuredText format
-    needs       = ["TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["TB1map_anat", "TB1map_angle", "rawMEVFA"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 

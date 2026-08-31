@@ -21,9 +21,9 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - 
+     - rawTB1map_famp, rawTB1map_anat
    - - ``makes``
-     - rawTB1map_famp, rawTB1map_anat, TB1map_angle, TB1map_anat
+     - TB1map_angle, TB1map_anat
    - - ``usesGPU``
      - false
 
@@ -79,9 +79,9 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - syntheticT1
+     - syntheticT1, derivICVF, derivFDir, derivFOD
    - - ``makes``
-     - derivICVF, derivFDir, derivFOD, DWItheta, DWIicvf, DWIff
+     - DWItheta, DWIicvf, DWIff
    - - ``usesGPU``
      - false
 
@@ -205,9 +205,9 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - 
+     - rawMEGRE
    - - ``makes``
-     - rawMEGRE, brainmask, ME4Dmag, ME4Dphase
+     - brainmask, ME4Dmag, ME4Dphase
    - - ``usesGPU``
      - false
 
@@ -246,9 +246,9 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - TB1map_anat, TB1map_angle
+     - rawUNIT1, rawINV1, rawINV2, TB1map_anat, TB1map_angle
    - - ``makes``
-     - rawUNIT1, rawINV1, rawINV2, R1map, M0map, MP2RAGE_T1w
+     - R1map, M0map, MP2RAGE_T1w
    - - ``usesGPU``
      - false
 
@@ -423,9 +423,9 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - TB1map_anat, TB1map_angle
+     - TB1map_anat, TB1map_angle, rawMEVFA
    - - ``makes``
-     - rawMEVFA, syntheticT1, M0map_echo1, TB1map_GRE, TB1anat_GRE, brainmask, ME4Dmag, ME4Dphase
+     - syntheticT1, M0map_echo1, TB1map_GRE, TB1anat_GRE, brainmask, ME4Dmag, ME4Dphase
    - - ``usesGPU``
      - false
 

@@ -19,7 +19,7 @@ arguments
 end
 
 if isempty(fieldnames(team))
-    disp('⚠ No team data found, cannot draw workflow graph')
+    disp('⚠  No team data found, cannot draw workflow graph')
     return
 end
 
@@ -37,7 +37,7 @@ end
 workers = workers(idx);
 workitems = unique(workitems);
 
-% Build edges = [source_idx, target_idx]. NB: if a worker makes a workitem starting with 'raw' or 'deriv', treat it as a source
+% Build edges = [source_idx, target_idx]
 edges = [];
 nWorkers = length(workerNames);
 for i = 1:nWorkers
@@ -45,11 +45,7 @@ for i = 1:nWorkers
     % Edges from worker to workitems it makes (except raw workitems)
     for m = workers{i}.makes
         if ~isempty(m) && ismember(m, workitems)
-            if startsWith(m, ["raw", "deriv"])      % Treat make as a source: edge from workitem to worker
-                edges(end+1, :) = [nWorkers + find(workitems == m, 1), i];
-            else                                    % Normal make: edge from worker to workitem
-                edges(end+1, :) = [i, nWorkers + find(workitems == m, 1)];
-            end
+            edges(end+1, :) = [i, nWorkers + find(workitems == m, 1)];
         end
     end
     

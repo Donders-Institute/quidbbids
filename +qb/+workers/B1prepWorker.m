@@ -10,7 +10,7 @@ properties (Constant)
                    "B1prepWorker processes raw B1 mapping data (acquired with acq-famp and acq-anat protocols) to produce"
                    "scaled and regularized transmit field (B1+) maps in degrees. The regularization uses a complex smoothing"
                    "approach that preserves tissue boundaries while reducing salt-and-pepper noise."] % Description should be in ReStructuredText format
-    needs       = ""                % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["rawTB1map_famp", "rawTB1map_anat"]      % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 

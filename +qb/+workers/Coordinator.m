@@ -10,9 +10,9 @@ properties
     workdir                 % Working directory for intermediate results
     deliverables            % The end products (workitems) requested by the user, for full list of possible deliverables, see obj.catalog()
     resumes                 % The resumes of all available workers
-    configfile              % Path to the active configuration file
-    workflowfile            % Path to the active workflow file
     config                  % Configuration struct loaded from the config file
+    configfile              % Path to the configuration file
+    workflowfile            % Path to the workflow file
     glossary = struct()     % Glossary struct loaded from the glossary.json file
     metadata = struct()     % A struct with metadata about the software package
 end
@@ -34,20 +34,34 @@ methods
         %   WORKDIR    - Working directory for intermediate results. Default: outputdir/[APPNAME]_work
         %   CONFIGFILE - Path to a configuration file with workflow settings
 
+        % Load existing workflow data
+        obj.load_workflow()
+
         % Parse the inputs
         bidsapp = regexp(class(obj), '[^.]+$', 'match', 'once');  % Only take the class basename, i.e. the last part after the dot
-        if strlength(outputdir) == 0
-            outputdir = fullfile(BIDS.pth, "derivatives", bidsapp);
+        if isempty(outputdir) || strlength(outputdir) == 0
+            if char(obj.outputdir)
+                outputdir = string(obj.outputdir);
+            else
+                outputdir = fullfile(BIDS.pth, "derivatives", bidsapp);
+            end
         end
-        if strlength(workdir) == 0
-            workdir = fullfile(BIDS.pth, "derivatives", bidsapp + "_work");
+        if isempty(workdir) || strlength(workdir) == 0
+            if char(obj.workdir)
+                workdir = string(obj.workdir);
+            else
+                workdir = fullfile(BIDS.pth, "derivatives", bidsapp + "_work");
+            end
+        end
+        if isempty(configfile) || strlength(configfile) == 0
+            configfile = string(obj.configfile);
         end
 
         % Initialize the derivatives and workdir datasets
-        if ~isfolder(outputdir)
+        if ~isfile(fullfile(outputdir, 'dataset_description.json'))
             bids.init(char(outputdir), 'is_derivative', true)
         end
-        if ~isfolder(workdir)
+        if ~isfile(fullfile(workdir, 'dataset_description.json'))
             bids.init(char(workdir), 'is_derivative', true)
         end
 
@@ -79,15 +93,16 @@ methods
     end
 
     function choose_products(obj)
-        obj.deliverables = qb.ChooseProducts(obj.coord.resumes);
+        % TODO: Implement a GUI to choose the deliverables interactively
+        obj.deliverables = qb.ChooseProducts(obj.resumes);
     end
 
     function items = catalog(obj)
         %CATALOG Gets or displays a list of all the workitems the workers can make
 
         makes = [];
-        for name = fieldnames(obj.resumes)'
-            makes = [makes, obj.resumes.(name{1}).makes];       %#ok<AGROW>
+        for worker = string(fieldnames(obj.resumes))'
+            makes = [makes, obj.resumes.(worker).makes];       %#ok<AGROW>
         end
         if nargout
             items = unique(makes);
@@ -105,8 +120,27 @@ methods
         end
     end
 
-    function resumes = get_resumes(obj)
-        %GET_RESUMES Gets the resumes of the pool of workers that live in qb.workers and in the configfile folder
+    function has_data = has_rawdata(obj, worker)
+        % Checks whether all raw input data for this (prep) worker is available
+        
+        has_data = true;
+        if isempty(dir(fullfile(obj.BIDS.pth, 'sub-*')))
+            return      % -> Escape for unit-tests
+        end
+
+        worker_ = worker.handle(obj.BIDS, struct(), obj.config);
+        for workitem = worker.needs
+            if startsWith(workitem, 'raw') && isempty(bids.query(obj.BIDS, 'data', worker_.bidsfilter.(workitem)))
+                has_data = false;
+                fprintf('⚠  No "%s" input data found for %s\n', workitem, worker.name)
+                return
+            end
+        end
+    end
+
+    function resumes = get_resumes(obj, CheckData)
+        %GET_RESUMES Gets the resumes of the pool of workers that live in qb.workers and in the configfile folder.
+        % Workers that do not have input data are excluded from the resumes if CHECKDATA is true.
         %
         % Output:
         %   RESUME.NAME.HANDLE      - The function handle
@@ -118,6 +152,11 @@ methods
         %              .PREFERRED   - True if the worker was selected by the user
         %
         % NB: Assumes the qb.workers have a "Worker" substring in their m-filename
+
+        arguments
+            obj
+            CheckData logical = true
+        end
 
         resumes = {};
         wfiles  = dir(fullfile(fileparts(which("qb.workers.Worker")), "*Worker*.m"))';
@@ -143,32 +182,61 @@ methods
             end
         end
 
+        % Do smart pruning of workers that depend on missing input data. TODO: make it smarter, it may still include workers that depend on prepworkers that have missing input data (when multiple workers make the same workitem)
+        if CheckData
+            names = strings(1,0);
+            for name = string(fieldnames(resumes))'
+                if ~ismember(name, names) && obj.has_rawdata(resumes.(name))
+                    names(end+1) = name;    %#ok<AGROW> Keep the worker itself 
+                    depworkers(resumes.(name))
+                end
+            end
+            for name = string(fieldnames(resumes))'
+                if ~ismember(name, names)
+                    fprintf('ℹ️  Discarding %s as (some of) its input data is missing\n', name)
+                    resumes = rmfield(resumes, name);
+                end
+            end
+        end
+
+        function depworkers(resume)
+            %DEPWORKERS Recursively find all workers that depend on the workitems made (as listed in the resume)
+            for workitem = resume.makes         % Find all workers that need this workitem
+                for name_ = string(fieldnames(resumes))'
+                    if ~ismember(name_, names) && ismember(workitem, resumes.(name_).needs) && obj.has_rawdata(resumes.(name_))
+                        names(end+1) = name_;   %#ok<AGROW>
+                        depworkers(resumes.(name_))
+                    end
+                end
+            end
+        end
     end
 
-    function load_coord(obj, workflowfile)
+    function load_workflow(obj, workflowfile)
         %LOAD_WORKFLOW Loads all coordinator properties from the workflowfile
 
         arguments
             obj
-            workflowfile {mustBeTextScalar} = obj.workflowfile
+            workflowfile = obj.workflowfile
         end
 
-        if ~isfile(workflowfile)
-            fprintf('🔧 No previous coordinator data found\n')
+        if isempty(workflowfile) || ~isfile(workflowfile)
+            fprintf('🔧 No previous workflow settings found\n')
             return
         end
 
-        fprintf('🔧 Loading coordinator data from: %s\n', workflowfile)
+        % Load the workflow settings from the workflowfile
+        fprintf('🔧 Loading workflow settings from: %s\n', workflowfile)
         load(workflowfile, 'coord')
         obj.workflowfile = workflowfile;
 
-        % Set the coordinator data
+        % Set the workflow settings
         for property = string(fieldnames(coord)')
             obj.(property) = coord.(property);
         end
     end
 
-    function save_coord(obj, workflowfile)
+    function save_workflow(obj, workflowfile)
         %SAVE_WORKFLOW Saves all coordinator properties to the workflowfile, except the BIDS and config data
 
         arguments
@@ -176,16 +244,21 @@ methods
             workflowfile {mustBeTextScalar} = obj.workflowfile
         end
 
-        % Get the coordinator data
+        % Collect the selected workflow settings
         for property = string(properties(obj)')
-            if ~ismember(property, {'BIDS','config','configfile'})
+            if ~ismember(property, {'BIDS','config'})
                 coord.(property) = obj.(property);
             end
         end
 
-        fprintf('🔧 Saving coordinator data to: %s\n', workflowfile)
+        % Save the workflow settings to the workflowfile
+        if ~isfile(workflowfile)
+            fprintf('🔧 Saving workflow settings to: %s\n', workflowfile)
+        else
+            fprintf('🔧 Overwriting workflow settings in: %s\n', workflowfile)
+        end
         [~,~] = mkdir(fileparts(workflowfile));
-        save(workflowfile, 'coord', '-append')
+        save(workflowfile, 'coord')
         obj.workflowfile = workflowfile;
     end
 

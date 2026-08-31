@@ -45,7 +45,7 @@ properties (Constant)
                    "   DWIprepWorker does NOT run QSIRecon itself; QSIRecon derivatives must be precomputed."
                    "   QSIPrep/QSIRecon output directories must be configured in the config file or else the downstream DI-MWI model estimations"
                    "   will be performed without the diffusion information (which may lead to suboptimal results)."]  % Description should be in ReStructuredText format
-    needs       = "syntheticT1"                % List of workitems (excluding derivative data) the worker needs. Workitems can contain regexp patterns
+    needs       = ["syntheticT1", "derivICVF", "derivFDir", "derivFOD"]     % List of workitems (excluding derivative data) the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 

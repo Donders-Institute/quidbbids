@@ -97,6 +97,7 @@ methods
 
     function workitems = makes(obj)
         workitems = string(fieldnames(obj.bidsfilter)');
+        workitems = workitems(~startsWith(workitems, ["raw", "deriv"]));
         if isempty(workitems)
             obj.logger.warning('%s does not seem to make anything!', obj.name)
         end

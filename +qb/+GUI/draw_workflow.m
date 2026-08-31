@@ -59,12 +59,20 @@ nodes = ["  " + workerNames, " " + workitems];  % Add spaces as node labels over
 % Create the workflow graph
 workflow = digraph(edges(:,1), edges(:,2), [], nodes);
 
-% Identify edges in upstream subtree of deliverables using graph traversal
+% Identify nodes in upstream subtree of deliverables using graph traversal
 deliverableNodeIdx = nWorkers + find(ismember(workitems, deliverables));
 upstream = flipedge(workflow);
-inDeliverableTree = false(size(nodes));
+deliverableTree = false(size(nodes));
 for d = deliverableNodeIdx
-    inDeliverableTree(bfsearch(upstream, d)) = true;
+    deliverableTree(bfsearch(upstream, d)) = true;
+end
+
+% Select edges to highlight: only highlight the preferred worker when multiple workers produce the same workitem.
+highlightTree = deliverableTree(edges(:,2));
+preferred     = cellfun(@(w) w.preferred, workers);
+for node = find(indegree(workflow) > 1 & (1:numel(nodes))' > nWorkers)'     % Find workitems made by multiple workers
+    inEdges = find(edges(:,2) == node);
+    highlightTree(inEdges(~preferred(edges(inEdges,1)))) = false;
 end
 
 % Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange), 4=raw/deriv(grey)
@@ -92,8 +100,8 @@ title('Workflow graph')
 
 % Highlight edges in deliverable subtrees
 highlight(H, ...
-          edges(inDeliverableTree(edges(:, 2)), 1), ...
-          edges(inDeliverableTree(edges(:, 2)), 2), ...
+          edges(highlightTree, 1), ...
+          edges(highlightTree, 2), ...
           EdgeColor=[0.5 0.5 0.5], LineWidth=3)     % highlight makes the specified EdgeColor lighter
 
 % Add a custom legend

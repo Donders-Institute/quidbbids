@@ -1,7 +1,7 @@
 function draw_workflow(team, deliverables)
-%DRAW_WORKFLOW Draw dependency graph with workers and workitems
+%DRAW_WORKFLOW(TEAM) Draw dependency graph with workers and workitems
 %
-% draw_workflow(TEAM) displays a bipartite graph where:
+% draw_workflow displays a bipartite graph where:
 %   - Blue nodes represent workers (labelled by their NAME property)
 %   - Green nodes represent workitems
 %   - Orange nodes represent deliverables (final requested workitems)
@@ -68,11 +68,13 @@ for d = deliverableNodeIdx
 end
 
 % Select edges to highlight: only highlight the preferred worker when multiple workers produce the same workitem.
-highlightTree = deliverableTree(edges(:,2));
-preferred     = cellfun(@(w) w.preferred, workers);
-for node = find(indegree(workflow) > 1 & (1:numel(nodes))' > nWorkers)'     % Find workitems made by multiple workers
-    inEdges = find(edges(:,2) == node);
-    highlightTree(inEdges(~preferred(edges(inEdges,1)))) = false;
+highlightTree = deliverableTree(edges(:,2));                                            % Indexing outgoing edges(:,2) includes all edges
+for node = find(indegree(workflow) > 1 & (1:numel(nodes))' > nWorkers)'                 % Find workitems made by multiple workers
+    for edge = find(edges(:,2) == node)'                                                % Find all incoming edges to this workitem
+        if ~strcmp(workerNames(edges(edge,1)), team.(workitems(node - nWorkers)).name)  % Remove incoming edges from non-preferred workers from the tree
+            highlightTree(edge) = false;
+        end
+    end
 end
 
 % Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange), 4=raw/deriv(grey)

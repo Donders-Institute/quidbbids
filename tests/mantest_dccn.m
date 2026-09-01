@@ -52,17 +52,16 @@ if ismember("MCR-MWI_VFA", datasets)
     quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
     quidb.config.VFAprepWorker.denoising.method.value = "tMPPCA";
     quidb.config.General.useHPC.value = true;
-    mgr = quidb.manager();
 
     % First run the non-GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',48*36e2};
     quidb.deliverables = "MWFmap_ortho";
-    mgr.start_workflow()
+    quidb.manager().start_workflow()
 
     % Then run the GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',10*36e2, 'options','--partition=gpu --gres=gpu:1'};
     quidb.deliverables = ["R1map", "R2starmap", "Chimap", "MWFmap"];
-    mgr.start_workflow()
+    quidb.manager().start_workflow()
 
     % Make QC reports
     if isunix
@@ -83,16 +82,15 @@ if ismember("Hamburg_MPM", datasets)
     quidb.config.General.useHPC.value = true;
     quidb.config.B1prepWorker.FAscaling.value = 100;
     quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
-    mgr = quidb.manager();
 
     % First run the non-GPU part of the workflow
     % quidb.deliverables = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.deliverables = p;
-    % mgr.start_workflow()
+    % quidb.manager().start_workflow()
 
     % Then run the GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1 --constraint=nomig'};    % MIG/NOMIG -> Crashes with NVML errors on partitioned GPUs
     quidb.deliverables = ["R1map", "R2starmap", "Chimap", "MWFmap"];
-    mgr.start_workflow()
+    quidb.manager().start_workflow()
 
     % Make QC reports
     if isunix

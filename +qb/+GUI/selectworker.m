@@ -33,6 +33,8 @@ function chosen = selectworker(workers, workitem)
 
     % Create figure
     fig = uifigure('Name', "Choose the Worker that should make your """ + workitem + """", 'Position', [100 100 figWidth figHeight]);
+    dlg = helpdlg({"There are multiple workers that can produce: " + workitem, "Please select the one you want to use"}, "Create team");
+    set(dlg, 'WindowStyle', 'modal')
 
     % --- Worker radiobutton group (left)
     rbHeight = figHeight - 2*margin - 2*spacing - 2*btnHeight;
@@ -71,9 +73,6 @@ function chosen = selectworker(workers, workitem)
     updateInfo(bg.SelectedObject.Text)
 
     % Wait for user
-    dlg = helpdlg({"There are multiple workers that can produce: " + workitem, "Please select the one you want to use"}, "Create team");
-    set(dlg, 'WindowStyle', 'modal')
-    uiwait(dlg)
     uiwait(fig)
 
     % -----------------------

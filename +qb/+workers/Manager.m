@@ -288,7 +288,7 @@ methods
 
                 % Ask the worker to fetch the deliverable for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf('▶  Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)  % Spaces are added to deal with the wide Unicode character
+                fprintf('▶ Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)  % The wide Unicode character may not display correctly in all environments
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: deliverables are passed directly instead of calling fetch()
                 elseif obj.coord.config.General.useParallel.value

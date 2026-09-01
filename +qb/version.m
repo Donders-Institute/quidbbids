@@ -26,7 +26,7 @@ function [ver, latest] = version()
                 latest = erase(rel.tag_name, "v"|"V");
             end
         catch ME
-            fprintf('⚠  Could not retrieve the latest release version:\n%s', ME.message)   % Spaces are added to deal with the wide Unicode character
+            fprintf('⚠ Could not retrieve the latest release version:\n%s', ME.message)  % The wide Unicode character may not display correctly in all environments
             latest = '0.0.0-unknown';
         end
     end

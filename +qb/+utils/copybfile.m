@@ -26,7 +26,7 @@ end
 
 % Copy the data and metadata to the destination
 if isfile(target.path) && ~force
-    fprintf('⚠  File already exists at destination: %s. Use force=true to overwrite\n', target.path)   % Spaces are added to deal with the wide Unicode character
+    fprintf('⚠ File already exists at destination: %s. Use force=true to overwrite\n', target.path)  % The wide Unicode character may not display correctly in all environments
 else
     [~,~] = mkdir(fileparts(target.path));
     copyfile(source.path, target.path)

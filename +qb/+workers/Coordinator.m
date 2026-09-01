@@ -132,7 +132,7 @@ methods
         for workitem = worker.needs
             if startsWith(workitem, 'raw') && isempty(bids.query(obj.BIDS, 'data', worker_.bidsfilter.(workitem)))
                 has_data = false;
-                fprintf('⚠  No "%s" input data found for %s\n', workitem, worker.name) % Spaces are added to deal with the wide Unicode character
+                fprintf('⚠ No "%s" input data found for %s\n', workitem, worker.name)  % The wide Unicode character may not display correctly in all environments
                 return
             end
         end

@@ -19,7 +19,7 @@ arguments
 end
 
 if isempty(fieldnames(team))
-    disp('⚠  No team data found, cannot draw workflow graph')  % Spaces are added to deal with the wide Unicode character
+    disp('⚠ No team data found, cannot draw workflow graph')  % The wide Unicode character may not display correctly in all environments
     return
 end
 

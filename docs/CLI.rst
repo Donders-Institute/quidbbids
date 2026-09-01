@@ -35,7 +35,7 @@ Edit settings and options
 
 All configuration settings and options for processing the data of your dataset can be set per worker by 
 modifying the ``config`` properties of your ``QuIDBBIDS`` object. For instance, to inspect the ``NumberShots`` 
-parameter of the MP2RAGEWorker and modify it from ``176`` to ``192``, and use your HPC you can do:
+parameter of the MP2RAGEWorker and modify it to ``192``, and use your HPC you can do:
 
 .. code-block:: matlab
 
@@ -48,7 +48,7 @@ parameter of the MP2RAGEWorker and modify it from ``176`` to ``192``, and use yo
           QSMWorker: [1×1 struct]
 
    >> quidb.config.MP2RAGEWorker.NumberShots
-          value: 176
+          value: ''
     description: 'Number of shots (NZslices) in inversion segment; not usually in JSON. See: 
     https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#numbershots-metadata-field'
 

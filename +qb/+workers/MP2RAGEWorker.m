@@ -175,6 +175,7 @@ methods (Access = private)
         MP2RAGE.FlipDegrees = [inv1.FlipAngle     inv2.FlipAngle];          % Flip angle of the two readouts in degrees
         MP2RAGE.InvEff      = config.InvEff;                                % Inversion efficiency of the adiabatic inversion pulse
         MP2RAGE.NumberShots = config.NumberShots;
+        assert(~isempty(MP2RAGE.NumberShots) && MP2RAGE.NumberShots > 0, "QuIDBBIDS:MP2RAGEWorker:InvalidNumberShots", "The NumberShots parameter must be a positive integer. Please set it in the configuration file.")
         if isempty(config.EchoSpacing)
             if isfield(inv1, 'RepetitionTimeExcitation')
                 config.EchoSpacing = inv1.RepetitionTimeExcitation;         % TR of the GRE readout in seconds

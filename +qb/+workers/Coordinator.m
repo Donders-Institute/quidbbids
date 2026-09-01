@@ -193,7 +193,7 @@ methods
             end
             for name = string(fieldnames(resumes))'
                 if ~ismember(name, names)
-                    fprintf('ℹ️  Discarding %s as (some of) its input data is missing\n', name)
+                    fprintf('ℹ️ Discarding %s as (some of) its input data is missing\n', name)
                     resumes = rmfield(resumes, name);
                 end
             end
@@ -253,9 +253,9 @@ methods
 
         % Save the workflow settings to the workflowfile
         if ~isfile(workflowfile)
-            fprintf('🔧 Saving workflow settings to: %s\n', workflowfile)
+            fprintf('💾 Saving workflow settings to: %s\n', workflowfile)
         else
-            fprintf('🔧 Overwriting workflow settings in: %s\n', workflowfile)
+            fprintf('💾 Overwriting workflow settings in: %s\n', workflowfile)
         end
         [~,~] = mkdir(fileparts(workflowfile));
         save(workflowfile, 'coord')

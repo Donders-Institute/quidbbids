@@ -177,7 +177,7 @@ methods
             end
         end
 
-        fprintf('🔧 Saving manager data to: %s\n', workflowfile)
+        fprintf('💾 Saving manager data to: %s\n', workflowfile)
         [~,~] = mkdir(fileparts(workflowfile));
         save(workflowfile, 'mgr', '-append')
         obj.coord.workflowfile = workflowfile;

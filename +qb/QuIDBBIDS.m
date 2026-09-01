@@ -102,7 +102,7 @@ methods
         if strlength(configfile) == 0 || default
             configfile = fullfile(outputdir, "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
             if default && isfile(configfile)
-                disp("🔧 Deleting existing config file: " + configfile)
+                disp("🗑️ Deleting existing config file: " + configfile)
                 delete(configfile)
             end
         elseif isfolder(configfile)

@@ -29,6 +29,7 @@ if ismember("ABRIM_MEGRE", datasets)
     quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM_MEGRE'), "", "", "default")
     quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
     quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
+    quidb.config.MP2RAGEWorker.NumberShots.value = 176;
     quidb.deliverables = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
     quidb.resumes.QSMWorker.preferred = true;       % Optional, else GUI usage
     quidb.config.General.useHPC.value = true;

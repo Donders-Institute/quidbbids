@@ -118,7 +118,7 @@ methods
 
         % Plot and save the team workflow graph
         if ~recurse_
-            qb.GUI.draw_workflow(obj.team, obj.coord.deliverables)
+            qb.GUI.draw_workflow(obj.team, obj.coord.deliverables);
             H = findall(groot, Tag='workflow_graph');
             if isvalid(H)
                 saveas(H(1), regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))

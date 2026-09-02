@@ -78,6 +78,11 @@ methods
         if isfile(glossfile)
             obj.glossary = jsondecode(fileread(glossfile));
         end
+
+        H = findall(groot, Tag='team_graph');
+        if isvalid(H)
+            saveas(H(1), regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1team$2.png"))
+        end
     end
 
     function set.deliverables(obj, val)
@@ -97,12 +102,17 @@ methods
         obj.deliverables = qb.ChooseProducts(obj.resumes);
     end
 
-    function items = catalog(obj)
-        %CATALOG Gets or displays a list of all the workitems the workers can make
+    function items = catalog(obj, resumes)
+        %CATALOG Gets or displays a list of all the workitems the workers in RESUMES can make
+
+        arguments
+            obj
+            resumes struct = obj.resumes
+        end
 
         makes = [];
-        for worker = string(fieldnames(obj.resumes))'
-            makes = [makes, obj.resumes.(worker).makes];       %#ok<AGROW>
+        for worker = string(fieldnames(resumes))'
+            makes = [makes, resumes.(worker).makes];       %#ok<AGROW>
         end
         if nargout
             items = unique(makes);
@@ -182,33 +192,118 @@ methods
             end
         end
 
-        % Do smart pruning of workers that depend on missing input data. TODO: make it smarter, it may still include workers that depend on prepworkers that have missing input data (when multiple workers make the same workitem)
+        % Discard workers that depend on missing input data
         if CheckData
-            names = strings(1,0);
-            for name = string(fieldnames(resumes))'
-                if ~ismember(name, names) && obj.has_rawdata(resumes.(name))
-                    names(end+1) = name;    %#ok<AGROW> Keep the worker itself 
-                    depworkers(resumes.(name))
+
+            % Create the workflow graph
+            workerNames   = string(fieldnames(resumes))';
+            nWorkers      = length(workerNames);
+            names         = strings(1,0);    % The names of the workers that uniquely depend on missing input data
+            [workflow, H] = create_workflow_graph();
+
+            % Discard workers that depend on missing input data
+            allDownstream = [];
+            for name = workerNames
+                if ~obj.has_rawdata(resumes.(name))
+                    discardworkers(name)
                 end
             end
-            for name = string(fieldnames(resumes))'
-                if ~ismember(name, names)
-                    fprintf('ℹ️ Discarding %s as (some of) its input data is missing\n', name)
-                    resumes = rmfield(resumes, name);
-                end
+            for name = names
+                fprintf('ℹ️ Discarding %s as (some of) its input data is missing\n', name)
+                resumes = rmfield(resumes, name);
+            end
+
+            % Highlight all discarded subtrees
+            if ~isempty(allDownstream) && isvalid(H)
+                highlight(H, allDownstream, NodeLabelColor=[1 0.6 0])
+                [s, t]  = findedge(workflow);                   % Highlight outgoing edges from the discarded nodes
+                edgeIdx = ismember(s, allDownstream);
+                highlight(H, s(edgeIdx), t(edgeIdx), EdgeColor=[1 0.6 0], LineWidth=2)
             end
         end
 
-        function depworkers(resume)
-            %DEPWORKERS Recursively find all workers that depend on the workitems made (as listed in the resume)
-            for workitem = resume.makes         % Find all workers that need this workitem
-                for name_ = string(fieldnames(resumes))'
-                    if ~ismember(name_, names) && ismember(workitem, resumes.(name_).needs) && obj.has_rawdata(resumes.(name_))
-                        names(end+1) = name_;   %#ok<AGROW>
-                        depworkers(resumes.(name_))
-                    end
+        function [workflow, H] = create_workflow_graph()
+            %CREATE_WORKFLOW_GRAPH Creates a complete graph of all workers and workitems
+            %
+            % Output:
+            %   WORKFLOW - digraph object with workers and workitems as nodes
+            %   H        - Handle to the plot
+
+            % Collect all unique workers and workitems
+            workitems = strings(1,0);
+            for name_ = workerNames
+                workitems = [workitems, resumes.(name_).makes, resumes.(name_).needs];
+            end
+            workitems = unique(workitems(workitems ~= ""));
+
+            % Build edges = [source_idx, target_idx]
+            edges = [];
+            for i = 1:nWorkers
+                % Edges from worker to workitems it makes
+                for item = resumes.(workerNames(i)).makes
+                    edges(end+1, :) = [i, nWorkers + find(workitems == item)];
+                end
+
+                % Edges from workitems it needs to worker
+                for item = resumes.(workerNames(i)).needs
+                    edges(end+1, :) = [nWorkers + find(workitems == item), i];
                 end
             end
+
+            % Create the workflow graph
+            workflow = digraph(edges(:,1), edges(:,2), [], ["  " + workerNames, " " + workitems]);
+
+            % Plot the workflow graph
+            nodeTypes                                                           = ones(size([workerNames, workitems])); % Workers
+            nodeTypes(nWorkers+1:end)                                           = 2;                                    % Workitems
+            nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 3;                                    % Raw/deriv data
+            H = plot(workflow, ...
+                     Layout       = 'layered', ...
+                     NodeCData    = nodeTypes, ...
+                     MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...
+                     NodeFontSize = 8, ...
+                     LineWidth    = 1.5, ...
+                     ArrowSize    = 10, ...
+                     Interpreter  = 'none', ...
+                     Tag          = 'team_graph');
+            blue   = [0.16 0.5 0.73];   % = RTD blue #2980B9
+            green  = [0 0.8 0];
+            grey   = [0.7 0.7 0.7];
+            colormap([blue; green; grey])
+            title('Team graph')
+            text(0.02, 0.95, 'orange = discarded due to missing input data', Units='normalized')
+        end
+
+        function discardworkers(workerName)
+            %DISCARDWORKERS Does a bfsearch() in the WORKFLOW graph to find all workers that depend on the given
+            % WORKERNAME. Then, from the resulting tree, all subtrees that stem from workitems that have an
+            % indegree > 1 are removed (as the workers in these subtrees do not uniquely depend on the given
+            % worker). Adds the downstream nodes to allDownstream.
+            
+            % First remove all workitem nodes with indegree > 1 from workflow_
+            nrNodes   = numnodes(workflow);
+            delNodes  = find((1:nrNodes)' > nWorkers & indegree(workflow, 1:nrNodes)' > 1);
+            workflow_ = workflow;
+            workflow_ = rmnode(workflow_, delNodes);
+
+            % Use bfsearch to find all nodes reachable from this worker in the reduced graph
+            downstream_ = bfsearch(workflow_, find(workerNames == workerName));
+            
+            % Map downstream_ indices from workflow_ back to original workflow indices
+            allNodes   = 1:nrNodes;
+            remNodes   = allNodes(~ismember(allNodes, delNodes));
+            downstream = remNodes(downstream_);
+            
+            % Extract worker names from remaining downstream nodes
+            for idx = downstream(downstream <= nWorkers)
+                wName = workerNames(idx);
+                if ~ismember(wName, names)
+                    names(end+1) = wName;
+                end
+            end
+
+            % Add the downstream nodes to allDownstream
+            allDownstream = unique([allDownstream, downstream]);
         end
     end
 

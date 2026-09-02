@@ -13,7 +13,7 @@ To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by provid
 .. code-block:: matlab
 
    >> quidb = qb.QuIDBBIDS('/path/to/bids/dataset');       % Initialize QuIDBBIDS coordinator
-   >> quidb.catalog                                        % See e.g. what QuIDBBIDS can make
+   >> quidb.catalog                                        % See e.g. what QuIDBBIDS can make, given the input data
       Chimap               : Magnetic susceptibility map derived from phase or quantitative susceptibility mapping (QSM) reconstruction
       FMW_exrate           : Exchange rate map in Free <-> Myelin Water analysis
       [...]                : [...]

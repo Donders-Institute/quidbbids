@@ -9,7 +9,7 @@ properties
     outputdir               % BIDSApp derivatives subdirectory where the output is stored
     workdir                 % Working directory for intermediate results
     deliverables            % The end products (workitems) requested by the user, for full list of possible deliverables, see obj.catalog()
-    resumes                 % The resumes of all available workers
+    resumes                 % The resumes of all available workers, given the current BIDS dataset
     config                  % Configuration struct loaded from the config file
     configfile              % Path to the configuration file
     workflowfile            % Path to the workflow file
@@ -266,19 +266,24 @@ methods
                      ArrowSize    = 10, ...
                      Interpreter  = 'none', ...
                      Tag          = 'team_graph');
-            blue   = [0.16 0.5 0.73];   % = RTD blue #2980B9
-            green  = [0 0.8 0];
-            grey   = [0.7 0.7 0.7];
-            colormap([blue; green; grey])
+            colormap([0.16 0.5 0.73; 0 0.8 0; 0.7 0.7 0.7])     % = RTD blue #2980B9; green; grey
             title('Team graph')
             text(0.02, 0.95, 'orange = discarded due to missing input data', Units='normalized')
         end
 
         function discardworkers(workerName)
-            %DISCARDWORKERS Does a bfsearch() in the WORKFLOW graph to find all workers that depend on the given
-            % WORKERNAME. Then, from the resulting tree, all subtrees that stem from workitems that have an
-            % indegree > 1 are removed (as the workers in these subtrees do not uniquely depend on the given
-            % worker). Adds the downstream nodes to allDownstream.
+            %DISCARDWORKERS Finds all workers that uniquely depend on the given WORKERNAME by:
+            %
+            % 1. Creating a reduced workflow graph with workitem nodes that have indegree > 1 removed
+            % 2. Performing bfsearch on the reduced graph to find reachable nodes
+            % 3. Mapping indices back to the original workflow
+            %
+            % The resulting downstream nodes are added to ALLDOWNSTREAM (in parent scope) and worker
+            % names are added to NAMES (in parent scope).
+            %
+            % NB: The reduced workflow in step 1 is not reduced sufficiently if the incoming edges are
+            %     all from discarded workers. Implementing a recursive check for this is possible but
+            %     overcomplicated and not worth the effort (for now).
             
             % First remove all workitem nodes with indegree > 1 from workflow_
             nrNodes   = numnodes(workflow);

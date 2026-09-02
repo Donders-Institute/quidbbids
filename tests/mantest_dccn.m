@@ -31,7 +31,6 @@ if ismember("ABRIM_MEGRE", datasets)
     quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
     quidb.config.MP2RAGEWorker.NumberShots.value = 176;
     quidb.deliverables = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
-    quidb.resumes.QSMWorker.preferred = true;       % Optional, else GUI usage
     quidb.config.General.useHPC.value = true;
     quidb.config.General.tag.value = "manualtest";
     mgr = quidb.manager();

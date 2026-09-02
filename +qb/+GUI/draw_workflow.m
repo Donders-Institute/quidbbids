@@ -60,10 +60,10 @@ nodes = ["  " + workerNames, " " + workitems];  % Add spaces as node labels over
 workflow = digraph(edges(:,1), edges(:,2), [], nodes);
 
 % Identify nodes in upstream subtree of deliverables using graph traversal
-deliverableNodeIdx = nWorkers + find(ismember(workitems, deliverables));
+deliverableNodes = nWorkers + find(ismember(workitems, deliverables));
 upstream = flipedge(workflow);
 deliverableTree = false(size(nodes));
-for d = deliverableNodeIdx
+for d = deliverableNodes
     deliverableTree(bfsearch(upstream, d)) = true;
 end
 
@@ -80,7 +80,7 @@ end
 % Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange), 4=raw/deriv(grey)
 nodeTypes                                                           = ones(size(nodes));
 nodeTypes(nWorkers+1:end)                                           = 2;
-nodeTypes(deliverableNodeIdx)                                       = 3;
+nodeTypes(deliverableNodes)                                         = 3;
 nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 4;
 
 % Plot the workflow graph

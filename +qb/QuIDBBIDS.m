@@ -151,7 +151,7 @@ methods
         %
         % See also: qb.QuIDBBIDS (for overview)
 
-        [obj.configfile, obj.config] = qb.configeditor(obj.configfile, obj.config, '', obj.BIDS);    % TODO: Add team workers
+        [obj.configfile, obj.config] = qb.configeditor(obj.configfile, obj.config, fieldnames(obj.resumes), obj.BIDS);    % TODO: Add team workers
     end
 
     function manager = manager(obj)

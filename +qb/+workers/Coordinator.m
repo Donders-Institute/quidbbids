@@ -79,9 +79,9 @@ methods
             obj.glossary = jsondecode(fileread(glossfile));
         end
 
-        H = findall(groot, Tag='team_graph');
+        H = findall(groot, Tag='workflow_mask');
         if isvalid(H)
-            saveas(H(1), regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1team$2.png"))
+            saveas(H(1), regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow_mask$2.png"))
         end
     end
 
@@ -216,7 +216,7 @@ methods
                 highlight(H, allDiscarded, NodeLabelColor=[1 0.6 0])
                 [s, t]  = findedge(fullworkflow);       % Highlight outgoing edges from the discarded nodes
                 edgeIdx = ismember(s, allDiscarded);
-                highlight(H, s(edgeIdx), t(edgeIdx), EdgeColor=[1 0.6 0], LineWidth=2)
+                highlight(H, s(edgeIdx), t(edgeIdx), EdgeColor=[1 0.6 0], LineStyle=':')
             end
         end
 
@@ -266,9 +266,9 @@ methods
                          LineWidth    = 1.5, ...
                          ArrowSize    = 10, ...
                          Interpreter  = 'none', ...
-                         Tag          = 'team_graph');
+                         Tag          = 'workflow_mask');
                 colormap([0.16 0.5 0.73; 0 0.8 0; 0.7 0.7 0.7])     % = RTD blue #2980B9; green; grey
-                title('Team graph')
+                title('Workflow mask')
                 text(0.02, 0.95, 'orange = discarded due to missing input data', Units='normalized')
             end
         end

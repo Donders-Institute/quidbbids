@@ -195,42 +195,42 @@ methods
         % Discard workers that depend on missing input data
         if CheckData
 
-            % Create the workflow graph
-            workerNames   = string(fieldnames(resumes))';
-            nWorkers      = length(workerNames);
-            names         = strings(1,0);    % The names of the workers that uniquely depend on missing input data
-            [workflow, H] = create_workflow_graph();
+            % Create the full workflow graph and store it for later use
+            [workflow, H] = create_workflow();
+            fullworkflow  = workflow;
+            nFullWorkers  = numel(fieldnames(resumes));
 
             % Discard workers that depend on missing input data
-            allDownstream = [];
-            for name = workerNames
+            allDiscarded = [];                          % The indices of all discarded nodes in the FULLWORKFLOW graph
+            for name = string(fieldnames(resumes))'
                 if ~obj.has_rawdata(resumes.(name))
+                    rawdata      = resumes.(name).needs(startsWith(resumes.(name).needs, ["raw","deriv"]));
+                    allDiscarded = [allDiscarded, find(ismember(strtrim(fullworkflow.Nodes.Name), rawdata))'];   % Add the missing raw input workitem nodes
                     discardworkers(name)
+                    workflow = create_workflow();       % Recreate WORKFLOW with the discarded nodes, i.e. from updated RESUMES
                 end
-            end
-            for name = names
-                fprintf('ℹ️ Discarding %s as (some of) its input data is missing\n', name)
-                resumes = rmfield(resumes, name);
             end
 
             % Highlight all discarded subtrees
-            if ~isempty(allDownstream) && isvalid(H)
-                highlight(H, allDownstream, NodeLabelColor=[1 0.6 0])
-                [s, t]  = findedge(workflow);                   % Highlight outgoing edges from the discarded nodes
-                edgeIdx = ismember(s, allDownstream);
+            if ~isempty(allDiscarded) && isvalid(H)
+                highlight(H, allDiscarded, NodeLabelColor=[1 0.6 0])
+                [s, t]  = findedge(fullworkflow);       % Highlight outgoing edges from the discarded nodes
+                edgeIdx = ismember(s, allDiscarded);
                 highlight(H, s(edgeIdx), t(edgeIdx), EdgeColor=[1 0.6 0], LineWidth=2)
             end
         end
 
-        function [workflow, H] = create_workflow_graph()
-            %CREATE_WORKFLOW_GRAPH Creates a complete graph of all workers and workitems
+        function [workflow, H] = create_workflow()
+            %CREATE_WORKFLOW Creates and plots a complete graph of all workers and workitems
             %
             % Output:
             %   WORKFLOW - digraph object with workers and workitems as nodes
-            %   H        - Handle to the plot
+            %   H        - Handle to the plot (the plot is created if nargout > 1)
 
             % Collect all unique workers and workitems
-            workitems = strings(1,0);
+            workitems   = strings(1,0);
+            workerNames = string(fieldnames(resumes))';
+            nWorkers    = length(workerNames);
             for name_ = workerNames
                 workitems = [workitems, resumes.(name_).makes, resumes.(name_).needs];
             end
@@ -254,21 +254,23 @@ methods
             workflow = digraph(edges(:,1), edges(:,2), [], ["  " + workerNames, " " + workitems]);
 
             % Plot the workflow graph
-            nodeTypes                                                           = ones(size([workerNames, workitems])); % Workers
-            nodeTypes(nWorkers+1:end)                                           = 2;                                    % Workitems
-            nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 3;                                    % Raw/deriv data
-            H = plot(workflow, ...
-                     Layout       = 'layered', ...
-                     NodeCData    = nodeTypes, ...
-                     MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...
-                     NodeFontSize = 8, ...
-                     LineWidth    = 1.5, ...
-                     ArrowSize    = 10, ...
-                     Interpreter  = 'none', ...
-                     Tag          = 'team_graph');
-            colormap([0.16 0.5 0.73; 0 0.8 0; 0.7 0.7 0.7])     % = RTD blue #2980B9; green; grey
-            title('Team graph')
-            text(0.02, 0.95, 'orange = discarded due to missing input data', Units='normalized')
+            if nargout > 1
+                nodeTypes                                                           = ones(size([workerNames, workitems])); % Workers
+                nodeTypes(nWorkers+1:end)                                           = 2;                                    % Workitems
+                nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 3;                                    % Raw/deriv data
+                H = plot(workflow, ...
+                         Layout       = 'layered', ...
+                         NodeCData    = nodeTypes, ...
+                         MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...
+                         NodeFontSize = 8, ...
+                         LineWidth    = 1.5, ...
+                         ArrowSize    = 10, ...
+                         Interpreter  = 'none', ...
+                         Tag          = 'team_graph');
+                colormap([0.16 0.5 0.73; 0 0.8 0; 0.7 0.7 0.7])     % = RTD blue #2980B9; green; grey
+                title('Team graph')
+                text(0.02, 0.95, 'orange = discarded due to missing input data', Units='normalized')
+            end
         end
 
         function discardworkers(workerName)
@@ -276,39 +278,37 @@ methods
             %
             % 1. Creating a reduced workflow graph with workitem nodes that have indegree > 1 removed
             % 2. Performing bfsearch on the reduced graph to find reachable nodes
-            % 3. Mapping indices back to the original workflow
+            % 3. Mapping indices back to the FULLWORKFLOW using node names
             %
-            % The resulting downstream nodes are added to ALLDOWNSTREAM (in parent scope) and worker
-            % names are added to NAMES (in parent scope).
+            % The resulting downstream nodes are added to ALLDISCARDED (in parent scope) and workers
+            % are removed from RESUMES (in parent scope).
             %
             % NB: The reduced workflow in step 1 is not reduced sufficiently if the incoming edges are
-            %     all from discarded workers. Implementing a recursive check for this is possible but
-            %     overcomplicated and not worth the effort (for now).
+            %     all from simultaneously discarded workers.
             
-            % First remove all workitem nodes with indegree > 1 from workflow_
-            nrNodes   = numnodes(workflow);
-            delNodes  = find((1:nrNodes)' > nWorkers & indegree(workflow, 1:nrNodes)' > 1);
-            workflow_ = workflow;
-            workflow_ = rmnode(workflow_, delNodes);
+            % First remove all workitem nodes with indegree > 1 from workflow
+            workerNames = string(fieldnames(resumes))';
+            nWorkers    = length(workerNames);
+            nrNodes     = numnodes(workflow);
+            delNodes    = find((1:nrNodes)' > nWorkers & indegree(workflow, 1:nrNodes)' > 1);
+            workflow    = rmnode(workflow, delNodes);
 
-            % Use bfsearch to find all nodes reachable from this worker in the reduced graph
-            downstream_ = bfsearch(workflow_, find(workerNames == workerName));
+            % Find all nodes reachable from this worker in the reduced graph
+            downstream = bfsearch(workflow, find(workerNames == workerName));
             
-            % Map downstream_ indices from workflow_ back to original workflow indices
-            allNodes   = 1:nrNodes;
-            remNodes   = allNodes(~ismember(allNodes, delNodes));
-            downstream = remNodes(downstream_);
+            % Map reduced workflow node names directly to FULLWORKFLOW indices
+            remNodes   = workflow.Nodes.Name(downstream);
+            downstream = find(ismember(fullworkflow.Nodes.Name, remNodes))';
             
-            % Extract worker names from remaining downstream nodes
-            for idx = downstream(downstream <= nWorkers)
-                wName = workerNames(idx);
-                if ~ismember(wName, names)
-                    names(end+1) = wName;
-                end
+            % Extract worker names from remaining downstream nodes and remove them from RESUMES
+            for idx = downstream(downstream <= nFullWorkers)
+                wName = strtrim(fullworkflow.Nodes.Name{idx});
+                fprintf('ℹ️ Discarding %s as (some of) its input data is missing\n', wName)
+                resumes = rmfield(resumes, wName);
             end
 
-            % Add the downstream nodes to allDownstream
-            allDownstream = unique([allDownstream, downstream]);
+            % Add the downstream nodes to ALLDISCARDED
+            allDiscarded = unique([allDiscarded, downstream]);
         end
     end
 

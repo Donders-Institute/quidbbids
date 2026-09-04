@@ -204,7 +204,7 @@ methods
                 if ~obj.has_rawdata(resumes.(name))
                     rawdata      = resumes.(name).needs(startsWith(resumes.(name).needs, ["raw"," deriv"]));
                     allDiscarded = [allDiscarded, " " + rawdata];     % Add the missing raw input workitem nodes
-                    discardworkers(name)
+                    discardworkers("  " + name)                 % Spaces are prepended to the worker names make the plot look nicer
                 end
             end
 
@@ -248,7 +248,7 @@ methods
             end
 
             % Create the workflow graph
-            workflow = digraph(edges(:,1), edges(:,2), [], ["  " + workerNames, " " + workitems]);
+            workflow = digraph(edges(:,1), edges(:,2), [], ["  " + workerNames, " " + workitems]);  % Spaces are prepended to the worker names and workitems to make the plot look nicer
 
             % Plot the workflow graph
             if nargout > 1
@@ -270,7 +270,7 @@ methods
             end
         end
 
-        function discardworkers(workerName)
+        function discardworkers(nodeName)
             %DISCARDWORKERS Finds all workers that uniquely depend on the given WORKERNAME by:
             %
             % 1. Creating a reduced workflow graph with workitem nodes that have indegree > 1 removed
@@ -294,10 +294,10 @@ methods
             workflow   = rmnode(workflow, multiNodes);
 
             % Find all nodes reachable from WORKERNAME in the reduced graph, i.e. its unique downstream nodes
-            downstream = bfsearch(workflow, "  " + workerName)';
+            downstream = bfsearch(workflow, nodeName)';
             
             % Extract worker names from remaining downstream nodes and remove them from RESUMES
-            for wName = strtrim(downstream(ismember(downstream, "  " + workerNames)))
+            for wName = strtrim(downstream(ismember(downstream, "  " + workerNames)))   % Spaces were prepended to the worker names to make the plot look nicer
                 fprintf('ℹ️ Discarding %s as (some of) its input data is missing\n', wName)
                 resumes = rmfield(resumes, wName);
             end
@@ -305,10 +305,11 @@ methods
             % Add the downstream nodes to ALLDISCARDED
             allDiscarded = unique([allDiscarded, downstream]);
 
-            % Check if the removed multi-degree workitem nodes depend exclusively on the downstream nodes
+            % Iteratively remove multi-degree workitem nodes that depend exclusively on the downstream nodes
             for multiNode = string(multiNodes)'
                 if all(ismember(fullworkflow.predecessors(multiNode), downstream))
                     allDiscarded = unique([allDiscarded, multiNode]);
+                    % TODO: fix this issue (-> MULTINODE is no longer in WORKFLOW when the upstream nodes are discarded) and replace the above line with it
                 end
             end
         end

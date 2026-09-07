@@ -310,23 +310,23 @@ methods
         fprintf("============= Finished workflow at %s =============\n\n", datetime('now'))
     end
 
-    function copy_to_outputdir(obj, worker, product, subjects)
+    function copy_to_outputdir(obj, worker, deliverable, subjects)
         %COPY_TO_OUTPUTDIR Copies the deliverables from the workdir to the outputdir
 
         arguments
             obj
             worker      qb.workers.Worker
-            product     string
+            deliverable string
             subjects    struct
         end
         
         labels = extractAfter({subjects.name}, 'sub-');
         BIDSW  = bids.layout(char(worker.workdir), filter=struct('sub',{labels}), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
-        for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(product))')
+        for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(deliverable))')
             target = bids.File(char(source));
             target.entities.tag = char(worker.config.General.tag);
             target.path = fullfile(obj.coord.outputdir, target.bids_path, target.filename);
-            worker.logger.info('-> Saving "%s" deliverable as: %s', product, target.path)
+            worker.logger.info('-> Saving "%s" deliverable as: %s', deliverable, target.path)
             qb.utils.copybfile(source, target, obj.force)
         end
     end

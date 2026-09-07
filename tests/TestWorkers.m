@@ -7,14 +7,12 @@ classdef TestWorkers < BaseTest
         BIDS
         Subject
         Config
-        BidsExamplesRepo  % Shared repository for all test methods
         BidsLayout        % Shared BIDS layout for all test methods
     end
 
     methods (TestClassSetup)
         function setupBidsExamples(testCase)
             % Clone bids-examples repository once for all test methods in this class
-            testCase.BidsExamplesRepo = fullfile(tempname, 'quidbbids_test_bids_examples');
             if ~exist(testCase.BidsExamplesRepo, 'dir')
                 system(sprintf('git clone --depth 1 %s %s', 'https://github.com/bids-standard/bids-examples.git', testCase.BidsExamplesRepo));
             end
@@ -39,15 +37,6 @@ classdef TestWorkers < BaseTest
             
             % Use the first subject from the dataset
             testCase.Subject = testCase.BIDS.subjects(1);
-        end
-    end
-
-    methods (TestClassTeardown)
-        function teardownBidsExamples(testCase)
-            % Clean up the bids-examples repository
-            if exist(testCase.BidsExamplesRepo, 'dir')
-                rmdir(testCase.BidsExamplesRepo, 's')
-            end
         end
     end
 

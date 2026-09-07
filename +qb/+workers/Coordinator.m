@@ -97,9 +97,9 @@ methods
         obj.deliverables(obj.deliverables=="") = [];
     end
 
-    function choose_products(obj)
+    function choose_deliverables(obj)
         % TODO: Implement a GUI to choose the deliverables interactively
-        obj.deliverables = qb.ChooseProducts(obj.resumes);
+        obj.deliverables = qb.ChooseDeliverables(obj.resumes);
     end
 
     function items = catalog(obj, resumes)
@@ -135,6 +135,7 @@ methods
         
         has_data = true;
         if isempty(dir(fullfile(obj.BIDS.pth, 'sub-*')))
+            fprintf('⚠ No "%s" subjects found in: %s\n', obj.BIDS.pth)
             return      % -> Escape for unit-tests
         end
 
@@ -168,7 +169,7 @@ methods
             CheckData logical = true
         end
 
-        resumes = {};
+        resumes = struct();
         wfiles  = dir(fullfile(fileparts(which("qb.workers.Worker")), "*Worker*.m"))';
         if ~isdeployed      % Add custom workers from the user config directory
             wfiles = [wfiles, dir(fullfile(fileparts(qb.resetconfig(false)), "workers", "*Worker*.m"))'];
@@ -201,7 +202,7 @@ methods
             % Discard workers that depend on missing input data
             allDiscarded = strings(1,0);                        % The node names of all discarded nodes in the FULLWORKFLOW graph
             for name = string(fieldnames(resumes))'
-                if ~obj.has_rawdata(resumes.(name))
+                if ismember(name, fieldnames(resumes)) && ~obj.has_rawdata(resumes.(name))  % NAME may have been removed in a previous iteration of this loop
                     rawdata      = resumes.(name).needs(startsWith(resumes.(name).needs, ["raw"," deriv"]));
                     allDiscarded = [allDiscarded, " " + rawdata];     % Add the missing raw input workitem nodes
                     discardworkers("  " + name)                 % Spaces are prepended to the worker names make the plot look nicer

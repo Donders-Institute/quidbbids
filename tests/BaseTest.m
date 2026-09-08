@@ -12,4 +12,13 @@ classdef BaseTest < matlab.unittest.TestCase
             warning('off', 'MATLAB:graphics:HardwareUnavailable')
         end
     end
+
+    methods (TestClassTeardown)
+        function teardownBidsExamples(testCase)
+            % Clean up the bids-examples repository
+            if exist(testCase.BidsExamplesRepo, 'dir')
+                rmdir(testCase.BidsExamplesRepo, 's')
+            end
+        end
+    end
 end

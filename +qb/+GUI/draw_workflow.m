@@ -1,4 +1,4 @@
-function draw_workflow(team, deliverables)
+function workflow = draw_workflow(team, deliverables)
 %DRAW_WORKFLOW(TEAM) Draw dependency graph with workers and workitems
 %
 % draw_workflow displays a bipartite graph where:
@@ -12,6 +12,9 @@ function draw_workflow(team, deliverables)
 % Inputs:
 %   TEAM         - Struct as created by Manager.create_team()
 %   DELIVERABLES - Row vector of deliverable workitem names (default: fieldnames(team))
+%
+% Returns:
+%   WORKFLOW     - MATLAB digraph object representing the workflow graph with all workers and workitems
 
 arguments
     team         (1,1) struct
@@ -20,6 +23,7 @@ end
 
 if isempty(fieldnames(team))
     disp('⚠ No team data found, cannot draw workflow graph')  % The wide Unicode character may not display correctly in all environments
+    workflow = digraph();
     return
 end
 
@@ -54,7 +58,7 @@ for i = 1:nWorkers
 end
 
 % Build node lists for the graph (workers come first, then workitems)
-nodes = ["  " + workerNames, " " + workitems];  % Add spaces as node labels overlap with markers in the digraph plot
+nodes = [workerNames, workitems];
 
 % Create the workflow graph
 workflow = digraph(edges(:,1), edges(:,2), [], nodes);
@@ -85,6 +89,7 @@ nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 4;
 
 % Plot the workflow graph
 H = plot(workflow, ...
+         NodeLabel    = ["  " + workerNames, " " + workitems], ...       % Add spaces as node labels overlap with markers in the digraph plot
          Layout       = 'layered', ...
          NodeCData    = nodeTypes, ...
          MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...

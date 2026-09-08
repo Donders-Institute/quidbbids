@@ -42,7 +42,7 @@ function chosen = selectworker(workers, workitem)
                        'SelectionChangedFcn', @(src,event) updateInfo(event.NewValue.Text));
 
     % --- Add radio buttons
-    names = arrayfun(@(w) strrep(char(w.handle),'qb.workers.',''), workers, 'UniformOutput', false);
+    names = arrayfun(@(w) replace(char(w.handle),'qb.workers.',''), workers, 'UniformOutput', false);
     yPos = rbHeight - 30;       % start from top
     for idx = 1:numel(workers)
         uiradiobutton(bg, 'Text', names{idx}, 'Position', [10, yPos, rbWidth-20, 25]);

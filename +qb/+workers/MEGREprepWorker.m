@@ -207,7 +207,7 @@ methods (Static)
                     end
                     magfile        = char(obj.query_ses(BIDSW, 'data', bfilter));
                     V_m{n}         = spm_vol(magfile);
-                    V_p{n}         = spm_vol(strrep(magfile, 'part-mag', 'part-phase'));
+                    V_p{n}         = spm_vol(replace(magfile, 'part-mag', 'part-phase'));
                     img(:,:,:,:,n) = single(spm_read_vols(V_m{n}) .* exp(1i * qb.utils.read_vols_phase(V_p{n})));   % Read phase data in radians
                 end
 

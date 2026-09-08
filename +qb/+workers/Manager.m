@@ -30,8 +30,9 @@ classdef Manager < handle
 
 properties
     team = struct.empty()   % The resumes of the workers that will produce the deliverables: team.(workitem) -> worker resume
+    workflow = digraph()    % The workflow graph as a MATLAB digraph object
     coord                   % The coordinator that help the manager with administrative tasks
-    force = false           % Force workers to start working, even if the subject is locked or existing results exist
+    force = strings(1,0)    % List of workers for which the work should be forced, even if the subject is locked or existing results exist
     interactive = true      % If true, the manager will ask the user for help when needed (false = useful for automated testing)
 end
 
@@ -47,6 +48,21 @@ methods
 
         obj.coord = coord;                      % The coordinator that help the manager with administrative tasks
         obj.create_team()
+    end
+
+    function set.force(obj, val)
+        % Check if the force property is stored as a valid string row
+        if ~ismember(class(val), {'string', 'char'})
+            error('QuIDBBIDS:Manager:InvalidForce', 'The force property must be a string or char array')
+        end
+        workers = fieldnames(obj.coord.resumes);   %#ok<MCSUP>
+        if strlength(val) == 0
+            obj.force = strings(1,0);
+        elseif all(ismember(string(val), workers))
+            obj.force = string(val(:)');
+        else
+            error('QuIDBBIDS:Manager:InvalidForce', 'The force property must be a subset of the available workers:%s', sprintf(' "%s"', workers{:}))
+        end
     end
 
     function create_team(obj, workitems, recurse_)
@@ -69,7 +85,7 @@ methods
             obj.team = struct();
         end
 
-        if ~strlength(workitems)
+        if isempty(workitems)
             return
         end
 
@@ -118,7 +134,7 @@ methods
 
         % Plot and save the team workflow graph
         if ~recurse_
-            qb.GUI.draw_workflow(obj.team, obj.coord.deliverables);
+            obj.workflow = qb.GUI.draw_workflow(obj.team, obj.coord.deliverables);
             H = findall(groot, Tag='workflow_graph');
             if isvalid(H)
                 saveas(H(1), regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
@@ -198,13 +214,15 @@ methods
             subjects string = "";
         end
 
+        % Block the start button in the GUI (if any)
+
         % Start a diary to log the screen output
         logdir = fullfile(obj.coord.outputdir, 'logs');
         [~,~]  = mkdir(logdir);
         diary(fullfile(logdir, 'diary_workflow.txt'))
         diary_off = onCleanup(@() diary('off'));
 
-        if ~strlength(obj.coord.deliverables)
+        if isempty(obj.coord.deliverables)
             disp('❌ The list of deliverables is empty, there is nothing to do')
             return
         end
@@ -232,7 +250,7 @@ methods
         end
 
         % Parse the subjects for which the workflow should be executed
-        if strlength(subjects) > 0
+        if strlength(subjects)
             sel = false(size(obj.coord.BIDS.subjects));
             for subject = subjects(:)'
                 sel(strcmp({obj.coord.BIDS.subjects.name}, subject)) = true;
@@ -273,7 +291,56 @@ methods
             end
         end
 
-        % Block the start button in the GUI (if any) and initialize the workers
+        % Delete the workitems from the forced workers and their downstream dependencies (so that they will be re-made)
+        if ~isempty(obj.force)
+            if isvalid(findall(groot, Tag='workflow_graph'))
+                qb.GUI.draw_workflow(obj.team, obj.coord.deliverables);     % Recreate the workflow graph if it was closed by the user
+            end
+            H = findall(groot, Tag='workflow_graph');
+            workers = fieldnames(obj.coord.resumes);
+            BIDSW   = bids.layout(char(obj.coord.workdir), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
+            for worker = obj.force
+
+                % Remove the non-preferred edges to find the downstream nodes of the forced worker
+                prunedflow = obj.workflow;
+                for node = string(prunedflow.Nodes.Name)'
+                    if ~ismember(node, workers) && indegree(prunedflow, node) > 1   % If it's not a worker, then it must be a workitem
+                        for parent = prunedflow.predecessors(node)'
+                            if ~strcmp(parent, obj.team.(node).name)                % Remove the edge if the parent worker is not preferred
+                                prunedflow = rmedge(prunedflow, parent, node);
+                            end
+                        end
+                    end
+                end
+                downstream = bfsearch(prunedflow, worker);
+
+                % Highlight the downstream edges
+                if isvalid(H)
+                    [s, t] = findedge(obj.workflow);
+                    idx    = ismember(obj.workflow.Nodes.Name(s), downstream);
+                    highlight(H, s(idx), t(idx), LineStyle=':')
+                end
+
+                % Delete the workitems from the forced workers and their downstream dependencies (so that they will be re-made)
+                for node = downstream'
+                    if ismember(node, workers)
+                        depworker = obj.coord.resumes.(node).handle(obj.coord.BIDS, struct(), obj.coord.config);
+                        for workitem = depworker.makes
+                            items = replace(erase(bids.query(BIDSW, 'data', depworker.bidsfilter.(workitem)),'.gz'),'.nii','.*');   % TODO: Fix BIDSW for QSMWorker, which uses a custom workdir
+                            if ~isempty(items)
+                                fprintf('🗑️ Deleting %s -> %s items from the workdir\n', depworker.name, workitem)
+                                delete(items{:})
+                            end
+                        end
+                    end
+                end
+            end
+            if isvalid(H)
+                saveas(H(1), regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
+            end
+        end
+
+        % Dispatch the workers
         fprintf("\n============= Starting workflow at %s =============\n", datetime('now'))
         for product = obj.coord.deliverables      % TODO: sort such that MEGREprepWorker deliverables (if any) are fetched first
             Worker = obj.team.(product).handle;
@@ -287,7 +354,7 @@ methods
                 end
 
                 % Ask the worker to fetch the deliverable for this subject
-                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
+                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
                 fprintf('▶ Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)  % The wide Unicode character may not display correctly in all environments
                 if obj.coord.config.General.useHPC.value
                     jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: deliverables are passed directly instead of calling fetch()
@@ -322,12 +389,12 @@ methods
         
         labels = extractAfter({subjects.name}, 'sub-');
         BIDSW  = bids.layout(char(worker.workdir), filter=struct('sub',{labels}), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
-        for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(deliverable))')
+        for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(deliverable)))'
             target = bids.File(char(source));
             target.entities.tag = char(worker.config.General.tag);
             target.path = fullfile(obj.coord.outputdir, target.bids_path, target.filename);
             worker.logger.info('-> Saving "%s" deliverable as: %s', deliverable, target.path)
-            qb.utils.copybfile(source, target, obj.force)
+            qb.utils.copybfile(source, target, ismember(worker.name, obj.force))
         end
     end
 

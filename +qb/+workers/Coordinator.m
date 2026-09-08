@@ -87,10 +87,12 @@ methods
 
     function set.deliverables(obj, val)
         % Check if the deliverable exist and force anything assigned to be stored as a string row
+        if ~ismember(class(val), {'string', 'char'})
+            error('QuIDBBIDS:Deliverables:TypeError', 'The deliverables property must be a string or char array')
+        end
         for product = string(val(:)')
             if product~="" && all(cellfun(@isempty, regexp(obj.catalog(), "^" + product + "$")))
-                warning("QuIDBBIDS:Deliverables:Ambiguous", 'The "%s" deliverable was not found, it must match any of:%s', product, sprintf(' "%s"', obj.catalog()))
-                return
+                error("QuIDBBIDS:Deliverables:Invalid", 'The "%s" deliverable was not found, it must match any of:%s', product, sprintf(' "%s"', obj.catalog()))
             end
         end
         obj.deliverables = string(val(:)');
@@ -204,8 +206,8 @@ methods
             for name = string(fieldnames(resumes))'
                 if ismember(name, fieldnames(resumes)) && ~obj.has_rawdata(resumes.(name))  % NAME may have been removed in a previous iteration of this loop
                     rawdata      = resumes.(name).needs(startsWith(resumes.(name).needs, ["raw"," deriv"]));
-                    allDiscarded = [allDiscarded, " " + rawdata];     % Add the missing raw input workitem nodes
-                    discardworkers("  " + name)                 % Spaces are prepended to the worker names make the plot look nicer
+                    allDiscarded = [allDiscarded, rawdata];     % Add the missing raw input workitem nodes
+                    discardworkers(name)
                 end
             end
 
@@ -249,7 +251,7 @@ methods
             end
 
             % Create the workflow graph
-            workflow = digraph(edges(:,1), edges(:,2), [], ["  " + workerNames, " " + workitems]);  % Spaces are prepended to the worker names and workitems to make the plot look nicer
+            workflow = digraph(edges(:,1), edges(:,2), [], [workerNames, workitems]);
 
             % Plot the workflow graph
             if nargout > 1
@@ -257,6 +259,7 @@ methods
                 nodeTypes(nrWorkers+1:end)                                           = 2;                                    % Workitems
                 nodeTypes(nrWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 3;                                    % Raw/deriv data
                 H = plot(workflow, ...
+                         NodeLabel    = ["  " + workerNames, " " + workitems], ...       % Add spaces as node labels overlap with markers in the digraph plot
                          Layout       = 'layered', ...
                          NodeCData    = nodeTypes, ...
                          MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...
@@ -298,7 +301,7 @@ methods
             downstream = bfsearch(workflow, nodeName)';
             
             % Extract worker names from remaining downstream nodes and remove them from RESUMES
-            for wName = strtrim(downstream(ismember(downstream, "  " + workerNames)))   % Spaces were prepended to the worker names to make the plot look nicer
+            for wName = downstream(ismember(downstream, workerNames))
                 fprintf('ℹ️ Discarding %s as (some of) its input data is missing\n', wName)
                 resumes = rmfield(resumes, wName);
             end

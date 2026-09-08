@@ -151,7 +151,7 @@ methods
         obj.bidsfilter.ME4Dmag.id   = 'temp';
         obj.bidsfilter.ME4Dphase.id = 'temp';
 
-        cleanup = onCleanup(@() delete(fullfile(strrep(obj.subject.path, obj.BIDS.pth, obj.workdir), bfilter.modality, '*_id-temp_*mask.*')));
+        cleanup = onCleanup(@() delete(fullfile(replace(obj.subject.path, obj.BIDS.pth, obj.workdir), bfilter.modality, '*_id-temp_*mask.*')));
         create_brainmask(obj, obj.BIDS, bfilter)
         merge_MEVFAfiles(obj, bfilter, obj.BIDS, false)
         denoise_MPPCA(obj)
@@ -228,7 +228,7 @@ methods
 
                 % Save the M0 volume as well
                 bfile                    = obj.bfile_set(Vref.fname, obj.bidsfilter.M0map_echo1);
-                bfile.metadata.Sources   = strrep(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids::');
+                bfile.metadata.Sources   = replace(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids::');
                 bfile.metadata.FlipAngle = flipangles;
                 obj.logger.verbose("-> Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
                 write_vol(Vref, M0, bfile);
@@ -274,7 +274,7 @@ methods
                         denoised_mag(:,:,:,:,m)   = single(spm_read_vols(spm_vol(denoised_magf{m})));
                         denoised_phase(:,:,:,:,m) = single(read_vols_phase(spm_vol(denoised_phasef{m})));
                     end
-                    cellfun(@delete, strrep(erase([denoised_magf, denoised_phasef],'.gz'), '.nii','.*'))
+                    cellfun(@delete, replace(erase([denoised_magf, denoised_phasef],'.gz'), '.nii','.*'))
                 end
 
                 % Realign all FA images to their synthetic targets

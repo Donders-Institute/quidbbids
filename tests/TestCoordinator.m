@@ -49,9 +49,7 @@ classdef TestCoordinator < BaseTest
         function testDeliverables(testCase)
             % Check that deliverables is a valid string row
             testCase.verifyEmpty(testCase.quidb_empty.deliverables, 'deliverables should be empty')
-            testCase.quidb_empty.deliverables = ["a", "b", "c"];
-            testCase.verifyEmpty(testCase.quidb_empty.deliverables, 'deliverables should be empty')
-            testCase.verifyWarning(@() setfield(testCase.quidb_empty, deliverables = ["a", "b", "c"]), 'QuIDBBIDS:Deliverables:Ambiguous', 'Should throw ambiguous deliverable warning')
+            testCase.verifyError(@() setfield(testCase.quidb_empty, deliverables = ["a", "b", "c"]), 'QuIDBBIDS:Deliverables:Invalid', 'Should throw invalid deliverable error')
             testCase.quidb_empty.deliverables = ["R1map"; "ME.*Dmag"];
             testCase.verifyEqual(testCase.quidb_empty.deliverables, ["R1map", "ME.*Dmag"])
         end

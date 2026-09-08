@@ -607,8 +607,8 @@ classdef ConfigEditor < handle
             
             % Convert search query to regex pattern with smart wildcard handling
             pattern = lower(strtrim(pattern));
-            pattern = strrep(pattern, '*', '.*'); % Convert * to .* for regex
-            pattern = strrep(pattern, '?', '.');  % Convert ? to . for regex
+            pattern = replace(pattern, '*', '.*'); % Convert * to .* for regex
+            pattern = replace(pattern, '?', '.');  % Convert ? to . for regex
             if ~startsWith(pattern, '^')
                 pattern = ['^', pattern];
             end

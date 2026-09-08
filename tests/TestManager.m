@@ -40,7 +40,7 @@ classdef TestManager < BaseTest
 
             % Should not throw an error if a worker can make the requested deliverables
             testCase.mgr.coord.resumes.MEGREprepWorker.preferred = true;
-            testCase.mgr.coord.deliverables = ["rawMEGRE", "echo.*D(mag|phase)"];
+            testCase.mgr.coord.deliverables = ["Chimap", "M.*D(mag|phase)"];
             testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error for known deliverables")
             testCase.verifyNotEmpty(testCase.mgr.team, 'Manager team should not be empty')
 

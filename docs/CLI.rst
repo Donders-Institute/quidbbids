@@ -63,7 +63,7 @@ Finally, to run the workflow, initialize the manager from your ``QuIDBBIDS`` obj
 .. code-block:: matlab
 
    >> mgr       = quidb.manager();  % Initialize the manager to get work done
-   >> mgr.force = false;            % Tell the manager to reuse existing workitems (= default)
+   >> mgr.force = ["B1prepWorker", "MP2RAGEWorker"];     % Reuse existing workitems except for these workers and their dependencies
    >> mgr.start_workflow()          % Start the workflow
 
 For getting more help on the various classes, methods and properties, you can use MATLAB's built-in documentation

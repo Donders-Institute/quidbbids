@@ -31,6 +31,6 @@ else
     [~,~] = mkdir(fileparts(target.path));
     copyfile(source.path, target.path)
     if ~isempty(fieldnames(source.metadata))
-        bids.util.jsonencode(char(strrep(target.path, target.filename, target.json_filename)), source.metadata)
+        bids.util.jsonencode(char(replace(target.path, target.filename, target.json_filename)), source.metadata)
     end
 end

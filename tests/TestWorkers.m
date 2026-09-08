@@ -78,7 +78,6 @@ classdef TestWorkers < BaseTest
                     testCase.verifyEqual(worker.workdir, testCase.WorkDir, 'workdir property should match input')
                     testCase.verifyEqual(worker.outputdir, testCase.OutputDir, 'outputdir property should match input')
                     testCase.verifyClass(worker.config, 'struct', 'config should be a struct')
-                    testCase.verifyFalse(worker.force, 'force should default to false')
                     testCase.verifyClass(worker.team, 'struct', 'team should be a struct')
                     testCase.verifyClass(worker.bidsfilter, 'struct', 'bidsfilter should be a struct')
                     testCase.verifyNotEmpty(worker.bidsfilter, 'bidsfilter should not be empty')

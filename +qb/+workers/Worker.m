@@ -30,7 +30,6 @@ properties
     workdir         % Working directory for intermediate files
     outputdir       % Output directory for final results
     team            % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker resume
-    force           % Force to start working, even if the subject is locked or existing results exist
     bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDS_ses, 'data', bidsfilter.(workitem), run=1)`
     logger          % A logger object for keeping logs
 end
@@ -55,7 +54,7 @@ end
 
 methods
 
-    function obj = Worker(BIDS, subject, config, workdir, outputdir, team, force, workitems)
+    function obj = Worker(BIDS, subject, config, workdir, outputdir, team, workitems)
         % Constructor for the abstract Worker class
 
         arguments
@@ -65,7 +64,6 @@ methods
             workdir   {mustBeTextScalar} = ''   % Working directory for intermediate files
             outputdir {mustBeTextScalar} = ''   % Output directory for final results
             team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
-            force     (1,1) logical = false     % Force to start working, even if the subject is locked or existing results exist
             workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the deliverable). Default = ''
         end
 
@@ -75,7 +73,6 @@ methods
         obj.workdir   = workdir;
         obj.outputdir = outputdir;
         obj.team      = team;
-        obj.force     = force;
         obj.name      = string(erase(class(obj), 'qb.workers.'));  % Get the class name without package prefix
         obj.logger    = qb.workers.Logging(obj);
 
@@ -132,19 +129,15 @@ methods
 
         % See if we can collect the requested workitem
         work = obj.query_ses(obj.BIDS_ses(), 'data', obj.bidsfilter.(workitem));
-        if isempty(work) || obj.force
+        if isempty(work)
 
             obj.logger.info("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path)
 
             % Check if the subject is already being worked on
             locked = obj.is_locked();
             if locked
-                if obj.force
-                    obj.logger.warning("Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked)
-                else
-                    obj.logger.error("%s was: %s", fileparts(obj.statusfile('.lock')), locked)
-                    return
-                end
+                obj.logger.error("%s was: %s", fileparts(obj.statusfile('.lock')), locked)
+                return
             end
 
             % Check if there is a GPU available

@@ -198,7 +198,7 @@ methods
 
                 % Compute T1 and M0 maps
                 obj.logger.info("--> Running despot1 to compute T1 and M0 maps from: " + VFA_e1{1})
-                flipangles = [];
+                flipangles = []; TRs = [];
                 VFAimg = NaN([Vref.dim length(VFA_e1)]);
                 for n = 1:length(VFA_e1)
                     VFAn = spm_vol(VFA_e1{n});
@@ -213,12 +213,23 @@ methods
                     end
                     metadata      = bids.File(VFA_e1{n}).metadata;
                     flipangles(n) = metadata.FlipAngle;
+                    TRs(n)        = metadata.RepetitionTime;
                 end
-                [T1, M0] = despot1_mapping(VFAimg, flipangles, metadata.RepetitionTime);
+                
+                isVTR = ~all(abs(TRs - TRs(1)) < 1e-6*TRs(1));
+                if isVTR
+                    if ~exist('despot1_VTR', 'class')
+                        obj.logger.exception('%s found a variable-TR protocol but despot1_VTR is not on the MATLAB-path.\nPossible solution:\ngit submodule update --init dependencies/vTR-qMRI', obj.name)
+                    end
+                    obj.logger.info('%s detected a variable-TR protocol (TR = [%s] ms), using despot1_VTR', obj.name, num2str(TRs*1e3, ' %.2f'))
+                    [T1, M0] = despot1_VTR(TRs, flipangles).estimate(VFAimg);
+                else
+                    [T1, M0] = despot1_mapping(VFAimg, flipangles, TRs(1));
+                end
 
                 % Save T1w-like images in the work directory
                 for n = 1:length(VFA_e1)
-                    T1w                    = M0 .* GRESignal(flipangles(n), metadata.RepetitionTime, T1);
+                    T1w                    = M0 .* GRESignal(flipangles(n), TRs(n), T1);
                     T1w(~isfinite(T1w))    = 0;
                     bfile                  = obj.bfile_set(VFA_e1{n}, obj.bidsfilter.syntheticT1);
                     bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
@@ -230,6 +241,7 @@ methods
                 bfile                    = obj.bfile_set(Vref.fname, obj.bidsfilter.M0map_echo1);
                 bfile.metadata.Sources   = strrep(VFA_e1, extractBefore(VFA_e1{1}, bfile.bids_path), 'bids::');
                 bfile.metadata.FlipAngle = flipangles;
+                bfile.metadata.RepetitionTime = TRs;
                 obj.logger.verbose("-> Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
                 write_vol(Vref, M0, bfile);
             end

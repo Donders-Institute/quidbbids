@@ -88,13 +88,6 @@ methods
         localfmask = obj.ask_team('localfmask');    % Multiple FA-images per run
         TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
 
-        % >>> TEMPORARY for development testing 
-        %testflips  = [1 2 5];                    % TR44/FA5, TR44/FA15, TR44/FA70
-        testflips = [21 12 5];                    % TR11/FA5, TR28/FA15, TR44/FA70
-        keep       = cellfun(@(f) ismember(str2double(bids.File(f).entities.flip), testflips), ME4Dmag);
-        ME4Dmag    = ME4Dmag(keep);   unwrapped = unwrapped(keep);
-        fieldmap   = fieldmap(keep);  localfmask = localfmask(keep);
-
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
         if numel(unique([length(unwrapped), length(fieldmap)])) > 1
             obj.logger.exception('%s received an ambiguous number of ME4Dmag, unwrapped or fieldmaps:%s', obj.name, ...

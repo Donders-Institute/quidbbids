@@ -344,7 +344,7 @@ methods
                 saveas(H, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
             end
         end
-return
+
         % Dispatch the workers
         fprintf("\n============= Starting workflow at %s =============\n", datetime('now'))
         for product = obj.coord.deliverables      % TODO: sort such that MEGREprepWorker deliverables (if any) are fetched first

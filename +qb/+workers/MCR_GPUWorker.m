@@ -1,4 +1,4 @@
-classdef MCR_GPUWorker < qb.workers.Worker
+classdef (Sealed) MCR_GPUWorker < qb.workers.Worker
 %MCRWORKER Runs MCR workflow on the GPU
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)

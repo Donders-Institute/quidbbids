@@ -27,9 +27,9 @@ for wfile = dir(fullfile(worker_dir, "*Worker*.m"))'
         continue
     end
     if endsWith(wfile.folder, '+workers')
-        worker = qb.workers.(erase(wfile.name, '.m'))(BIDS, struct('name','','session',''), config);
+        worker = qb.workers.(erase(wfile.name, '.m'))(BIDS, struct(name='',session=''), config);
     else
-        worker = feval(erase(wfile.name, '.m'), BIDS, struct('name','','session',''), config);
+        worker = feval(erase(wfile.name, '.m'), BIDS, struct(name='',session=''), config);
     end
 
     % Write worker header

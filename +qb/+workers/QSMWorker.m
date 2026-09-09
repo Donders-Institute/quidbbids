@@ -1,4 +1,4 @@
-classdef QSMWorker < qb.workers.Worker
+classdef (Sealed) QSMWorker < qb.workers.Worker
 %QSMWORKER Runs QSM and R2-star workflows
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
@@ -106,12 +106,12 @@ methods
             end
 
             % Create a SEPIA header file
-            clear input
+            clear('input')
             input.nifti      = magfiles{n};                                         % For extracting B0 direction, voxel size, matrix size (only the first 3 dimensions)
             input.TEFileList = {spm_file(spm_file(magfiles{n}, 'ext',''), 'ext','.json')};   % If given, then SEPIA requires non-BIDS "ConversionSoftware" field from dcm2niix
             bfile            = obj.bfile_set(magfiles{n}, setfield(obj.bidsfilter.R2starmap, suffix=''));  % Output basename; SEPIA adds suffixes of its own
             output           = extractBefore(bfile.path, bfile.extension);          % Output path. N.B: SEPIA will interpret the last part of the path as a file-prefix
-            save_sepia_header(input, struct('TE', bfile.metadata.EchoTime), output) % Override SEPIA's TE values with what the bfile says (-> added by file_merge)
+            save_sepia_header(input, struct(TE=bfile.metadata.EchoTime), output)    % Override SEPIA's TE values with what the bfile says (-> added by file_merge)
 
             % Get the SEPIA parameters
             switch workitem
@@ -126,7 +126,7 @@ methods
             end
 
             % Run the SEPIA workflow
-            clear input
+            clear('input')
             input(1).name = phasefiles{n};  % For input().name see SEPIA GUI
             input(2).name = magfiles{n};
             input(3).name = '';

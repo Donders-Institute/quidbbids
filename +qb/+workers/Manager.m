@@ -229,7 +229,7 @@ methods
 
         % Save the config and workflow data, so that the workflow can be resumed later
         obj.coord.get_config(obj.coord.config);
-        obj.coord.save_workflow()
+        obj.coord.save_coord()
 
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value
@@ -336,10 +336,11 @@ methods
                 end
             end
             if isvalid(H)
-                L = findall(ancestor(H,'Figure'), Type='Legend');
+                L = findall(ancestor(H,'Figure'), Type='Legend'); drawnow
                 if L.Position(2) < 0.1      % Move the legend a bit up if the best Position is 'South'
                     L.Position(2) = L.Position(2) + 0.045;
                 end
+                delete(findall(ancestor(H,'Figure'), 'Type', 'textboxshape'))
                 annotation('textbox', [L.Position(1), L.Position(2)-0.045, L.Position(3), 0.035], String='{\bf--} Enforced', FontSize=L.FontSize, BackgroundColor=L.Color)
                 saveas(H, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
             end
@@ -382,59 +383,6 @@ methods
         fprintf("============= Finished workflow at %s =============\n\n", datetime('now'))
     end
 
-    function copy_to_outputdir(obj, worker, deliverable, subjects)
-        %COPY_TO_OUTPUTDIR Copies the deliverables from the workdir to the outputdir
-
-        arguments
-            obj
-            worker      qb.workers.Worker
-            deliverable string
-            subjects    struct
-        end
-        
-        labels = extractAfter({subjects.name}, 'sub-');
-        BIDSW  = bids.layout(char(worker.workdir), filter=struct('sub',{labels}), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
-        for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(deliverable)))'
-            target = bids.File(char(source));
-            target.entities.tag = char(worker.config.General.tag);
-            target.path = fullfile(obj.coord.outputdir, target.bids_path, target.filename);
-            worker.logger.info('-> Saving "%s" deliverable as: %s', deliverable, target.path)
-            qb.utils.copybfile(source, target, ismember(worker.name, obj.force))
-        end
-    end
-
-    function monitor_progress(obj, workitem, jobIDs)
-        %MONITOR_PROGRESS Watches over the progress of the workers until all work is done
-
-        arguments
-            obj
-            workitem {mustBeTextScalar}
-            jobIDs   dictionary
-        end
-
-        if ~jobIDs.numEntries
-            return
-        end
-
-        % Launch a dashboard
-        dashboard = qb.workers.Dashboard(obj.coord, workitem, jobIDs);
-
-        % Wait until all work is done
-        while length(dashboard.work_done()) < length(jobIDs.keys)
-            pause(1)
-            dashboard.update()
-        end
-
-        % Report any errors or warnings
-        dashboard.has_warnings(true);
-        dashboard.has_errors(true);
-
-        % Close the dashboard
-        if isvalid(dashboard.fig)
-            close(dashboard.fig)
-        end
-    end
-
     function workflow = draw_workflow(obj)
         %DRAW_WORKFLOW() Draw dependency graph with workers and workitems
         %
@@ -462,10 +410,10 @@ methods
         workitems   = strings(1,0);
         for item = string(fieldnames(obj.team))'
             worker             = obj.team.(item);
-            workers{end+1}     = worker;
-            workerNames(end+1) = worker.name;
-            workitems          = [workitems worker.makes() worker.needs];
-            tooltips{end+1}    = join(worker.description, newline);
+            workers{end+1}     = worker;                                    %#ok<AGROW>
+            workerNames(end+1) = worker.name;                               %#ok<AGROW>
+            workitems          = [workitems worker.makes() worker.needs];   %#ok<AGROW>
+            tooltips{end+1}    = join(worker.description, newline);         %#ok<AGROW>
         end
         [workerNames, idx] = unique(workerNames, 'stable');
         workers            = workers(idx);
@@ -479,12 +427,12 @@ methods
             
             % Edges from worker to workitems it makes
             for item = workers{i}.makes
-                edges(end+1, :) = [i, nWorkers + find(workitems == item)];
+                edges(end+1, :) = [i, nWorkers + find(workitems == item)];      %#ok<AGROW>
             end
             
             % Edges from workitems it needs to worker
             for item = workers{i}.needs
-                edges(end+1, :) = [nWorkers + find(workitems == item), i];
+                edges(end+1, :) = [nWorkers + find(workitems == item), i];      %#ok<AGROW>
             end
         end
 
@@ -548,19 +496,72 @@ methods
                 EdgeColor=[0.5 0.5 0.5], LineWidth=3)     % highlight makes the specified EdgeColor lighter
 
         % Add a custom legend
-        hold on
+        hold('on')
         plot(NaN, NaN, 'o', MarkerFaceColor=grey)
         plot(NaN, NaN, 'o', MarkerFaceColor=blue)
         plot(NaN, NaN, 'o', MarkerFaceColor=green)
         plot(NaN, NaN, 'o', MarkerFaceColor=orange)
         legend('', 'Raw data', 'Workers', 'Workitems', 'Deliverables', Location='best')
-        hold off
+        hold('off')
     end
 
 end
 
 
 methods (Access = private)
+
+    function copy_to_outputdir(obj, worker, deliverable, subjects)
+        %COPY_TO_OUTPUTDIR Copies the deliverables from the workdir to the outputdir
+
+        arguments
+            obj
+            worker      qb.workers.Worker
+            deliverable string
+            subjects    struct
+        end
+        
+        labels = extractAfter({subjects.name}, 'sub-');
+        BIDSW  = bids.layout(char(worker.workdir), filter=struct(sub={labels}), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
+        for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(deliverable)))'
+            target = bids.File(char(source));
+            target.entities.tag = char(worker.config.General.tag);
+            target.path = fullfile(obj.coord.outputdir, target.bids_path, target.filename);
+            worker.logger.info('-> Saving "%s" deliverable as: %s', deliverable, target.path)
+            qb.utils.copybfile(source, target, ismember(worker.name, obj.force))
+        end
+    end
+
+    function monitor_progress(obj, workitem, jobIDs)
+        %MONITOR_PROGRESS Watches over the progress of the workers until all work is done
+
+        arguments
+            obj
+            workitem {mustBeTextScalar}
+            jobIDs   dictionary
+        end
+
+        if ~jobIDs.numEntries
+            return
+        end
+
+        % Launch a dashboard
+        dashboard = qb.workers.Dashboard(obj.coord, workitem, jobIDs);
+
+        % Wait until all work is done
+        while length(dashboard.work_done()) < length(jobIDs.keys)
+            pause(1)
+            dashboard.update()
+        end
+
+        % Report any errors or warnings
+        dashboard.has_warnings(true);
+        dashboard.has_errors(true);
+
+        % Close the dashboard
+        if isvalid(dashboard.fig)
+            close(dashboard.fig)
+        end
+    end
 
     function subses = sub_ses(obj, subject)
         % Parses the sub-#_ses-# prefix from a BIDS.subjects item

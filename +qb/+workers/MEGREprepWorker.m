@@ -1,4 +1,4 @@
-classdef MEGREprepWorker < qb.workers.Worker
+classdef (Sealed) MEGREprepWorker < qb.workers.Worker
 %MEGREPREPWORKER Performs preprocessing on raw MEGRE data to produce workitems that can be used by other workers
 %
 % Preprocessing steps:

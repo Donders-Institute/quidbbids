@@ -1,4 +1,4 @@
-classdef DWIprepWorker < qb.workers.Worker
+classdef (Sealed) DWIprepWorker < qb.workers.Worker
 %DWIPREPWORKER Converts QSIRecon outputs (NODDI and MSMT-CSD) into workitems needed for DI-MWI analysis
 % See also: qb.workers.MCRWorker, qb.workers.Worker, qb.QuIDBBIDS
 
@@ -77,7 +77,7 @@ methods
 
         arguments
             obj
-            workitem {mustBeTextScalar, mustBeNonempty}
+            workitem {mustBeTextScalar, mustBeNonempty}     %#ok<INUSA>
         end
 
         function qsidir = get_qsidir(qsidir)

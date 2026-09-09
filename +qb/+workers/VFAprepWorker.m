@@ -1,4 +1,4 @@
-classdef VFAprepWorker < qb.workers.Worker
+classdef (Sealed) VFAprepWorker < qb.workers.Worker
 %VFAPREPWORKER Performs preprocessing on raw VFA/MPM data to produce workitems that can be used by other workers
 %
 % Processing steps:

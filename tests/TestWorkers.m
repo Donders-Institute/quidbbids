@@ -210,7 +210,7 @@ classdef TestWorkers < BaseTest
             testCase.verifyClass(result, 'cell')
             
             % Test query_ses with struct filter
-            filter = struct('modality', 'anat');
+            filter = struct(modality = 'anat');
             [result, bfiles] = worker.query_ses(testCase.BIDS, 'data', filter);
             testCase.verifyClass(result, 'cell')
             
@@ -230,7 +230,7 @@ classdef TestWorkers < BaseTest
             bfile = bids.File(originalPath);
             
             % Test updating entities
-            specs = struct('acq', 'updated', 'run', 2, 'suffix', 'T1map');
+            specs = struct(acq='updated', run=2, suffix='T1map');
             updatedBfile = worker.bfile_set(bfile, specs, testCase.WorkDir);
             
             testCase.verifyClass(updatedBfile, 'bids.File')

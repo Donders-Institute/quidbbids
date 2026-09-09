@@ -1,4 +1,4 @@
-classdef SCRWorker < qb.workers.Worker
+classdef (Sealed) SCRWorker < qb.workers.Worker
 %SCRWORKER Runs SCR workflow
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)

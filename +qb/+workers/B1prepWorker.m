@@ -1,4 +1,4 @@
-classdef B1prepWorker < qb.workers.Worker
+classdef (Sealed) B1prepWorker < qb.workers.Worker
 %B1PREPWORKER Performs preprocessing to produce workitems that can be used by other workers
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
@@ -40,7 +40,7 @@ methods
 
         arguments
             obj
-            workitem {mustBeTextScalar, mustBeNonempty}
+            workitem {mustBeTextScalar, mustBeNonempty}     %#ok<INUSA>
         end
 
         import qb.utils.spm_vol

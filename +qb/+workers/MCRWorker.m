@@ -1,4 +1,4 @@
-classdef MCRWorker < qb.workers.Worker
+classdef (Sealed) MCRWorker < qb.workers.Worker
 %MCRWORKER Runs MCR workflow on the CPU
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)

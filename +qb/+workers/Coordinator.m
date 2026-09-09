@@ -35,7 +35,7 @@ methods
         %   CONFIGFILE - Path to a configuration file with workflow settings
 
         % Load existing workflow data
-        obj.load_workflow()
+        obj.load_coord()
 
         % Parse the inputs
         bidsapp = regexp(class(obj), '[^.]+$', 'match', 'once');  % Only take the class basename, i.e. the last part after the dot
@@ -99,9 +99,9 @@ methods
         obj.deliverables(obj.deliverables=="") = [];
     end
 
-    function choose_deliverables(obj)
+    function set_deliverables(obj)
         % TODO: Implement a GUI to choose the deliverables interactively
-        obj.deliverables = qb.ChooseDeliverables(obj.resumes);
+        obj.deliverables = qb.GUI.SetDeliverables(obj.resumes);
     end
 
     function items = catalog(obj, resumes)
@@ -128,25 +128,6 @@ methods
                     description = '';
                 end
                 fprintf('%-*s : %s\n', 20, item, description)
-            end
-        end
-    end
-
-    function has_data = has_rawdata(obj, worker)
-        % Checks whether all raw input data for this (prep) worker is available
-        
-        has_data = true;
-        if isempty(dir(fullfile(obj.BIDS.pth, 'sub-*')))
-            fprintf('⚠ No "%s" subjects found in: %s\n', obj.BIDS.pth)
-            return      % -> Escape for unit-tests
-        end
-
-        worker_ = worker.handle(obj.BIDS, struct(), obj.config);
-        for workitem = worker.needs
-            if startsWith(workitem, 'raw') && isempty(bids.query(obj.BIDS, 'data', worker_.bidsfilter.(workitem)))
-                has_data = false;
-                fprintf('⚠ No "%s" input data found for %s\n', workitem, worker.name)  % The wide Unicode character may not display correctly in all environments
-                return
             end
         end
     end
@@ -206,7 +187,7 @@ methods
             for name = string(fieldnames(resumes))'
                 if ismember(name, fieldnames(resumes)) && ~obj.has_rawdata(resumes.(name))  % NAME may have been removed in a previous iteration of this loop
                     rawdata      = resumes.(name).needs(startsWith(resumes.(name).needs, ["raw"," deriv"]));
-                    allDiscarded = [allDiscarded, rawdata];     % Add the missing raw input workitem nodes
+                    allDiscarded = [allDiscarded, rawdata];     %#ok<AGROW> Add the missing raw input workitem nodes
                     discardworkers(name)
                 end
             end
@@ -232,7 +213,7 @@ methods
             workerNames = string(fieldnames(resumes))';
             nrWorkers   = length(workerNames);
             for name_ = workerNames
-                workitems = [workitems, resumes.(name_).makes, resumes.(name_).needs];
+                workitems = [workitems, resumes.(name_).makes, resumes.(name_).needs];  %#ok<AGROW>
             end
             workitems = unique(workitems(workitems ~= ""));
 
@@ -241,12 +222,12 @@ methods
             for i = 1:nrWorkers
                 % Edges from worker to workitems it makes
                 for item = resumes.(workerNames(i)).makes
-                    edges(end+1, :) = [i, nrWorkers + find(workitems == item)];
+                    edges(end+1, :) = [i, nrWorkers + find(workitems == item)];     %#ok<AGROW>
                 end
 
                 % Edges from workitems it needs to worker
                 for item = resumes.(workerNames(i)).needs
-                    edges(end+1, :) = [nrWorkers + find(workitems == item), i];
+                    edges(end+1, :) = [nrWorkers + find(workitems == item), i];     %#ok<AGROW>
                 end
             end
 
@@ -319,7 +300,7 @@ methods
         end
     end
 
-    function load_workflow(obj, workflowfile)
+    function load_coord(obj, workflowfile)
         %LOAD_WORKFLOW Loads all coordinator properties from the workflowfile
 
         arguments
@@ -343,7 +324,7 @@ methods
         end
     end
 
-    function save_workflow(obj, workflowfile)
+    function save_coord(obj, workflowfile)
         %SAVE_WORKFLOW Saves all coordinator properties to the workflowfile, except the BIDS and config data
 
         arguments
@@ -369,6 +350,29 @@ methods
         obj.workflowfile = workflowfile;
     end
 
+end
+
+methods (Access = protected)
+
+    function has_data = has_rawdata(obj, worker)
+        % Checks whether all raw input data for this (prep) worker is available
+        
+        has_data = true;
+        if isempty(dir(fullfile(obj.BIDS.pth, 'sub-*')))
+            fprintf('⚠ No "%s" subjects found in: %s\n', obj.BIDS.pth)
+            return      % -> Escape for unit-tests
+        end
+
+        worker_ = worker.handle(obj.BIDS, struct(), obj.config);
+        for workitem = worker.needs
+            if startsWith(workitem, 'raw') && isempty(bids.query(obj.BIDS, 'data', worker_.bidsfilter.(workitem)))
+                has_data = false;
+                fprintf('⚠ No "%s" input data found for %s\n', workitem, worker.name)  % The wide Unicode character may not display correctly in all environments
+                return
+            end
+        end
+    end
+    
 end
 
 end

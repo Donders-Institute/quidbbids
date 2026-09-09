@@ -38,7 +38,7 @@ classdef TestQuIDBBIDS < BaseTest
             % Test if settings are created correctly
             obj = qb.QuIDBBIDS(testCase.TmpDir);
             testCase.assertTrue(isfile(configfile), sprintf('Configfile "%s" not found', configfile));
-            testCase.assertClass(obj.get_config(struct('configfile',configfile)), 'struct', 'Settings should be a struct')
+            testCase.assertClass(obj.get_config(struct(configfile=configfile)), 'struct', 'Settings should be a struct')
 
             % Test if default settings are used correctly
             config = jsondecode(fileread(configfile));

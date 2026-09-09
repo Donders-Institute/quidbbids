@@ -38,7 +38,7 @@ end
 
 % Create a minimal header struction if only voxel sizes are provided
 if isnumeric(V) && isvector(V)
-    V = struct('mat', diag([V(:); 1]));
+    V = struct(mat = diag([V(:); 1]));
     if nargin < 3 || isempty(bfile)
         error('QuIDBBIDS:Nifti:MissingInputArgument', 'When providing only voxel sizes, an output (b)filename must be specified')
     end

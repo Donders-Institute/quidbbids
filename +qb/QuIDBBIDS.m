@@ -1,4 +1,4 @@
-classdef QuIDBBIDS < qb.workers.Coordinator
+classdef (Sealed) QuIDBBIDS < qb.workers.Coordinator
 %   ___       ___ ___  ___ ___ ___ ___  ___
 %  / _ \ _  _|_ _|   \| _ ) _ )_ _|   \/ __|
 % | (_) | || || || |) | _ \ _ \| || |) \__ \
@@ -219,10 +219,10 @@ methods (Access = private)
                descrip.Name     = [obj.metadata.project.name ' output data'];
             end
             descrip.BIDSVersion = obj.metadata.project.BIDSVersion;
-            descrip.GeneratedBy = struct('Name',        obj.metadata.project.name, ...
-                                         'Version',     qb.version(), ...
-                                         'Description', obj.metadata.project.description, ...
-                                         'CodeURL',     obj.metadata.project.urls.repository);
+            descrip.GeneratedBy = struct(Name        = obj.metadata.project.name, ...
+                                         Version     = qb.version(), ...
+                                         Description = obj.metadata.project.description, ...
+                                         CodeURL     = obj.metadata.project.urls.repository);
             bids.util.jsonencode(char(descripfile), descrip)
         end
     end

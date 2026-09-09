@@ -1,4 +1,4 @@
-classdef MP2RAGEWorker < qb.workers.Worker
+classdef (Sealed) MP2RAGEWorker < qb.workers.Worker
 %MP2RAGEWorker Performs preprocessing to produce workitems that can be used by other workers
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)

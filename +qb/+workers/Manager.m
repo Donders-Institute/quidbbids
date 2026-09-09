@@ -134,10 +134,10 @@ methods
 
         % Plot and save the team workflow graph
         if ~recurse_
-            obj.workflow = qb.GUI.draw_workflow(obj.team, obj.coord.deliverables);
+            obj.workflow = obj.draw_workflow();
             H = findall(groot, Tag='workflow_graph');
             if isvalid(H)
-                saveas(H(1), regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
+                saveas(H, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
             end
         end
 
@@ -293,8 +293,8 @@ methods
 
         % Delete the workitems from the forced workers and their downstream dependencies (so that they will be re-made)
         if ~isempty(obj.force)
-            if isvalid(findall(groot, Tag='workflow_graph'))
-                qb.GUI.draw_workflow(obj.team, obj.coord.deliverables);     % Recreate the workflow graph if it was closed by the user
+            if isempty(findall(groot, Tag='workflow_graph'))
+                obj.draw_workflow();        % Recreate the workflow graph if it was closed by the user
             end
             H = findall(groot, Tag='workflow_graph');
             workers = fieldnames(obj.coord.resumes);
@@ -336,10 +336,15 @@ methods
                 end
             end
             if isvalid(H)
-                saveas(H(1), regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
+                L = findall(ancestor(H,'Figure'), Type='Legend');
+                if L.Position(2) < 0.1      % Move the legend a bit up if the best Position is 'South'
+                    L.Position(2) = L.Position(2) + 0.045;
+                end
+                annotation('textbox', [L.Position(1), L.Position(2)-0.045, L.Position(3), 0.035], String='{\bf--} Enforced', FontSize=L.FontSize, BackgroundColor=L.Color)
+                saveas(H, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
             end
         end
-
+return
         % Dispatch the workers
         fprintf("\n============= Starting workflow at %s =============\n", datetime('now'))
         for product = obj.coord.deliverables      % TODO: sort such that MEGREprepWorker deliverables (if any) are fetched first
@@ -428,6 +433,128 @@ methods
         if isvalid(dashboard.fig)
             close(dashboard.fig)
         end
+    end
+
+    function workflow = draw_workflow(obj)
+        %DRAW_WORKFLOW() Draw dependency graph with workers and workitems
+        %
+        % draw_workflow displays a bipartite graph where:
+        %   - Blue nodes represent workers (labelled by their NAME property)
+        %   - Green nodes represent workitems
+        %   - Orange nodes represent deliverables (final requested workitems)
+        %   - Edges from workers to workitems show what each worker produces (makes)
+        %   - Edges from workitems to workers show what each worker needs
+        %   - Edges in deliverable upstream subtrees are thicker
+        %
+        % Returns:
+        %   WORKFLOW     - MATLAB digraph object representing the workflow graph with all workers and workitems
+
+        if isempty(fieldnames(obj.team))
+            disp('⚠ No team data found, cannot draw workflow graph')  % The wide Unicode character may not display correctly in all environments
+            workflow = digraph();
+            return
+        end
+
+        % Collect all unique workers and workitems
+        tooltips    = {};
+        workers     = {};
+        workerNames = strings(1,0);
+        workitems   = strings(1,0);
+        for item = string(fieldnames(obj.team))'
+            worker             = obj.team.(item);
+            workers{end+1}     = worker;
+            workerNames(end+1) = worker.name;
+            workitems          = [workitems worker.makes() worker.needs];
+            tooltips{end+1}    = join(worker.description, newline);
+        end
+        [workerNames, idx] = unique(workerNames, 'stable');
+        workers            = workers(idx);
+        workitems          = unique(workitems(workitems ~= ""));
+        tooltips           = [tooltips(idx), cellfun(@(item) obj.coord.glossary.(item), workitems, UniformOutput=false)];
+
+        % Build edges = [source_idx, target_idx]
+        edges    = [];
+        nWorkers = length(workerNames);
+        for i = 1:nWorkers
+            
+            % Edges from worker to workitems it makes
+            for item = workers{i}.makes
+                edges(end+1, :) = [i, nWorkers + find(workitems == item)];
+            end
+            
+            % Edges from workitems it needs to worker
+            for item = workers{i}.needs
+                edges(end+1, :) = [nWorkers + find(workitems == item), i];
+            end
+        end
+
+        % Build node lists for the graph (workers come first, then workitems)
+        nodes = [workerNames, workitems];
+
+        % Create the workflow graph
+        workflow = digraph(edges(:,1), edges(:,2), [], nodes);
+
+        % Identify nodes in upstream subtree of deliverables using graph traversal
+        deliverableNodes = nWorkers + find(ismember(workitems, obj.coord.deliverables));
+        upstream = flipedge(workflow);
+        deliverableTree = false(size(nodes));
+        for d = deliverableNodes
+            deliverableTree(bfsearch(upstream, d)) = true;
+        end
+
+        % Select edges to highlight: only highlight the preferred worker when multiple workers produce the same workitem.
+        highlightTree = deliverableTree(edges(:,2));                                            % Indexing outgoing edges(:,2) includes all edges
+        for node = find(indegree(workflow) > 1 & (1:numel(nodes))' > nWorkers)'                 % Find workitems made by multiple workers
+            for edge = find(edges(:,2) == node)'                                                % Find all incoming edges to this workitem
+                if ~strcmp(workerNames(edges(edge,1)), obj.team.(workitems(node - nWorkers)).name)  % Remove incoming edges from non-preferred workers from the tree
+                    highlightTree(edge) = false;
+                end
+            end
+        end
+
+        % Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange), 4=raw/deriv(grey)
+        nodeTypes                                                           = ones(size(nodes));
+        nodeTypes(nWorkers+1:end)                                           = 2;
+        nodeTypes(deliverableNodes)                                         = 3;
+        nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 4;
+
+        % Plot the workflow graph
+        clf
+        H = plot(workflow, ...
+                NodeLabel    = ["  " + workerNames, " " + workitems], ...       % Add spaces as node labels overlap with markers in the digraph plot
+                Layout       = 'layered', ...
+                NodeCData    = nodeTypes, ...
+                MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...
+                NodeFontSize = 8, ...
+                LineWidth    = 1.5, ...
+                ArrowSize    = 10, ...
+                Interpreter  = 'none', ...
+                Tag          = 'workflow_graph');
+        blue   = [0.16 0.5 0.73];   % = RTD blue #2980B9
+        green  = [0 0.8 0];
+        orange = [1 0.6 0];
+        grey   = [0.7 0.7 0.7];
+        colormap([blue; green; orange; grey])
+        title('Workflow graph')
+
+        % Add datatips for the workers and workitems
+        H.DataTipTemplate.Interpreter = 'none';
+        H.DataTipTemplate.DataTipRows = dataTipTextRow('', tooltips);
+
+        % Highlight edges in deliverable subtrees
+        highlight(H, ...
+                edges(highlightTree, 1), ...
+                edges(highlightTree, 2), ...
+                EdgeColor=[0.5 0.5 0.5], LineWidth=3)     % highlight makes the specified EdgeColor lighter
+
+        % Add a custom legend
+        hold on
+        plot(NaN, NaN, 'o', MarkerFaceColor=grey)
+        plot(NaN, NaN, 'o', MarkerFaceColor=blue)
+        plot(NaN, NaN, 'o', MarkerFaceColor=green)
+        plot(NaN, NaN, 'o', MarkerFaceColor=orange)
+        legend('', 'Raw data', 'Workers', 'Workitems', 'Deliverables', Location='best')
+        hold off
     end
 
 end

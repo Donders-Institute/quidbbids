@@ -81,7 +81,7 @@ methods
 
         H = findall(groot, Tag='workflow_mask');
         if isvalid(H)
-            saveas(H(1), regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow_mask$2.png"))
+            saveas(H, regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow_mask$2.png"))
         end
     end
 

@@ -165,6 +165,7 @@ methods
 
         if isempty(obj.deliverables)
             disp('⚠ You should probably first specify your deliverables before creating a manager')
+            obj.set_deliverables()
         end
 
         manager = qb.workers.Manager(obj);

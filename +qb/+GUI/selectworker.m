@@ -32,17 +32,16 @@ function chosen = selectworker(workers, workitem)
     maxTableHeight = 250;       % Maximum table height
 
     % Create figure
-    fig = uifigure('Name', "Choose the Worker that should make your """ + workitem + """", 'Position', [100 100 figWidth figHeight]);
+    fig = uifigure(Name="Choose the Worker that should make your """ + workitem + """", Position=[100 100 figWidth figHeight]);
     dlg = helpdlg({"There are multiple workers that can produce: " + workitem, "Please select the one you want to use"}, "Create team");
-    set(dlg, 'WindowStyle', 'modal')
+    set(dlg, WindowStyle='modal')
 
     % --- Worker radiobutton group (left)
     rbHeight = figHeight - 2*margin - 2*spacing - 2*btnHeight;
-    bg = uibuttongroup(fig, 'Position', [margin, margin + 2*btnHeight + 2*spacing, rbWidth, rbHeight], ...
-                       'SelectionChangedFcn', @(src,event) updateInfo(event.NewValue.Text));
+    bg = uibuttongroup(fig, Position=[margin, margin + 2*btnHeight + 2*spacing, rbWidth, rbHeight], SelectionChangedFcn=@(src,event) updateInfo(event.NewValue.Text));
 
     % --- Add radio buttons
-    names = arrayfun(@(w) replace(char(w.handle),'qb.workers.',''), workers, 'UniformOutput', false);
+    names = arrayfun(@(w) replace(char(w.handle),'qb.workers.',''), workers, UniformOutput=false);
     yPos = rbHeight - 30;       % start from top
     for idx = 1:numel(workers)
         uiradiobutton(bg, 'Text', names{idx}, 'Position', [10, yPos, rbWidth-20, 25]);
@@ -50,22 +49,20 @@ function chosen = selectworker(workers, workitem)
     end
 
     % --- Add Cancel and Done buttons
-    uibutton(fig, 'push', 'Text', '✗ Cancel', 'FontWeight', 'bold', 'Position', [margin, margin + btnHeight + spacing/2, rbWidth, btnHeight], ...
-             'ButtonPushedFcn', @(src,event) doCancel());
-    uibutton(fig, 'push', 'Text', '✓ Done', 'FontWeight', 'bold', 'Position', [margin, margin, rbWidth, btnHeight], ...
-             'ButtonPushedFcn', @(src,event) doSelect());
+    uibutton(fig, 'push', Text='✗ Cancel', FontWeight='bold', Position=[margin, margin + btnHeight + spacing/2, rbWidth, btnHeight], ButtonPushedFcn=@(src,event) doCancel());
+    uibutton(fig, 'push', Text='✓ Done',   FontWeight='bold', Position=[margin, margin, rbWidth, btnHeight], ButtonPushedFcn=@(src,event) doSelect());
 
     % --- Add resume box (right) - start with placeholder height = 100
     infoWidth = figWidth - 2*margin - rbWidth - spacing;
-    info = uitextarea(fig, 'Position', [margin + rbWidth + spacing, figHeight - margin - 100, infoWidth, 100], 'Editable', 'off');
+    info = uitextarea(fig, Position=[margin + rbWidth + spacing, figHeight - margin - 100, infoWidth, 100], Editable='off');
 
     % --- Add required Workitems table - start with minimal height
-    tblNeeds = uitable(fig, 'ColumnName', {'Needs',''}, 'RowName', [], 'ColumnWidth', {120, 'auto'}, ...
-                    'Position', [margin + rbWidth + spacing, margin + minTableHeight + spacing, infoWidth, minTableHeight]);
+    tblNeeds = uitable(fig, ColumnName=["Needs",""], RowName=[], ColumnWidth={120, 'auto'}, ...
+                       Position=[margin + rbWidth + spacing, margin + minTableHeight + spacing, infoWidth, minTableHeight]);
 
     % --- Add produced Workitems table - start with minimal height
-    tblMakes = uitable(fig, 'ColumnName', {'Makes',''}, 'RowName', [], 'ColumnWidth', {120, 'auto'}, ...
-                    'Position', [margin + rbWidth + spacing, margin, infoWidth, minTableHeight]);
+    tblMakes = uitable(fig, ColumnName=["Makes",""], RowName=[], ColumnWidth={120, 'auto'}, ...
+                       Position=[margin + rbWidth + spacing, margin, infoWidth, minTableHeight]);
 
     % Select first worker by default
     chosen = [];

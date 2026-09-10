@@ -101,7 +101,8 @@ methods
 
     function set_deliverables(obj)
         % TODO: Implement a GUI to choose the deliverables interactively
-        obj.deliverables = qb.GUI.SetDeliverables(obj.catalog);
+        [items, descriptions] = obj.catalog();
+        obj.deliverables = qb.GUI.set_deliverables(items, descriptions, obj.deliverables);
     end
 
     function [items, descriptions] = catalog(obj, resumes)

@@ -238,7 +238,12 @@ methods
                 nodeTypes                                                            = ones(size([workerNames, workitems])); % Workers
                 nodeTypes(nrWorkers+1:end)                                           = 2;                                    % Workitems
                 nodeTypes(nrWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 3;                                    % Raw/deriv data
-                H = plot(workflow, ...
+                clf()   % NB: This should not clear GUI figure
+                A = findall(groot, Tag='workflow_axes');
+                if isempty(A)
+                    A = axes(Tag='workflow_axes');
+                end
+                H = plot(A, workflow, ...
                          NodeLabel    = ["  " + workerNames, " " + workitems], ...       % Add spaces as node labels overlap with markers in the digraph plot
                          Layout       = 'layered', ...
                          NodeCData    = nodeTypes, ...
@@ -248,9 +253,9 @@ methods
                          ArrowSize    = 10, ...
                          Interpreter  = 'none', ...
                          Tag          = 'workflow_mask');
-                colormap([0.16 0.5 0.73; 0 0.8 0; 0.7 0.7 0.7])     % = RTD blue #2980B9; green; grey
-                title('Workflow mask')
-                text(0.02, 0.95, 'orange = discarded due to missing input data', Units='normalized')
+                colormap(A, [0.16 0.5 0.73; 0 0.8 0; 0.7 0.7 0.7])     % = RTD blue #2980B9; green; grey
+                title(A, 'Workflow mask')
+                text(A, 0.02, 0.95, 'orange = discarded due to missing input data', Units='normalized')
 
                 % Add datatips for the workers and workitems
                 H.DataTipTemplate.Interpreter = 'none';

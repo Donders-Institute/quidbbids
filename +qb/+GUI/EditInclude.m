@@ -30,7 +30,7 @@ methods
         obj.BIDS            = BIDS;
         obj.IncludeOriginal = include;
         obj.IncludeCurrent  = include;
-        obj.NodeMap         = dictionary();
+        obj.NodeMap         = containers.Map();
         
         % Build the GUI and file tree from the root directory
 

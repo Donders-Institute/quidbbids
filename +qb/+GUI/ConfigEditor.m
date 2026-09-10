@@ -243,7 +243,7 @@ methods (Access = ?TestConfigEditorGUI)
         end
 
         % Update the value label to show the selected node's name
-        obj.ValLabel.Text = [node.Text ':'];
+        obj.ValLabel.Text = [node.Text ' value:'];
         
         % Show description and the current value
         data = node.NodeData;

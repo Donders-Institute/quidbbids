@@ -19,7 +19,7 @@ classdef TestQuIDBBIDS < BaseTest
     methods(TestMethodTeardown)
         function removeTempDir(testCase)
             rmdir(testCase.TmpDir, 's')
-            delete(findall(0,'Name','QuIDBBIDS Info'))
+            delete(findall(0, Name='QuIDBBIDS Info'))
         end
     end
 

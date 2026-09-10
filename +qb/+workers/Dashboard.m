@@ -33,7 +33,7 @@ methods
             set(findall(obj.fig, Type='Text'), Interpreter='none')
         else
             obj.fig = timer;    % Lightweight dummy handle object
-            delete(obj.fig)
+            close(obj.fig)
         end
     end
     

@@ -27,10 +27,10 @@ qb.resetconfig;             % Useful when running the development version
 %% ABRIM_MEGRE
 if ismember("ABRIM_MEGRE", datasets)
     quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM_MEGRE'), "", "", "default")
+    quidb.deliverables = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
     quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
     quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
     quidb.config.MP2RAGEWorker.NumberShots.value = 176;
-    quidb.deliverables = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
     quidb.config.General.useHPC.value = true;
     quidb.config.General.tag.value = "manualtest";
     mgr = quidb.manager();

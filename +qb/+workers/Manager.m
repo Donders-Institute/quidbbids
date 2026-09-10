@@ -1,18 +1,17 @@
 classdef Manager < handle
 %MANAGER Manages the entire workflow to make the deliverables that the user wants
 %
-% This class defines the common interface and base functionality for interacting with the user,
-% composing workflows, setting config parameters, creating a team of workers from the pool, and
-% putting the team to work.
+% This class defines the common interface and base functionality for creating a team of workers from
+% the pool, and putting the team to work.
 %
 % Workflow:
-%   0. User initializes the workflow and calls Manager
+%   0. User initializes the coordinator, sets config parameters and deliverables, and creates the Manager
 %   1. Manager loads an existing workflow from the output directory (if present) and asks user
-%      what deliverables to make
+%      what workitems to enforce, i.e. recompute if already present instead of re-using them.
 %   2. Manager assembles a team that can make the deliverables (and asks the user for help if needed)
-%   3. Manager lets the user tweak the config parameters and saves it all back in the output folder
+%   3. Manager saves the workflow settings in the derivative output folder
 %   4. Manager puts the team to work (subject by subject or in parallel):
-%       a. For each end deliverable, the manager asks the responsible team worker to produce it
+%       a. For each deliverable, the manager asks the responsible team worker to produce it
 %       b. If this worker needs a workitem to get the work done, he/she will ask another
 %          team worker to produce it. In turn, that worker can ask other team workers to
 %          produce their workitems -- all the way up until only raw BIDS data items are needed
@@ -340,8 +339,8 @@ methods
                 if L.Position(2) < 0.1      % Move the legend a bit up if the best Position is 'South'
                     L.Position(2) = L.Position(2) + 0.045;
                 end
-                delete(findall(ancestor(H,'Figure'), 'Type', 'textboxshape'))
-                annotation('textbox', [L.Position(1), L.Position(2)-0.045, L.Position(3), 0.035], String='{\bf--} Enforced', FontSize=L.FontSize, BackgroundColor=L.Color)
+                delete(findall(ancestor(H,'Figure'), Tag='legend_annotation'))
+                annotation(ancestor(H,'Figure'), 'textbox', [L.Position(1), L.Position(2)-0.045, L.Position(3), 0.035], String='{\bf--} Enforced', FontSize=L.FontSize, BackgroundColor=L.Color, Tag='legend_annotation')
                 saveas(H, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
             end
         end
@@ -464,23 +463,28 @@ methods
         nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 4;
 
         % Plot the workflow graph
-        clf
-        H = plot(workflow, ...
-                NodeLabel    = ["  " + workerNames, " " + workitems], ...       % Add spaces as node labels overlap with markers in the digraph plot
-                Layout       = 'layered', ...
-                NodeCData    = nodeTypes, ...
-                MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...
-                NodeFontSize = 8, ...
-                LineWidth    = 1.5, ...
-                ArrowSize    = 10, ...
-                Interpreter  = 'none', ...
-                Tag          = 'workflow_graph');
+        clf()   % NB: This should not clear GUI figure
+        A = findall(groot, Tag='workflow_axes');
+        if isempty(A)
+           A = axes(Tag='workflow_axes');
+        end
+        delete(findall(ancestor(A,'Figure'), Tag='legend_annotation'))
+        H = plot(A, workflow, ...
+                 NodeLabel    = ["  " + workerNames, " " + workitems], ...       % Add spaces as node labels overlap with markers in the digraph plot
+                 Layout       = 'layered', ...
+                 NodeCData    = nodeTypes, ...
+                 MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...
+                 NodeFontSize = 8, ...
+                 LineWidth    = 1.5, ...
+                 ArrowSize    = 10, ...
+                 Interpreter  = 'none', ...
+                 Tag          = 'workflow_graph');
         blue   = [0.16 0.5 0.73];   % = RTD blue #2980B9
         green  = [0 0.8 0];
         orange = [1 0.6 0];
         grey   = [0.7 0.7 0.7];
-        colormap([blue; green; orange; grey])
-        title('Workflow graph')
+        colormap(A, [blue; green; orange; grey])
+        title(A, 'Workflow graph')
 
         % Add datatips for the workers and workitems
         H.DataTipTemplate.Interpreter = 'none';
@@ -488,18 +492,18 @@ methods
 
         % Highlight edges in deliverable subtrees
         highlight(H, ...
-                edges(highlightTree, 1), ...
-                edges(highlightTree, 2), ...
-                EdgeColor=[0.5 0.5 0.5], LineWidth=3)     % highlight makes the specified EdgeColor lighter
+                  edges(highlightTree, 1), ...
+                  edges(highlightTree, 2), ...
+                  EdgeColor=[0.5 0.5 0.5], LineWidth=3)     % highlight makes the specified EdgeColor lighter
 
         % Add a custom legend
-        hold('on')
-        plot(NaN, NaN, 'o', MarkerFaceColor=grey)
-        plot(NaN, NaN, 'o', MarkerFaceColor=blue)
-        plot(NaN, NaN, 'o', MarkerFaceColor=green)
-        plot(NaN, NaN, 'o', MarkerFaceColor=orange)
-        legend('', 'Raw data', 'Workers', 'Workitems', 'Deliverables', Location='best')
-        hold('off')
+        hold(A, 'on')
+        plot(A, NaN, NaN, 'o', MarkerFaceColor=grey)
+        plot(A, NaN, NaN, 'o', MarkerFaceColor=blue)
+        plot(A, NaN, NaN, 'o', MarkerFaceColor=green)
+        plot(A, NaN, NaN, 'o', MarkerFaceColor=orange)
+        legend(A, '', 'Raw data', 'Workers', 'Workitems', 'Deliverables', Location='best')
+        hold(A, 'off')
     end
 
 end

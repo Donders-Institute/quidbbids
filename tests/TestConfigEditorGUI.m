@@ -57,7 +57,7 @@ classdef TestConfigEditorGUI < BaseTest
             matches = {gui.SearchMatches{:}.Text};
             testCase.verifyTrue(any(contains(matches,'FWHM')));
 
-            delete(gui);
+            delete(gui)
         end
 
         function testSearchEnterKeyAlert(testCase)
@@ -84,7 +84,7 @@ classdef TestConfigEditorGUI < BaseTest
             testCase.verifyEmpty(gui.SearchMatches)
             testCase.verifyEqual(gui.SearchIndex, 0)
 
-            delete(gui);
+            delete(gui)
         end
         
         function testIncrementalSearchUpdates(testCase)

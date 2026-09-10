@@ -96,28 +96,28 @@ methods (Access = ?TestConfigEditorGUI)
         % build GUI layout with uifigure
 
         % Create main uifigure
-        obj.Fig = uifigure('Position',[300 100 745 650]);
+        obj.Fig = uifigure(Position=[300 100 745 650]);
         obj.updateWindowTitle()
 
         % Left panel (tree + search)
         leftX = 20; leftW = 360;        % Tree area rectangle in pixels
         
         % Create search label and field
-        uilabel(obj.Fig,'Text','Search:', 'Position',[leftX 607 50 22], 'HorizontalAlignment','left');
-        obj.SearchField = uieditfield(obj.Fig,'text','Position',[leftX+50 606 leftW-50 24], 'ValueChangingFcn',@(src,evt)obj.onSearchLive(evt), 'ValueChangedFcn',@(src,evt)obj.onSearchEnter(evt), 'Value','');
+        uilabel(obj.Fig, Text='Search:', Position=[leftX 607 50 22], HorizontalAlignment='left');
+        obj.SearchField = uieditfield(obj.Fig, Position=[leftX+50 606 leftW-50 24], ValueChangingFcn=@(src,evt)obj.onSearchLive(evt), ValueChangedFcn=@(src,evt)obj.onSearchEnter(evt), Value='');
         
         % Prev/Next buttons
-        uibutton(obj.Fig,'Text','◀','Position',[leftX    572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchPrev());
-        uibutton(obj.Fig,'Text','▶','Position',[leftX+45 572 40 24], 'ButtonPushedFcn',@(~,~)obj.searchNext());
+        uibutton(obj.Fig, Text='◀', Position=[leftX    572 40 24], ButtonPushedFcn=@(~,~)obj.searchPrev());
+        uibutton(obj.Fig, Text='▶', Position=[leftX+45 572 40 24], ButtonPushedFcn=@(~,~)obj.searchNext());
 
         % Search results counter
-        obj.SearchResultsLabel = uilabel(obj.Fig,'Text','','Position',[leftX+95 572 80 24], 'HorizontalAlignment','left');
+        obj.SearchResultsLabel = uilabel(obj.Fig, Text='', Position=[leftX+95 572 80 24], HorizontalAlignment='left');
 
         % Info label for search state
-        uilabel(obj.Fig,'Text','(supports *, ? and regex wildcards)','Position',[leftX+130 572 220 24], 'FontAngle','italic', 'HorizontalAlignment','left');
+        uilabel(obj.Fig, Text='(supports *, ? and regex wildcards)', Position=[leftX+130 572 220 24], FontAngle='italic', HorizontalAlignment='left');
 
         % Tree (use uitree within uifigure)
-        obj.Tree = uitree(obj.Fig, 'Position',[leftX 20 leftW 536], 'Multiselect','off', 'SelectionChangedFcn',@(src,evt)obj.nodeSelected(evt));
+        obj.Tree = uitree(obj.Fig, Position=[leftX 20 leftW 536], Multiselect='off', SelectionChangedFcn=@(src,evt)obj.nodeSelected(evt));
 
         % Right panel (Description and edit area)
         rpX = leftX + leftW + 20;
@@ -126,24 +126,24 @@ methods (Access = ?TestConfigEditorGUI)
         txtAreaH = 175;
 
         % Description box
-        obj.DescArea = uitextarea(obj.Fig, 'Position',[rpX, topY - txtAreaH, rpW, txtAreaH], 'Editable','off');
+        obj.DescArea = uitextarea(obj.Fig, Position=[rpX, topY - txtAreaH, rpW, txtAreaH], Editable='off');
 
         % Value label (10 px below textarea)
         valueLabelY  = topY - txtAreaH - 10 - 22;
-        obj.ValLabel = uilabel(obj.Fig,'Text','Value:', 'Position',[rpX valueLabelY 200 22], 'HorizontalAlignment','left');
+        obj.ValLabel = uilabel(obj.Fig, Text='Value:', Position=[rpX valueLabelY 200 22], HorizontalAlignment='left');
 
         % Value edit field
-        obj.ValField = uieditfield(obj.Fig,'text', 'Position',[rpX valueLabelY - 40 rpW 40], 'ValueChangedFcn',@(src,~)obj.updateLeafFromField());
+        obj.ValField = uieditfield(obj.Fig, Position=[rpX valueLabelY - 40 rpW 40], ValueChangedFcn=@(src,~)obj.updateLeafFromField());
 
         % Reset button
         btnY = 20; btnH = 30; btnW = 70; gap = 15;
-        uibutton(obj.Fig, 'Text','↺ Reset', 'Position',[rpX+rpW-btnW valueLabelY-83 btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetLeaf());
+        uibutton(obj.Fig, Text='↺ Reset', Position=[rpX+rpW-btnW valueLabelY-83 btnW btnH], ButtonPushedFcn=@(~,~)obj.resetLeaf());
 
         % Bottom row buttons
-        uibutton(obj.Fig, 'Text','Reset All', 'Position',[rpX              btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.resetAll());
-        uibutton(obj.Fig, 'Text','✗ Cancel',  'Position',[rpX+1*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)close(obj.Fig));
-        uibutton(obj.Fig, 'Text','📂 Load',   'Position',[rpX+2*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.loadConfig());
-        uibutton(obj.Fig, 'Text','💾 Save',   'Position',[rpX+3*(btnW+gap) btnY btnW btnH], 'ButtonPushedFcn',@(~,~)obj.saveConfig());
+        uibutton(obj.Fig, Text='Reset All', Position=[rpX              btnY btnW btnH], ButtonPushedFcn=@(~,~)obj.resetAll());
+        uibutton(obj.Fig, Text='✗ Cancel',  Position=[rpX+1*(btnW+gap) btnY btnW btnH], ButtonPushedFcn=@(~,~)close(obj.Fig));
+        uibutton(obj.Fig, Text='📂 Load',   Position=[rpX+2*(btnW+gap) btnY btnW btnH], ButtonPushedFcn=@(~,~)obj.loadConfig());
+        uibutton(obj.Fig, Text='💾 Save',   Position=[rpX+3*(btnW+gap) btnY btnW btnH], ButtonPushedFcn=@(~,~)obj.saveConfig());
     end
 
     function populateTree(obj)
@@ -164,7 +164,7 @@ methods (Access = ?TestConfigEditorGUI)
             if ~isfield(obj.Config,key)
                 continue
             end
-            node = uitreenode(obj.Tree,'Text',key,'NodeData',obj.Config.(key));
+            node = uitreenode(obj.Tree, Text=key, NodeData=obj.Config.(key));
             obj.buildSubtree(node, obj.Config.(key))
             obj.RootNodes(end+1) = node;
         end
@@ -178,7 +178,7 @@ methods (Access = ?TestConfigEditorGUI)
 
         for nm = fieldnames(value)'
             child = value.(nm{1});
-            node  = uitreenode(parentNode,'Text',nm{1},'NodeData',child);
+            node  = uitreenode(parentNode, Text=nm{1}, NodeData=child);
             if ~obj.isLeaf(child)
                 obj.buildSubtree(node, child)
             end
@@ -664,7 +664,7 @@ methods (Access = ?TestConfigEditorGUI)
             obj.SearchIndex = 1;
             obj.selectMatch(1)
         else
-            uialert(obj.Fig,'No matches found','Search', 'Icon','warning');
+            uialert(obj.Fig,'No matches found','Search', Icon='warning');
         end
     end
 

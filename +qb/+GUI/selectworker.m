@@ -44,7 +44,7 @@ function chosen = selectworker(workers, workitem)
     names = arrayfun(@(w) replace(char(w.handle),'qb.workers.',''), workers, UniformOutput=false);
     yPos = rbHeight - 30;       % start from top
     for idx = 1:numel(workers)
-        uiradiobutton(bg, 'Text', names{idx}, 'Position', [10, yPos, rbWidth-20, 25]);
+        uiradiobutton(bg, 'Text', names{idx}, Position=[10, yPos, rbWidth-20, 25]);
         yPos = yPos - 20;       % spacing between radio buttons
     end
 

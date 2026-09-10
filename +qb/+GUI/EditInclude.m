@@ -35,7 +35,7 @@ methods
         % Build the GUI and file tree from the root directory
 
         % Create figure
-        obj.Fig = uifigure('Name', ['BIDS Include Editor - ' obj.BIDS.pth], 'Position', [200 200 800 500], 'CloseRequestFcn', @(src, evt) obj.onCancel());
+        obj.Fig = uifigure(Name=['BIDS Include Editor - ' obj.BIDS.pth], Position=[200 200 800 500], CloseRequestFcn=@(src, evt) obj.onCancel());
 
         % Main grid
         mainGrid = uigridlayout(obj.Fig, [1 2]);
@@ -52,7 +52,7 @@ methods
         includeGrid.Padding     = [0 0 0 0];
 
         % Input label and field
-        uilabel(includeGrid, 'Text', 'Include filter');
+        uilabel(includeGrid, Text='Include filter');
         obj.InputField                 = uitextarea(includeGrid);
         obj.InputField.Value           = jsonencode(obj.IncludeCurrent, 'PrettyPrint',true);
         obj.InputField.ValueChangedFcn = @(src, evt) obj.onInputChanged();
@@ -63,9 +63,9 @@ methods
         buttonGrid.RowHeight   = {'fit'};
         buttonGrid.ColumnWidth = {60, 60, 60};
         buttonGrid.Padding     = [0 0 0 10];   % [left bottom right top]
-        uibutton(buttonGrid, 'Text', '✗ Cancel', 'ButtonPushedFcn', @(src, evt) obj.onCancel());
-        uibutton(buttonGrid, 'Text', '↺ Reset',  'ButtonPushedFcn', @(src, evt) obj.onReset());
-        uibutton(buttonGrid, 'Text', '✓ Done',   'ButtonPushedFcn', @(src, evt) obj.onDone());
+        uibutton(buttonGrid, Text='✗ Cancel', ButtonPushedFcn=@(src, evt) obj.onCancel());
+        uibutton(buttonGrid, Text='↺ Reset',  ButtonPushedFcn=@(src, evt) obj.onReset());
+        uibutton(buttonGrid, Text='✓ Done',   ButtonPushedFcn=@(src, evt) obj.onDone());
 
         %--- TREE AREA
         treeGrid             = uigridlayout(mainGrid, [2 1]);
@@ -73,7 +73,7 @@ methods
         treeGrid.RowSpacing  = 5;
         treeGrid.ColumnWidth = {'1x'};
         treeGrid.Padding     = [0 0 0 0];
-        uilabel(treeGrid, 'Text', 'Data inclusion tree');
+        uilabel(treeGrid, Text='Data inclusion tree');
         obj.Tree             = uitree(treeGrid);
         obj.Tree.Tooltip     = 'Tree view of the BIDS data structure. Green arrows indicate included files/folders';
 
@@ -98,7 +98,7 @@ methods
             if isKey(obj.NodeMap, subPath)
                 parentNode = obj.NodeMap(subPath);
             else
-                newNode              = uitreenode(parentNode, 'Text', part{1});
+                newNode              = uitreenode(parentNode, Text=part{1});
                 newNode.UserData     = subPath;
                 obj.NodeMap(subPath) = newNode;
                 parentNode           = newNode;
@@ -149,7 +149,7 @@ methods
     
     function onReset(obj)
         % Callback for Reset button
-        obj.InputField.Value = jsonencode(obj.IncludeOriginal, 'PrettyPrint',true);
+        obj.InputField.Value = jsonencode(obj.IncludeOriginal, PrettyPrint=true);
         obj.IncludeCurrent   = obj.IncludeOriginal;
         obj.tagTree()
     end

@@ -101,10 +101,10 @@ methods
 
     function set_deliverables(obj)
         % TODO: Implement a GUI to choose the deliverables interactively
-        obj.deliverables = qb.GUI.SetDeliverables(obj.resumes);
+        obj.deliverables = qb.GUI.SetDeliverables(obj.catalog);
     end
 
-    function items = catalog(obj, resumes)
+    function [items, descriptions] = catalog(obj, resumes)
         %CATALOG Gets or displays a list of all the workitems the workers in RESUMES can make
 
         arguments
@@ -117,18 +117,10 @@ methods
             makes = [makes, resumes.(worker).makes];       %#ok<AGROW>
         end
         if nargout
-            items = unique(makes);
+            items        = unique(makes);
+            descriptions = qb.workers.help(items);
         else
-            for item = unique(makes)
-                if isfield(obj.glossary, item)
-                    description = obj.glossary.(item);
-                elseif endsWith(item, "_ortho")
-                    description = sprintf('A 2D montage with 3 orthogonal (QC) slices of "%s"', item);
-                else
-                    description = '';
-                end
-                fprintf('%-*s : %s\n', 20, item, description)
-            end
+            qb.workers.help(unique(makes))
         end
     end
 
@@ -252,6 +244,10 @@ methods
                 colormap([0.16 0.5 0.73; 0 0.8 0; 0.7 0.7 0.7])     % = RTD blue #2980B9; green; grey
                 title('Workflow mask')
                 text(0.02, 0.95, 'orange = discarded due to missing input data', Units='normalized')
+
+                % Add datatips for the workers and workitems
+                H.DataTipTemplate.Interpreter = 'none';
+                H.DataTipTemplate.DataTipRows = dataTipTextRow('', qb.workers.help([workerNames, workitems]));
             end
         end
 

@@ -14,9 +14,12 @@ To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by provid
 
    >> quidb = qb.QuIDBBIDS('/path/to/bids/dataset');       % Initialize QuIDBBIDS coordinator
    >> quidb.catalog()                                      % See e.g. what QuIDBBIDS can make, given the input data
-      Chimap               : Magnetic susceptibility map derived from phase or quantitative susceptibility mapping (QSM) reconstruction
-      FMW_exrate           : Exchange rate map in Free <-> Myelin Water analysis
-      [...]                : [...]
+      Chimap       : Magnetic susceptibility map derived from phase or quantitative susceptibility mapping (QSM) reconstruction
+      M0map        : Proton density (M0) map derived from GRE or similar acquisitions
+      ME4Dmag      : 4D magnitude image stack from a multi-echo GRE acquisition
+      ME4Dphase    : 4D phase image stack from a multi-echo GRE acquisition
+      MP2RAGE_T1w  : T1-weighted MP2RAGE image generated from the MP2RAGE sequence
+      [..]         : [..]
 
    >> quidb.resumes.R2R1R2sWorker                          % NB: Only ever edit the `preferred` field
            handle: @qb.workers.R1R2sWorker
@@ -62,9 +65,14 @@ Finally, to run the workflow, initialize the manager from your ``QuIDBBIDS`` obj
 
 .. code-block:: matlab
 
-   >> mgr       = quidb.manager();  % Initialize the manager to get work done
-   >> mgr.force = ["B1prepWorker", "MP2RAGEWorker"];     % Reuse existing workitems except for these workers and their dependencies
-   >> mgr.start_workflow()          % Start the workflow
+   >> mgr       = quidb.manager();                    % Initialize the manager to get work done
+   >> mgr.force = ["B1prepWorker", "MP2RAGEWorker"];  % Reuse existing workitems except for these workers and their dependencies
+   >> mgr.start_workflow()                            % Start the workflow
+
+A more advanced example of a CLI workflow can be found in this `manual test script <https://github.com/Donders-Institute/quidbbids/blob/main/tests/mantest_dccn.m>`__.
+
+Getting help
+------------
 
 For getting more help on the various classes, methods and properties, you can use MATLAB's built-in documentation
 browser:
@@ -73,4 +81,18 @@ browser:
 
    >> doc qb.QuIDBBIDS
 
-A more advanced example of a CLI workflow can be found in this `manual test script <https://github.com/Donders-Institute/quidbbids/blob/main/tests/mantest_dccn.m>`__.
+Alternatively, you can get help about the workers and workitems using the ``qb.workers.help`` function:
+
+.. code-block:: matlab
+
+   >> qb.workers.help(["R1map", "localfmask"])
+   R1map      : Longitudinal relaxation rate (R1) map (R1 = 1/T1)
+   localfmask : Local field mask for susceptibility mapping
+
+   >> qb.workers.help('QSMWorker')
+   QSMWorker : Quantitative Susceptibility Mapping (QSM) and R2* relaxometry worker using the SEPIA toolbox.
+
+   QSMWorker performs QSM reconstruction and R2* mapping from multi-echo GRE magnitude and phase data.
+   QSM is a post-processing technique that converts MRI phase data into quantitative susceptibility maps,
+   enabling the study of tissue magnetic properties such as iron content, calcium, and myelin.
+   [..]

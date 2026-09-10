@@ -404,7 +404,6 @@ methods
         end
 
         % Collect all unique workers and workitems
-        tooltips    = {};
         workers     = {};
         workerNames = strings(1,0);
         workitems   = strings(1,0);
@@ -413,12 +412,10 @@ methods
             workers{end+1}     = worker;                                    %#ok<AGROW>
             workerNames(end+1) = worker.name;                               %#ok<AGROW>
             workitems          = [workitems worker.makes() worker.needs];   %#ok<AGROW>
-            tooltips{end+1}    = join(worker.description, newline);         %#ok<AGROW>
         end
         [workerNames, idx] = unique(workerNames, 'stable');
         workers            = workers(idx);
         workitems          = unique(workitems(workitems ~= ""));
-        tooltips           = [tooltips(idx), cellfun(@(item) obj.coord.glossary.(item), workitems, UniformOutput=false)];
 
         % Build edges = [source_idx, target_idx]
         edges    = [];
@@ -487,7 +484,7 @@ methods
 
         % Add datatips for the workers and workitems
         H.DataTipTemplate.Interpreter = 'none';
-        H.DataTipTemplate.DataTipRows = dataTipTextRow('', tooltips);
+        H.DataTipTemplate.DataTipRows = dataTipTextRow('', qb.workers.help(nodes));
 
         % Highlight edges in deliverable subtrees
         highlight(H, ...

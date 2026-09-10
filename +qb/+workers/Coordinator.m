@@ -9,12 +9,13 @@ properties
     outputdir               % BIDSApp derivatives subdirectory where the output is stored
     workdir                 % Working directory for intermediate results
     deliverables            % The end products (workitems) requested by the user, for full list of possible deliverables, see obj.catalog()
-    resumes                 % The resumes of all available workers, given the current BIDS dataset
+    resumes                 % The resumes of all compatible workers, given the current BIDS dataset
+    allresumes              % The resumes of all available workers
     config                  % Configuration struct loaded from the config file
     configfile              % Path to the configuration file
     workflowfile            % Path to the workflow file
-    glossary = struct()     % Glossary struct loaded from the glossary.json file
     metadata = struct()     % A struct with metadata about the software package
+    interactive = true      % If true, the coordinator will ask the user for help when needed (false = useful for automated testing)
 end
 
 
@@ -74,10 +75,6 @@ methods
         obj.config       = obj.get_config();
         obj.resumes      = obj.get_resumes();
         obj.deliverables = "";      % NB: This has to be called after get_resumes() because set.deliverables() needs to know the workitems
-        glossfile = fullfile(fileparts(mfilename('fullpath')), 'glossary.json');
-        if isfile(glossfile)
-            obj.glossary = jsondecode(fileread(glossfile));
-        end
 
         H = findall(groot, Tag='workflow_mask');
         if isvalid(H)
@@ -100,13 +97,21 @@ methods
     end
 
     function set_deliverables(obj)
-        % TODO: Implement a GUI to choose the deliverables interactively
+        % Launch a GUI to set the deliverables interactively
         [items, descriptions] = obj.catalog();
-        obj.deliverables = qb.GUI.set_deliverables(items, descriptions, obj.deliverables);
+        if obj.interactive
+            obj.deliverables = qb.GUI.set_deliverables(items, descriptions, obj.deliverables);
+        end
     end
 
     function [items, descriptions] = catalog(obj, resumes)
-        %CATALOG Gets or displays a list of all the workitems the workers in RESUMES can make
+        %CATALOG Gets or displays a list of all the workitems the workers in RESUMES can make,
+        % along with their DESCRIPTIONS
+        %
+        % Examples
+        %   obj.catalog()                           % Lists all workitems, given the BIDS dataset
+        %   obj.catalog(obj.allresumes)             % Lists all potential workitems
+        %   [items, descriptions] = obj.catalog();  % Gets all workitems and their descriptions
 
         arguments
             obj
@@ -168,6 +173,7 @@ methods
                 fprintf('   - %s\n', worker.name)
             end
         end
+        obj.allresumes = resumes;
 
         % Discard workers that depend on missing input data
         if CheckData

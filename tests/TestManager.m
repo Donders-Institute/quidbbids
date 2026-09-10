@@ -14,8 +14,9 @@ classdef TestManager < BaseTest
             testCase.TmpDir = tempname;
             mkdir(fullfile(testCase.TmpDir))
             bids.init(testCase.TmpDir)
-            testCase.mgr = qb.QuIDBBIDS(testCase.TmpDir).manager();
-            testCase.mgr.interactive = false;
+            quidb = qb.QuIDBBIDS(testCase.TmpDir);
+            quidb.interactive = false;
+            testCase.mgr = quidb.manager();
         end
     end
 

@@ -81,7 +81,7 @@ browser:
 
    >> doc qb.QuIDBBIDS
 
-Alternatively, you can get help about the workers and workitems using the ``qb.workers.help`` function:
+Additionally, you can get help about the workers and workitems using the ``qb.workers.help`` function:
 
 .. code-block:: matlab
 

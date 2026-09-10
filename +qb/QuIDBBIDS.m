@@ -154,7 +154,7 @@ methods
         [obj.configfile, obj.config] = qb.configeditor(obj.configfile, obj.config, fieldnames(obj.resumes), obj.BIDS);    % TODO: Add team workers
     end
 
-    function manager = manager(obj)
+    function mgr = manager(obj)
         %GET_MANAGER Gets a workflow manager to get work done
         %
         % See also: qb.workers.Manager
@@ -168,7 +168,8 @@ methods
             obj.set_deliverables()
         end
 
-        manager = qb.workers.Manager(obj);
+        mgr = qb.workers.Manager(obj);
+        mgr.interactive = obj.interactive;
     end
 
     function config = get_config(obj, config)

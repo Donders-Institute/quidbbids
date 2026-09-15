@@ -46,7 +46,7 @@ methods
         end
 
         obj.coord = coord;                      % The coordinator that help the manager with administrative tasks
-        obj.create_team()
+        obj.create_team()                       % Create the team and workflow
     end
 
     function set.force(obj, val)
@@ -54,7 +54,7 @@ methods
         if ~ismember(class(val), {'string', 'char'})
             error('QuIDBBIDS:Manager:InvalidForce', 'The force property must be a string or char array')
         end
-        workers = fieldnames(obj.coord.resumes);   %#ok<MCSUP>
+        workers = intersect(fieldnames(obj.coord.resumes), obj.workflow.Nodes.Name);   %#ok<MCSUP>
         if strlength(val) == 0
             obj.force = strings(1,0);
         elseif all(ismember(string(val), workers))
@@ -62,6 +62,7 @@ methods
         else
             error('QuIDBBIDS:Manager:InvalidForce', 'The force property must be a subset of the available workers:%s', sprintf(' "%s"', workers{:}))
         end
+        obj.forced_workflow();
     end
 
     function create_team(obj, workitems, recurse_)
@@ -70,6 +71,8 @@ methods
         % Asks the user for help if needed. The assembled team is stored in the TEAM property, which is a struct
         % with fields corresponding to the workitems and value corresponding to the resume of the worker that will
         % produce the workitem.
+        %
+        % CREATE_TEAM also sets and saves the obj.workflow graph
         %
         % NB: RECURSE_ is a private argument that should not be used
 
@@ -295,53 +298,23 @@ methods
             if isempty(findall(groot, Tag='workflow_graph'))
                 obj.draw_workflow();        % Recreate the workflow graph if it was closed by the user
             end
-            H = findall(groot, Tag='workflow_graph');
-            workers = fieldnames(obj.coord.resumes);
-            BIDSW   = bids.layout(char(obj.coord.workdir), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
-            for worker = obj.force
+            workers    = fieldnames(obj.coord.resumes);
+            BIDSW      = bids.layout(char(obj.coord.workdir), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
+            downstream = obj.forced_workflow();
+            saveas(H, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
 
-                % Remove the non-preferred edges to find the downstream nodes of the forced worker
-                prunedflow = obj.workflow;
-                for node = string(prunedflow.Nodes.Name)'
-                    if ~ismember(node, workers) && indegree(prunedflow, node) > 1   % If it's not a worker, then it must be a workitem
-                        for parent = prunedflow.predecessors(node)'
-                            if ~strcmp(parent, obj.team.(node).name)                % Remove the edge if the parent worker is not preferred
-                                prunedflow = rmedge(prunedflow, parent, node);
-                            end
+            % Delete the workitems from the forced workers and their downstream dependencies (so that they will be re-made)
+            for node = downstream'
+                if ismember(node, workers)
+                    depworker = obj.coord.resumes.(node).handle(obj.coord.BIDS, struct(), obj.coord.config);
+                    for workitem = depworker.makes
+                        items = replace(erase(bids.query(BIDSW, 'data', depworker.bidsfilter.(workitem)),'.gz'),'.nii','.*');   % TODO: Fix BIDSW for QSMWorker, which uses a custom workdir
+                        if ~isempty(items)
+                            fprintf('🗑️ Deleting %s -> %s items from the workdir\n', depworker.name, workitem)
+                            delete(items{:})
                         end
                     end
                 end
-                downstream = bfsearch(prunedflow, worker);
-
-                % Highlight the downstream edges
-                if isvalid(H)
-                    [s, t] = findedge(obj.workflow);
-                    idx    = ismember(obj.workflow.Nodes.Name(s), downstream);
-                    highlight(H, s(idx), t(idx), LineStyle=':')
-                end
-
-                % Delete the workitems from the forced workers and their downstream dependencies (so that they will be re-made)
-                for node = downstream'
-                    if ismember(node, workers)
-                        depworker = obj.coord.resumes.(node).handle(obj.coord.BIDS, struct(), obj.coord.config);
-                        for workitem = depworker.makes
-                            items = replace(erase(bids.query(BIDSW, 'data', depworker.bidsfilter.(workitem)),'.gz'),'.nii','.*');   % TODO: Fix BIDSW for QSMWorker, which uses a custom workdir
-                            if ~isempty(items)
-                                fprintf('🗑️ Deleting %s -> %s items from the workdir\n', depworker.name, workitem)
-                                delete(items{:})
-                            end
-                        end
-                    end
-                end
-            end
-            if isvalid(H)
-                L = findall(ancestor(H,'Figure'), Type='Legend'); drawnow
-                if L.Position(2) < 0.1      % Move the legend a bit up if the best Position is 'South'
-                    L.Position(2) = L.Position(2) + 0.045;
-                end
-                delete(findall(ancestor(H,'Figure'), Tag='legend_annotation'))
-                annotation(ancestor(H,'Figure'), 'textbox', [L.Position(1), L.Position(2)-0.045, L.Position(3), 0.035], String='{\bf--} Enforced', FontSize=L.FontSize, BackgroundColor=L.Color, Tag='legend_annotation')
-                saveas(H, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
             end
         end
 
@@ -510,6 +483,46 @@ end
 
 
 methods (Access = private)
+
+    function downstream = forced_workflow(obj)
+        %FORCED_WORKFLOW finds and highlights the enforced downstream edges of the workflow graph
+
+        % Find the downstream nodes of the forced workers
+        workers    = fieldnames(obj.coord.resumes);
+        downstream = [];
+        for worker = obj.force
+            prunedflow = obj.workflow;
+            for node = string(prunedflow.Nodes.Name)'
+                if ~ismember(node, workers) && indegree(prunedflow, node) > 1   % If it's not a worker, then it must be a workitem
+                    for parent = prunedflow.predecessors(node)'
+                        if ~strcmp(parent, obj.team.(node).name)                % Remove the edge if the parent worker is not preferred
+                            prunedflow = rmedge(prunedflow, parent, node);
+                        end
+                    end
+                end
+            end
+            downstream = unique([downstream; bfsearch(prunedflow, worker)]);
+        end
+
+        % Highligt the downstream edges
+        if isvalid(findall(groot, Tag='workflow_graph'))
+
+            % Start with a new workflow and highlight the edges
+            obj.draw_workflow();
+            H      = findall(groot, Tag='workflow_graph');
+            [s, t] = findedge(obj.workflow);
+            idx    = ismember(obj.workflow.Nodes.Name(s), downstream);
+            highlight(H, s(idx), t(idx), LineStyle=':')
+
+            % Add a custom legend for the highlighted edges
+            L = findall(ancestor(H,'Figure'), Type='Legend'); drawnow
+            if L.Position(2) < 0.1      % Move the legend a bit up if the best Position is 'South'
+                L.Position(2) = L.Position(2) + 0.045;
+            end
+            delete(findall(ancestor(H,'Figure'), Tag='legend_annotation'))
+            annotation(ancestor(H,'Figure'), 'textbox', [L.Position(1), L.Position(2)-0.045, L.Position(3), 0.035], String='{\bf--} Enforced', FontSize=L.FontSize, BackgroundColor=L.Color, Tag='legend_annotation')
+        end
+    end
 
     function copy_to_outputdir(obj, worker, deliverable, subjects)
         %COPY_TO_OUTPUTDIR Copies the deliverables from the workdir to the outputdir

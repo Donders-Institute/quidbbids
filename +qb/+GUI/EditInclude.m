@@ -160,11 +160,10 @@ methods
         delete(obj.Fig)
     end
     
-    function [result, BIDS] = waitForResult(obj)
+    function result = waitForResult(obj)
         % Wait for user to click Done or Cancel and return the include filter (as a struct)
         waitfor(obj.Fig)
         result = obj.IncludeResult;
-        BIDS   = obj.BIDS;
     end
     
 end

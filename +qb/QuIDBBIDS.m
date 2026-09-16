@@ -118,13 +118,21 @@ methods
                                           verbose           = true);
         obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
 
+        % Use the QuIDBBIDS icon everywhere
+        set(groot, defaultFigureIcon = fullfile(fileparts(mfilename('fullpath')), 'private', 'icon.png'))
+
         % Add project metadata to the output folders
         obj.metadata = metadata;
         obj.add_metadata(obj.outputdir)
         obj.add_metadata(obj.workdir)
     end
 
-    function startGUI(obj)
+    function delete(obj)
+        % Destructor for the QuIDBBIDS coordinator
+        set(groot, defaultFigureIcon='factory');
+    end
+
+    function start_GUI(obj)
     end
 
     function editinclusion(obj)
@@ -165,7 +173,9 @@ methods
 
         if isempty(obj.deliverables)
             disp('⚠ You should probably first specify your deliverables before creating a manager')
-            obj.set_deliverables()
+            if obj.interactive
+                obj.set_deliverables()
+            end
         end
 
         mgr = qb.workers.Manager(obj);

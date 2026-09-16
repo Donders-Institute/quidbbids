@@ -55,7 +55,7 @@ methods
             error('QuIDBBIDS:Manager:InvalidForce', 'The force property must be a string or char array')
         end
         workers = intersect(fieldnames(obj.coord.resumes), obj.workflow.Nodes.Name);   %#ok<MCSUP>
-        if strlength(val) == 0
+        if isempty(val) || all(strlength(val) == 0)
             obj.force = strings(1,0);
         elseif all(ismember(string(val), workers))
             obj.force = string(val(:)');

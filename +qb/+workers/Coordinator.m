@@ -76,14 +76,24 @@ methods
         obj.resumes      = obj.get_resumes();
         obj.deliverables = "";      % NB: This has to be called after get_resumes() because set.deliverables() needs to know the workitems
 
+        % Save the workflow mask graph
         H = findall(groot, Tag='workflow_mask');
         if isvalid(H)
             saveas(H, regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow_mask$2.png"))
         end
+        
+        % Launch the main workflow control panel if no input arguments are given
+        if ~nargin
+            obj.start_GUI()
+        end
+
     end
 
     function set.deliverables(obj, val)
         % Check if the deliverable exist and force anything assigned to be stored as a string row
+        if isempty(val) || all(strlength(val) == 0)
+            val = strings(1,0);
+        end
         if ~ismember(class(val), {'string', 'char'})
             error('QuIDBBIDS:Deliverables:TypeError', 'The deliverables property must be a string or char array')
         end
@@ -99,9 +109,12 @@ methods
     function set_deliverables(obj)
         % Launch a GUI to set the deliverables interactively
         [items, descriptions] = obj.catalog();
-        if obj.interactive
-            obj.deliverables = qb.GUI.set_deliverables(items, descriptions, obj.deliverables);
-        end
+        obj.deliverables = qb.GUI.set_deliverables(items, descriptions, obj.deliverables);
+    end
+
+    function start_GUI(obj)
+        %START_GUI launches an interactive control panel to setup and run your workflow
+        qb.GUI.WorkflowPanel(obj)
     end
 
     function [items, descriptions] = catalog(obj, resumes)

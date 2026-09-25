@@ -29,8 +29,8 @@ properties (Constant)
                    ""
                    ".. note::"
                    ""
-                   "   The joint estimation approach is particularly advantageous when T1 and T2* are correlated,"
-                   "   such as in white matter where myelin water has distinct relaxation properties."
+                   "   The joint estimation approach is  advantageous when T1 and T2* are correlated,"
+                   "   or in the context of low SNR thanks to harvesting all available data SNR and possibility of using spatial regularization."
                    "   Requires GPU hardware with CUDA support."]   % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
     usesGPU     = true

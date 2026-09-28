@@ -15,7 +15,7 @@ end
 
 if isunix
     restoredefaultpath
-    addpath('/home/common/matlab/sepia/sepia_1.2.2.6')
+    addpath('/home/common/matlab/sepia/sepia_1.3.0.0')
     sepia_addpath
     testdata = '/project/3032002.02/testdata';
 else

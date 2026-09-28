@@ -125,14 +125,16 @@ methods
         obj.metadata = metadata;
         obj.add_metadata(obj.outputdir)
         obj.add_metadata(obj.workdir)
+
+        % Launch the main workflow control panel if no input arguments are given
+        if ~nargin
+            obj.start_GUI()
+        end
     end
 
     function delete(obj)
         % Destructor for the QuIDBBIDS coordinator
         set(groot, defaultFigureIcon='factory');
-    end
-
-    function start_GUI(obj)
     end
 
     function editinclusion(obj)

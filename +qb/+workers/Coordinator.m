@@ -36,7 +36,7 @@ methods
         %   CONFIGFILE - Path to a configuration file with workflow settings
 
         % Load existing workflow data
-        obj.load_coord()
+        obj.load_properties()
 
         % Parse the inputs
         bidsapp = regexp(class(obj), '[^.]+$', 'match', 'once');  % Only take the class basename, i.e. the last part after the dot
@@ -79,14 +79,8 @@ methods
         % Save the workflow mask graph
         H = findall(groot, Tag='workflow_mask');
         if isvalid(H)
-            saveas(H, regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow_mask$2.png"))
+            exportgraphics(H.Parent, regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow_mask$2.png"))
         end
-        
-        % Launch the main workflow control panel if no input arguments are given
-        if ~nargin
-            obj.start_GUI()
-        end
-
     end
 
     function set.deliverables(obj, val)
@@ -114,7 +108,9 @@ methods
 
     function start_GUI(obj)
         %START_GUI launches an interactive control panel to setup and run your workflow
-        qb.GUI.WorkflowPanel(obj)
+        close(get(findall(groot, Tag='workflow_axes'), 'Parent'))
+        qb.GUI.WorkflowPanel(obj);
+        obj.get_resumes();                          % Redraw the full workflow in the GUI
     end
 
     function [items, descriptions] = catalog(obj, resumes)
@@ -145,7 +141,8 @@ methods
 
     function resumes = get_resumes(obj, CheckData)
         %GET_RESUMES Gets the resumes of the pool of workers that live in qb.workers and in the configfile folder.
-        % Workers that do not have input data are excluded from the resumes if CHECKDATA is true.
+        % Workers that do not have input data are excluded from the resumes if CHECKDATA is true (default). Also,
+        % a masked graph of the workflow is plotted in a figure.
         %
         % Output:
         %   RESUME.NAME.HANDLE      - The function handle
@@ -251,7 +248,6 @@ methods
                 nodeTypes                                                            = ones(size([workerNames, workitems])); % Workers
                 nodeTypes(nrWorkers+1:end)                                           = 2;                                    % Workitems
                 nodeTypes(nrWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 3;                                    % Raw/deriv data
-                clf()   % NB: This should not clear GUI figure
                 A = findall(groot, Tag='workflow_axes');
                 if isempty(A)
                     A = axes(Tag='workflow_axes');
@@ -266,9 +262,10 @@ methods
                          ArrowSize    = 10, ...
                          Interpreter  = 'none', ...
                          Tag          = 'workflow_mask');
-                colormap(A, [0.16 0.5 0.73; 0 0.8 0; 0.7 0.7 0.7])     % = RTD blue #2980B9; green; grey
+                colormap(A, [0.16 0.5 0.73; 0 0.8 0; 0.7 0.7 0.7])      % = RTD blue #2980B9; green; grey
                 title(A, 'Workflow mask')
                 text(A, 0.02, 0.95, 'orange = discarded due to missing input data', Units='normalized')
+                A.Tag = 'workflow_axes';                                % Restore the axes tag (plot removes it)
 
                 % Add datatips for the workers and workitems
                 H.DataTipTemplate.Interpreter = 'none';
@@ -321,7 +318,7 @@ methods
         end
     end
 
-    function load_coord(obj, workflowfile)
+    function load_properties(obj, workflowfile)
         %LOAD_WORKFLOW Loads all coordinator properties from the workflowfile
 
         arguments
@@ -345,7 +342,7 @@ methods
         end
     end
 
-    function save_coord(obj, workflowfile)
+    function save_properties(obj, workflowfile)
         %SAVE_WORKFLOW Saves all coordinator properties to the workflowfile, except the BIDS and config data
 
         arguments

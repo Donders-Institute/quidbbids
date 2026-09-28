@@ -139,7 +139,7 @@ methods
             obj.workflow = obj.draw_workflow();
             H = findall(groot, Tag='workflow_graph');
             if isvalid(H)
-                saveas(H, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
+                exportgraphics(H.Parent, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
             end
         end
 
@@ -231,7 +231,7 @@ methods
 
         % Save the config and workflow data, so that the workflow can be resumed later
         obj.coord.get_config(obj.coord.config);
-        obj.coord.save_coord()
+        obj.coord.save_properties()
 
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value
@@ -301,7 +301,7 @@ methods
             workers    = fieldnames(obj.coord.resumes);
             BIDSW      = bids.layout(char(obj.coord.workdir), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
             downstream = obj.forced_workflow();
-            saveas(H, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
+            exportgraphics(get(findall(groot,Tag='workflow_graph'),'Parent'), regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
 
             % Delete the workitems from the forced workers and their downstream dependencies (so that they will be re-made)
             for node = downstream'
@@ -436,9 +436,8 @@ methods
         nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 4;
 
         % Plot the workflow graph
-        clf()   % NB: This should not clear GUI figure
         A = findall(groot, Tag='workflow_axes');
-        if isempty(A)
+        if isempty(A)   % There is no GUI
            A = axes(Tag='workflow_axes');
         end
         delete(findall(ancestor(A,'Figure'), Tag='legend_annotation'))
@@ -452,6 +451,7 @@ methods
                  ArrowSize    = 10, ...
                  Interpreter  = 'none', ...
                  Tag          = 'workflow_graph');
+        A.Tag  = 'workflow_axes';                           % Restore the axes tag (plot removes it)
         blue   = [0.16 0.5 0.73];   % = RTD blue #2980B9
         green  = [0 0.8 0];
         orange = [1 0.6 0];

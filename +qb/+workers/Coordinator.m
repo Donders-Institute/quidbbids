@@ -96,7 +96,7 @@ methods
                 error("QuIDBBIDS:Deliverables:Invalid", 'The "%s" deliverable was not found, it must match any of:%s', product, sprintf(' "%s"', obj.catalog()))
             end
         end
-        obj.deliverables = string(val(:)');
+        obj.deliverables = unique(string(val(:)'));
         obj.deliverables(obj.deliverables=="") = [];
     end
 
@@ -252,6 +252,7 @@ methods
                 if isempty(A)
                     A = axes(Tag='workflow_axes');
                 end
+                legend(A, 'off')
                 H = plot(A, workflow, ...
                          NodeLabel    = ["  " + workerNames, " " + workitems], ...       % Add spaces as node labels overlap with markers in the digraph plot
                          Layout       = 'layered', ...

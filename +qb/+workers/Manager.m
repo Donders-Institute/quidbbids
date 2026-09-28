@@ -7,7 +7,7 @@ classdef Manager < handle
 % Workflow:
 %   0. User initializes the coordinator, sets config parameters and deliverables, and creates the Manager
 %   1. Manager loads an existing workflow from the output directory (if present) and asks user
-%      what workitems to enforce, i.e. recompute if already present instead of re-using them.
+%      what workitems to force, i.e. recompute if already present instead of re-using them.
 %   2. Manager assembles a team that can make the deliverables (and asks the user for help if needed)
 %   3. Manager saves the workflow settings in the derivative output folder
 %   4. Manager puts the team to work (subject by subject or in parallel):
@@ -58,7 +58,7 @@ methods
         if isempty(val) || all(strlength(val) == 0)
             obj.force = strings(1,0);
         elseif all(ismember(string(val), workers))
-            obj.force = string(val(:)');
+            obj.force = unique(string(val(:)'));
         else
             error('QuIDBBIDS:Manager:InvalidForce', 'The force property must be a subset of the available workers:%s', sprintf(' "%s"', workers{:}))
         end
@@ -240,11 +240,11 @@ methods
             cleanup = onCleanup(@() qsublist('killall'));
             batch = obj.getbatch();         % -> qsubfeval()
             if mislocked('qsublist') && obj.interactive
-                answer = questdlg(sprintf('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes, that may cause issues.\n\nCan I cleanup the bookkeeping?'), ...
-                    'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Yes');
-                if isempty(answer) || strcmp(answer, 'Cancel')
+                switch questdlg(sprintf('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes, that may cause issues.\n\nCan I cleanup the bookkeeping?'), ...
+                                'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Yes')
+                case {'', 'Cancel'}
                     return
-                elseif strcmp(answer, 'Yes')
+                case 'Yes'
                     munlock('qsublist')
                     clear('qsublist')   % TODO: make this less brutal by only clearing the submitted jobs
                 end
@@ -269,7 +269,7 @@ methods
             if obj.interactive
                 sample = fullfile(lockfiles(1).folder, lockfiles(1).name);
                 answer = questdlg(sprintf('Found %d existing lockfile(s), probably caused by previous crashes. Here is a sample:\n\n..%s:\n%s\n\nShall I clean them up?', ...
-                length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Yes');
+                    length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Yes');
                 if strcmp(answer, 'Yes')
                     lockfiles = fullfile({lockfiles.folder}, {lockfiles.name});
                     fprintf('🔓 Deleting %d existing lockfile(s)\n', length(lockfiles))
@@ -300,11 +300,11 @@ methods
             end
             workers    = fieldnames(obj.coord.resumes);
             BIDSW      = bids.layout(char(obj.coord.workdir), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
-            downstream = obj.forced_workflow();
+            forcedflow = obj.forced_workflow();
             exportgraphics(get(findall(groot,Tag='workflow_graph'),'Parent'), regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
 
             % Delete the workitems from the forced workers and their downstream dependencies (so that they will be re-made)
-            for node = downstream'
+            for node = forcedflow'
                 if ismember(node, workers)
                     depworker = obj.coord.resumes.(node).handle(obj.coord.BIDS, struct(), obj.coord.config);
                     for workitem = depworker.makes
@@ -358,13 +358,15 @@ methods
     function workflow = draw_workflow(obj)
         %DRAW_WORKFLOW() Draw dependency graph with workers and workitems
         %
-        % draw_workflow displays a bipartite graph where:
+        % DRAW_WORKFLOW displays a bipartite graph where:
         %   - Blue nodes represent workers (labelled by their NAME property)
         %   - Green nodes represent workitems
         %   - Orange nodes represent deliverables (final requested workitems)
         %   - Edges from workers to workitems show what each worker produces (makes)
         %   - Edges from workitems to workers show what each worker needs
         %   - Edges in deliverable upstream subtrees are thicker
+        %
+        % Clicking on a node brings up a popup-menu for enforcing the associated worker
         %
         % Returns:
         %   WORKFLOW     - MATLAB digraph object representing the workflow graph with all workers and workitems
@@ -419,11 +421,13 @@ methods
             deliverableTree(bfsearch(upstream, d)) = true;
         end
 
-        % Select edges to highlight: only highlight the preferred worker when multiple workers produce the same workitem.
-        highlightTree = deliverableTree(edges(:,2));                                            % Indexing outgoing edges(:,2) includes all edges
-        for node = find(indegree(workflow) > 1 & (1:numel(nodes))' > nWorkers)'                 % Find workitems made by multiple workers
-            for edge = find(edges(:,2) == node)'                                                % Find all incoming edges to this workitem
-                if ~strcmp(workerNames(edges(edge,1)), obj.team.(workitems(node - nWorkers)).name)  % Remove incoming edges from non-preferred workers from the tree
+        % Select edges to highlight: highlight the preferred worker only when multiple workers produce the same workitem.
+        highlightTree = deliverableTree(edges(:,2));                                % Indexing outgoing edges(:,2) includes all edges
+        for node = find(indegree(workflow) > 1 & (1:numel(nodes))' > nWorkers)'     % Find workitems made by multiple workers
+            workitem = workitems(node - nWorkers);
+            for edge = find(edges(:,2) == node)'                                    % Find all incoming edges to this workitem
+                if ~ismember(workitem, fieldnames(obj.team)) || ...                 % Remove incoming edges from (unneeded) non-deliverables and from non-preferred workers
+                    ~strcmp(workerNames(edges(edge,1)), obj.team.(workitem).name)
                     highlightTree(edge) = false;
                 end
             end
@@ -440,7 +444,6 @@ methods
         if isempty(A)   % There is no GUI
            A = axes(Tag='workflow_axes');
         end
-        delete(findall(ancestor(A,'Figure'), Tag='legend_annotation'))
         H = plot(A, workflow, ...
                  NodeLabel    = ["  " + workerNames, " " + workitems], ...       % Add spaces as node labels overlap with markers in the digraph plot
                  Layout       = 'layered', ...
@@ -451,6 +454,7 @@ methods
                  ArrowSize    = 10, ...
                  Interpreter  = 'none', ...
                  Tag          = 'workflow_graph');
+        H.ButtonDownFcn = @(src, event, G) obj.setforce(src, event, workflow);
         A.Tag  = 'workflow_axes';                           % Restore the axes tag (plot removes it)
         blue   = [0.16 0.5 0.73];   % = RTD blue #2980B9
         green  = [0 0.8 0];
@@ -484,43 +488,62 @@ end
 
 methods (Access = private)
 
-    function downstream = forced_workflow(obj)
-        %FORCED_WORKFLOW finds and highlights the enforced downstream edges of the workflow graph
+    function setforce(obj, src, event, workflow)
+        
+        % Find the node that is closest to the clickpoint, but not too far away
+        [dist, nodeIdx] = min((src.XData - event.IntersectionPoint(1)).^2 + (src.YData - event.IntersectionPoint(2)).^2);
+        nodeName        = workflow.Nodes.Name{nodeIdx};
+        if dist > 0.25^2 || ~contains(nodeName, "Worker")
+            return
+        end
+
+        % Add/remove the node from the force-list
+        switch questdlg("Do you want to force recomputing the output of: " + nodeName, 'Set/unset force')
+            case 'Yes'
+                obj.force = [obj.force, nodeName];
+            case 'No'
+                obj.force(obj.force == nodeName) = [];
+        end
+    end
+
+    function forcedflow = forced_workflow(obj)
+        %FORCED_WORKFLOW finds and highlights the forced downstream edges of the workflow graph
 
         % Find the downstream nodes of the forced workers
         workers    = fieldnames(obj.coord.resumes);
-        downstream = [];
+        forcedflow = [];
         for worker = obj.force
             prunedflow = obj.workflow;
             for node = string(prunedflow.Nodes.Name)'
                 if ~ismember(node, workers) && indegree(prunedflow, node) > 1   % If it's not a worker, then it must be a workitem
                     for parent = prunedflow.predecessors(node)'
-                        if ~strcmp(parent, obj.team.(node).name)                % Remove the edge if the parent worker is not preferred
+                        if ismember(parent, fieldnames(obj.team)) && ~strcmp(parent, obj.team.(node).name) % Remove the edge if the parent worker is not preferred
                             prunedflow = rmedge(prunedflow, parent, node);
                         end
                     end
                 end
             end
-            downstream = unique([downstream; bfsearch(prunedflow, worker)]);
+            forcedflow = unique([forcedflow; bfsearch(prunedflow, worker)]);
         end
 
-        % Highligt the downstream edges
+        % Highligt the forcedflow edges
         if isvalid(findall(groot, Tag='workflow_graph'))
 
-            % Start with a new workflow and highlight the edges
+            % Start with a new workflow
             obj.draw_workflow();
-            H      = findall(groot, Tag='workflow_graph');
-            [s, t] = findedge(obj.workflow);
-            idx    = ismember(obj.workflow.Nodes.Name(s), downstream);
-            highlight(H, s(idx), t(idx), LineStyle=':')
 
-            % Add a custom legend for the highlighted edges
-            L = findall(ancestor(H,'Figure'), Type='Legend'); drawnow
-            if L.Position(2) < 0.1      % Move the legend a bit up if the best Position is 'South'
-                L.Position(2) = L.Position(2) + 0.045;
+            % Highlight the edges
+            if ~isempty(forcedflow)
+                H      = findall(groot, Tag='workflow_graph');
+                [s, t] = findedge(obj.workflow);
+                idx    = ismember(obj.workflow.Nodes.Name(s), forcedflow);
+                highlight(H, s(idx), t(idx), LineStyle=':')
+
+                % Add a legend title for the newly forced edges
+                L = findall(ancestor(H,'Figure'), Type='Legend');
+                L.Title.String     = ['{\bf--} Forced      ', char(160)];    % Extra (non-breaking) spaces are a hack as title doesn't support HorizontalAlignment = 'left'
+                L.Title.FontWeight = 'normal';
             end
-            delete(findall(ancestor(H,'Figure'), Tag='legend_annotation'))
-            annotation(ancestor(H,'Figure'), 'textbox', [L.Position(1), L.Position(2)-0.045, L.Position(3), 0.035], String='{\bf--} Enforced', FontSize=L.FontSize, BackgroundColor=L.Color, Tag='legend_annotation')
         end
     end
 

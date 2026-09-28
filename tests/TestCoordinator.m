@@ -51,7 +51,7 @@ classdef TestCoordinator < BaseTest
             testCase.verifyEmpty(testCase.quidb_empty.deliverables, 'deliverables should be empty')
             testCase.verifyError(@() setfield(testCase.quidb_empty, deliverables = ["a", "b", "c"]), 'QuIDBBIDS:Deliverables:Invalid', 'Should throw invalid deliverable error')
             testCase.quidb_empty.deliverables = ["R1map"; "ME.*Dmag"];
-            testCase.verifyEqual(testCase.quidb_empty.deliverables, ["R1map", "ME.*Dmag"])
+            testCase.verifyEqual(sort(testCase.quidb_empty.deliverables), ["ME.*Dmag", "R1map"])
         end
 
         function testWorkitems(testCase)

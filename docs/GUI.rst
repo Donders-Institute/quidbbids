@@ -42,7 +42,7 @@ particular interest:
 
    * ``tag``. A custom tag that is added to the deliverables, e.g. to distinguish or compare the results when using
      different parameter settings. In such use cases, you could iteratively: (1) update the config parameter(s) and
-     output tag, (2) delete or enforce the workitems that need to be re-computed from the work-folder (3) execute the
+     output tag, (2) delete or force the workitems that need to be re-computed from the work-folder (3) execute the
      workflow. In this way unaffected work-items in the work-folder can be reused, while the deliverables are save
      with different tags in the output-folder.
      

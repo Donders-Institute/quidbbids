@@ -454,7 +454,7 @@ methods
                  ArrowSize    = 10, ...
                  Interpreter  = 'none', ...
                  Tag          = 'workflow_graph');
-        H.ButtonDownFcn = @(src, event, G) obj.setforce(src, event, workflow);
+        addlistener(H, 'Hit', @(src, event) obj.setforce(src, event, workflow));
         A.Tag  = 'workflow_axes';                           % Restore the axes tag (plot removes it)
         blue   = [0.16 0.5 0.73];   % = RTD blue #2980B9
         green  = [0 0.8 0];

@@ -20,12 +20,12 @@ After that, as described below, two GUIs can be used.
 Processing settings and options
 -------------------------------
 All configuration settings and options for processing the data can be set per worker with a GUI, which can be 
-launched by either calling the ``editconfig()`` method from your ``QuIDBBIDS`` object, or by directly calling the 
+launched by either calling the ``edit_config()`` method from your ``QuIDBBIDS`` object, or by directly calling the 
 ``configeditor()`` function:
 
 .. code-block:: matlab
 
-   >> quidb.editconfig()   % Opens a GUI to edit the settings of your dataset
+   >> quidb.edit_config()  % Opens a GUI to edit the settings of your dataset
    >> qb.configeditor()    % Opens a GUI to edit the settings of any dataset
 
 .. figure:: ./_static/configeditor.png

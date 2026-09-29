@@ -61,11 +61,21 @@ methods
 
     function reset_config(obj)
         % Callback for Reset button
+        uialert(obj.Fig, 'Reset function is not yet implemented', 'WIP')
     end
     
     function start_workflow(obj)
         % Callback for Start button
+        
+        % Disable user interaction
+        set(findobj(obj.Fig, Type='uibutton', Enable='on'), Enable='off')
+        cleanup = onCleanup(@() set(findobj(obj.Fig, Type='uibutton', Enable='off'), Enable='on'));
+        dlg = helpdlg('Starting the workflow', 'Please wait');
+
+        % Start the workflow
         obj.manager.start_workflow()
+        if isvalid(dlg), close(dlg), end
+        uialert(obj.Fig, 'The workflow has completed', 'QuIDBBIDS info', Icon='info')
     end
     
 end

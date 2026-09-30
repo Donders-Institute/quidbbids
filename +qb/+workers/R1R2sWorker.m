@@ -44,14 +44,14 @@ methods (Access = protected)
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.R2starmap = struct(modality = 'anat', ...
+        obj.bidsfilter.R2starmap_VFA = struct(modality = 'anat', ...
                                           echo     = [], ...
                                           flip     = [], ...
                                           part     = '', ...
                                           desc     = 'gacelleR1R2s', ...
                                           suffix   = 'R2starmap');
-        obj.bidsfilter.M0map     = setfield(obj.bidsfilter.R2starmap, suffix='M0Map');
-        obj.bidsfilter.R1map     = setfield(obj.bidsfilter.R2starmap, suffix='R1map');
+        obj.bidsfilter.M0map_VFA     = setfield(obj.bidsfilter.R2starmap, suffix='M0Map');
+        obj.bidsfilter.R1map_VFA     = setfield(obj.bidsfilter.R2starmap, suffix='R1map');
     end
 
 end
@@ -108,9 +108,9 @@ methods
 
         % Save the output data
         V(1).dim = dims(1:3);
-        write_vol(V(1), askadam_R1R2s.final.R1,     obj.bfile_set(bfile, obj.bidsfilter.R1map    ));
-        write_vol(V(1), askadam_R1R2s.final.M0,     obj.bfile_set(bfile, obj.bidsfilter.M0map    ));
-        write_vol(V(1), askadam_R1R2s.final.R2star, obj.bfile_set(bfile, obj.bidsfilter.R2starmap));
+        write_vol(V(1), askadam_R1R2s.final.R1,     obj.bfile_set(bfile, obj.bidsfilter.R1map_VFA    ));
+        write_vol(V(1), askadam_R1R2s.final.M0,     obj.bfile_set(bfile, obj.bidsfilter.M0map_VFA    ));
+        write_vol(V(1), askadam_R1R2s.final.R2star, obj.bfile_set(bfile, obj.bidsfilter.R2starmap_VFA));
     end
 
 end

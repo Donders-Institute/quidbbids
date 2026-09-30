@@ -45,8 +45,16 @@ methods
             coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
         end
 
+        % Set and load existing workflow data into OBJ
         obj.coord = coord;                      % The coordinator that help the manager with administrative tasks
-        obj.create_team()                       % Create the team and workflow
+        obj.load_properties()
+
+        % Create the team and workflow
+        if isempty(fieldnames(obj.team))
+            obj.create_team()
+        else
+            obj.forced_workflow()
+        end
     end
 
     function set.force(obj, val)
@@ -157,48 +165,42 @@ methods
         end
     end
 
-    function load_mgr(obj, workflowfile)
-        %LOAD_WORKFLOW Loads all manager properties from the workflowfile
+    function load_properties(obj)
+        %LOAD_PROPERTIES Loads all manager properties from the workflowfile
 
-        arguments
-            obj
-            workflowfile {mustBeTextScalar} = obj.coord.workflowfile
-        end
-
+        workflowfile = obj.coord.workflowfile;
         if ~isfile(workflowfile)
-            fprintf('🔧 No previous manager data found\n')
             return
         end
 
-        fprintf('🔧 Loading manager data from: %s\n', workflowfile)
+        % Load the manager settings from the workflowfile
         load(workflowfile, 'mgr')
-        obj.coord.workflowfile = workflowfile;
 
         % Set the manager data
-        for property = string(fieldnames(mgr)')
-            obj.(property) = mgr.(property);
+        if exist('mgr', 'var')
+            for property = string(fieldnames(mgr)')
+                obj.(property) = mgr.(property);
+            end
         end
     end
 
-    function save_mgr(obj, workflowfile)
-        %SAVE_WORKFLOW Saves all manager properties to the workflowfile, except the COORD handle
+    function save_properties(obj)
+        %SAVE_PROPERTIES Saves all manager properties to the workflowfile, except the COORD handle
 
-        arguments
-            obj
-            workflowfile {mustBeTextScalar} = obj.coord.workflowfile
-        end
-
-        % Get the manager data
+        % Get the manager data (except for 'coord')
         for property = string(properties(obj)')
             if ~ismember(property, {'coord'})
                 mgr.(property) = obj.(property);
             end
         end
 
-        fprintf('💾 Saving manager data to: %s\n', workflowfile)
+        workflowfile = obj.coord.workflowfile;
         [~,~] = mkdir(fileparts(workflowfile));
-        save(workflowfile, 'mgr', '-append')
-        obj.coord.workflowfile = workflowfile;
+        if isfile(workflowfile)
+            save(workflowfile, 'mgr', '-append')
+        else
+            save(workflowfile, 'mgr')
+        end
     end
 
     function start_workflow(obj, subjects)
@@ -216,8 +218,6 @@ methods
             subjects string = "";
         end
 
-        % Block the start button in the GUI (if any)
-
         % Start a diary to log the screen output
         logdir = fullfile(obj.coord.outputdir, 'logs');
         [~,~]  = mkdir(logdir);
@@ -232,6 +232,7 @@ methods
         % Save the config and workflow data, so that the workflow can be resumed later
         obj.coord.get_config(obj.coord.config);
         obj.coord.save_properties(obj.coord.workflowfile)
+        obj.save_properties()
 
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value
@@ -527,7 +528,7 @@ methods (Access = private)
         end
 
         % Highligt the forcedflow edges
-        if isvalid(findall(groot, Tag='workflow_graph'))
+        if isvalid(findall(groot, Tag='workflow_axes'))
 
             % Start with a new workflow
             obj.draw_workflow();

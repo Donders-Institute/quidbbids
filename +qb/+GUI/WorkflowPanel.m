@@ -35,19 +35,19 @@ methods
 
         % Config buttons
         buttonGrid = uigridlayout(mainGrid, [4 1], RowHeight = {'fit', 'fit', 'fit', 'fit'});
-        uibutton(buttonGrid, Text='📂 Open',    Enable='on',  ButtonPushedFcn=@(~,~) obj.onOpen(),         Tooltip='Open a BIDS dataset');
-        uibutton(buttonGrid, Text='🛒 Catalog', Enable='on',  ButtonPushedFcn=@(~,~) obj.onDeliverables(), Tooltip='Select deliverables from the workitems catalog');
-        uibutton(buttonGrid, Text='🔧 Edit',    Enable='off', ButtonPushedFcn=@(~,~) coord.edit_config(),  Tooltip='Edit worker configurations');
-        uibutton(buttonGrid, Text='↺ Reset',    Enable='off', ButtonPushedFcn=@(~,~) obj.reset_config(),   Tooltip='Reset everything');
+        uibutton(buttonGrid, Text='📂 Open',    Enable='on',  ButtonPushedFcn=@(~,~) obj.open_BIDS(),        Tooltip='Open a BIDS dataset');
+        uibutton(buttonGrid, Text='🛒 Catalog', Enable='on',  ButtonPushedFcn=@(~,~) obj.set_deliverables(), Tooltip='Select deliverables from the workitems catalog');
+        uibutton(buttonGrid, Text='🔧 Edit',    Enable='off', ButtonPushedFcn=@(~,~) coord.edit_config(),    Tooltip='Edit worker configurations');
+        uibutton(buttonGrid, Text='↺ Reset',    Enable='off', ButtonPushedFcn=@(~,~) obj.reset_config(),     Tooltip='Reset everything');
 
         % Workflow
         uiaxes(mainGrid, Tag='workflow_axes', XTick=[], YTick=[], Box='on');
 
         % Control buttons
         buttonGrid = uigridlayout(mainGrid, [2 1], RowHeight = {'fit', 'fit'});
-        uibutton(buttonGrid, Text='📂 Load',    Enable='off', ButtonPushedFcn=@(~,~) coord.load_properties(), Tooltip='Load previously saved workflow settings');
-        uibutton(buttonGrid, Text='💾 Save',    Enable='off', ButtonPushedFcn=@(~,~) coord.save_properties(), Tooltip='Save your workflow settings');
-        uibutton(buttonGrid, Text='▶ Start',    Enable='off', ButtonPushedFcn=@(~,~) obj.start_workflow(),    Tooltip='Start the workflow execution');
+        uibutton(buttonGrid, Text='📂 Load',    Enable='off', ButtonPushedFcn=@(~,~) obj.load_workflow(),  Tooltip='Load previously saved workflow settings');
+        uibutton(buttonGrid, Text='💾 Save',    Enable='off', ButtonPushedFcn=@(~,~) obj.save_workflow(),  Tooltip='Save your workflow settings');
+        uibutton(buttonGrid, Text='▶ Start',    Enable='off', ButtonPushedFcn=@(~,~) obj.start_workflow(), Tooltip='Save and start the workflow');
 
         % Redraw the full workflow in the GUI
         coord.get_resumes();
@@ -60,12 +60,12 @@ methods
 
     end
 
-    function onOpen(obj)
+    function open_BIDS(obj)
         % Callback for Open button
         uialert(obj.Fig, '[Open] function is not yet implemented', 'WIP')
     end
 
-    function onDeliverables(obj)
+    function set_deliverables(obj)
         % Callback for Catalog button
         obj.coord.set_deliverables()
         obj.manager = qb.workers.Manager(obj.coord);
@@ -79,6 +79,18 @@ methods
         uialert(obj.Fig, '[Reset] function is not yet implemented', 'WIP')
     end
     
+    function load_workflow(obj)
+        % Callback for Load button
+        obj.coord.load_properties()
+        obj.manager.load_properties()
+    end
+    
+    function save_workflow(obj)
+        % Callback for Save button
+        obj.coord.save_properties()
+        obj.manager.save_properties()
+    end
+
     function start_workflow(obj)
         % Callback for Start button
         

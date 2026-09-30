@@ -329,7 +329,7 @@ methods
     end
 
     function load_properties(obj, workflowfile)
-        %LOAD_WORKFLOW Loads all coordinator properties from the workflowfile. Leave WORKFLOWFILE empty for interactive usage
+        %LOAD_PROPERTIES Loads all coordinator properties from the workflowfile. Leave WORKFLOWFILE empty for interactive usage
 
         arguments
             obj
@@ -360,13 +360,15 @@ methods
         load(workflowfile, 'coord')
 
         % Set the workflow settings
-        for property = string(fieldnames(coord)')
-            obj.(property) = coord.(property);
+        if exist('coord', 'var')
+            for property = string(fieldnames(coord)')
+                obj.(property) = coord.(property);
+            end
         end
     end
 
     function save_properties(obj, workflowfile)
-        %SAVE_WORKFLOW Saves all coordinator properties to the workflowfile, except the BIDS and config data
+        %SAVE_PROPERTIES Saves all coordinator properties to the workflowfile, except the BIDS and config data
         % Leave WORKFLOWFILE empty for interactive usage
 
         arguments
@@ -401,7 +403,11 @@ methods
             fprintf('💾 Overwriting workflow settings in: %s\n', workflowfile)
         end
         [~,~] = mkdir(fileparts(workflowfile));
-        save(workflowfile, 'coord')
+        if isfile(workflowfile)
+            save(workflowfile, 'coord', '-append')
+        else
+            save(workflowfile, 'coord')
+        end
         obj.workflowfile = workflowfile;
     end
 

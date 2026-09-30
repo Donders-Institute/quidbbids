@@ -24,7 +24,7 @@ Configuration editor
 
 .. figure:: ./_static/configeditor.png
 
-   Left panel: The General QuIDBBIDS settings as well as the the settings for the individual workers. In this
+   Left panel: The General QuIDBBIDS settings as well as the settings for the individual workers. In this
    example the user navigated to the ``MP2RAGEWorker`` and selected the ``NumberShots`` parameter. Right panel:
    The description of the selected parameter (top) with a box to edit its value (bottom).
 

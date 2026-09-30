@@ -65,9 +65,9 @@ Finally, to run the workflow, initialize the manager from your ``QuIDBBIDS`` obj
 
 .. code-block:: matlab
 
-   >> mgr       = quidb.manager();                    % Initialize the manager to get work done
-   >> mgr.force = ["B1prepWorker", "MP2RAGEWorker"];  % Reuse existing workitems except for these workers and their dependencies
-   >> mgr.start_workflow()                            % Start the workflow
+   >> quidb.get_manager()                                       % Initialize the manager to get work done
+   >> quidb.manager.force = ["B1prepWorker", "MP2RAGEWorker"];  % Reuse existing workitems except for these workers and their dependencies
+   >> quidb.manager.start_workflow()                            % Start the workflow
 
 A more advanced example of a CLI workflow can be found in this `manual test script <https://github.com/Donders-Institute/quidbbids/blob/main/tests/mantest_dccn.m>`__.
 

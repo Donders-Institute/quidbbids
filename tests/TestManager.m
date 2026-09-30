@@ -16,7 +16,7 @@ classdef TestManager < BaseTest
             bids.init(testCase.TmpDir)
             quidb = qb.QuIDBBIDS(testCase.TmpDir);
             quidb.interactive = false;
-            testCase.mgr = quidb.manager();
+            testCase.mgr = quidb.get_manager();
         end
     end
 

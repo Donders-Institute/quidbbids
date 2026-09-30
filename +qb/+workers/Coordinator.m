@@ -16,6 +16,7 @@ properties
     workflowfile                % Path to the workflow file
     metadata = struct()         % A struct with metadata about the software package
     interactive = true          % If true, the coordinator will ask the user for help when needed (false = useful for automated testing)
+    manager                     % The manager that will be used to run the workflow
 end
 
 
@@ -125,6 +126,30 @@ methods
         % Launch a GUI to set the deliverables interactively
         [items, descriptions] = obj.catalog();
         obj.deliverables = qb.GUI.set_deliverables(items, descriptions, obj.deliverables);
+    end
+
+    function manager = get_manager(obj)
+        %GET_MANAGER Initialzes a workflow manager to get work done
+        %
+        % See also: qb.workers.Manager
+
+        arguments
+            obj
+        end
+
+        if isempty(obj.deliverables)
+            disp('⚠ You should probably first specify your deliverables before creating a manager')
+            if obj.interactive
+                obj.set_deliverables()
+            end
+        end
+
+        obj.manager = qb.workers.Manager(obj);
+        obj.manager.interactive = obj.interactive;
+
+        if nargout
+            manager = obj.manager;
+        end
     end
 
     function start_GUI(obj)

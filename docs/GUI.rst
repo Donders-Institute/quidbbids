@@ -30,7 +30,7 @@ launched by either calling the ``edit_config()`` method from your ``QuIDBBIDS`` 
 
 .. figure:: ./_static/configeditor.png
 
-   Left panel: The General QuIDBBIDS settings as well as the the settings for the individual workers. In this
+   Left panel: The General QuIDBBIDS settings as well as the settings for the individual workers. In this
    example the user navigated to the ``MP2RAGEWorker`` and selected the ``NumberShots`` parameter. Right panel:
    The description of the selected parameter (top) with a box to edit its current value of ``176`` (bottom).
 
@@ -65,4 +65,5 @@ Finally, to run the workflow, initialize the manager and start the workflow:
 
 .. code-block:: matlab
 
-   >> quidb.manager().start_workflow()    % NB: See the CLI section to forcefully re-running (subtrees of) workflows
+   >> quidb.get_manager()
+   >> quidb.manager.start_workflow()   % NB: See the CLI section to forcefully re-running (subtrees of) workflows

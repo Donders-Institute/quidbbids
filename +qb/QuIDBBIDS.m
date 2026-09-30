@@ -55,7 +55,8 @@ methods
         end
 
         % Use the QuIDBBIDS icon everywhere
-        set(groot, defaultFigureIcon = fullfile(fileparts(mfilename('fullpath')), 'private', 'icon.png'))
+        icon = fullfile(fileparts(mfilename('fullpath')), 'private', 'icon.png');
+        set(groot, defaultFigureIcon=icon)
 
         % Check the input
         if strlength(bidsdir) == 0
@@ -68,6 +69,10 @@ methods
         end
         if strlength(outputdir) == 0
             outputdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS");  % See also: Coordinator constructor
+        end
+        if ~nargin && isfile(fullfile(outputdir, "code", "config.json")) && ...
+            strcmp(questdlg(["Would you like to reload previously saved settings from:","", outputdir, "","N.B. No will reset them to default",""], 'Config settings', 'Yes', 'No', 'Yes'), 'No')
+            configfile = "default";
         end
 
         % Check for the latest QuIDBBIDS version
@@ -96,11 +101,15 @@ methods
         % Get started by first setting-up the path
         fprintf(['\n⏱ Starting up QuIDBBIDS...' ...
                  '\n‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n'])
+        H = uifigure(Name='Starting up QuIDBBIDS...', Position=[200 200 400 100]);
+        P = uiprogressdlg(H, Title='Setting up the dependencies', Message='Please wait...', Icon=icon, Indeterminate='on');
+        cleanup = onCleanup(@() close(H));
         qb.addpath_deps()
 
         % Get or create the configuration settings
         default = strcmp(configfile, "default");
         if strlength(configfile) == 0 || default
+            P.Title = 'Deleting existing config file(s)';
             configfile = fullfile(outputdir, "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
             if default && isfile(configfile)
                 disp("🗑️ Deleting existing config file(s): " + configfile)
@@ -112,6 +121,7 @@ methods
         config = get_config(configfile);    % Cannot call obj.get_config directly because obj is not yet fully constructed / the superclass has not yet been called
 
         % Initialize the BIDS layout and call the superclass constructor
+        P.Title = "Indexing: " + bidsdir;
         BIDS = bids.layout(char(bidsdir), use_schema        = true, ...
                                           index_derivatives = false, ...
                                           filter            = config.General.BIDS.include.value, ...
@@ -160,26 +170,6 @@ methods
         % See also: qb.QuIDBBIDS (for overview)
 
         [obj.configfile, obj.config] = qb.configeditor(obj.configfile, obj.config, ['General'; fieldnames(obj.resumes)], obj.BIDS);
-    end
-
-    function mgr = manager(obj)
-        %GET_MANAGER Gets a workflow manager to get work done
-        %
-        % See also: qb.workers.Manager
-
-        arguments
-            obj
-        end
-
-        if isempty(obj.deliverables)
-            disp('⚠ You should probably first specify your deliverables before creating a manager')
-            if obj.interactive
-                obj.set_deliverables()
-            end
-        end
-
-        mgr = qb.workers.Manager(obj);
-        mgr.interactive = obj.interactive;
     end
 
     function config = get_config(obj, config)

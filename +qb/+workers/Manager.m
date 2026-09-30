@@ -53,7 +53,7 @@ methods
         if isempty(fieldnames(obj.team))
             obj.create_team()
         else
-            obj.forced_workflow()
+            obj.forced_workflow();
         end
     end
 

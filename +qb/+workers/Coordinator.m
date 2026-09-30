@@ -26,7 +26,7 @@ end
 
 methods
 
-    function obj = Coordinator(BIDS, configfile, outputdir, workdir)
+    function obj = Coordinator(BIDS, outputdir, workdir, configfile)
         % Constructor for the abstract Coordinator class
         %
         % Inputs:
@@ -37,9 +37,9 @@ methods
 
         arguments
             BIDS        struct
-            configfile  {mustBeTextScalar}
             outputdir   {mustBeTextScalar} = ""
             workdir     {mustBeTextScalar} = ""
+            configfile  {mustBeTextScalar} = ""
         end
 
         % Close all old QuIDBBIDS figures
@@ -48,26 +48,36 @@ methods
         end
 
         % Load existing workflow data into OBJ
-        obj.load_properties(regexprep(configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat"))
+        bidsapp = regexp(class(obj), '[^.]+$', 'match', 'once');  % Only take the class basename, i.e. the last part after the dot
+        if strlength(configfile)
+            obj.load_properties(regexprep(configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat"))
+        elseif strlength(outputdir)
+            obj.load_properties(fullfile(outputdir, "code", "config.json"))
+        else
+            obj.load_properties(fullfile(BIDS.pth, "derivatives", bidsapp, "code", "config.json"))
+        end
 
         % Parse the inputs
-        bidsapp = regexp(class(obj), '[^.]+$', 'match', 'once');  % Only take the class basename, i.e. the last part after the dot
-        if isempty(outputdir) || strlength(outputdir) == 0
+        if ~strlength(outputdir)
             if char(obj.outputdir)
                 outputdir = string(obj.outputdir);
             else
                 outputdir = fullfile(BIDS.pth, "derivatives", bidsapp);
             end
         end
-        if isempty(workdir) || strlength(workdir) == 0
+        if ~strlength(workdir)
             if char(obj.workdir)
                 workdir = string(obj.workdir);
             else
-                workdir = fullfile(BIDS.pth, "derivatives", bidsapp + "_work");
+                workdir = replace(outputdir + "_work", filesep + "_work", "_work");
             end
         end
-        if isempty(configfile) || strlength(configfile) == 0
-            configfile = string(obj.configfile);
+        if ~strlength(configfile)
+            if char(obj.configfile)
+                configfile = string(obj.configfile);
+            else
+                configfile = fullfile(outputdir, "code", "config.json");
+            end
         end
 
         % Initialize the derivatives and workdir datasets
@@ -84,7 +94,7 @@ methods
         obj.workdir    = workdir;
         obj.configfile = configfile;
         obj.config     = obj.get_config();
-        obj.resumes    = obj.get_resumes();
+        obj.resumes    = obj.get_resumes();     % TODO: Fix overwriting loaded properties
 
         % Save the workflow mask graph
         H = findall(groot, Tag='workflow_mask');

@@ -36,9 +36,9 @@ methods
         %   OUTPUTDIR  - Path to the QuIDBBIDS derivatives directory where output will be written.
         %                Default: [BIDSDIR]/derivatives/QuIDBBIDS
         %   WORKDIR    - Working directory for intermediate results. Default: [BIDSDIR]/derivatives/QuIDBBIDS_work.
-        %   CONFIGFILE - Path to the configuration file with workflow settings. Passing 'default' uses the
-        %                default config from the QuIDBBIDS folder in your HOME directory as default.
-        %                Default: [OUTPUTDIR]/code/config.json
+        %   CONFIGFILE - Path to the configuration file with workflow settings. Passing 'default' deletes
+        %                previously saved config and workflow files, i.e. it will load the default config file from
+        %                the QuIDBBIDS folder in your HOME directory. Default: [OUTPUTDIR]/code/config.json
         %
         % Usage:
         %   quidb = qb.QuIDBBIDS();             % Select BIDS root directory via GUI
@@ -103,8 +103,8 @@ methods
         if strlength(configfile) == 0 || default
             configfile = fullfile(outputdir, "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
             if default && isfile(configfile)
-                disp("🗑️ Deleting existing config file: " + configfile)
-                delete(configfile)
+                disp("🗑️ Deleting existing config file(s): " + configfile)
+                delete(configfile, fullfile(outputdir, "code", "workflow.mat"))
             end
         elseif isfolder(configfile)
             error("QuIDBBIDS:Nifti:InvalidInputArgument", "The configfile must be a file, not a folder: %s", configfile)
@@ -117,7 +117,7 @@ methods
                                           filter            = config.General.BIDS.include.value, ...
                                           tolerant          = true, ...
                                           verbose           = true);
-        obj@qb.workers.Coordinator(BIDS, configfile, outputdir, workdir)
+        obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
 
         % Add project metadata to the output folders
         obj.metadata = metadata;

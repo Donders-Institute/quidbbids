@@ -117,7 +117,7 @@ methods
                                           filter            = config.General.BIDS.include.value, ...
                                           tolerant          = true, ...
                                           verbose           = true);
-        obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
+        obj@qb.workers.Coordinator(BIDS, configfile, outputdir, workdir)
 
         % Add project metadata to the output folders
         obj.metadata = metadata;

@@ -231,7 +231,7 @@ methods
 
         % Save the config and workflow data, so that the workflow can be resumed later
         obj.coord.get_config(obj.coord.config);
-        obj.coord.save_properties()
+        obj.coord.save_properties(obj.coord.workflowfile)
 
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value
@@ -441,7 +441,7 @@ methods
 
         % Plot the workflow graph
         A = findall(groot, Tag='workflow_axes');
-        if isempty(A)   % There is no GUI
+        if isempty(A)
            A = axes(Tag='workflow_axes');
         end
         H = plot(A, workflow, ...

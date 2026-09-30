@@ -41,13 +41,13 @@ methods (Access = protected)
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.R1map_S0      = struct(modality = 'anat', ...
+        obj.bidsfilter.R1map_VFA      = struct(modality = 'anat', ...
                                               echo     = [], ...
                                               part     = '', ...
-                                              desc     = 'despot1S0', ...
+                                              desc     = 'mean', ...
                                               suffix   = 'R1map');
-        obj.bidsfilter.M0map_S0      = setfield(obj.bidsfilter.R1map_S0, suffix='M0map');
-        obj.bidsfilter.meanR2starmap = struct(modality = 'anat', ...
+        obj.bidsfilter.M0map_VFA      = setfield(obj.bidsfilter.R1map_S0, suffix='M0map');
+        obj.bidsfilter.R2starmap_VFA = struct(modality = 'anat', ...
                                               echo     = [], ...
                                               part     = '', ...
                                               desc     = 'mean', ...
@@ -130,7 +130,7 @@ methods
             % Compute and save weighted means of the R2-star & Chi maps. TODO: Change the `desc` value from `VFA\d*` -> `mean`. Also, only compute for ME-VFA data
             R2smean  = sum(S0.^2 .* R2s, 4) ./ sum(S0.^2, 4);
             Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
-            bfileR2s = obj.bfile_set(S0data{1}, obj.bidsfilter.meanR2starmap);
+            bfileR2s = obj.bfile_set(S0data{1}, obj.bidsfilter.R2starmap_VFA);
             bfileChi = obj.bfile_set(S0data{1}, obj.bidsfilter.meanChimap);
             write_vol(V, R2smean.*mask, bfileR2s);
             write_vol(V, Chimean.*mask, bfileChi);
@@ -142,8 +142,8 @@ methods
             R1(~isfinite(R1)) = 0;          % set NaN and Inf to 0
 
             % Save the SCR output maps
-            bfileR1 = obj.bfile_set(S0data{1}, obj.bidsfilter.R1map_S0);
-            bfileM0 = obj.bfile_set(S0data{1}, obj.bidsfilter.M0map_S0);
+            bfileR1 = obj.bfile_set(S0data{1}, obj.bidsfilter.R1map_VFA);
+            bfileM0 = obj.bfile_set(S0data{1}, obj.bidsfilter.M0map_VFA);
             write_vol(V, R1,       bfileR1);
             write_vol(V, M0.*mask, bfileM0);
 

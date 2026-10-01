@@ -43,15 +43,15 @@ methods (Access = protected)
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.R2starmap_VFA = struct(modality = 'anat', ...
+        obj.bidsfilter.R2starmap_SCR = struct(modality = 'anat', ...
                                               echo     = [], ...
                                               flip     = [], ...      % The fit combines all flip angles
                                               part     = '', ...
-                                              desc     = 'VFAmean', ...
+                                              desc     = 'SCR', ...
                                               suffix   = 'R2starmap');
-        obj.bidsfilter.R1map_VFA     = setfield(obj.bidsfilter.R2starmap_VFA, suffix='R1map');
-        obj.bidsfilter.M0map_VFA     = setfield(obj.bidsfilter.R2starmap_VFA, suffix='M0map');
-        obj.bidsfilter.meanChimap    = setfield(obj.bidsfilter.R2starmap_VFA, suffix='Chimap');
+        obj.bidsfilter.R1map_SCR     = setfield(obj.bidsfilter.R2starmap_SCR, suffix='R1map');
+        obj.bidsfilter.M0map_SCR     = setfield(obj.bidsfilter.R2starmap_SCR, suffix='M0map');
+        obj.bidsfilter.meanChimap    = setfield(obj.bidsfilter.R2starmap_SCR, suffix='Chimap');
     end
 
 end
@@ -68,7 +68,7 @@ methods
         end
 
         switch workitem
-            case {'R1map_VFA', 'M0map_VFA', 'R2starmap_VFA'}
+            case {'R1map_SCR', 'M0map_SCR', 'R2starmap_SCR'}
                 obj.fit_relaxometry()
             case 'meanChimap'
                 obj.average_chimap()
@@ -137,9 +137,9 @@ methods (Access = private)
         end
 
         % Save the SCR output maps
-        write_vol(V(1), fit.R1,     obj.bfile_set(ME4Dmag{1}, obj.bidsfilter.R1map_VFA    ));
-        write_vol(V(1), fit.M0,     obj.bfile_set(ME4Dmag{1}, obj.bidsfilter.M0map_VFA    ));
-        write_vol(V(1), fit.R2star, obj.bfile_set(ME4Dmag{1}, obj.bidsfilter.R2starmap_VFA));
+        write_vol(V(1), fit.R1,     obj.bfile_set(ME4Dmag{1}, obj.bidsfilter.R1map_SCR    ));
+        write_vol(V(1), fit.M0,     obj.bfile_set(ME4Dmag{1}, obj.bidsfilter.M0map_SCR    ));
+        write_vol(V(1), fit.R2star, obj.bfile_set(ME4Dmag{1}, obj.bidsfilter.R2starmap_SCR));
     end
 
 

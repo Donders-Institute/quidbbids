@@ -61,6 +61,14 @@
     }
   },
 
+  "SCRWorker": {
+    "nNewton": {
+        "value": 1,
+        "description": "Number of Gauss-Newton refinement steps on the exact signal equation (0 = closed-form Pade estimate only)"
+    }
+  },
+
+
   "MCR_GPUWorker": {
     "fixed_params": {
       "t1_mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"},

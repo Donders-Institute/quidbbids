@@ -22,8 +22,8 @@ properties (Constant)
                    ""
                    "1. Brain Mask Generation:"
                    "   Creates a brain mask for each MEGRE acquisition using the echo-1 magnitude image as input to"
-                   "   mri_synthstrip (FreeSurfer). Individual masks are combined to produce a minimal output mask"
-                   "   suitable for QSM processing."
+                   "   mri_synthstrip (FreeSurfer) or BET (FSL). Individual masks are combined to produce a minimal output"
+                   "   mask suitable for QSM processing."
                    ""
                    "2. Multi-Echo Merging:"
                    "   Merges all echo images (magnitude and phase) for each acquisition into 4D NIfTI files."
@@ -36,7 +36,8 @@ properties (Constant)
                    ".. note::"
                    ""
                    "   The brain mask generation uses mri_synthstrip which requires FreeSurfer to be installed and configured."
-                   "   Denoising is applied in-place to the merged 4D files when enabled."] % Description should be in ReStructuredText format
+                   "   If not available, then BET is used as a fallback. Denoising is applied in-place to the merged 4D files"
+                   "   when enabled."] % Description should be in ReStructuredText format
     needs       = "rawMEGRE";   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
@@ -162,16 +163,24 @@ methods (Static)
 
                 obj.logger.info("--> Creating brain mask for run: %d", run)
 
-                % Combine all (echo-1) masks to create a minimal brain mask (using mri_synthstrip)
+                % Combine all (echo-1) masks to create a minimal brain mask (using mri_synthstrip or BET)
                 mask = true;
                 for echo1 = obj.query_ses(BIDS, 'data', bfilter, echo=1, run=run, part='mag')     % This will loop over flips (NB: and possibly more)
                     bfile = bids.File(char(echo1));
                     specs = setfield(obj.bidsfilter.brainmask, desc=sprintf('VFA%02d', bfile.metadata.FlipAngle));    % Add desc -> (flip)mask is a temporary file
                     bfile = obj.bfile_set(bfile, specs);
                     [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
-                    obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(echo1), bfile.path));        % [status,out] = system('echo $CUDA_VISIBLE_DEVICES') does not detect if pytorch was compiled with CUDA support
-                    mask  = spm_read_vols(spm_vol(bfile.path)) & mask;
-                    delete(bfile.path)                      % Delete the temporary mask file
+                    if system('mri_synthstrip -i') > 1      % Wrong usage of mri_synthstrip returns 2
+                        obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(echo1), bfile.path));        % [status,out] = system('echo $CUDA_VISIBLE_DEVICES') does not detect if pytorch was compiled with CUDA support
+                        mask = spm_read_vols(spm_vol(bfile.path)) & mask;
+                        delete(bfile.path)                  % Delete the temporary mask file
+                    else
+                        obj.logger.warning("mri_synthstrip is not available. Using BET (FSL) as a fallback for brain masking")
+                        conf = obj.config.(obj.name).BET;
+                        Hdr  = spm_vol(char(echo1));
+                        Par  = spm_imatrix(Hdr.mat);
+                        mask = BET(spm_read_vols(Hdr), Hdr.dim, abs(Par(7:9)), conf.FractionalThreshold, conf.GradientThreshold) & mask;
+                    end
                 end
 
                 % Save the combined mask

@@ -14,6 +14,10 @@
     "denoising": {
       "method": {"value": "", "description": "Denoising method. Options: '' (no denoising), 'MPPCA' (Marchenko–Pastur PCA), 'tMPPCA' (tensor Marchenko–Pastur PCA; this is however not useful for MEGRE data)."},
       "kernel": {"value": [5,5,5], "description": "Size of the sliding window (patch) used for the PCA, specified as [x y z]."}
+    },
+    "BET": {
+      "FractionalThreshold": {"value": 0.5, "description": "Fractional intensity threshold (0->1). Smaller values give larger brain outline estimates"},
+      "GradientThreshold": {"value": 0, "description": "Vertical gradient in fractional intensity threshold (-1->1). Positive values give larger brain outline at bottom, smaller at top"}
     }
   },
 

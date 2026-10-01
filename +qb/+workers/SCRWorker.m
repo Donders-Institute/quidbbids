@@ -7,29 +7,31 @@ classdef (Sealed) SCRWorker < qb.workers.Worker
 properties (Constant)
     description = ["Single Compartment Relaxometry (SCR) worker for combined relaxometry and susceptibility analysis."
                    ""
-                   "SCRWorker combines separately computed Quantitative Susceptibility Mapping (QSM) outputs with"
-                   "relaxometry data to generate consolidated parameter maps. SCR provides a simplified model that"
-                   "assumes a single tissue compartment, suitable for applications where multi-compartment modeling"
-                   "is not required or when computational efficiency is prioritized."
+                   "SCRWorker jointly estimates R1, R2* and M0 from multi-echo variable flip angle (VFA) GRE data, and"
+                   "combines separately computed Quantitative Susceptibility Mapping (QSM) outputs into a single"
+                   "susceptibility map. SCR assumes a single tissue compartment, suitable for applications where"
+                   "multi-compartment modeling is not required or when computational efficiency is prioritized."
                    ""
                    "Methods:"
                    "--------"
                    ""
-                   "1. R2* and Chi Map Averaging:"
-                   "   Computes weighted means of R2* and susceptibility (Chi) maps across different flip angles."
-                   "   The weighting uses S0^2 to emphasize voxels with higher signal intensity."
+                   "1. Joint R1, R2* and M0 Mapping:"
+                   "   Fits the spoiled GRE signal equation to all echoes of all flip angles simultaneously, using a"
+                   "   Pade approximation of the T1 recovery term to obtain a closed-form estimate, followed by"
+                   "   Gauss-Newton refinement on the exact signal equation. Transmit field (B1+) inhomogeneity is"
+                   "   accounted for. The fit runs on the CPU and supports variable flip angles as well as variable"
+                   "   repetition and echo times."
                    ""
-                   "2. R1 and M0 Mapping:"
-                   "   Estimates R1 (1/T1) and M0 (proton density) maps using the DESPOT1 (Driven Equilibrium Single"
-                   "   Pulse Observation of T1) method with S0 estimates from QSM processing."
-                   "   The current implementation assumes a constant TR across all flip angles."
+                   "2. Chi Map Averaging:"
+                   "   Computes the weighted mean of the susceptibility (Chi) maps across flip angles. The weighting"
+                   "   uses S0^2 to emphasize voxels with higher signal intensity."
                    ""
                    ".. note::"
                    ""
                    "   The SCR model is appropriate for tissues with relatively homogeneous microstructure or when"
                    "   the primary goal is to obtain average parameter values rather than compartment-specific estimates."
                    "   For myelin water imaging, consider using MCRWorker or MCR_GPUWorker instead."]   % Description should be in ReStructuredText format
-    needs       = ["S0map", "R2starmap", "Chimap", "localfmask", "TB1map_GRE"]   % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["ME4Dmag", "TB1map_GRE", "brainmask", "S0map", "Chimap", "localfmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -41,18 +43,15 @@ methods (Access = protected)
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.R1map_VFA      = struct(modality = 'anat', ...
-                                              echo     = [], ...
-                                              part     = '', ...
-                                              desc     = 'VFAmean', ...
-                                              suffix   = 'R1map');
-        obj.bidsfilter.M0map_VFA      = setfield(obj.bidsfilter.R1map_S0, suffix='M0map');
         obj.bidsfilter.R2starmap_VFA = struct(modality = 'anat', ...
                                               echo     = [], ...
+                                              flip     = [], ...      % The fit combines all flip angles
                                               part     = '', ...
                                               desc     = 'VFAmean', ...
                                               suffix   = 'R2starmap');
-        obj.bidsfilter.meanChimap    = setfield(obj.bidsfilter.meanR2starmap, suffix='Chimap');
+        obj.bidsfilter.R1map_VFA     = setfield(obj.bidsfilter.R2starmap_VFA, suffix='R1map');
+        obj.bidsfilter.M0map_VFA     = setfield(obj.bidsfilter.R2starmap_VFA, suffix='M0map');
+        obj.bidsfilter.meanChimap    = setfield(obj.bidsfilter.R2starmap_VFA, suffix='Chimap');
     end
 
 end
@@ -68,26 +67,92 @@ methods
             workitem {mustBeTextScalar, mustBeNonempty}
         end
 
+        switch workitem
+            case {'R1map_VFA', 'M0map_VFA', 'R2starmap_VFA'}
+                obj.fit_relaxometry()
+            case 'meanChimap'
+                obj.average_chimap()
+            otherwise
+                obj.logger.exception('%s does not know how to make a %s workitem', obj.name, workitem)
+        end
+    end
+
+end
+
+
+methods (Access = private)
+
+    function fit_relaxometry(obj)
+        %FIT_RELAXOMETRY Jointly estimates R1, R2* and M0 from the multi-echo VFA data
+
         import qb.utils.write_vol
         import qb.utils.spm_vol
 
-        % Check the input
+        % Check the input (we need a B1map to correct the flip angles)
         if ~ismember("fmap", fieldnames(obj.subject))
             return
         end
 
-        % Get the QSM workitems we need from a colleague (instead of just getting the files, use the filters to get the right runs ourselves)
-        [~, S0filter]     = obj.ask_team('S0map');
-        [~, maskfilter]   = obj.ask_team('localfmask');
-        [~, R2starfilter] = obj.ask_team('R2starmap');  % TODO: Make optional (-> ME-VFA data)
-        [~, Chifilter]    = obj.ask_team('Chimap');     % TODO: Make optional (-> ME-VFA data)
+        % Get the workitems we need from a colleague
+        ME4Dmag    = obj.ask_team('ME4Dmag');       % One multi-echo 4D file per flip angle
+        TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
+        brainmask  = obj.ask_team('brainmask');     % Single image per run
 
-        % Get B1map from a colleague
-        B1map             = obj.ask_team('TB1map_GRE');
-        if length(B1map) ~= 1       % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-            obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', B1map{:}))
+        % Check the number of items we got. TODO: FIXME: multi-run acquisitions
+        if length(ME4Dmag) < 2
+            obj.logger.exception('%s received data for only %d flip angle(s)', obj.name, length(ME4Dmag))
         end
-        B1 = spm_read_vols(spm_vol(char(B1map)));
+        if length(TB1map_GRE) ~= 1      % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
+            obj.logger.exception('%s expected only one B1map file but got:%s', obj.name, sprintf(' %s', TB1map_GRE{:}))
+        end
+        if length(brainmask) ~= 1       % TODO: FIXME
+            obj.logger.exception('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', brainmask{:}))
+        end
+
+        % Load the data + the protocol of each acquisition (= flip angle). NB: The echo trains are
+        % concatenated along the 4th dimension, so the TE/TR do not have to be the same for each acquisition
+        V   = spm_vol(ME4Dmag{1});
+        img = [];
+        TE  = cell(1, length(ME4Dmag));
+        TR  = NaN(1, length(ME4Dmag));
+        FA  = NaN(1, length(ME4Dmag));
+        for n = 1:length(ME4Dmag)
+            bfile = bids.File(ME4Dmag{n});              % For reading metadata, parsing entities, etc
+            TE{n} = bfile.metadata.EchoTime(:)';        % [s]
+            TR(n) = bfile.metadata.RepetitionTime;      % [s]
+            FA(n) = bfile.metadata.FlipAngle;           % [deg]
+            img   = cat(4, img, single(spm_read_vols(spm_vol(ME4Dmag{n}))));
+        end
+        mask = spm_read_vols(spm_vol(char(brainmask))) > 0 & all(isfinite(img), 4);
+        B1   = spm_read_vols(spm_vol(char(TB1map_GRE)));
+
+        % Jointly estimate R1, R2* and M0 from all echoes of all flip angles at once
+        solver         = padeJointR1R2starMapping(TE, TR, FA);
+        solver.nNewton = obj.config.SCRWorker.nNewton;
+        fit            = solver.estimate(img, mask, B1);
+
+        % Set the non-fitted (NaN) voxels to 0
+        for map = ["R1" "R2star" "M0"]
+            fit.(map)(~isfinite(fit.(map))) = 0;
+        end
+
+        % Save the SCR output maps
+        write_vol(V(1), fit.R1,     obj.bfile_set(ME4Dmag{1}, obj.bidsfilter.R1map_VFA    ));
+        write_vol(V(1), fit.M0,     obj.bfile_set(ME4Dmag{1}, obj.bidsfilter.M0map_VFA    ));
+        write_vol(V(1), fit.R2star, obj.bfile_set(ME4Dmag{1}, obj.bidsfilter.R2starmap_VFA));
+    end
+
+
+    function average_chimap(obj)
+        %AVERAGE_CHIMAP Computes the S0^2-weighted mean of the QSM Chi-maps over the flip angles
+
+        import qb.utils.write_vol
+        import qb.utils.spm_vol
+
+        % Get the QSM workitems we need from a colleague (instead of just getting the files, use the filters to get the right runs ourselves)
+        [~, S0filter]   = obj.ask_team('S0map');
+        [~, Chifilter]  = obj.ask_team('Chimap');
+        [~, maskfilter] = obj.ask_team('localfmask');
 
         % Index the (special) SEPIA workdir layout (only for obj.subject)
         BIDSWS = obj.BIDS_ses(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
@@ -95,57 +160,33 @@ methods
         % Process all runs independently
         for run = obj.query_ses(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs
 
-            S0data     = obj.query_ses(BIDSWS, 'data',     S0filter,     run=char(run));
-            R2stardata = obj.query_ses(BIDSWS, 'data',     R2starfilter, run=char(run));
-            Chidata    = obj.query_ses(BIDSWS, 'data',     Chifilter,    run=char(run));
-            maskdata   = obj.query_ses(BIDSWS, 'data',     maskfilter,   run=char(run));
-            meta       = obj.query_ses(BIDSWS, 'metadata', S0filter,     run=char(run));
-            flips      = cellfun(@getfield, meta, repmat({'FlipAngle'}, size(meta)), UniformOutput=true);
+            S0data   = obj.query_ses(BIDSWS, 'data', S0filter,   run=char(run));
+            Chidata  = obj.query_ses(BIDSWS, 'data', Chifilter,  run=char(run));
+            maskdata = obj.query_ses(BIDSWS, 'data', maskfilter, run=char(run));
 
-            % Check the queries workitems
-            if numel(unique([length(S0data), length(R2stardata), length(Chidata), length(maskdata)])) > 1
-                obj.logger.exception('%s received an ambiguous number of S0maps, R2starmaps, Chimaps or localfmasks:%s', obj.name, ...
-                                        sprintf('\n%s', S0data{:}, R2stardata{:}, Chidata{:}, maskdata{:}))
+            % Check the queried workitems
+            if numel(unique([length(S0data), length(Chidata), length(maskdata)])) > 1
+                obj.logger.exception('%s received an ambiguous number of S0maps, Chimaps or localfmasks:%s', obj.name, ...
+                                        sprintf('\n%s', S0data{:}, Chidata{:}, maskdata{:}))
             end
             if length(S0data) < 2
-                obj.logger.exception('%s received data for only %d flip angles', obj.name, length(S0data))
-            end
-            if length(flips) <= 1
-                obj.logger.exception("Need at least two different flip angles to compute T1 and S0 maps, found:" + sprintf(" %s", flips{:}))
+                obj.logger.exception('%s received data for only %d flip angle(s)', obj.name, length(S0data))
             end
 
             % Read the QSM images (4th dimension = flip angle)
             V    = spm_vol(S0data{1});                  % Get generic metadata (from any QSM output image)
             S0   = NaN([V.dim(1:3) length(S0data)]);
-            R2s  = S0;
             Chi  = S0;
             mask = true;
             for n = 1:length(S0data)
                 S0(:,:,:,n)  = spm_read_vols(spm_vol(S0data{n}));
-                R2s(:,:,:,n) = spm_read_vols(spm_vol(R2stardata{n}));       % NB: Assumes the order of R2stardata is the same as for S0data
-                Chi(:,:,:,n) = spm_read_vols(spm_vol(Chidata{n}));          % Idem
+                Chi(:,:,:,n) = spm_read_vols(spm_vol(Chidata{n}));          % NB: Assumes the order of Chidata is the same as for S0data
                 mask         = spm_read_vols(spm_vol(maskdata{n})) & mask;  % Idem
             end
 
-            % Compute and save weighted means of the R2-star & Chi maps. TODO: Change the `desc` value from `VFA\d*` -> `mean`. Also, only compute for ME-VFA data
-            R2smean  = sum(S0.^2 .* R2s, 4) ./ sum(S0.^2, 4);
-            Chimean  = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
-            bfileR2s = obj.bfile_set(S0data{1}, obj.bidsfilter.R2starmap_VFA);
-            bfileChi = obj.bfile_set(S0data{1}, obj.bidsfilter.meanChimap);
-            write_vol(V, R2smean.*mask, bfileR2s);
-            write_vol(V, Chimean.*mask, bfileChi);
-
-            % Compute the R1 and M0 maps using DESPOT1 (based on S0).     TODO: Adapt for using echo data as an alternative to S0
-            bfile    = bids.File(S0data{1});                            % TODO: FIXME: Random
-            [T1, M0] = despot1_mapping(S0, flips, bfile.metadata.RepetitionTime, mask, B1);     % TODO: Check if we should only use the first two FA (as in MWI_tmp)
-            R1       = (mask ./ T1);
-            R1(~isfinite(R1)) = 0;          % set NaN and Inf to 0
-
-            % Save the SCR output maps
-            bfileR1 = obj.bfile_set(S0data{1}, obj.bidsfilter.R1map_VFA);
-            bfileM0 = obj.bfile_set(S0data{1}, obj.bidsfilter.M0map_VFA);
-            write_vol(V, R1,       bfileR1);
-            write_vol(V, M0.*mask, bfileM0);
+            % Compute and save the weighted mean of the Chi maps
+            Chimean = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
+            write_vol(V, Chimean.*mask, obj.bfile_set(S0data{1}, obj.bidsfilter.meanChimap));
 
         end
     end

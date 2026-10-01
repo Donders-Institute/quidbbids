@@ -101,7 +101,7 @@ methods
         % Get started by first setting-up the path
         fprintf(['\n⏱ Starting up QuIDBBIDS...' ...
                  '\n‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n'])
-        H = uifigure(Name='Starting up QuIDBBIDS...', Position=[200 200 400 100]);
+        H = uifigure(Name='Starting up QuIDBBIDS...', Position=[400 400 400 100]);
         P = uiprogressdlg(H, Title='Setting up the dependencies', Message='Please wait...', Icon=icon, Indeterminate='on');
         cleanup = onCleanup(@() close(H));
         qb.addpath_deps()
@@ -136,6 +136,7 @@ methods
 
         % Launch the main workflow control panel if no input arguments are given
         if ~nargin
+            P.Title = "Initializing the Workflow Control Panel";
             obj.start_GUI()
         end
     end

@@ -182,8 +182,8 @@ Processing Steps:
 
 1. Brain Mask Generation:
    Creates a brain mask for each MEGRE acquisition using the echo-1 magnitude image as input to
-   mri_synthstrip (FreeSurfer). Individual masks are combined to produce a minimal output mask
-   suitable for QSM processing.
+   mri_synthstrip (FreeSurfer) or BET (FSL). Individual masks are combined to produce a minimal output
+   mask suitable for QSM processing.
 
 2. Multi-Echo Merging:
    Merges all echo images (magnitude and phase) for each acquisition into 4D NIfTI files.
@@ -196,7 +196,8 @@ Processing Steps:
 .. note::
 
    The brain mask generation uses mri_synthstrip which requires FreeSurfer to be installed and configured.
-   Denoising is applied in-place to the merged 4D files when enabled.
+   If not available, then BET is used as a fallback. Denoising is applied in-place to the merged 4D files
+   when enabled.
 
 Properties
 ----------
@@ -318,9 +319,9 @@ Methods:
 
 .. note::
 
-   The joint estimation approach is particularly advantageous when T1 and T2* are correlated,
-   such as in white matter where myelin water has distinct relaxation properties.
-   Requires GPU hardware with CUDA support.
+   - The joint estimation approach is advantageous when T1 and T2* are correlated, or in the context of
+     low SNR thanks to harvesting all available data SNR and possibility of using spatial regularization.
+   - Requires GPU hardware with CUDA support.
 
 Properties
 ----------

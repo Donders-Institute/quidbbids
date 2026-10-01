@@ -42,3 +42,7 @@
 	path = dependencies/Tensor-MP-PCA
 	url = https://github.com/Neurophysics-CFIN/Tensor-MP-PCA.git
 	branch = main
+[submodule "dependencies/vTR-qMRI"]
+	path = dependencies/vTR-qMRI
+	url = https://github.com/samuelmelke/vTR-qMRI.git
+	branch = main

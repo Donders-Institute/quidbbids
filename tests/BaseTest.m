@@ -6,7 +6,6 @@ classdef BaseTest < matlab.unittest.TestCase
 
     methods(TestClassSetup)
         function addPathDeps(testCase)
-            restoredefaultpath()
             qb.addpath_deps()
         end
         function setupOnce(testCase)

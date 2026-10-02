@@ -1,5 +1,9 @@
-QuIDBBIDS 101 — First R2* and Chi Maps
-=======================================
+####################
+QuIDBBIDS -- CLI 101
+####################
+
+First R2* and Chi Maps
+======================
 From BIDS dataset including multi-echo GRE data to quantitative maps in a few lines of code
 
 Objectives
@@ -18,8 +22,8 @@ Target audience
    - R1 and R2* maps from variable flip angle acquisitions 
 
 Estimated time
-------------------  
-About ---minutes
+--------------
+About # minutes
 
 Introduction
 ------------
@@ -66,7 +70,7 @@ Each subject has magnitude and phase images for multiple echoes, stored as separ
 with accompanying JSON sidecars that contain acquisition parameters such as echo times.
 
 Exercise 2 — Run QuIDBBIDS
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Now that we have our data ready, we can run QuIDBBIDS to compute the R2* and Chi maps.
 Open MATLAB and follow these steps:
@@ -93,11 +97,11 @@ This scans the dataset and discovers all subjects, sessions, and available data 
  
       **See all available products**
  
-      To see everything QuIDBBIDS can produce, type:
+      To see everything QuIDBBIDS can produce, using the current data, type:
  
       .. code-block:: matlab
  
-         >> quidb.workitems
+         >> quidb.catalog()
             Chimap               : Magnetic susceptibility map derived from QSM reconstruction
             FMW_exrate           : Exchange rate map in Free <-> Myelin Water analysis
             [...]                : [...]
@@ -163,7 +167,7 @@ This scans the dataset and discovers all subjects, sessions, and available data 
  
       .. code-block:: matlab
  
-         >> quidb.editconfig()
+         >> quidb.edit_config()
  
       .. figure:: /_static/configeditor.png
  
@@ -190,8 +194,8 @@ This scans the dataset and discovers all subjects, sessions, and available data 
  
    .. code-block:: matlab
  
-      >> mgr = quidb.manager();
-      >> mgr.start_workflow();
+      >> quidb.get_manager();
+      >> quidb.manager.start_workflow()
 
    QuIDBBIDS will now process each subject in your dataset. It automatically handles all
    intermediate steps: creating brain masks, merging echoes, running SEPIA for phase
@@ -206,8 +210,8 @@ This scans the dataset and discovers all subjects, sessions, and available data 
    >> quidb = qb.QuIDBBIDS('/path/to/my_bids_dataset');
    >> quidb.products = ["Chimap", "R2starmap"];
    >> quidb.resumes.QSMWorker.preferred = true;
-   >> mgr = quidb.manager();
-   >> mgr.start_workflow();
+   >> quidb.get_manager();
+   >> quidb.manager.start_workflow()
 
 .. tip::
  
@@ -217,7 +221,7 @@ This scans the dataset and discovers all subjects, sessions, and available data 
       >> quidb.config.General.useHPC.value = true;
 
 Exercise 3 — Inspect the results
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
  
 1. **Find the output** — After the workflow completes, your results are stored in the BIDS
    derivatives directory:
@@ -259,4 +263,5 @@ From here you can:
 - **Customise processing** — Explore all settings with ``quidb.config`` or the
   :doc:`graphical config editor </GUI>`
 - **Scale up** — Enable HPC processing to run all subjects in parallel
-- **Read the docs** — Check out the :doc:`/CLI` and :doc:`/architecture` pages to understand how it works under the hood and how to customise it for your needs.
+- **Read the docs** — Check out the :doc:`/CLI` and :doc:`/architecture` pages to understand how it
+  works under the hood and how to customise it for your needs.

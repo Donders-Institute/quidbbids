@@ -37,8 +37,8 @@
   },
 
   "B1prepWorker": {
-    "FWHM": {"value": 10, "description": "in mm, smoothing kernel for regularizing the B1 map"},
-    "FAscaling": {"value": 800, "description": "Factor to scale the data to radians (800 is what SIEMENS seems to use on TFL B1-mapping)"}
+    "FWHM": {"value": 10, "description": "in mm, Full width half maximmum of gaussian smoothing applied to the B1 map"},
+    "FAscaling": {"value": 800, "description": "Factor to scale the the flip angle map into a relative B1 (800 is the scaling factor for SIEMENS uses when doing TFL B1-mapping)"}
   },
 
   "MP2RAGEWorker": {

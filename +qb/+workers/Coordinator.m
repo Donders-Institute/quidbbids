@@ -5,17 +5,17 @@ classdef (Abstract) Coordinator < handle
 
 
 properties
-    BIDS                    % BIDS layout object from bids-matlab
-    outputdir               % BIDSApp derivatives subdirectory where the output is stored
-    workdir                 % Working directory for intermediate results
-    deliverables            % The end products (workitems) requested by the user, for full list of possible deliverables, see obj.catalog()
-    resumes                 % The resumes of all compatible workers, given the current BIDS dataset
-    allresumes              % The resumes of all available workers
-    config                  % Configuration struct loaded from the config file
-    configfile              % Path to the configuration file
-    workflowfile            % Path to the workflow file
-    metadata = struct()     % A struct with metadata about the software package
-    interactive = true      % If true, the coordinator will ask the user for help when needed (false = useful for automated testing)
+    BIDS                        % BIDS layout object from bids-matlab
+    outputdir                   % BIDSApp derivatives subdirectory where the output is stored
+    workdir                     % Working directory for intermediate results
+    deliverables = strings(1,0) % The end products (workitems) requested by the user, for full list of possible deliverables, see obj.catalog()
+    resumes                     % The resumes of all compatible workers, given the current BIDS dataset
+    allresumes                  % The resumes of all available workers
+    config                      % Configuration struct loaded from the config file
+    configfile                  % Path to the configuration file
+    workflowfile                % Path to the workflow file
+    metadata = struct()         % A struct with metadata about the software package
+    interactive = true          % If true, the coordinator will ask the user for help when needed (false = useful for automated testing)
 end
 
 
@@ -35,27 +35,49 @@ methods
         %   WORKDIR    - Working directory for intermediate results. Default: outputdir/[APPNAME]_work
         %   CONFIGFILE - Path to a configuration file with workflow settings
 
-        % Load existing workflow data
-        obj.load_properties()
+        arguments
+            BIDS        struct
+            outputdir   {mustBeTextScalar} = ""
+            workdir     {mustBeTextScalar} = ""
+            configfile  {mustBeTextScalar} = ""
+        end
+
+        % Close all old QuIDBBIDS figures
+        for H = findall(groot, Tag='workflow_axes')'
+            close(ancestor(H, 'Figure'))
+        end
+
+        % Load existing workflow data into OBJ
+        bidsapp = regexp(class(obj), '[^.]+$', 'match', 'once');  % Only take the class basename, i.e. the last part after the dot
+        if strlength(configfile)
+            obj.load_properties(regexprep(configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat"))
+        elseif strlength(outputdir)
+            obj.load_properties(fullfile(outputdir, "code", "config.json"))
+        else
+            obj.load_properties(fullfile(BIDS.pth, "derivatives", bidsapp, "code", "config.json"))
+        end
 
         % Parse the inputs
-        bidsapp = regexp(class(obj), '[^.]+$', 'match', 'once');  % Only take the class basename, i.e. the last part after the dot
-        if isempty(outputdir) || strlength(outputdir) == 0
+        if ~strlength(outputdir)
             if char(obj.outputdir)
                 outputdir = string(obj.outputdir);
             else
                 outputdir = fullfile(BIDS.pth, "derivatives", bidsapp);
             end
         end
-        if isempty(workdir) || strlength(workdir) == 0
+        if ~strlength(workdir)
             if char(obj.workdir)
                 workdir = string(obj.workdir);
             else
-                workdir = fullfile(BIDS.pth, "derivatives", bidsapp + "_work");
+                workdir = replace(outputdir + "_work", filesep + "_work", "_work");
             end
         end
-        if isempty(configfile) || strlength(configfile) == 0
-            configfile = string(obj.configfile);
+        if ~strlength(configfile)
+            if char(obj.configfile)
+                configfile = string(obj.configfile);
+            else
+                configfile = fullfile(outputdir, "code", "config.json");
+            end
         end
 
         % Initialize the derivatives and workdir datasets
@@ -67,14 +89,12 @@ methods
         end
 
         % Set the properties
-        obj.BIDS         = BIDS;
-        obj.outputdir    = outputdir;
-        obj.workdir      = workdir;
-        obj.configfile   = configfile;
-        obj.workflowfile = regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat");
-        obj.config       = obj.get_config();
-        obj.resumes      = obj.get_resumes();
-        obj.deliverables = "";      % NB: This has to be called after get_resumes() because set.deliverables() needs to know the workitems
+        obj.BIDS       = BIDS;
+        obj.outputdir  = outputdir;
+        obj.workdir    = workdir;
+        obj.configfile = configfile;
+        obj.config     = obj.get_config();
+        obj.resumes    = obj.get_resumes();     % TODO: Fix overwriting loaded properties
 
         % Save the workflow mask graph
         H = findall(groot, Tag='workflow_mask');
@@ -85,6 +105,7 @@ methods
 
     function set.deliverables(obj, val)
         % Check if the deliverable exist and force anything assigned to be stored as a string row
+        catalog = obj.catalog;
         if isempty(val) || all(strlength(val) == 0)
             val = strings(1,0);
         end
@@ -92,7 +113,7 @@ methods
             error('QuIDBBIDS:Deliverables:TypeError', 'The deliverables property must be a string or char array')
         end
         for product = string(val(:)')
-            if product~="" && all(cellfun(@isempty, regexp(obj.catalog(), "^" + product + "$")))
+            if ~isempty(catalog) && product~="" && all(cellfun(@isempty, regexp(catalog, "^" + product + "$")))   % NB: catalog can be empty during construction
                 error("QuIDBBIDS:Deliverables:Invalid", 'The "%s" deliverable was not found, it must match any of:%s', product, sprintf(' "%s"', obj.catalog()))
             end
         end
@@ -108,9 +129,7 @@ methods
 
     function start_GUI(obj)
         %START_GUI launches an interactive control panel to setup and run your workflow
-        close(get(findall(groot, Tag='workflow_axes'), 'Parent'))
         qb.GUI.WorkflowPanel(obj);
-        obj.get_resumes();                          % Redraw the full workflow in the GUI
     end
 
     function [items, descriptions] = catalog(obj, resumes)
@@ -320,35 +339,64 @@ methods
     end
 
     function load_properties(obj, workflowfile)
-        %LOAD_WORKFLOW Loads all coordinator properties from the workflowfile
+        %LOAD_PROPERTIES Loads all coordinator properties from the workflowfile. Leave WORKFLOWFILE empty for interactive usage
 
         arguments
             obj
-            workflowfile = obj.workflowfile
+            workflowfile {mustBeTextScalar} = ""
         end
 
-        if isempty(workflowfile) || ~isfile(workflowfile)
-            fprintf('🔧 No previous workflow settings found\n')
+        % Parse the input argument
+        if nargin < 2 || ~strlength(workflowfile)
+            if obj.interactive
+                [fname, pname] = uigetfile(char(obj.workflowfile), 'Select a workflowfile');
+                if fname
+                    obj.workflowfile = fullfile(pname, fname);
+                else
+                    return
+                end
+            end
+            workflowfile = obj.workflowfile;
+        end
+        obj.workflowfile = workflowfile;
+
+        if ~isfile(workflowfile)
+            fprintf('🔧 No existing workflow settings found\n')
             return
         end
 
         % Load the workflow settings from the workflowfile
-        fprintf('🔧 Loading workflow settings from: %s\n', workflowfile)
+        fprintf('🔧 Loading existing workflow settings from: %s\n', workflowfile)
         load(workflowfile, 'coord')
-        obj.workflowfile = workflowfile;
 
         % Set the workflow settings
-        for property = string(fieldnames(coord)')
-            obj.(property) = coord.(property);
+        if exist('coord', 'var')
+            for property = string(fieldnames(coord)')
+                obj.(property) = coord.(property);
+            end
         end
     end
 
     function save_properties(obj, workflowfile)
-        %SAVE_WORKFLOW Saves all coordinator properties to the workflowfile, except the BIDS and config data
+        %SAVE_PROPERTIES Saves all coordinator properties to the workflowfile, except the BIDS and config data
+        % Leave WORKFLOWFILE empty for interactive usage
 
         arguments
             obj
-            workflowfile {mustBeTextScalar} = obj.workflowfile
+            workflowfile {mustBeTextScalar} = ""
+        end
+
+        % Parse the input argument
+        if nargin < 2 || ~strlength(workflowfile)
+            if obj.interactive
+                [fname, pname] = uiputfile(char(obj.workflowfile), 'Select a workflowfile');
+                if fname
+                    obj.workflowfile = fullfile(pname, fname);
+                else
+                    return
+                end
+            end
+            workflowfile = obj.workflowfile;
         end
 
         % Collect the selected workflow settings
@@ -365,7 +413,11 @@ methods
             fprintf('💾 Overwriting workflow settings in: %s\n', workflowfile)
         end
         [~,~] = mkdir(fileparts(workflowfile));
-        save(workflowfile, 'coord')
+        if isfile(workflowfile)
+            save(workflowfile, 'coord', '-append')
+        else
+            save(workflowfile, 'coord')
+        end
         obj.workflowfile = workflowfile;
     end
 

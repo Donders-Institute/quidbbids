@@ -36,9 +36,9 @@ methods
         %   OUTPUTDIR  - Path to the QuIDBBIDS derivatives directory where output will be written.
         %                Default: [BIDSDIR]/derivatives/QuIDBBIDS
         %   WORKDIR    - Working directory for intermediate results. Default: [BIDSDIR]/derivatives/QuIDBBIDS_work.
-        %   CONFIGFILE - Path to the configuration file with workflow settings. Passing 'default' uses the
-        %                default config from the QuIDBBIDS folder in your HOME directory as default.
-        %                Default: [OUTPUTDIR]/code/config.json
+        %   CONFIGFILE - Path to the configuration file with workflow settings. Passing 'default' deletes
+        %                previously saved config and workflow files, i.e. it will load the default config file from
+        %                the QuIDBBIDS folder in your HOME directory. Default: [OUTPUTDIR]/code/config.json
         %
         % Usage:
         %   quidb = qb.QuIDBBIDS();             % Select BIDS root directory via GUI
@@ -54,9 +54,12 @@ methods
             configfile {mustBeTextScalar} = ""
         end
 
+        % Use the QuIDBBIDS icon everywhere
+        set(groot, defaultFigureIcon = fullfile(fileparts(mfilename('fullpath')), 'private', 'icon.png'))
+
         % Check the input
         if strlength(bidsdir) == 0
-            if usejava('swing')
+            if usejava('swing')                             % Avoid unit-test exceptions
                 bidsdir = uigetdir(pwd, "Select the root BIDS directory");
             end
             if isequal(bidsdir, 0) || strlength(bidsdir) == 0
@@ -74,10 +77,10 @@ methods
             r = sscanf(rel, '%d.%d.%d');
             if any((v<r) & (cumsum(v~=r)==1))
                 msg = sprintf('Your QuIDBBIDS version is v%s, but the latest released version is v%s', ver, rel);
-                if usejava('swing')
+                if usejava('swing')                         % Avoid unit-test exceptions
                     helpdlg(msg, 'QuIDBBIDS Info')
                 end
-                warning('QuIDBBIDS:UpdateAvailable', msg)         %#ok<SPWRN>
+                warning('QuIDBBIDS:UpdateAvailable', msg)   %#ok<SPWRN>
             end
         end
 
@@ -86,9 +89,7 @@ methods
         mversion = erase(metadata.project.dependencies.matlab, '>');
         if isMATLABReleaseOlderThan(mversion)
             msg = sprintf('Your MATLAB version (%s) is older than %s.\n\nQuIDBBIDS was developed for %s and later, so some GPU or other features may not work as expected', version('-release'), mversion, mversion);
-            if usejava('swing')
-                warndlg(msg, 'QuIDBBIDS Warning')
-            end
+            warndlg(msg, 'QuIDBBIDS Warning')
             warning('QuIDBBIDS:MATLABVersion', msg)         %#ok<SPWRN>
         end
 
@@ -102,8 +103,8 @@ methods
         if strlength(configfile) == 0 || default
             configfile = fullfile(outputdir, "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
             if default && isfile(configfile)
-                disp("🗑️ Deleting existing config file: " + configfile)
-                delete(configfile)
+                disp("🗑️ Deleting existing config file(s): " + configfile)
+                delete(configfile, fullfile(outputdir, "code", "workflow.mat"))
             end
         elseif isfolder(configfile)
             error("QuIDBBIDS:Nifti:InvalidInputArgument", "The configfile must be a file, not a folder: %s", configfile)
@@ -118,9 +119,6 @@ methods
                                           verbose           = true);
         obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
 
-        % Use the QuIDBBIDS icon everywhere
-        set(groot, defaultFigureIcon = fullfile(fileparts(mfilename('fullpath')), 'private', 'icon.png'))
-
         % Add project metadata to the output folders
         obj.metadata = metadata;
         obj.add_metadata(obj.outputdir)
@@ -134,16 +132,16 @@ methods
 
     function delete(obj)
         % Destructor for the QuIDBBIDS coordinator
-        set(groot, defaultFigureIcon='factory');
+        set(groot, defaultFigureIcon='remove')
     end
 
-    function editinclusion(obj)
+    function edit_inclusion(obj)
         % Opens a GUI to edit the BIDS inclusion filters for the dataset
         %
         % Usage:
-        %   obj = obj.editinclusion();
+        %   obj = obj.edit_inclusion();
         %
-        % See also: qb.QuIDBBIDS (for overview) and qb.editconfig
+        % See also: qb.QuIDBBIDS (for overview) and qb.edit_config
 
         oldVal = obj.config.General.BIDS.include.value;
         newVal = qb.GUI.EditInclude(oldVal, obj.BIDS).waitForResult();
@@ -153,11 +151,11 @@ methods
         obj.config.General.BIDS.include.value = newVal;
     end
 
-    function editconfig(obj)
+    function edit_config(obj)
         % Opens a GUI to edit the processing options in the dataset configuration file
         %
         % Usage:
-        %   obj = obj.editconfig();
+        %   obj = obj.edit_config();
         %
         % See also: qb.QuIDBBIDS (for overview)
 

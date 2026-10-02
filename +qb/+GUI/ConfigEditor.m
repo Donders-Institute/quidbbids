@@ -342,7 +342,7 @@ methods (Access = ?TestConfigEditorGUI)
                 if isempty(txt)
                     newVal   = "";
                     parsedOK = true;
-                elseif isempty(oldVal) || strlength(oldVal)==0
+                elseif isempty(oldVal) || isequal(oldVal, "")
                     newVal   = jsondecode(txt);
                     parsedOK = true;
                 elseif isnumeric(oldVal)

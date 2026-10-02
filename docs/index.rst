@@ -22,9 +22,17 @@
 .. toctree::
    :maxdepth: 3
    :hidden:
-   :caption: Miscellaneous
+   :caption: Tutorials
 
-   tutorial
+   tutorial/tutorialdata
+   tutorial/quidbbids_101
+   tutorial/quidbbids_102
+
+.. toctree::
+   :maxdepth: 3
+   :hidden:
+   :caption: Miscellaneous  
+
    screenshots
    CHANGELOG
    contributing

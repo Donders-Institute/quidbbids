@@ -175,7 +175,7 @@ methods (Static)
                         mask = spm_read_vols(spm_vol(bfile.path)) & mask;
                         delete(bfile.path)                  % Delete the temporary mask file
                     else
-                        obj.logger.warning("mri_synthstrip is not available. Using BET (FSL) as a fallback for brain masking")
+                        obj.logger.warning("mri_synthstrip is not available. Using BET (FSL - as distributed in the MEDI toolbox) as a fallback for brain masking")
                         conf = obj.config.(obj.name).BET;
                         Hdr  = spm_vol(char(echo1));
                         Par  = spm_imatrix(Hdr.mat);

@@ -332,7 +332,7 @@ Properties
    - - ``needs``
      - ME4Dmag, TB1map_GRE, brainmask
    - - ``makes``
-     - R2starmap, M0map, R1map
+     - R2starmap_SCR, M0map_SCR, R1map_SCR
    - - ``usesGPU``
      - true
 
@@ -341,22 +341,24 @@ SCRWorker
 
 Single Compartment Relaxometry (SCR) worker for combined relaxometry and susceptibility analysis.
 
-SCRWorker combines separately computed Quantitative Susceptibility Mapping (QSM) outputs with
-relaxometry data to generate consolidated parameter maps. SCR provides a simplified model that
-assumes a single tissue compartment, suitable for applications where multi-compartment modeling
-is not required or when computational efficiency is prioritized.
+SCRWorker jointly estimates R1, R2* and M0 from multi-echo variable flip angle (VFA) GRE data, and
+combines separately computed Quantitative Susceptibility Mapping (QSM) outputs into a single
+susceptibility map. SCR assumes a single tissue compartment, suitable for applications where
+multi-compartment modeling is not required or when computational efficiency is prioritized.
 
 Methods:
 --------
 
-1. R2* and Chi Map Averaging:
-   Computes weighted means of R2* and susceptibility (Chi) maps across different flip angles.
-   The weighting uses S0^2 to emphasize voxels with higher signal intensity.
+1. Joint R1, R2* and M0 Mapping:
+   Fits the spoiled GRE signal equation to all echoes of all flip angles simultaneously, using a
+   Pade approximation of the T1 recovery term to obtain a closed-form estimate, followed by
+   Gauss-Newton refinement on the exact signal equation. Transmit field (B1+) inhomogeneity is
+   accounted for. The fit runs on the CPU and supports variable flip angles as well as variable
+   repetition and echo times.
 
-2. R1 and M0 Mapping:
-   Estimates R1 (1/T1) and M0 (proton density) maps using the DESPOT1 (Driven Equilibrium Single
-   Pulse Observation of T1) method with S0 estimates from QSM processing.
-   The current implementation assumes a constant TR across all flip angles.
+2. Chi Map Averaging:
+   Computes the weighted mean of the susceptibility (Chi) maps across flip angles. The weighting
+   uses S0^2 to emphasize voxels with higher signal intensity.
 
 .. note::
 
@@ -371,9 +373,9 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - S0map, R2starmap, Chimap, localfmask, TB1map_GRE
+     - ME4Dmag, TB1map_GRE, brainmask, S0map, Chimap, localfmask
    - - ``makes``
-     - R1map_S0, M0map_S0, meanR2starmap, meanChimap
+     - R2starmap_SCR, R1map_SCR, M0map_SCR, meanChimap
    - - ``usesGPU``
      - false
 
@@ -427,6 +429,40 @@ Properties
      - TB1map_anat, TB1map_angle, rawMEVFA
    - - ``makes``
      - syntheticT1, M0map_echo1, TB1map_GRE, TB1anat_GRE, brainmask, ME4Dmag, ME4Dphase
+   - - ``usesGPU``
+     - false
+
+meanQSMWorker
+~~~~~~~~~~~~~
+
+mean QSM worker .
+
+meanQSMWorker combines separately computed Quantitative Susceptibility Mapping (QSM) outputs into a single
+susceptibility maptaking account the SNR of each acquisition.
+
+Methods:
+--------
+
+Chi Map Averaging:
+   Computes the weighted mean of the susceptibility (Chi) maps across flip angles. The weighting
+   uses S0^2 to emphasize voxels with higher signal intensity.
+
+.. note::
+
+   The SCR model is appropriate for tissues with relatively homogeneous microstructure or when
+   the primary goal is to obtain average parameter values rather than compartment-specific estimates.
+   For myelin water imaging, consider using MCRWorker or MCR_GPUWorker instead.
+
+Properties
+----------
+
+.. list-table::
+   :widths: 25 75
+
+   - - ``needs``
+     - ME4Dmag, TB1map_GRE, brainmask, S0map, Chimap, localfmask
+   - - ``makes``
+     - meanChimap
    - - ``usesGPU``
      - false
 

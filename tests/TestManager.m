@@ -47,14 +47,16 @@ classdef TestManager < BaseTest
 
             % Should not error if the preferred worker is set
             testCase.mgr.coord.deliverables = ["R1map", "R2starmap", "MWFmap"];
-            testCase.mgr.coord.resumes.R1R2sWorker.preferred = true;
+            testCase.mgr.coord.resumes.R1R2sWorker.preferred   = true;
             testCase.mgr.coord.resumes.MCR_GPUWorker.preferred = true;
-            testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error when preferred worker is set")
+            testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error when preferred workers are set")
             testCase.verifyNotEmpty(testCase.mgr.team, 'Manager team should not be empty')
 
             % Should error if the preferred worker is not set
-            testCase.mgr.coord.resumes.R1R2sWorker.preferred = false;
-            testCase.verifyError(@() testCase.mgr.create_team(), "QuIDBBIDS:WorkItem:InvalidCount", "Manager should error when preferred worker is not set")
+            testCase.mgr.coord.resumes.MEGREprepWorker.preferred = false;
+            testCase.mgr.coord.resumes.R1R2sWorker.preferred     = false;
+            testCase.mgr.coord.resumes.MCR_GPUWorker.preferred   = false;
+            testCase.verifyError(@() testCase.mgr.create_team(), "QuIDBBIDS:WorkItem:InvalidCount", "Manager should error when preferred workers are not set")
             testCase.verifyNotEmpty(testCase.mgr.team, 'Manager team should not be empty')
         end
 

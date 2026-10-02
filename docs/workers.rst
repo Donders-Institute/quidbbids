@@ -134,7 +134,8 @@ GPU-accelerated Multi-Compartment Relaxometry (MCR) worker for efficient myelin 
 
 MCR_GPUWorker implements the MCR framework on GPU hardware, combining complex multi-echo GRE data (VFA or MPM)
 with coregistered B1 transmit field maps to estimate myelin water fraction (MWF) and other quantitative
-microstructural parameters.
+microstructural parameters. Protocols with a variable TR and/or a variable number of echoes across flip angles 
+are fitted with gpuMCRMWI_VFAVTR (https://github.com/samuelmelke/vTR-qMRI).
 
 Theoretical Framework:
 ----------------------

@@ -7,9 +7,8 @@ classdef (Sealed) SCRWorker < qb.workers.Worker
 properties (Constant)
     description = ["Single Compartment Relaxometry (SCR) worker for combined relaxometry and susceptibility analysis."
                    ""
-                   "SCRWorker jointly estimates R1, R2* and M0 from multi-echo variable flip angle (VFA) GRE data, and"
-                   "combines separately computed Quantitative Susceptibility Mapping (QSM) outputs into a single"
-                   "susceptibility map. SCR assumes a single tissue compartment, suitable for applications where"
+                   "SCRWorker jointly estimates R1, R2* and M0 from multi-echo variable flip angle (VFA) GRE data."
+                   "SCR assumes a single tissue compartment, suitable for applications where"
                    "multi-compartment modeling is not required or when computational efficiency is prioritized."
                    ""
                    "Methods:"
@@ -22,16 +21,12 @@ properties (Constant)
                    "   accounted for. The fit runs on the CPU and supports variable flip angles as well as variable"
                    "   repetition and echo times."
                    ""
-                   "2. Chi Map Averaging:"
-                   "   Computes the weighted mean of the susceptibility (Chi) maps across flip angles. The weighting"
-                   "   uses S0^2 to emphasize voxels with higher signal intensity."
-                   ""
                    ".. note::"
                    ""
                    "   The SCR model is appropriate for tissues with relatively homogeneous microstructure or when"
                    "   the primary goal is to obtain average parameter values rather than compartment-specific estimates."
                    "   For myelin water imaging, consider using MCRWorker or MCR_GPUWorker instead."]   % Description should be in ReStructuredText format
-    needs       = ["ME4Dmag", "TB1map_GRE", "brainmask", "S0map", "Chimap", "localfmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["ME4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -51,7 +46,6 @@ methods (Access = protected)
                                               suffix   = 'R2starmap');
         obj.bidsfilter.R1map_SCR     = setfield(obj.bidsfilter.R2starmap_SCR, suffix='R1map');
         obj.bidsfilter.M0map_SCR     = setfield(obj.bidsfilter.R2starmap_SCR, suffix='M0map');
-        obj.bidsfilter.meanChimap    = setfield(obj.bidsfilter.R2starmap_SCR, suffix='Chimap');
     end
 
 end
@@ -70,8 +64,6 @@ methods
         switch workitem
             case {'R1map_SCR', 'M0map_SCR', 'R2starmap_SCR'}
                 obj.fit_relaxometry()
-            case 'meanChimap'
-                obj.average_chimap()
             otherwise
                 obj.logger.exception('%s does not know how to make a %s workitem', obj.name, workitem)
         end
@@ -142,54 +134,6 @@ methods (Access = private)
         write_vol(V(1), fit.R2star, obj.bfile_set(ME4Dmag{1}, obj.bidsfilter.R2starmap_SCR));
     end
 
-
-    function average_chimap(obj)
-        %AVERAGE_CHIMAP Computes the S0^2-weighted mean of the QSM Chi-maps over the flip angles
-
-        import qb.utils.write_vol
-        import qb.utils.spm_vol
-
-        % Get the QSM workitems we need from a colleague (instead of just getting the files, use the filters to get the right runs ourselves)
-        [~, S0filter]   = obj.ask_team('S0map');
-        [~, Chifilter]  = obj.ask_team('Chimap');
-        [~, maskfilter] = obj.ask_team('localfmask');
-
-        % Index the (special) SEPIA workdir layout (only for obj.subject)
-        BIDSWS = obj.BIDS_ses(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
-
-        % Process all runs independently
-        for run = obj.query_ses(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs
-
-            S0data   = obj.query_ses(BIDSWS, 'data', S0filter,   run=char(run));
-            Chidata  = obj.query_ses(BIDSWS, 'data', Chifilter,  run=char(run));
-            maskdata = obj.query_ses(BIDSWS, 'data', maskfilter, run=char(run));
-
-            % Check the queried workitems
-            if numel(unique([length(S0data), length(Chidata), length(maskdata)])) > 1
-                obj.logger.exception('%s received an ambiguous number of S0maps, Chimaps or localfmasks:%s', obj.name, ...
-                                        sprintf('\n%s', S0data{:}, Chidata{:}, maskdata{:}))
-            end
-            if length(S0data) < 2
-                obj.logger.exception('%s received data for only %d flip angle(s)', obj.name, length(S0data))
-            end
-
-            % Read the QSM images (4th dimension = flip angle)
-            V    = spm_vol(S0data{1});                  % Get generic metadata (from any QSM output image)
-            S0   = NaN([V.dim(1:3) length(S0data)]);
-            Chi  = S0;
-            mask = true;
-            for n = 1:length(S0data)
-                S0(:,:,:,n)  = spm_read_vols(spm_vol(S0data{n}));
-                Chi(:,:,:,n) = spm_read_vols(spm_vol(Chidata{n}));          % NB: Assumes the order of Chidata is the same as for S0data
-                mask         = spm_read_vols(spm_vol(maskdata{n})) & mask;  % Idem
-            end
-
-            % Compute and save the weighted mean of the Chi maps
-            Chimean = sum(S0.^2 .* Chi, 4) ./ sum(S0.^2, 4);
-            write_vol(V, Chimean.*mask, obj.bfile_set(S0data{1}, obj.bidsfilter.meanChimap));
-
-        end
-    end
 
 end
 

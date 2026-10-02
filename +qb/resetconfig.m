@@ -19,7 +19,7 @@ if ~force && isfile(config_default)
     return
 end
 
-disp("🔧 Creating factory default configuration: " + config_default)
+disp("💾 Creating factory default configuration: " + config_default)
 if isfile(config_default)
     delete(config_default)
 end

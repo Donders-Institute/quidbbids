@@ -5,16 +5,17 @@ classdef (Abstract) Coordinator < handle
 
 
 properties
-    BIDS                    % BIDS layout object from bids-matlab
-    outputdir               % BIDSApp derivatives subdirectory where the output is stored
-    workdir                 % Working directory for intermediate results
-    products                % The end products (workitems) requested by the user, full list of possible products, see obj.workitems()
-    resumes                 % The resumes of all available workers
-    configfile              % Path to the active configuration file
-    workflowfile            % Path to the active workflow file
-    config                  % Configuration struct loaded from the config file
-    glossary = struct()     % Glossary struct loaded from the glossary.json file
-    metadata = struct()     % A struct with metadata about the software package
+    BIDS                        % BIDS layout object from bids-matlab
+    outputdir                   % BIDSApp derivatives subdirectory where the output is stored
+    workdir                     % Working directory for intermediate results
+    deliverables = strings(1,0) % The end products (workitems) requested by the user, for full list of possible deliverables, see obj.catalog()
+    resumes                     % The resumes of all compatible workers, given the current BIDS dataset
+    allresumes                  % The resumes of all available workers
+    config                      % Configuration struct loaded from the config file
+    configfile                  % Path to the configuration file
+    workflowfile                % Path to the workflow file
+    metadata = struct()         % A struct with metadata about the software package
+    interactive = true          % If true, the coordinator will ask the user for help when needed (false = useful for automated testing)
 end
 
 
@@ -34,79 +35,133 @@ methods
         %   WORKDIR    - Working directory for intermediate results. Default: outputdir/[APPNAME]_work
         %   CONFIGFILE - Path to a configuration file with workflow settings
 
-        % Parse the inputs
-        bidsapp = regexp(class(obj), '[^.]+$', 'match', 'once');  % Only take the class basename, i.e. the last part after the dot
-        if strlength(outputdir) == 0
-            outputdir = fullfile(BIDS.pth, "derivatives", bidsapp);
+        arguments
+            BIDS        struct
+            outputdir   {mustBeTextScalar} = ""
+            workdir     {mustBeTextScalar} = ""
+            configfile  {mustBeTextScalar} = ""
         end
-        if strlength(workdir) == 0
-            workdir = fullfile(BIDS.pth, "derivatives", bidsapp + "_work");
+
+        % Close all old QuIDBBIDS figures
+        for H = findall(groot, Tag='workflow_axes')'
+            close(ancestor(H, 'Figure'))
+        end
+
+        % Load existing workflow data into OBJ
+        bidsapp = regexp(class(obj), '[^.]+$', 'match', 'once');  % Only take the class basename, i.e. the last part after the dot
+        if strlength(configfile)
+            obj.load_properties(regexprep(configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat"))
+        elseif strlength(outputdir)
+            obj.load_properties(fullfile(outputdir, "code", "config.json"))
+        else
+            obj.load_properties(fullfile(BIDS.pth, "derivatives", bidsapp, "code", "config.json"))
+        end
+
+        % Parse the inputs
+        if ~strlength(outputdir)
+            if char(obj.outputdir)
+                outputdir = string(obj.outputdir);
+            else
+                outputdir = fullfile(BIDS.pth, "derivatives", bidsapp);
+            end
+        end
+        if ~strlength(workdir)
+            if char(obj.workdir)
+                workdir = string(obj.workdir);
+            else
+                workdir = replace(outputdir + "_work", filesep + "_work", "_work");
+            end
+        end
+        if ~strlength(configfile)
+            if char(obj.configfile)
+                configfile = string(obj.configfile);
+            else
+                configfile = fullfile(outputdir, "code", "config.json");
+            end
         end
 
         % Initialize the derivatives and workdir datasets
-        if ~isfolder(outputdir)
+        if ~isfile(fullfile(outputdir, 'dataset_description.json'))
             bids.init(char(outputdir), 'is_derivative', true)
         end
-        if ~isfolder(workdir)
+        if ~isfile(fullfile(workdir, 'dataset_description.json'))
             bids.init(char(workdir), 'is_derivative', true)
         end
 
         % Set the properties
-        obj.BIDS         = BIDS;
-        obj.outputdir    = outputdir;
-        obj.workdir      = workdir;
-        obj.configfile   = configfile;
-        obj.workflowfile = regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow$2.mat");
-        obj.config       = obj.get_config();
-        obj.resumes      = obj.get_resumes();
-        obj.products     = "";      % NB: This has to be called after get_resumes() because set.products() needs to know the workitems
-        glossfile = fullfile(fileparts(mfilename('fullpath')), 'glossary.json');
-        if isfile(glossfile)
-            obj.glossary = jsondecode(fileread(glossfile));
+        obj.BIDS       = BIDS;
+        obj.outputdir  = outputdir;
+        obj.workdir    = workdir;
+        obj.configfile = configfile;
+        obj.config     = obj.get_config();
+        obj.resumes    = obj.get_resumes();     % TODO: Fix overwriting loaded properties
+
+        % Save the workflow mask graph
+        H = findall(groot, Tag='workflow_mask');
+        if isvalid(H)
+            exportgraphics(H.Parent, regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow_mask$2.png"))
         end
     end
 
-    function set.products(obj, val)
-        % Check if the product exist and force anything assigned to be stored as a string row
+    function set.deliverables(obj, val)
+        % Check if the deliverable exist and force anything assigned to be stored as a string row
+        catalog = obj.catalog;
+        if isempty(val) || all(strlength(val) == 0)
+            val = strings(1,0);
+        end
+        if ~ismember(class(val), {'string', 'char'})
+            error('QuIDBBIDS:Deliverables:TypeError', 'The deliverables property must be a string or char array')
+        end
         for product = string(val(:)')
-            if product~="" && all(cellfun(@isempty, regexp(obj.workitems(), "^" + product + "$")))
-                warning("QuIDBBIDS:Products:Ambiguous", 'The "%s" product was not found, it must match any of:%s', product, sprintf(' "%s"', obj.workitems()))
-                return
+            if ~isempty(catalog) && product~="" && all(cellfun(@isempty, regexp(catalog, "^" + product + "$")))   % NB: catalog can be empty during construction
+                error("QuIDBBIDS:Deliverables:Invalid", 'The "%s" deliverable was not found, it must match any of:%s', product, sprintf(' "%s"', obj.catalog()))
             end
         end
-        obj.products = string(val(:)');
-        obj.products(obj.products=="") = [];
+        obj.deliverables = unique(string(val(:)'));
+        obj.deliverables(obj.deliverables=="") = [];
     end
 
-    function choose_products(obj)
-        obj.products = qb.ChooseProducts(obj.coord.resumes);
+    function set_deliverables(obj)
+        % Launch a GUI to set the deliverables interactively
+        [items, descriptions] = obj.catalog();
+        obj.deliverables = qb.GUI.set_deliverables(items, descriptions, obj.deliverables);
     end
 
-    function items = workitems(obj)
-        %WORKITEMS Gets or displays a list of all the workitems the workers can make
+    function start_GUI(obj)
+        %START_GUI launches an interactive control panel to setup and run your workflow
+        qb.GUI.WorkflowPanel(obj);
+    end
+
+    function [items, descriptions] = catalog(obj, resumes)
+        %CATALOG Gets or displays a list of all the workitems the workers in RESUMES can make,
+        % along with their DESCRIPTIONS
+        %
+        % Examples
+        %   obj.catalog()                           % Lists all workitems, given the BIDS dataset
+        %   obj.catalog(obj.allresumes)             % Lists all potential workitems
+        %   [items, descriptions] = obj.catalog();  % Gets all workitems and their descriptions
+
+        arguments
+            obj
+            resumes struct = obj.resumes
+        end
 
         makes = [];
-        for name = fieldnames(obj.resumes)'
-            makes = [makes, obj.resumes.(name{1}).makes];       %#ok<AGROW>
+        for worker = string(fieldnames(resumes))'
+            makes = [makes, resumes.(worker).makes];       %#ok<AGROW>
         end
         if nargout
-            items = unique(makes);
+            items        = unique(makes);
+            descriptions = qb.workers.help(items);
         else
-            for item = unique(makes)
-                if isfield(obj.glossary, item)
-                    description = obj.glossary.(item);
-                elseif endsWith(item, "_ortho")
-                    description = sprintf('A 2D montage with 3 orthogonal (QC) slices of "%s"', item);
-                else
-                    description = '';
-                end
-                fprintf('%-*s : %s\n', 20, item, description);
-            end
+            qb.workers.help(unique(makes))
         end
     end
 
-    function resumes = get_resumes(obj)
-        %GET_RESUMES Gets the resumes of the pool of workers that live in qb.workers and in the configfile folder
+    function resumes = get_resumes(obj, CheckData)
+        %GET_RESUMES Gets the resumes of the pool of workers that live in qb.workers and in the configfile folder.
+        % Workers that do not have input data are excluded from the resumes if CHECKDATA is true (default). Also,
+        % a masked graph of the workflow is plotted in a figure.
         %
         % Output:
         %   RESUME.NAME.HANDLE      - The function handle
@@ -119,14 +174,19 @@ methods
         %
         % NB: Assumes the qb.workers have a "Worker" substring in their m-filename
 
-        resumes = {};
+        arguments
+            obj
+            CheckData logical = true
+        end
+
+        resumes = struct();
         wfiles  = dir(fullfile(fileparts(which("qb.workers.Worker")), "*Worker*.m"))';
         if ~isdeployed      % Add custom workers from the user config directory
             wfiles = [wfiles, dir(fullfile(fileparts(qb.resetconfig(false)), "workers", "*Worker*.m"))'];
         end
         fprintf("\nRegistering:\n")
         for wfile = wfiles
-            if ~strcmp(wfile.name, 'Worker.m')      % Exclude the abstract Worker class
+            if ~(strcmp(wfile.name, 'Worker.m') || startsWith(wfile.name, '.'))     % Exclude the abstract Worker class and hidden files
                 if endsWith(wfile.folder, '+workers')
                     worker = qb.workers.(erase(wfile.name, '.m'))(obj.BIDS, struct(name='',session=''), obj.config);
                 else                                % Custom workers in the user config directory should be on the MATLAB-path
@@ -142,53 +202,248 @@ methods
                 fprintf('   - %s\n', worker.name)
             end
         end
+        obj.allresumes = resumes;
 
+        % Discard workers that depend on missing input data
+        if CheckData
+
+            % Create the full workflow graph and store it for later use
+            [fullworkflow, H] = create_workflow();
+
+            % Discard workers that depend on missing input data
+            allDiscarded = strings(1,0);                        % The node names of all discarded nodes in the FULLWORKFLOW graph
+            for name = string(fieldnames(resumes))'
+                if ismember(name, fieldnames(resumes)) && ~obj.has_rawdata(resumes.(name))  % NAME may have been removed in a previous iteration of this loop
+                    rawdata      = resumes.(name).needs(startsWith(resumes.(name).needs, ["raw"," deriv"]));
+                    allDiscarded = [allDiscarded, rawdata];     %#ok<AGROW> Add the missing raw input workitem nodes
+                    discardworkers(name)
+                end
+            end
+
+            % Highlight all discarded subtrees
+            if ~isempty(allDiscarded) && isvalid(H)
+                highlight(H, allDiscarded, NodeLabelColor=[1 0.6 0])
+                [s, t]  = findedge(fullworkflow);               % Highlight outgoing edges from the discarded nodes
+                edgeIdx = ismember(fullworkflow.Nodes.Name(s), allDiscarded);
+                highlight(H, s(edgeIdx), t(edgeIdx), EdgeColor=[1 0.6 0], LineStyle=':')
+            end
+        end
+
+        function [workflow, H] = create_workflow()
+            %CREATE_WORKFLOW Creates and plots a complete graph of all workers and workitems
+            %
+            % Output:
+            %   WORKFLOW - digraph object with workers and workitems as nodes
+            %   H        - Handle to the plot (the plot is created if nargout > 1)
+
+            % Collect all unique workers and workitems
+            workitems   = strings(1,0);
+            workerNames = string(fieldnames(resumes))';
+            nrWorkers   = length(workerNames);
+            for name_ = workerNames
+                workitems = [workitems, resumes.(name_).makes, resumes.(name_).needs];  %#ok<AGROW>
+            end
+            workitems = unique(workitems(workitems ~= ""));
+
+            % Build edges = [source_idx, target_idx]
+            edges = [];
+            for i = 1:nrWorkers
+                % Edges from worker to workitems it makes
+                for item = resumes.(workerNames(i)).makes
+                    edges(end+1, :) = [i, nrWorkers + find(workitems == item)];     %#ok<AGROW>
+                end
+
+                % Edges from workitems it needs to worker
+                for item = resumes.(workerNames(i)).needs
+                    edges(end+1, :) = [nrWorkers + find(workitems == item), i];     %#ok<AGROW>
+                end
+            end
+
+            % Create the workflow graph
+            workflow = digraph(edges(:,1), edges(:,2), [], [workerNames, workitems]);
+
+            % Plot the workflow graph
+            if nargout > 1
+                nodeTypes                                                            = ones(size([workerNames, workitems])); % Workers
+                nodeTypes(nrWorkers+1:end)                                           = 2;                                    % Workitems
+                nodeTypes(nrWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 3;                                    % Raw/deriv data
+                A = findall(groot, Tag='workflow_axes');
+                if isempty(A)
+                    A = axes(Tag='workflow_axes');
+                end
+                legend(A, 'off')
+                H = plot(A, workflow, ...
+                         NodeLabel    = ["  " + workerNames, " " + workitems], ...       % Add spaces as node labels overlap with markers in the digraph plot
+                         Layout       = 'layered', ...
+                         NodeCData    = nodeTypes, ...
+                         MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...
+                         NodeFontSize = 8, ...
+                         LineWidth    = 1.5, ...
+                         ArrowSize    = 10, ...
+                         Interpreter  = 'none', ...
+                         Tag          = 'workflow_mask');
+                colormap(A, [0.16 0.5 0.73; 0 0.8 0; 0.7 0.7 0.7])      % = RTD blue #2980B9; green; grey
+                title(A, 'Workflow mask')
+                text(A, 0.02, 0.95, 'orange = discarded due to missing input data', Units='normalized')
+                A.Tag = 'workflow_axes';                                % Restore the axes tag (plot removes it)
+
+                % Add datatips for the workers and workitems
+                H.DataTipTemplate.Interpreter = 'none';
+                H.DataTipTemplate.DataTipRows = dataTipTextRow('', qb.workers.help([workerNames, workitems]));
+            end
+        end
+
+        function discardworkers(nodeName)
+            %DISCARDWORKERS Finds all workers that uniquely depend on the given WORKERNAME by:
+            %
+            % 1. Creating a reduced workflow graph with workitem nodes that have indegree > 1 removed
+            % 2. Performing bfsearch on the reduced graph to find reachable nodes
+            % 3. Mapping indices back to the FULLWORKFLOW using node names
+            %
+            % The resulting downstream nodes are added to ALLDISCARDED (in parent scope) and workers
+            % are removed from RESUMES (in parent scope).
+            %
+            % NB: The reduced workflow in step 1 is not reduced sufficiently if the incoming edges are
+            %     all from simultaneously discarded workers.
+            
+            % Create up-to-date WORKFLOW (previous calls may have discarded some nodes) and worker names
+            workflow    = create_workflow();
+            workerNames = string(fieldnames(resumes))';
+            nrWorkers   = length(workerNames);
+            
+            % First remove all workitem nodes with indegree > 1 from workflow
+            nrNodes    = numnodes(workflow);
+            multiNodes = workflow.Nodes.Name(find((1:nrNodes) > nrWorkers & indegree(workflow, 1:nrNodes) > 1));
+            workflow   = rmnode(workflow, multiNodes);
+
+            % Find all nodes reachable from WORKERNAME in the reduced graph, i.e. its unique downstream nodes
+            downstream = bfsearch(workflow, nodeName)';
+            
+            % Extract worker names from remaining downstream nodes and remove them from RESUMES
+            for wName = downstream(ismember(downstream, workerNames))
+                fprintf('ℹ️ Discarding %s as (some of) its input data is missing\n', wName)
+                resumes = rmfield(resumes, wName);
+            end
+
+            % Add the downstream nodes to ALLDISCARDED
+            allDiscarded = unique([allDiscarded, downstream]);
+
+            % Iteratively remove multi-degree workitem nodes that depend exclusively on the downstream nodes
+            for multiNode = string(multiNodes)'
+                if all(ismember(fullworkflow.predecessors(multiNode), downstream))
+                    allDiscarded = unique([allDiscarded, multiNode]);
+                    % TODO: fix this issue (-> MULTINODE is no longer in WORKFLOW when the upstream nodes are discarded) and replace the above line with it
+                end
+            end
+        end
     end
 
-    function load_coord(obj, workflowfile)
-        %LOAD_WORKFLOW Loads all coordinator properties from the workflowfile
+    function load_properties(obj, workflowfile)
+        %LOAD_PROPERTIES Loads all coordinator properties from the workflowfile. Leave WORKFLOWFILE empty for interactive usage
 
         arguments
             obj
-            workflowfile {mustBeTextScalar} = obj.workflowfile
+            workflowfile {mustBeTextScalar} = ""
         end
 
+        % Parse the input argument
+        if nargin < 2 || ~strlength(workflowfile)
+            if obj.interactive
+                [fname, pname] = uigetfile(char(obj.workflowfile), 'Select a workflowfile');
+                if fname
+                    obj.workflowfile = fullfile(pname, fname);
+                else
+                    return
+                end
+            end
+            workflowfile = obj.workflowfile;
+        end
+        obj.workflowfile = workflowfile;
+
         if ~isfile(workflowfile)
-            fprintf('🔧 No previous coordinator data found\n')
+            fprintf('🔧 No existing workflow settings found\n')
             return
         end
 
-        fprintf('🔧 Loading coordinator data from: %s\n', workflowfile)
+        % Load the workflow settings from the workflowfile
+        fprintf('🔧 Loading existing workflow settings from: %s\n', workflowfile)
         load(workflowfile, 'coord')
-        obj.workflowfile = workflowfile;
 
-        % Set the coordinator data
-        for property = string(fieldnames(coord)')
-            obj.(property) = coord.(property);
+        % Set the workflow settings
+        if exist('coord', 'var')
+            for property = string(fieldnames(coord)')
+                obj.(property) = coord.(property);
+            end
         end
     end
 
-    function save_coord(obj, workflowfile)
-        %SAVE_WORKFLOW Saves all coordinator properties to the workflowfile, except the BIDS and config data
+    function save_properties(obj, workflowfile)
+        %SAVE_PROPERTIES Saves all coordinator properties to the workflowfile, except the BIDS and config data
+        % Leave WORKFLOWFILE empty for interactive usage
 
         arguments
             obj
-            workflowfile {mustBeTextScalar} = obj.workflowfile
+            workflowfile {mustBeTextScalar} = ""
         end
 
-        % Get the coordinator data
+        % Parse the input argument
+        if nargin < 2 || ~strlength(workflowfile)
+            if obj.interactive
+                [fname, pname] = uiputfile(char(obj.workflowfile), 'Select a workflowfile');
+                if fname
+                    obj.workflowfile = fullfile(pname, fname);
+                else
+                    return
+                end
+            end
+            workflowfile = obj.workflowfile;
+        end
+
+        % Collect the selected workflow settings
         for property = string(properties(obj)')
-            if ~ismember(property, {'BIDS','config','configfile'})
+            if ~ismember(property, {'BIDS','config'})
                 coord.(property) = obj.(property);
             end
         end
 
-        fprintf('🔧 Saving coordinator data to: %s\n', workflowfile)
+        % Save the workflow settings to the workflowfile
+        if ~isfile(workflowfile)
+            fprintf('💾 Saving workflow settings to: %s\n', workflowfile)
+        else
+            fprintf('💾 Overwriting workflow settings in: %s\n', workflowfile)
+        end
         [~,~] = mkdir(fileparts(workflowfile));
-        save(workflowfile, 'coord', '-append')
+        if isfile(workflowfile)
+            save(workflowfile, 'coord', '-append')
+        else
+            save(workflowfile, 'coord')
+        end
         obj.workflowfile = workflowfile;
     end
 
+end
+
+methods (Access = protected)
+
+    function has_data = has_rawdata(obj, worker)
+        % Checks whether all raw input data for this (prep) worker is available
+        
+        has_data = true;
+        if isempty(dir(fullfile(obj.BIDS.pth, 'sub-*')))
+            fprintf('⚠ No "%s" subjects found in: %s\n', obj.BIDS.pth)
+            return      % -> Escape for unit-tests
+        end
+
+        worker_ = worker.handle(obj.BIDS, struct(), obj.config);
+        for workitem = worker.needs
+            if startsWith(workitem, 'raw') && isempty(bids.query(obj.BIDS, 'data', worker_.bidsfilter.(workitem)))
+                has_data = false;
+                fprintf('⚠ No "%s" input data found for %s\n', workitem, worker.name)  % The wide Unicode character may not display correctly in all environments
+                return
+            end
+        end
+    end
+    
 end
 
 end

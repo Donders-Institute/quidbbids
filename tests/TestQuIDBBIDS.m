@@ -19,7 +19,7 @@ classdef TestQuIDBBIDS < BaseTest
     methods(TestMethodTeardown)
         function removeTempDir(testCase)
             rmdir(testCase.TmpDir, 's')
-            delete(findall(0,'Name','QuIDBBIDS Info'))
+            delete(findall(0, Name='QuIDBBIDS Info'))
         end
     end
 
@@ -32,13 +32,13 @@ classdef TestQuIDBBIDS < BaseTest
         end
 
         function testGetconfig(testCase)
-            configfile = fullfile(testCase.TmpDir, 'code', 'QuIDBBIDS', 'config.json');
+            configfile = fullfile(testCase.TmpDir, 'derivatives', 'QuIDBBIDS', 'code', 'config.json');
             testCase.assertFalse(isfile(configfile), sprintf('Configfile "%s" should not yet exist', configfile))
 
             % Test if settings are created correctly
             obj = qb.QuIDBBIDS(testCase.TmpDir);
             testCase.assertTrue(isfile(configfile), sprintf('Configfile "%s" not found', configfile));
-            testCase.assertClass(obj.get_config(struct('configfile',configfile)), 'struct', 'Settings should be a struct')
+            testCase.assertClass(obj.get_config(struct(configfile=configfile)), 'struct', 'Settings should be a struct')
 
             % Test if default settings are used correctly
             config = jsondecode(fileread(configfile));

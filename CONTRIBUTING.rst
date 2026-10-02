@@ -7,6 +7,7 @@ Project organization
 
 * `+qb/ <./+qb>`__ - The main namespace with the core packages and functions:
 
+  - ``+GUI/`` - The code for the graphical user interface (GUI) of QuIDBBIDS
   - ``+MP2RAGE/`` - The `MP2RAGE related scripts <https://github.com/Donders-Institute/MP2RAGE-related-scripts>`__ used in QuIDBBIDS
   - ``+utils/`` - A collection of useful helper tools
   - ``+workers/`` - A library of workers and related functions that constitute the core od the QuIDBBIDS framework
@@ -79,7 +80,7 @@ Coding guidelines
 
 Please check that your contribution complies with the following rules before submitting a pull request:
 
-* Workers (i.e. ``+qb/+workers/*Worker.m`` files that inherit from the ``Worker`` class) should have informative help texts and a clear resume with bidsfilters and description. Also, the worker must be described in the Sphinx RTD documentation
+* Workers (i.e. ``+qb/+workers/*Worker.m`` files that inherit from the ``Worker`` class) should have informative help texts and a clear resume with bidsfilters and description. Run `qb.utils.gen_workerdocs()` to update the Sphinx RTD worker documentation
 * New methods added to the ``Coordinator``, ``Manager``, or to other classes in ``+worker`` should be accompanied with new (matlab.unittest) tests
 * To improve code readability, minor comments can (should) be appended at the end of the code lines they apply to (even if that means right scrolling)
 * Horizontal space is not limited, so multi-line readability is preferred, e.g. the vertical alignment of ``=`` operators (i.e. padded horizontally with whitespaces)

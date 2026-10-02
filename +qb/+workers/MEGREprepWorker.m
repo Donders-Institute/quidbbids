@@ -1,9 +1,9 @@
-classdef MEGREprepWorker < qb.workers.Worker
+classdef (Sealed) MEGREprepWorker < qb.workers.Worker
 %MEGREPREPWORKER Performs preprocessing on raw MEGRE data to produce workitems that can be used by other workers
 %
-% Processing steps:
+% Preprocessing steps:
 %
-% 1. Create a brain mask using the echo-1_mag image
+% 1. Create a brain mask using the echo-1_mag image (for SEPIA)
 % 2. Merge all echoes into a 4D file (for running the QSM workflows)
 % 3. Denoise the merged 4D file (optional)
 %
@@ -11,13 +11,33 @@ classdef MEGREprepWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["I am a working class hero that will happily do the following pre-processing work for you:";
-                   "";
-                   "1. Create a brain mask for each FA using the echo-1_mag image. Combine the individual mask";
-                   "   to produce a minimal output mask (for SEPIA)";
-                   "2. Merge all echoes into a 4D file (for running the QSM workflows)"
-                   "3. Denoise the merged 4D file (optional)"]
-    needs       = "";       % List of workitems the worker needs. Workitems can contain regexp patterns
+    description = ["Performs preprocessing on raw Multi-Echo Gradient Recalled Echo (MEGRE) data for QSM and relaxometry workflows."
+                   ""
+                   "MEGREprepWorker prepares MEGRE acquisitions by performing essential preprocessing steps required for"
+                   "subsequent Quantitative Susceptibility Mapping (QSM) and relaxometry analysis. MEGRE is a GRE sequence"
+                   "with multiple echo times that allows for both magnitude and phase contrast optimization."
+                   ""
+                   "Processing Steps:"
+                   "-----------------"
+                   ""
+                   "1. Brain Mask Generation:"
+                   "   Creates a brain mask for each MEGRE acquisition using the echo-1 magnitude image as input to"
+                   "   mri_synthstrip (FreeSurfer). Individual masks are combined to produce a minimal output mask"
+                   "   suitable for QSM processing."
+                   ""
+                   "2. Multi-Echo Merging:"
+                   "   Merges all echo images (magnitude and phase) for each acquisition into 4D NIfTI files."
+                   "   This format is required by downstream QSM workflows (e.g., SEPIA) that process multi-echo data."
+                   ""
+                   "3. Denoising (Optional):"
+                   "   Applies (Tensor) MPPCA denoising to the merged 4D files to improve signal-to-noise ratio."
+                   "   Configurable via denoising.method ('MPPCA' or 'tMPPCA') and denoising.kernel parameters."
+                   ""
+                   ".. note::"
+                   ""
+                   "   The brain mask generation uses mri_synthstrip which requires FreeSurfer to be installed and configured."
+                   "   Denoising is applied in-place to the merged 4D files when enabled."] % Description should be in ReStructuredText format
+    needs       = "rawMEGRE";   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -63,7 +83,7 @@ methods
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
 
-        arguments (Input)
+        arguments
             obj
             workitem {mustBeTextScalar, mustBeNonempty}
         end
@@ -149,9 +169,26 @@ methods (Static)
                     specs = setfield(obj.bidsfilter.brainmask, desc=sprintf('VFA%02d', bfile.metadata.FlipAngle));    % Add desc -> (flip)mask is a temporary file
                     bfile = obj.bfile_set(bfile, specs);
                     [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
+<<<<<<< Updated upstream
                     obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(echo1), bfile.path));        % [status,out] = system('echo $CUDA_VISIBLE_DEVICES') does not detect if pytorch was compiled with CUDA support
                     mask  = spm_read_vols(spm_vol(bfile.path)) & mask;
                     delete(bfile.path)                      % Delete the temporary mask file
+=======
+                    if system('mri_synthstrip -i') > 1      % Wrong usage of mri_synthstrip returns 2
+                        obj.run_command(sprintf("mri_synthstrip -i %s -m %s", char(echo1), bfile.path));        % [status,out] = system('echo $CUDA_VISIBLE_DEVICES') does not detect if pytorch was compiled with CUDA support
+                        mask = spm_read_vols(spm_vol(bfile.path)) & mask;
+                        delete(bfile.path)                  % Delete the temporary mask file
+                    else
+                        obj.logger.warning("mri_synthstrip is not available. Using BET (FSL - as distributed in the MEDI toolbox) as a fallback for brain masking")
+%                         conf = obj.config.(obj.name).BET;
+                        sepia_addpath('MEDI')
+                        conf = obj.config.MEGREprepWorker.BET;
+                        Hdr  = spm_vol(char(echo1));
+                        Par  = spm_imatrix(Hdr.mat);
+                        mask = BET(spm_read_vols(Hdr), Hdr.dim, abs(Par(7:9)), conf.FractionalThreshold, conf.GradientThreshold) & mask;
+                        sepia_addpath()
+                    end
+>>>>>>> Stashed changes
                 end
 
                 % Save the combined mask
@@ -172,7 +209,7 @@ methods (Static)
             return
         end
 
-        BIDSW   = obj.BIDSW_ses();
+        BIDSW   = obj.BIDS_ses();
         bfilter = obj.bidsfilter.ME4Dmag;
         for acq = obj.query_ses(BIDSW, 'acquisitions', bfilter)
             bfilter.acq = char(acq);
@@ -187,13 +224,14 @@ methods (Static)
                     end
                     magfile        = char(obj.query_ses(BIDSW, 'data', bfilter));
                     V_m{n}         = spm_vol(magfile);
-                    V_p{n}         = spm_vol(strrep(magfile, 'part-mag', 'part-phase'));
+                    V_p{n}         = spm_vol(replace(magfile, 'part-mag', 'part-phase'));
                     img(:,:,:,:,n) = single(spm_read_vols(V_m{n}) .* exp(1i * qb.utils.read_vols_phase(V_p{n})));   % Read phase data in radians
                 end
 
                 % Get the mask
                 mask = obj.query_ses(BIDSW, 'data', obj.bidsfilter.brainmask);
                 mask = logical(spm_read_vols(spm_vol(char(mask))));
+                mask = mask & ~any(img, [4 5]);  % Ensures that voxels that have zero intensity at any time point are excluded from the mask. TODO: Check with Jose's unmerged patch-2 branch
 
                 obj.logger.info('--> %s denoising: %s [..]', denoising.method, spm_file(magfile,'filename'))
                 switch denoising.method
@@ -217,10 +255,11 @@ methods (Static)
 
         function write_vol_denoised(V, img)
             bfile = bids.File(V(1).fname);
-            if isfield(bfile.metadata, 'Denoised')
-                obj.logger.warning('Denoising applied TWICE to "%s": This file was already denoised using "%s"', bfile.path, bfile.metadata.Denoised)
+            if isfield(bfile.metadata, 'DenoisingMethod')
+                obj.logger.warning('Denoising applied TWICE to "%s": This file was already denoised using "%s"', bfile.path, bfile.metadata.DenoisingMethod)
             end
-            bfile.metadata.Denoised = obj.config.(obj.name).denoising.method;
+            bfile.metadata.DenoisingMethod = obj.config.(obj.name).denoising.method;
+            bfile.metadata.DenoisingKernel = obj.config.(obj.name).denoising.kernel;
             obj.logger.info("-> Saving: %s", V(1).fname)
             qb.utils.write_vol(V, img, bfile);
         end

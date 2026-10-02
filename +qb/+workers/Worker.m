@@ -12,8 +12,8 @@ classdef (Abstract) Worker < handle
 
 
 properties (Abstract, Constant)
-    description     % Description of the work that is done
-    needs           % List of workitems the worker needs. Workitems can contain regexp patterns
+    description     % String that describes the work that is done. The formatting should be in ReStructuredText
+    needs           % List of workitems (excluding raw data) the worker needs. Workitems can contain regexp patterns
     usesGPU         % Logical flag indicating if the worker can use GPU resources
 end
 
@@ -25,13 +25,12 @@ end
 
 properties
     BIDS            % BIDS layout from bids-matlab (raw input data only)
-    subject         % The subject that will be worked on
-    config          % Configuration settings that are used to produce the work
+    subject         % The subject that will be worked on (i.e. an item from bids.layout().subjects)
+    config          % Configuration settings (as a struct) that are used to produce the work
     workdir         % Working directory for intermediate files
     outputdir       % Output directory for final results
     team            % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker resume
-    force           % Force to start working, even if the subject is locked or existing results exist
-    bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDSW_ses, 'data', bidsfilter.(workitem), run=1)`
+    bidsfilter      % BIDS modality filters that can be used for querying the produced workitems, e.g. `obj.query_ses(BIDS_ses, 'data', bidsfilter.(workitem), run=1)`
     logger          % A logger object for keeping logs
 end
 
@@ -55,7 +54,7 @@ end
 
 methods
 
-    function obj = Worker(BIDS, subject, config, workdir, outputdir, team, force, workitems)
+    function obj = Worker(BIDS, subject, config, workdir, outputdir, team, workitems)
         % Constructor for the abstract Worker class
 
         arguments
@@ -65,8 +64,7 @@ methods
             workdir   {mustBeTextScalar} = ''   % Working directory for intermediate files
             outputdir {mustBeTextScalar} = ''   % Output directory for final results
             team      struct = struct()         % A workitem struct with co-workers that can produce the needed workitems: team.(workitem) -> worker classname
-            force     (1,1) logical = false     % Force to start working, even if the subject is locked or existing results exist
-            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the end product). Default = ''
+            workitems {mustBeText} = ''         % The workitems that need to be made (useful if the workitem is the deliverable). Default = ''
         end
 
         obj.BIDS      = BIDS;
@@ -75,7 +73,6 @@ methods
         obj.workdir   = workdir;
         obj.outputdir = outputdir;
         obj.team      = team;
-        obj.force     = force;
         obj.name      = string(erase(class(obj), 'qb.workers.'));  % Get the class name without package prefix
         obj.logger    = qb.workers.Logging(obj);
 
@@ -97,6 +94,7 @@ methods
 
     function workitems = makes(obj)
         workitems = string(fieldnames(obj.bidsfilter)');
+        workitems = workitems(~startsWith(workitems, ["raw", "deriv"]));
         if isempty(workitems)
             obj.logger.warning('%s does not seem to make anything!', obj.name)
         end
@@ -130,20 +128,16 @@ methods
         end
 
         % See if we can collect the requested workitem
-        work = obj.query_ses(obj.BIDSW_ses(), 'data', obj.bidsfilter.(workitem));
-        if isempty(work) || obj.force
+        work = obj.query_ses(obj.BIDS_ses(), 'data', obj.bidsfilter.(workitem));
+        if isempty(work)
 
             obj.logger.info("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path)
 
             % Check if the subject is already being worked on
             locked = obj.is_locked();
             if locked
-                if obj.force
-                    obj.logger.warning("Work will be done on %s but it was: %s", fileparts(obj.statusfile('.lock')), locked)
-                else
-                    obj.logger.error("%s was: %s", fileparts(obj.statusfile('.lock')), locked)
-                    return
-                end
+                obj.logger.error("%s was: %s", fileparts(obj.statusfile('.lock')), locked)
+                return
             end
 
             % Check if there is a GPU available
@@ -190,7 +184,7 @@ methods
             end
 
             % Collect the requested workitem
-            work = obj.query_ses(obj.BIDSW_ses(), 'data', obj.bidsfilter.(workitem));
+            work = obj.query_ses(obj.BIDS_ses(), 'data', obj.bidsfilter.(workitem));
             if ~isempty(work)
                 obj.done()
                 obj.logger.info(obj.name + " has finished working on: " + obj.subject.path)
@@ -316,7 +310,7 @@ methods
     end
 
     function label = sub(obj)
-        %SUB Gets the sub-label from the subject data-structure
+        %SUB Gets the sub-label from the subject data-structure, e.g. 'sub-001' -> '001'
         label = strsplit(obj.subject.name, '-');
         label = label{end};
         if isempty(label)
@@ -325,20 +319,53 @@ methods
     end
 
     function label = ses(obj)
-        %SES Gets the ses-label from the subject data-structure
+        %SES Gets the ses-label from the subject data-structure, e.g. 'ses-01' -> '01'
         label = strsplit(obj.subject.session, '-');
         label = label{end};
     end
 
     function subses = sub_ses(obj)
-        % Parses the sub-#_ses-# prefix from a BIDS.subjects item
+        % Parses the sub-#_ses-# prefix from a BIDS.subjects item, e.g. 'sub-001_ses-01'
         subses = replace(erase(obj.subject.path, [obj.BIDS.pth filesep]), filesep,'_');
     end
 
-    function BIDSW = BIDSW_ses(obj, workdir)
-        %BIDSW_SES Gets a tolerant bids.layout() for the WORKDIR sub/ses data only (default: WORKDIR = obj.workdir)
+    function BIDS = BIDS_sub(obj, workdir, varargin)
+        %BIDS_SUB Gets a tolerant (no schema validation) bids.layout() for the WORKDIR sub data only (default: WORKDIR = obj.workdir)
         %
-        % Waits up to 60 seconds for the workdir BIDS initialization to be ready, allowing the HPC file system latency to settle
+        % Waits up to 60 seconds for the BIDS initialization to be ready, allowing the HPC file system latency to settle
+        %
+        % Usage:
+        %   BIDS = OBJ.BIDS_SUB()                   % Uses obj.workdir as the BIDS directory
+        %   BIDS = OBJ.BIDS_SUB(WORKDIR, VARGIN)    % Uses WORKDIR as the BIDS directory and passes VARGIN to bids.layout()
+
+        if nargin < 2 || isempty(workdir)
+            workdir = obj.workdir;
+        end
+        
+        % Check for the BIDS layout to be ready (HPC file system latency workaround)
+        start = tic;
+        while ~isfile(fullfile(workdir, 'dataset_description.json')) && toc(start) < 60
+            pause(5);
+        end
+        if toc(start) >= 60
+            obj.logger.warning('BIDS layout %s did not become available within 60 seconds', workdir)
+        end
+
+        % Make sure the sub/ses dir exists or bids.layout will error
+        filter.sub = {obj.sub()};
+        [~,~] = mkdir(fullfile(workdir, "sub-" + obj.sub()));
+
+        BIDS = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, varargin{:});
+    end
+
+    function BIDS = BIDS_ses(obj, workdir, varargin)
+        %BIDS_SES Gets a tolerant (no schema validation) bids.layout() for the WORKDIR sub/ses data only (default: WORKDIR = obj.workdir)
+        %
+        % Waits up to 60 seconds for the BIDS initialization to be ready, allowing the HPC file system latency to settle
+        %
+        % Usage:
+        %   BIDS = OBJ.BIDS_SES()                   % Uses obj.workdir as the BIDS directory
+        %   BIDS = OBJ.BIDS_SES(WORKDIR, VARGIN)    % Uses WORKDIR as the BIDS directory and passes VARGIN to bids.layout()
 
         if nargin < 2 || isempty(workdir)
             workdir = obj.workdir;
@@ -362,7 +389,73 @@ methods
         end
         [~,~] = mkdir(fullfile(workdir, subsesdir));        
 
-        BIDSW = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_derivatives',false, 'tolerant',true, 'verbose',false);
+        BIDS = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, varargin{:});
+    end
+
+    function [result, bfiles] = query_sub(obj, layout, query, varargin)
+        %QUERY_SUB A thin wrapper around bids.query that adds an additional filter for the current subject. It
+        % also ensures that the output is always formatted as a row.
+        %
+        % Inputs:
+        %   LAYOUT - BIDS directory name or BIDS structure (from bids.layout) to query
+        %   QUERY  - The type of query to perform (e.g., 'data', 'metadata', 'runs', etc.)
+        %   FILTER - (optional) Either a struct, named-values, or name-value pairs specifying additional filters for the
+        %            query (i.e. as in bids.query), or a struct followed by the name-value pairs. It's possible to use
+        %            regular as well as range expressions in the queried values. To exclude an entity, use '' or [].
+        %
+        % Output:
+        %   RESULT - The result of the bids.query with the subject filter applied. NB: always a row cell array
+        %   BFILES - The associated bids.File objects. NB: For this to work, QUERY must be 'data'
+        %
+        % Usage:
+        %   RESULT = OBJ.QUERY_SUB(LAYOUT, QUERY, [FILTER])
+        %   RESULT = OBJ.QUERY_SUB(LAYOUT, QUERY, struct(name1=value1, name2=value2, ...))
+        %   RESULT = OBJ.QUERY_SUB(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
+        %   RESULT = OBJ.QUERY_SUB(LAYOUT, QUERY, struct(name1=value1), name2=value2, ...)
+        %
+        % See also: bids.query, obj.query_ses
+
+        % Parse the filter input
+        bfilter = struct();
+        if ~isempty(varargin) && isstruct(varargin{1})
+            bfilter = varargin{1};
+            varargin(1) = [];
+        end
+        if mod(length(varargin),2) ~= 0
+            obj.logger.exception('QUERY_SUB expects the FILTER to be either a struct, or name-value pairs or a struct followed by name-value pairs')
+        end
+
+        % Check if there is any data to query
+        if ~isfield(layout, 'subjects') || ~isfield(layout.subjects, 'name') || ~ismember(obj.subject.name, {layout.subjects.name})
+            result = {};
+            bfiles = {};
+            return
+        end
+
+        % Do the query with the subject + any additional filters added
+        result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), varargin{:}));
+
+        % Postprocess the query result (i.e. fix the quirky bids.query behavior)
+        switch query
+            case {'metadata', 'dependencies'}
+                if isscalar(result) && ~iscell(result)
+                    result = {result};  % Always return a cell array
+                end
+        end
+        if size(result,2)==0 || size(result,1)>1
+            result = result';           % Always return a row array
+        end
+
+        if nargout > 1
+            bfiles = cell(size(result));
+            if strcmp(query, 'data')
+                for n = 1:numel(result)
+                    bfiles{n} = bids.File(result{n});
+                end
+            else
+                obj.logger.warning("The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
+            end
+        end
     end
 
     function [result, bfiles] = query_ses(obj, layout, query, varargin)
@@ -386,7 +479,7 @@ methods
         %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, 'name1', value1, 'name2', value2, ...)
         %   RESULT = OBJ.QUERY_SES(LAYOUT, QUERY, struct(name1=value1), name2=value2, ...)
         %
-        % See also: bids.query
+        % See also: bids.query, obj.query_sub
 
         % Parse the filter input
         bfilter = struct();

@@ -1,12 +1,16 @@
-classdef B1prepWorker < qb.workers.Worker
+classdef (Sealed) B1prepWorker < qb.workers.Worker
 %B1PREPWORKER Performs preprocessing to produce workitems that can be used by other workers
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
 properties (Constant)
-    description = ["I am a modest worker that fabricates regularized flip-angle maps in degrees (ready for the big B1-correction party!)"] % Description of the work that is done
-    needs       = ""                % List of workitems the worker needs. Workitems can contain regexp patterns
+    description = ["Performs B1 field mapping preprocessing to generate regularized flip-angle maps for MRI bias correction."
+                   ""
+                   "B1prepWorker processes raw B1 mapping data (acquired with acq-famp and acq-anat protocols) to produce"
+                   "scaled and regularized transmit field (B1+) maps in degrees. The regularization uses a complex smoothing"
+                   "approach that preserves tissue boundaries while reducing salt-and-pepper noise."] % Description should be in ReStructuredText format
+    needs       = ["rawTB1map_famp", "rawTB1map_anat"]      % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -28,14 +32,15 @@ methods (Access = protected)
     
 end
 
+
 methods
 
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
 
-        arguments (Input)
+        arguments
             obj
-            workitem {mustBeTextScalar, mustBeNonempty}
+            workitem {mustBeTextScalar, mustBeNonempty}     %#ok<INUSA>
         end
 
         import qb.utils.spm_vol

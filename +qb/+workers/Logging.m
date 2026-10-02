@@ -26,7 +26,7 @@ methods
     end
 
     function debug(obj, message, varargin)
-        %INFO Writes a formatted messages for debugging purposes
+        %DEBUG Writes a formatted messages for debugging purposes
         %
         % Input:
         %   MESSAGE : Text message with optional format specifiers
@@ -50,7 +50,7 @@ methods
     end
 
     function verbose(obj, message, varargin)
-        %INFO Writes a formatted message to a logfile only
+        %VERBOSE Writes a formatted message to a logfile only
         %
         % Input:
         %   MESSAGE : Text message with optional format specifiers

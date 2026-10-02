@@ -68,7 +68,7 @@ html_context = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 
 html_static_path = ['_static']
-# html_favicon     = "./_static/quidbbids_logo.png"
+html_favicon     = str(Path(__file__).parents[1]/"+qb"/"private"/"icon.png")
 html_logo        = "./_static/quidbbids_logo.png"
 html_theme_options = {
     'logo_only':        True,   # Only show logo (no project name)

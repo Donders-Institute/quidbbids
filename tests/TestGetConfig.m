@@ -14,7 +14,7 @@ classdef TestGetConfig < BaseTest
             cd(fullfile(fileparts(mfilename("fullpath")),'..','+qb','private'))
 
             % Path for test config file
-            testCase.ConfigFile = fullfile(testCase.TempDir, 'code', 'QuIDBBIDS', 'config.json');
+            testCase.ConfigFile = fullfile(testCase.TempDir, 'derivatives', 'QuIDBBIDS_dummy', 'code', 'config.json');
         end
     end
 
@@ -30,7 +30,7 @@ classdef TestGetConfig < BaseTest
 
             % Verify the config file was created
             testCase.verifyFalse(isfile(testCase.ConfigFile))
-            config = get_config(testCase.ConfigFile, struct());
+            config = get_config(testCase.ConfigFile);
             testCase.verifyTrue(isfile(testCase.ConfigFile))
 
             % Verify the config fields match the default

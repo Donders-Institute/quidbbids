@@ -1,23 +1,22 @@
 classdef Manager < handle
-%MANAGER Manages the entire workflow to make the end products that the user wants
+%MANAGER Manages the entire workflow to make the deliverables that the user wants
 %
-% This class defines the common interface and base functionality for interacting with the user,
-% composing workflows, setting config parameters, creating a team of workers from the pool, and
-% putting the team to work.
+% This class defines the common interface and base functionality for creating a team of workers from
+% the pool, and putting the team to work.
 %
 % Workflow:
-%   0. User initializes the workflow and calls Manager
+%   0. User initializes the coordinator, sets config parameters and deliverables, and creates the Manager
 %   1. Manager loads an existing workflow from the output directory (if present) and asks user
-%      what products to make
-%   2. Manager assembles a team that can make the products (and asks the user for help if needed)
-%   3. Manager lets the user tweak the config parameters and saves it all back in the output folder
+%      what workitems to force, i.e. recompute if already present instead of re-using them.
+%   2. Manager assembles a team that can make the deliverables (and asks the user for help if needed)
+%   3. Manager saves the workflow settings in the derivative output folder
 %   4. Manager puts the team to work (subject by subject or in parallel):
-%       a. For each end product, the manager asks the responsible team worker to produce it
+%       a. For each deliverable, the manager asks the responsible team worker to produce it
 %       b. If this worker needs a workitem to get the work done, he/she will ask another
 %          team worker to produce it. In turn, that worker can ask other team workers to
 %          produce their workitems -- all the way up until only raw BIDS data items are needed
 %   5. Manager monitors the progress of the workers and informs the user until all work is done
-%   6. Manager fetches the end products and copies them to the output directory
+%   6. Manager fetches the deliverables and copies them to the output directory
 %
 % Limitation:
 %   In the workflow, each workitem is always made by the same worker, i.e. it is not possible to
@@ -29,9 +28,10 @@ classdef Manager < handle
 
 
 properties
-    team = struct.empty()   % The resumes of the workers that will produce the products: team.(workitem) -> worker resume
+    team = struct.empty()   % The resumes of the workers that will produce the deliverables: team.(workitem) -> worker resume
+    workflow = digraph()    % The workflow graph as a MATLAB digraph object
     coord                   % The coordinator that help the manager with administrative tasks
-    force = false           % Force workers to start working, even if the subject is locked or existing results exist
+    force = strings(1,0)    % List of workers for which the work should be forced, even if the subject is locked or existing results exist
     interactive = true      % If true, the manager will ask the user for help when needed (false = useful for automated testing)
 end
 
@@ -45,22 +45,48 @@ methods
             coord     qb.workers.Coordinator    % The coordinator that help the manager with administrative tasks
         end
 
+        % Set and load existing workflow data into OBJ
         obj.coord = coord;                      % The coordinator that help the manager with administrative tasks
-        obj.create_team()
+        obj.load_properties()
+
+        % Create the team and workflow
+        if isempty(fieldnames(obj.team))
+            obj.create_team()
+        else
+            obj.forced_workflow();
+        end
+    end
+
+    function set.force(obj, val)
+        % Check if the force property is stored as a valid string row
+        if ~ismember(class(val), {'string', 'char'})
+            error('QuIDBBIDS:Manager:InvalidForce', 'The force property must be a string or char array')
+        end
+        workers = intersect(fieldnames(obj.coord.resumes), obj.workflow.Nodes.Name);   %#ok<MCSUP>
+        if isempty(val) || all(strlength(val) == 0)
+            obj.force = strings(1,0);
+        elseif all(ismember(string(val), workers))
+            obj.force = unique(string(val(:)'));
+        else
+            error('QuIDBBIDS:Manager:InvalidForce', 'The force property must be a subset of the available workers:%s', sprintf(' "%s"', workers{:}))
+        end
+        obj.forced_workflow();
     end
 
     function create_team(obj, workitems, recurse_)
-        %CREATE_TEAM Selects workers from the pool that together are capable of making the WORKITEMS (products).
+        %CREATE_TEAM Selects workers from the pool that together are capable of making the WORKITEMS (deliverables).
         %
         % Asks the user for help if needed. The assembled team is stored in the TEAM property, which is a struct
         % with fields corresponding to the workitems and value corresponding to the resume of the worker that will
         % produce the workitem.
         %
+        % CREATE_TEAM also sets and saves the obj.workflow graph
+        %
         % NB: RECURSE_ is a private argument that should not be used
 
         arguments
             obj
-            workitems {mustBeText} = obj.coord.products
+            workitems {mustBeText} = obj.coord.deliverables
             recurse_ logical       = false
         end
 
@@ -69,12 +95,17 @@ methods
             obj.team = struct();
         end
 
-        if ~strlength(workitems)
+        if isempty(workitems)
             return
         end
 
         % Find and select one capable worker per workitem
         for workitem = string(workitems(:)')                % The workitem with optional regexp pattern
+
+            % Filter out the raw/deriv workitems
+            if startsWith(workitem, ["raw", "deriv"])
+                continue
+            end
 
             % First put all capable workers in the team
             for name = fieldnames(obj.coord.resumes)'       % Iterate over all available workers
@@ -82,15 +113,10 @@ methods
                 makes  = worker.makes();
                 items  = ~cellfun(@isempty, regexp(makes, "^" + workitem + "$"));
 
-                % Skip prepWorkers if there is no raw (anat) data for them
-                if ~obj.has_rawdata(worker)
-                    continue
-                end
-                
                 % Add to the team if the worker is capable
                 for workitem_ = makes(items)                % Loop over the actual matching workitems (without optional regexp pattern)
                     if isfield(obj.team, workitem_)         % Append the worker to the list
-                        if ~ismember(worker.name, obj.team.(workitem_).name)    % Check if we haven't already added this worker
+                        if ~ismember(worker.name, [obj.team.(workitem_).name])    % Check if we haven't already added this worker
                             obj.team.(workitem_)(end+1) = worker;
                         end
                     else                                    % Or create a new list
@@ -99,7 +125,7 @@ methods
                 end
             end
             if all(cellfun(@isempty, regexp(fieldnames(obj.team), "^" + workitem + "$")))
-                error('QuIDBBIDS:WorkItem:NoWorker', 'Could not find a worker that can make: %s', workitem)
+                error('QuIDBBIDS:WorkItem:NoWorker', 'Could not find a worker + input data for making: %s', workitem)
             end
 
             % Then select one worker per workitem and recursively add the workers needed to make the workitem
@@ -115,6 +141,16 @@ methods
             end
 
         end
+
+        % Plot and save the team workflow graph
+        if ~recurse_
+            obj.workflow = obj.draw_workflow();
+            H = findall(groot, Tag='workflow_graph');
+            if isvalid(H)
+                exportgraphics(H.Parent, regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
+            end
+        end
+
     end
 
     function members = team_members(obj)
@@ -129,52 +165,46 @@ methods
         end
     end
 
-    function load_mgr(obj, workflowfile)
-        %LOAD_WORKFLOW Loads all manager properties from the workflowfile
+    function load_properties(obj)
+        %LOAD_PROPERTIES Loads all manager properties from the workflowfile
 
-        arguments
-            obj
-            workflowfile {mustBeTextScalar} = obj.coord.workflowfile
-        end
-
+        workflowfile = obj.coord.workflowfile;
         if ~isfile(workflowfile)
-            fprintf('🔧 No previous manager data found\n')
             return
         end
 
-        fprintf('🔧 Loading manager data from: %s\n', workflowfile)
+        % Load the manager settings from the workflowfile
         load(workflowfile, 'mgr')
-        obj.coord.workflowfile = workflowfile;
 
         % Set the manager data
-        for property = string(fieldnames(mgr)')
-            obj.(property) = mgr.(property);
+        if exist('mgr', 'var')
+            for property = string(fieldnames(mgr)')
+                obj.(property) = mgr.(property);
+            end
         end
     end
 
-    function save_mgr(obj, workflowfile)
-        %SAVE_WORKFLOW Saves all manager properties to the workflowfile, except the COORD handle
+    function save_properties(obj)
+        %SAVE_PROPERTIES Saves all manager properties to the workflowfile, except the COORD handle
 
-        arguments
-            obj
-            workflowfile {mustBeTextScalar} = obj.coord.workflowfile
-        end
-
-        % Get the manager data
+        % Get the manager data (except for 'coord')
         for property = string(properties(obj)')
             if ~ismember(property, {'coord'})
                 mgr.(property) = obj.(property);
             end
         end
 
-        fprintf('🔧 Saving manager data to: %s\n', workflowfile)
+        workflowfile = obj.coord.workflowfile;
         [~,~] = mkdir(fileparts(workflowfile));
-        save(workflowfile, 'mgr', '-append')
-        obj.coord.workflowfile = workflowfile;
+        if isfile(workflowfile)
+            save(workflowfile, 'mgr', '-append')
+        else
+            save(workflowfile, 'mgr')
+        end
     end
 
     function start_workflow(obj, subjects)
-        %START_WORKFLOW For each end product, asks the responsible team worker to fetch it. Logs the screen output in a diary.
+        %START_WORKFLOW For each deliverable, asks the responsible team worker to fetch it. Logs the screen output in a diary.
         %
         % Inputs:
         %   SUBJECTS - String array with subject names for which the workflow should be executed. Default is all subjects in the BIDS layout
@@ -194,10 +224,15 @@ methods
         diary(fullfile(logdir, 'diary_workflow.txt'))
         diary_off = onCleanup(@() diary('off'));
 
-        if ~strlength(obj.coord.products)
-            disp('❌ The list of products is empty, there is nothing to do')
+        if isempty(obj.coord.deliverables)
+            disp('❌ The list of deliverables is empty, there is nothing to do')
             return
         end
+
+        % Save the config and workflow data, so that the workflow can be resumed later
+        obj.coord.get_config(obj.coord.config);
+        obj.coord.save_properties(obj.coord.workflowfile)
+        obj.save_properties()
 
         % Avoid issues with persistent memory locks of the qsublist function
         if obj.coord.config.General.useHPC.value
@@ -206,11 +241,11 @@ methods
             cleanup = onCleanup(@() qsublist('killall'));
             batch = obj.getbatch();         % -> qsubfeval()
             if mislocked('qsublist') && obj.interactive
-                answer = questdlg(sprintf('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes, that may cause issues.\n\nCan I cleanup the bookkeeping?'), ...
-                    'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Yes');
-                if isempty(answer) || strcmp(answer, 'Cancel')
+                switch questdlg(sprintf('You have old/unreturned qsub(feval) jobs in memory,\nprobably caused by previous crashes, that may cause issues.\n\nCan I cleanup the bookkeeping?'), ...
+                                'Locked qsublist detected', 'Yes', 'No', 'Cancel', 'Yes')
+                case {'', 'Cancel'}
                     return
-                elseif strcmp(answer, 'Yes')
+                case 'Yes'
                     munlock('qsublist')
                     clear('qsublist')   % TODO: make this less brutal by only clearing the submitted jobs
                 end
@@ -218,7 +253,7 @@ methods
         end
 
         % Parse the subjects for which the workflow should be executed
-        if strlength(subjects) > 0
+        if strlength(subjects)
             sel = false(size(obj.coord.BIDS.subjects));
             for subject = subjects(:)'
                 sel(strcmp({obj.coord.BIDS.subjects.name}, subject)) = true;
@@ -235,7 +270,7 @@ methods
             if obj.interactive
                 sample = fullfile(lockfiles(1).folder, lockfiles(1).name);
                 answer = questdlg(sprintf('Found %d existing lockfile(s), probably caused by previous crashes. Here is a sample:\n\n..%s:\n%s\n\nShall I clean them up?', ...
-                length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Yes');
+                    length(lockfiles), extractAfter(sample, 'derivatives'), fileread(sample)), 'Lockfiles detected', 'Yes', 'No', 'Yes');
                 if strcmp(answer, 'Yes')
                     lockfiles = fullfile({lockfiles.folder}, {lockfiles.name});
                     fprintf('🔓 Deleting %d existing lockfile(s)\n', length(lockfiles))
@@ -245,7 +280,7 @@ methods
         end
 
         % Check if our team is up-to-date
-        if ~all(isfield(obj.team, obj.coord.products))
+        if ~all(isfield(obj.team, obj.coord.deliverables))
             disp("🔄 Manager updates the team")
             obj.create_team()
         end
@@ -259,12 +294,37 @@ methods
             end
         end
 
-        % Block the start button in the GUI (if any) and initialize the workers
+        % Delete the workitems from the forced workers and their downstream dependencies (so that they will be re-made)
+        if ~isempty(obj.force)
+            if isempty(findall(groot, Tag='workflow_graph'))
+                obj.draw_workflow();        % Recreate the workflow graph if it was closed by the user
+            end
+            workers    = fieldnames(obj.coord.resumes);
+            BIDSW      = bids.layout(char(obj.coord.workdir), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
+            forcedflow = obj.forced_workflow();
+            exportgraphics(get(findall(groot,Tag='workflow_graph'),'Parent'), regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
+
+            % Delete the workitems from the forced workers and their downstream dependencies (so that they will be re-made)
+            for node = forcedflow'
+                if ismember(node, workers)
+                    depworker = obj.coord.resumes.(node).handle(obj.coord.BIDS, struct(), obj.coord.config);
+                    for workitem = depworker.makes
+                        items = replace(erase(bids.query(BIDSW, 'data', depworker.bidsfilter.(workitem)),'.gz'),'.nii','.*');   % TODO: Fix BIDSW for QSMWorker, which uses a custom workdir
+                        if ~isempty(items)
+                            fprintf('🗑️ Deleting %s -> %s items from the workdir\n', depworker.name, workitem)
+                            delete(items{:})
+                        end
+                    end
+                end
+            end
+        end
+
+        % Dispatch the workers
         fprintf("\n============= Starting workflow at %s =============\n", datetime('now'))
-        for product = obj.coord.products      % TODO: sort such that MEGREprepWorker products (if any) are fetched first
+        for product = obj.coord.deliverables      % TODO: sort such that MEGREprepWorker deliverables (if any) are fetched first
             Worker = obj.team.(product).handle;
             name   = obj.team.(product).name;
-            jobIDs = containers.Map(KeyType='char', ValueType='char');
+            jobIDs = dictionary();
             for subject = subjects
 
                 % Skip if we are not at the modality level, i.e. at the subject level while sessions are present
@@ -272,11 +332,11 @@ methods
                     continue
                 end
 
-                % Ask the worker to fetch the product for this subject
-                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team, obj.force};
-                fprintf('▶ Manager dispatched %s to make the "%s" product for %s/%s\n', name, product, subject.name, subject.session)
+                % Ask the worker to fetch the deliverable for this subject
+                args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
+                fprintf('▶ Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)  % The wide Unicode character may not display correctly in all environments
                 if obj.coord.config.General.useHPC.value
-                    jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: products are passed directly instead of calling fetch()
+                    jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: deliverables are passed directly instead of calling fetch()
                 elseif obj.coord.config.General.useParallel.value
                     jobIDs(obj.sub_ses(subject)) = parfeval(Worker, 0, args{:}, product);
                 else
@@ -288,7 +348,7 @@ methods
             % Monitor the progress of the workers until all work is done and report any errors or warnings
             obj.monitor_progress(product, jobIDs)
 
-            % Copy the end products to the output directory
+            % Copy the deliverables to the output directory
             obj.copy_to_outputdir(Worker(args{:}), product, subjects)
         end
 
@@ -296,24 +356,216 @@ methods
         fprintf("============= Finished workflow at %s =============\n\n", datetime('now'))
     end
 
-    function copy_to_outputdir(obj, worker, product, subjects)
-        %COPY_TO_OUTPUTDIR Copies the product files from the workdir to the outputdir
+    function workflow = draw_workflow(obj)
+        %DRAW_WORKFLOW() Draw dependency graph with workers and workitems
+        %
+        % DRAW_WORKFLOW displays a bipartite graph where:
+        %   - Blue nodes represent workers (labelled by their NAME property)
+        %   - Green nodes represent workitems
+        %   - Orange nodes represent deliverables (final requested workitems)
+        %   - Edges from workers to workitems show what each worker produces (makes)
+        %   - Edges from workitems to workers show what each worker needs
+        %   - Edges in deliverable upstream subtrees are thicker
+        %
+        % Clicking on a node brings up a popup-menu for enforcing the associated worker
+        %
+        % Returns:
+        %   WORKFLOW     - MATLAB digraph object representing the workflow graph with all workers and workitems
+
+        if isempty(fieldnames(obj.team))
+            disp('⚠ No team data found, cannot draw workflow graph')  % The wide Unicode character may not display correctly in all environments
+            workflow = digraph();
+            return
+        end
+
+        % Collect all unique workers and workitems
+        workers     = {};
+        workerNames = strings(1,0);
+        workitems   = strings(1,0);
+        for item = string(fieldnames(obj.team))'
+            worker             = obj.team.(item);
+            workers{end+1}     = worker;                                    %#ok<AGROW>
+            workerNames(end+1) = worker.name;                               %#ok<AGROW>
+            workitems          = [workitems worker.makes() worker.needs];   %#ok<AGROW>
+        end
+        [workerNames, idx] = unique(workerNames, 'stable');
+        workers            = workers(idx);
+        workitems          = unique(workitems(workitems ~= ""));
+
+        % Build edges = [source_idx, target_idx]
+        edges    = [];
+        nWorkers = length(workerNames);
+        for i = 1:nWorkers
+            
+            % Edges from worker to workitems it makes
+            for item = workers{i}.makes
+                edges(end+1, :) = [i, nWorkers + find(workitems == item)];      %#ok<AGROW>
+            end
+            
+            % Edges from workitems it needs to worker
+            for item = workers{i}.needs
+                edges(end+1, :) = [nWorkers + find(workitems == item), i];      %#ok<AGROW>
+            end
+        end
+
+        % Build node lists for the graph (workers come first, then workitems)
+        nodes = [workerNames, workitems];
+
+        % Create the workflow graph
+        workflow = digraph(edges(:,1), edges(:,2), [], nodes);
+
+        % Identify nodes in upstream subtree of deliverables using graph traversal
+        deliverableNodes = nWorkers + find(ismember(workitems, obj.coord.deliverables));
+        upstream = flipedge(workflow);
+        deliverableTree = false(size(nodes));
+        for d = deliverableNodes
+            deliverableTree(bfsearch(upstream, d)) = true;
+        end
+
+        % Select edges to highlight: highlight the preferred worker only when multiple workers produce the same workitem.
+        highlightTree = deliverableTree(edges(:,2));                                % Indexing outgoing edges(:,2) includes all edges
+        for node = find(indegree(workflow) > 1 & (1:numel(nodes))' > nWorkers)'     % Find workitems made by multiple workers
+            workitem = workitems(node - nWorkers);
+            for edge = find(edges(:,2) == node)'                                    % Find all incoming edges to this workitem
+                if ~ismember(workitem, fieldnames(obj.team)) || ...                 % Remove incoming edges from (unneeded) non-deliverables and from non-preferred workers
+                    ~strcmp(workerNames(edges(edge,1)), obj.team.(workitem).name)
+                    highlightTree(edge) = false;
+                end
+            end
+        end
+
+        % Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange), 4=raw/deriv(grey)
+        nodeTypes                                                           = ones(size(nodes));
+        nodeTypes(nWorkers+1:end)                                           = 2;
+        nodeTypes(deliverableNodes)                                         = 3;
+        nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 4;
+
+        % Plot the workflow graph
+        A = findall(groot, Tag='workflow_axes');
+        if isempty(A)
+           A = axes(Tag='workflow_axes');
+        end
+        H = plot(A, workflow, ...
+                 NodeLabel    = ["  " + workerNames, " " + workitems], ...       % Add spaces as node labels overlap with markers in the digraph plot
+                 Layout       = 'layered', ...
+                 NodeCData    = nodeTypes, ...
+                 MarkerSize   = [12 * ones(size(workerNames)), 10 * ones(size(workitems))], ...
+                 NodeFontSize = 8, ...
+                 LineWidth    = 1.5, ...
+                 ArrowSize    = 10, ...
+                 Interpreter  = 'none', ...
+                 Tag          = 'workflow_graph');
+        addlistener(H, 'Hit', @(src, event) obj.setforce(src, event, workflow));
+        A.Tag  = 'workflow_axes';                           % Restore the axes tag (plot removes it)
+        blue   = [0.16 0.5 0.73];   % = RTD blue #2980B9
+        green  = [0 0.8 0];
+        orange = [1 0.6 0];
+        grey   = [0.7 0.7 0.7];
+        colormap(A, [blue; green; orange; grey])
+        title(A, 'Workflow graph')
+
+        % Add datatips for the workers and workitems
+        H.DataTipTemplate.Interpreter = 'none';
+        H.DataTipTemplate.DataTipRows = dataTipTextRow('', qb.workers.help(nodes));
+
+        % Highlight edges in deliverable subtrees
+        highlight(H, ...
+                  edges(highlightTree, 1), ...
+                  edges(highlightTree, 2), ...
+                  EdgeColor=[0.5 0.5 0.5], LineWidth=3)     % highlight makes the specified EdgeColor lighter
+
+        % Add a custom legend
+        hold(A, 'on')
+        plot(A, NaN, NaN, 'o', MarkerFaceColor=grey)
+        plot(A, NaN, NaN, 'o', MarkerFaceColor=blue)
+        plot(A, NaN, NaN, 'o', MarkerFaceColor=green)
+        plot(A, NaN, NaN, 'o', MarkerFaceColor=orange)
+        legend(A, '', 'Raw data', 'Workers', 'Workitems', 'Deliverables', Location='best')
+        hold(A, 'off')
+    end
+
+end
+
+
+methods (Access = private)
+
+    function setforce(obj, src, event, workflow)
+        
+        % Find the node that is closest to the clickpoint, but not too far away
+        [dist, nodeIdx] = min((src.XData - event.IntersectionPoint(1)).^2 + (src.YData - event.IntersectionPoint(2)).^2);
+        nodeName        = workflow.Nodes.Name{nodeIdx};
+        if dist > 0.25^2 || ~contains(nodeName, "Worker")
+            return
+        end
+
+        % Add/remove the node from the force-list
+        switch questdlg("Do you want to force recomputing the output of: " + nodeName, 'Set/unset force')
+            case 'Yes'
+                obj.force = [obj.force, nodeName];
+            case 'No'
+                obj.force(obj.force == nodeName) = [];
+        end
+    end
+
+    function forcedflow = forced_workflow(obj)
+        %FORCED_WORKFLOW finds and highlights the forced downstream edges of the workflow graph
+
+        % Find the downstream nodes of the forced workers
+        workers    = fieldnames(obj.coord.resumes);
+        forcedflow = [];
+        for worker = obj.force
+            prunedflow = obj.workflow;
+            for node = string(prunedflow.Nodes.Name)'
+                if ~ismember(node, workers) && indegree(prunedflow, node) > 1   % If it's not a worker, then it must be a workitem
+                    for parent = prunedflow.predecessors(node)'
+                        if ismember(parent, fieldnames(obj.team)) && ~strcmp(parent, obj.team.(node).name) % Remove the edge if the parent worker is not preferred
+                            prunedflow = rmedge(prunedflow, parent, node);
+                        end
+                    end
+                end
+            end
+            forcedflow = unique([forcedflow; bfsearch(prunedflow, worker)]);
+        end
+
+        % Highligt the forcedflow edges
+        if isvalid(findall(groot, Tag='workflow_axes'))
+
+            % Start with a new workflow
+            obj.draw_workflow();
+
+            % Highlight the edges
+            if ~isempty(forcedflow)
+                H      = findall(groot, Tag='workflow_graph');
+                [s, t] = findedge(obj.workflow);
+                idx    = ismember(obj.workflow.Nodes.Name(s), forcedflow);
+                highlight(H, s(idx), t(idx), LineStyle=':')
+
+                % Add a legend title for the newly forced edges
+                L = findall(ancestor(H,'Figure'), Type='Legend');
+                L.Title.String     = ['{\bf--} Forced      ', char(160)];    % Extra (non-breaking) spaces are a hack as title doesn't support HorizontalAlignment = 'left'
+                L.Title.FontWeight = 'normal';
+            end
+        end
+    end
+
+    function copy_to_outputdir(obj, worker, deliverable, subjects)
+        %COPY_TO_OUTPUTDIR Copies the deliverables from the workdir to the outputdir
 
         arguments
             obj
             worker      qb.workers.Worker
-            product     string
+            deliverable string
             subjects    struct
         end
         
         labels = extractAfter({subjects.name}, 'sub-');
-        BIDSW  = bids.layout(char(worker.workdir), filter=struct('sub',{labels}), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
-        for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(product))')
+        BIDSW  = bids.layout(char(worker.workdir), filter=struct(sub={labels}), use_schema=false, index_derivatives=false, index_dependencies=false, tolerant=true, verbose=false);
+        for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(deliverable)))'
             target = bids.File(char(source));
             target.entities.tag = char(worker.config.General.tag);
             target.path = fullfile(obj.coord.outputdir, target.bids_path, target.filename);
-            worker.logger.info('-> Saving "%s" product as: %s', product, target.path)
-            qb.utils.copybfile(source, target, obj.force)
+            worker.logger.info('-> Saving "%s" deliverable as: %s', deliverable, target.path)
+            qb.utils.copybfile(source, target, ismember(worker.name, obj.force))
         end
     end
 
@@ -323,7 +575,11 @@ methods
         arguments
             obj
             workitem {mustBeTextScalar}
-            jobIDs   containers.Map
+            jobIDs   dictionary
+        end
+
+        if ~jobIDs.numEntries
+            return
         end
 
         % Launch a dashboard
@@ -345,34 +601,9 @@ methods
         end
     end
 
-end
-
-
-methods (Access = private)
-
     function subses = sub_ses(obj, subject)
         % Parses the sub-#_ses-# prefix from a BIDS.subjects item
         subses = replace(erase(subject.path, [obj.coord.BIDS.pth filesep]), filesep,'_');
-    end
-
-    function has_data = has_rawdata(obj, worker)
-        % Checks whether all raw input data for this (prep) worker is available
-        
-        has_data = true;
-        if isempty(dir(fullfile(obj.coord.BIDS.pth, 'sub-*')))
-            return      % -> Escape for unit-tests
-        end
-
-        if contains(worker.name, 'prepWorker')
-            worker_ = worker.handle(obj.coord.BIDS, struct(), obj.coord.config);
-            for workitem = worker.makes
-                if startsWith(workitem, 'raw') && isempty(bids.query(obj.coord.BIDS, 'data', worker_.bidsfilter.(workitem)))
-                    has_data = false;
-                    fprintf('No "%s" input data found for %s\n', workitem, worker.name)
-                    return
-                end
-            end
-        end
     end
 
     function selectworker(obj, workitem)
@@ -383,13 +614,17 @@ methods (Access = private)
             return
         end
 
-        % Check if any of the workers is preferred. If not ask the user and make the worker preferred
-        if obj.interactive && ~any([workers.preferred])
-            chosen = qb.GUI.askuser(workers, workitem);
-            if chosen
-                workers(chosen).preferred = true;
-            else
-                return
+        % Check if there is exactly one preferred worker. If not, ask the user to select one.
+        if obj.interactive
+            if sum([workers.preferred]) > 1
+                error('QuIDBBIDS:Workers:MultiplePreferred', "Found multiple preferred workers for workitem '%s'", workitem)
+            elseif ~any([workers.preferred])
+                chosen = qb.GUI.selectworker(workers, workitem);
+                if chosen
+                    workers(chosen).preferred = true;
+                else
+                    return
+                end
             end
         end
 

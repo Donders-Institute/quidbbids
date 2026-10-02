@@ -26,11 +26,11 @@ end
 
 % Copy the data and metadata to the destination
 if isfile(target.path) && ~force
-    fprintf('File already exists at destination: %s. Use force=true to overwrite\n', target.path)
+    fprintf('⚠ File already exists at destination: %s. Use force=true to overwrite\n', target.path)  % The wide Unicode character may not display correctly in all environments
 else
     [~,~] = mkdir(fileparts(target.path));
     copyfile(source.path, target.path)
     if ~isempty(fieldnames(source.metadata))
-        bids.util.jsonencode(char(strrep(target.path, target.filename, target.json_filename)), source.metadata)
+        bids.util.jsonencode(char(replace(target.path, target.filename, target.json_filename)), source.metadata)
     end
 end

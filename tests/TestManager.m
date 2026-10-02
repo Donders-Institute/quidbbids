@@ -14,8 +14,9 @@ classdef TestManager < BaseTest
             testCase.TmpDir = tempname;
             mkdir(fullfile(testCase.TmpDir))
             bids.init(testCase.TmpDir)
-            testCase.mgr = qb.QuIDBBIDS(testCase.TmpDir).manager();
-            testCase.mgr.interactive = false;
+            quidb = qb.QuIDBBIDS(testCase.TmpDir);
+            quidb.interactive = false;
+            testCase.mgr = quidb.manager();
         end
     end
 
@@ -38,14 +39,14 @@ classdef TestManager < BaseTest
 
         function testCreateTeam(testCase)
 
-            % Should not throw an error if a worker can make the requested product
+            % Should not throw an error if a worker can make the requested deliverables
             testCase.mgr.coord.resumes.MEGREprepWorker.preferred = true;
-            testCase.mgr.coord.products = ["rawMEGRE", "echo.*D(mag|phase)"];
-            testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error for known products")
+            testCase.mgr.coord.deliverables = ["Chimap", "M.*D(mag|phase)"];
+            testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error for known deliverables")
             testCase.verifyNotEmpty(testCase.mgr.team, 'Manager team should not be empty')
 
             % Should not error if the preferred worker is set
-            testCase.mgr.coord.products = ["R1map", "R2starmap", "MWFmap"];
+            testCase.mgr.coord.deliverables = ["R1map", "R2starmap", "MWFmap"];
             testCase.mgr.coord.resumes.R1R2sWorker.preferred = true;
             testCase.mgr.coord.resumes.MCR_GPUWorker.preferred = true;
             testCase.verifyWarningFree(@() testCase.mgr.create_team(), "Manager should not error when preferred worker is set")

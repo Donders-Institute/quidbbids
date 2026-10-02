@@ -1,6 +1,5 @@
 venv/
 docs/_build
-resources/*
 *.m~
 *.asv
 *.autosave
@@ -10,6 +9,4 @@ resources/*
 .vscode
 *.pyc
 .DS_Store
-!project.json
 Thumbs.db
-QuIDBBIDS.prj

@@ -1,14 +1,37 @@
-classdef R1R2sWorker < qb.workers.Worker
+classdef (Sealed) R1R2sWorker < qb.workers.Worker
 %R1R2SWORKER Runs MCR workflow on the GPU
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
 
 properties (Constant)
-    description = ["I'm R2-D2, an astromech droid that can fix starships and, yes, generate precise R1- and R2-starmaps for all your neuro-navigation needs!";
-                   "";
+    description = ["Joint R1 and R2* mapping worker using GPU-accelerated estimation for multi-echo GRE data."
+                   ""
+                   "R1R2sWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip Angle (VFA) and"
+                   "Multi-Parameter Mapping (MPM) multi-echo GRE data using a joint estimation model. The simultaneous fitting"
+                   "of R1 and R2* parameters improves accuracy by accounting for the interdependence of these relaxation"
+                   "parameters, particularly important at high field strengths where both T1 and T2* effects are significant."
+                   ""
+                   "Theoretical Framework:"
+                   "----------------------"
+                   ""
+                   "The joint R1-R2* estimation is implemented using the Gacelle toolbox:"
+                   "Gacelle, K. S. Chan et al., Imaging Neuroscience 2026"
+                   ""
+                   "Documentation: https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html"
+                   ""
                    "Methods:"
-                   "- Gacelle et al., MRM 2020 for R2-star mapping from multi-echo GRE data"]
+                   "--------"
+                   ""
+                   "- Loads coregistered multi-echo GRE magnitude data, B1 transmit field maps, and brain masks"
+                   "- Performs joint estimation of R1 and R2* using gpuJointR1R2starMapping"
+                   "- Accounts for B1 inhomogeneities in the fitting process"
+                   ""
+                   ".. note::"
+                   ""
+                   "   The joint estimation approach is particularly advantageous when T1 and T2* are correlated,"
+                   "   such as in white matter where myelin water has distinct relaxation properties."
+                   "   Requires GPU hardware with CUDA support."]   % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
     usesGPU     = true
 end
@@ -21,14 +44,14 @@ methods (Access = protected)
         % subclasses to perform additional setup after the common Worker properties have been initialized.
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.R2starmap = struct(modality = 'anat', ...
+        obj.bidsfilter.R2starmap_VFA = struct(modality = 'anat', ...
                                           echo     = [], ...
                                           flip     = [], ...
                                           part     = '', ...
                                           desc     = 'gacelleR1R2s', ...
                                           suffix   = 'R2starmap');
-        obj.bidsfilter.M0map     = setfield(obj.bidsfilter.R2starmap, suffix='M0Map');
-        obj.bidsfilter.R1map     = setfield(obj.bidsfilter.R2starmap, suffix='R1map');
+        obj.bidsfilter.M0map_VFA     = setfield(obj.bidsfilter.R2starmap, suffix='M0Map');
+        obj.bidsfilter.R1map_VFA     = setfield(obj.bidsfilter.R2starmap, suffix='R1map');
     end
 
 end
@@ -39,7 +62,7 @@ methods
     function get_work_done(obj, workitem)
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
 
-        arguments (Input)
+        arguments
             obj
             workitem {mustBeTextScalar, mustBeNonempty}
         end
@@ -85,9 +108,9 @@ methods
 
         % Save the output data
         V(1).dim = dims(1:3);
-        write_vol(V(1), askadam_R1R2s.final.R1,     obj.bfile_set(bfile, obj.bidsfilter.R1map    ));
-        write_vol(V(1), askadam_R1R2s.final.M0,     obj.bfile_set(bfile, obj.bidsfilter.M0map    ));
-        write_vol(V(1), askadam_R1R2s.final.R2star, obj.bfile_set(bfile, obj.bidsfilter.R2starmap));
+        write_vol(V(1), askadam_R1R2s.final.R1,     obj.bfile_set(bfile, obj.bidsfilter.R1map_VFA    ));
+        write_vol(V(1), askadam_R1R2s.final.M0,     obj.bfile_set(bfile, obj.bidsfilter.M0map_VFA    ));
+        write_vol(V(1), askadam_R1R2s.final.R2star, obj.bfile_set(bfile, obj.bidsfilter.R2starmap_VFA));
     end
 
 end

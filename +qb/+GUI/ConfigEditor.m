@@ -332,13 +332,20 @@ methods (Access = ?TestConfigEditorGUI)
         else
 
             % Try robust parsing:
+            % - If oldVal is empty: try JSON decode
             % - If oldVal numeric: try JSON decode or str2num
             % - If oldVal logical: accept true/false/1/0
             % - If oldVal is char/string: accept as string (if user provided JSON string decode if quoted)
             % - For cell/struct/array: prefer jsondecode
             try
                 txt = strtrim(obj.ValField.Value);
-                if isnumeric(oldVal)
+                if isempty(txt)
+                    newVal   = "";
+                    parsedOK = true;
+                elseif isempty(oldVal) || strlength(oldVal)==0
+                    newVal   = jsondecode(txt);
+                    parsedOK = true;
+                elseif isnumeric(oldVal)
                     % If user typed JSON array like [1,2,3], jsondecode will work
                     if startsWith(txt,'[') && endsWith(txt,']') && contains(txt,',')
                         try

@@ -9,7 +9,8 @@ properties (Constant)
                    ""
                    "MCR_GPUWorker implements the MCR framework on GPU hardware, combining complex multi-echo GRE data (VFA or MPM)"
                    "with coregistered B1 transmit field maps to estimate myelin water fraction (MWF) and other quantitative"
-                   "microstructural parameters."
+                   "microstructural parameters. Protocols with a variable TR and/or a variable number of echoes across flip angles "
+                   "are fitted with gpuMCRMWI_VFAVTR (https://github.com/samuelmelke/vTR-qMRI)."
                    ""
                    "Theoretical Framework:"
                    "----------------------"
@@ -102,30 +103,49 @@ methods
             obj.logger.exception('%s expected %d brainmasks but got:%s', obj.name, length(ME4Dmag), sprintf(' %s', localfmask{:}))
         end
 
+        % Read the protocol of each acquisition. This is done before allocating because acquisitions
+        % may differ in TR and in the number of echoes 
+        for n = 1:length(ME4Dmag)
+            bfile = bids.File(ME4Dmag{n});                  % For reading metadata, parsing entities, etc
+            FA(n) = bfile.metadata.FlipAngle;               %#ok<AGROW>
+            TR(n) = bfile.metadata.RepetitionTime;          %#ok<AGROW>
+            TE{n} = bfile.metadata.EchoTime(:);             %#ok<AGROW>
+        end
+        nTE           = cellfun(@numel, TE);
+        te_indexrange = [cumsum(nTE(:)) - nTE(:) + 1, cumsum(nTE(:))];      % First/last index of each acquisition along the echo dimension
+        isVTR         = ~all(abs(TR - TR(1)) < 1e-6*TR(1)) || ...           % Different repetition times
+                        ~all(nTE == nTE(1))                || ...           % Different numbers of echoes
+                        ~all(cellfun(@(t) isequal(t, TE{1}), TE));          % Different echo times
+   
         % Load the data + metadata
-        V              = spm_vol(ME4Dmag{1});                    % For reading the 3D image dimensions
-        dims           = [V(1).dim length(V) length(ME4Dmag)];   % Dimensions: [x,y,z,TE,FA]
+        V              = spm_vol(ME4Dmag{1});                        % For reading the 3D image dimensions
+        dims           = [V(1).dim sum(nTE)];                        % Dimensions: [x,y,z,echo], all acquisitions concatenated
         img            = single(NaN(dims));
         unwrappedPhase = single(NaN(dims));
-        totalField     = single(NaN(dims([1:3 5])));                % Dimensions: [x,y,z,FA]
+        totalField     = single(NaN([dims(1:3) length(ME4Dmag)]));   % Dimensions: [x,y,z,FA]
         mask           = true;
-        for n = 1:dims(5)
-            bfile                     = bids.File(ME4Dmag{n});   % For reading metadata, parsing entities, etc
-            img(:,:,:,:,n)            = spm_read_vols(spm_vol(ME4Dmag{n}));
-            unwrappedPhase(:,:,:,:,n) = spm_read_vols(spm_vol(unwrapped{n}));
+        for n = 1:length(ME4Dmag)
+            idx                       = te_indexrange(n,1):te_indexrange(n,2);
+            img(:,:,:,idx)            = spm_read_vols(spm_vol(ME4Dmag{n}));
+            unwrappedPhase(:,:,:,idx) = spm_read_vols(spm_vol(unwrapped{n}));
             totalField(:,:,:,n)       = spm_read_vols(spm_vol(fieldmap{n}));
             mask                      = spm_read_vols(spm_vol(localfmask{n})) & mask;
-            FA(n)                     = bfile.metadata.FlipAngle;   %#ok<AGROW>
         end
         B1 = spm_read_vols(spm_vol(char(TB1map_GRE)));
-        TR = bfile.metadata.RepetitionTime;
-        TE = bfile.metadata.EchoTime;
-
-        % Obtain the initial estimation of the initial B1 phase
+        
+        % Obtain the initial estimation of the initial B1 phase (NB: img is still 4D here, i.e. with all acquisitions concatenated)
         img  = img .* exp(1i*unwrappedPhase);
-        mask = mask & all(~isnan(img), [4 5]);
-        pini = squeeze(unwrappedPhase(:,:,:,1,:)) - 2*pi*totalField .* TE(1);
+        mask = mask & all(~isnan(img), 4);
+        TE1  = reshape(cellfun(@(te) te(1), TE), 1, 1, 1, []);                      % First echo time of each acquisition
+        pini = unwrappedPhase(:,:,:,te_indexrange(:,1)) - 2*pi*totalField .* TE1;   % Dimensions: [x,y,z,FA]
         pini = polyfit3D_NthOrder(double(mean(pini(:,:,:,1:end-1), 4)), mask, 6);
+
+        clear unwrappedPhase  % not used after this line
+
+        if ~isVTR
+            img            = reshape(img,            [dims(1:3) nTE(1) length(ME4Dmag)]);   % Back to [x,y,z,TE,FA] for gpuMCRMWI
+            dims           = size(img);
+        end
 
         % Construct the fixed parameters and extra data for the MCR model
         fixed_params      = obj.config.MCR_GPUWorker.fixed_params;
@@ -135,9 +155,28 @@ methods
         extraData.pini    = pini;
         extraData.b1      = B1;
 
-        % Estimate the MCR model
-        objGPU      = gpuMCRMWI(TE, TR, FA, fixed_params);
-        askadam_mcr = objGPU.estimate(img, mask, extraData, obj.config.MCR_GPUWorker.fitting);
+        % Variable-TR protocols need the echo index ranges and cannot use the EPG-X networks
+        % We need to override isEPG for VTR, and mutating obj.config would leak the change into other subjects processed in the same session
+        fitting = obj.config.MCR_GPUWorker.fitting; 
+        if isVTR
+            extraData.te_indexrange = te_indexrange;
+            if fitting.isEPG
+                obj.logger.warning('%s: the EPG-X networks assume a single TR for all flip angles, using the Bloch-McConnell solution instead', obj.name)
+                fitting.isEPG = false;
+            end
+        end
+
+       % Estimate the MCR model (variable-TR protocols need the vTR-qMRI implementation)
+        if isVTR
+            if ~exist('gpuMCRMWI_VFAVTR', 'class')
+                obj.logger.exception('%s found a variable-TR protocol but gpuMCRMWI_VFAVTR is not on the MATLAB-path.\nPossible solution:\ngit submodule update --init dependencies/vTR-qMRI', obj.name)
+            end
+            obj.logger.info('%s detected a variable protocol (TR = [%s] ms), using gpuMCRMWI_VFAVTR', obj.name, num2str(TR*1e3, ' %.1f'))
+            objGPU = gpuMCRMWI_VFAVTR(TE, TR, FA, fixed_params);
+        else
+            objGPU = gpuMCRMWI(TE{1}, TR(1), FA, fixed_params);
+        end
+        askadam_mcr = objGPU.estimate(img, mask, extraData, fitting);
 
         % Extract and save the output data
         V(1).dim = dims(1:3);

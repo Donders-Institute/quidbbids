@@ -12,18 +12,21 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: true
 
       - name: Set up MATLAB
-        uses: matlab-actions/setup-matlab@v2
+        uses: matlab-actions/setup-matlab@v3
 
       - name: Run MATLAB Tests
-        uses: matlab-actions/run-command@v2
+        uses: matlab-actions/run-command@v3
         with:
+          generate-summary: true
           command: |
             addpath(pwd)
-            results = runtests('tests', 'IncludeSubfolders', true);
+            suite = testsuite('tests', 'IncludeSubfolders', true);
+            runner = matlab.unittest.TestRunner.withDefaultPlugins;
+            results = runner.run(suite);
             display(results)
             assertSuccess(results)

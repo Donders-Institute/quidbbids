@@ -35,11 +35,11 @@ methods (Access = protected)
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
         obj.bidsfilter.meanChimap = struct(modality = 'anat', ...
-                                              echo     = [], ...
-                                              flip     = [], ...      % The fit combines all flip angles
-                                              part     = '', ...
-                                              desc     = 'SCR', ...
-                                              suffix   = 'Chimap');
+                                           echo     = [], ...
+                                           flip     = [], ...      % The fit combines all flip angles
+                                           part     = '', ...
+                                           desc     = 'SCR', ...
+                                           suffix   = 'Chimap');
     end
 
 end
@@ -62,8 +62,6 @@ end
 
 
 methods (Access = private)
-
-
 
     function average_chimap(obj)
         %AVERAGE_CHIMAP Computes the S0^2-weighted mean of the QSM Chi-maps over the flip angles

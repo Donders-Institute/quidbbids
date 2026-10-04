@@ -99,7 +99,8 @@ methods
         set(findobj(obj.Fig, Type='uibutton', Text='🛒 Catalog'), Enable='on')
         obj.coord.deliverables = "";
         obj.coord.manager      = [];
-        obj.coord.get_resumes()
+        obj.coord.config       = obj.coord.get_config();
+        obj.coord.resumes      = obj.coord.get_resumes();
     end
     
     function load_workflow(obj)

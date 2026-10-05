@@ -265,6 +265,12 @@ methods (Access = ?TestConfigEditorGUI)
     function s = valueToStringForDisplay(~, val)
         % Format various MATLAB types to a string representation suitable for editing
 
+        % Handle empty values - return empty string to display as empty field
+        if isempty(val) || ((ischar(val) || isstring(val)) && strlength(strip(val)) == 0)
+            s = '';
+            return
+        end
+
         if isnumeric(val) && isscalar(val)
             s = num2str(val);
         else
@@ -306,10 +312,10 @@ methods (Access = ?TestConfigEditorGUI)
             if isempty(fieldnames(obj.BIDS)) && isfolder(bidsdir)
                 w = helpdlg('Scanning BIDS dataset with the inclusion filter...', 'Please wait'); pause(0.1)    % Give time to render the dialog
                 obj.BIDS = bids.layout(char(bidsdir), use_schema        = true, ...
-                                                        index_derivatives = false, ...
-                                                        filter            = obj.Config.General.BIDS.include.value, ...
-                                                        tolerant          = true, ...
-                                                        verbose           = true);
+                                                      index_derivatives = false, ...
+                                                      filter            = obj.Config.General.BIDS.include.value, ...
+                                                      tolerant          = true, ...
+                                                      verbose           = true);
                 if isvalid(w), close(w), end
             end
             if ~isempty(fieldnames(obj.BIDS))
@@ -321,10 +327,10 @@ methods (Access = ?TestConfigEditorGUI)
                 if ~isequal(obj.Config.General.BIDS.include.value.modality, newVal.modality) || isfield(newVal, 'sub') || isfield(newVal, 'ses')
                     w = helpdlg('Re-scanning BIDS dataset with the new inclusion filter...', 'Please wait'); pause(0.1) % Give time to render the dialog
                     obj.BIDS = bids.layout(char(bidsdir), use_schema        = true, ...
-                                                            index_derivatives = false, ...
-                                                            filter            = newVal, ...
-                                                            tolerant          = true, ...
-                                                            verbose           = true);
+                                                          index_derivatives = false, ...
+                                                          filter            = newVal, ...
+                                                          tolerant          = true, ...
+                                                          verbose           = true);
                     if isvalid(w), close(w), end
                 end
             end
@@ -338,7 +344,7 @@ methods (Access = ?TestConfigEditorGUI)
             % - If oldVal is char/string: accept as string (if user provided JSON string decode if quoted)
             % - For cell/struct/array: prefer jsondecode
             try
-                txt = strtrim(obj.ValField.Value);
+                txt = strip(obj.ValField.Value);
                 if isempty(txt)
                     newVal   = "";
                     parsedOK = true;
@@ -614,7 +620,7 @@ methods (Access = ?TestConfigEditorGUI)
         end
         
         % Convert search query to regex pattern with smart wildcard handling
-        pattern = lower(strtrim(pattern));
+        pattern = lower(strip(pattern));
         pattern = replace(pattern, '*', '.*'); % Convert * to .* for regex
         pattern = replace(pattern, '?', '.');  % Convert ? to . for regex
         if ~startsWith(pattern, '^')
@@ -653,7 +659,7 @@ methods (Access = ?TestConfigEditorGUI)
 
     function onSearchLive(obj, evt)
 
-        obj.updateSearchMatches(strtrim(evt.Value))
+        obj.updateSearchMatches(strip(evt.Value))
 
         if ~isempty(obj.SearchMatches)
             obj.SearchIndex = 1;
@@ -665,7 +671,7 @@ methods (Access = ?TestConfigEditorGUI)
 
     function onSearchEnter(obj, evt)
 
-        obj.updateSearchMatches(strtrim(evt.Value))
+        obj.updateSearchMatches(strip(evt.Value))
 
         if ~isempty(obj.SearchMatches)
             obj.SearchIndex = 1;

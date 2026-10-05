@@ -152,8 +152,8 @@ methods
                 else
                     [status, out] = system('nvidia-smi --query-gpu=name --format=csv,noheader');
                     reason = 'but GPU acceleration is unavailable';
-                    if status == 0 && ~isempty(strtrim(out))
-                        reason = ['and the GPU was detected (' strtrim(out) '), but MATLAB cannot use it'];
+                    if status == 0 && ~isempty(strip(out))
+                        reason = ['and the GPU was detected (' strip(out) '), but MATLAB cannot use it'];
                     end
                     obj.logger.error(['%s was configured to use a GPU, %s. Possible causes: no GPU allocated by the scheduler, incompatible ' ...
                                       'CUDA/driver, or missing Parallel Computing Toolbox license.'], obj.name, reason)

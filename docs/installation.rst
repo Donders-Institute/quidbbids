@@ -1,82 +1,132 @@
 Installation
 ============
 
-QuIDBBIDS is a MATLAB package that can be installed on Linux, Windows, and macOS systems, provided the following requirements are met.
+QuIDBBIDS is a MATLAB package compatible with Linux, Windows, and macOS systems.
 
-**Requirements:**
+Requirements
+------------
 
-- `MATLAB <https://nl.mathworks.com/products/MATLAB.html>`__ (see `project.json <https://github.com/Donders-Institute/quidbbids/blob/main/project.json>`__ for more details)
-- `Git <https://git-scm.com>`__ (for cloning and updating the repository)
+- `MATLAB <https://nl.mathworks.com/products/MATLAB.html>`__ (see `project.json <https://github.com/Donders-Institute/quidbbids/blob/main/project.json>`__ for version details)
+- `Git <https://git-scm.com>`__ (for cloning and updating; optional if downloading a ZIP archive)
 
-Installing QuIDBBIDS
+Installation Methods
 --------------------
 
-The recommended installation method is via **Git**. This allows you to easily obtain a specific release (``main``
-branch) or the latest development version (``dev`` branch; see the contributing guide <https://github.com/Donders-Institute/quidbbids/blob/dev/CONTRIBUTING.rst>`__).
+Git (Recommended)
+~~~~~~~~~~~~~~~~~
 
-To clone QuIDBBIDS and its dependencies, run:
+The recommended approach uses Git to install QuIDBBIDS and its dependencies. This allows easy access
+to specific releases (``main`` branch) or the latest development code (``dev`` branch; see the 
+`contributing guide <https://github.com/Donders-Institute/quidbbids/blob/dev/CONTRIBUTING.rst>`__).
 
 .. code-block:: console
 
    git clone --recurse-submodules https://github.com/Donders-Institute/QuIDBBIDS.git
 
-This will create a folder named ``QuIDBBIDS`` in your current directory.
+This creates a ``QuIDBBIDS`` folder containing both the package and its submodule dependencies.
 
-To install a specific **versioned release**, list available tags and check out the desired one, for example:
+**MATLAB Path Setup**
 
-.. code-block:: console
+Add the ``QuIDBBIDS`` folder (without subfolders) to your MATLAB path.
 
-   cd QuIDBBIDS
-   git tag                        # List available release versions (e.g., v1.0.0, v1.0.1, v1.1.0)
-   git checkout v1.0.1            # Check out a specific (stable) release version
-   git switch -c dev origin/dev   # Check out the latest (unstable) development code
+.. code-block:: matlab
 
-And to update the dev branch:
+   addpath('/path/to/QuIDBBIDS')
 
-.. code-block:: console
+Or use the MATLAB GUI: *Home → Set Path → Add Folder*.
 
-   git switch dev                 # Check out your dev branch
-   git pull                       # Get the latest code
-   qb.resetconfig()               # Update the QuIDBBIDS settings to latest format (may be required after updates)
+ZIP Archive (Alternative)
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Then, in MATLAB, add the cloned ``QuIDBBIDS`` folder (without subfolders) to your MATLAB path.
+Download the latest release from the `releases page <https://github.com/Donders-Institute/QuIDBBIDS/releases>`__
+and extract the ZIP file. Add the extracted ``QuIDBBIDS`` folder to your MATLAB path as above.
 
 .. note::
-   If not present, running QuIDBBIDS will install a default configuration file in your home directory, named 
-   ``~/.quidbbids/v#.#.#/config_default.json``. You can modify this file to change default settings or reset them back to 
-   factory defaults by running ``qb.resetconfig()`` in MATLAB.
+   ZIP downloads do not include submodule dependencies, which will need to be installed manually.
 
-Installing dependencies
------------------------
+Configuration
+-------------
 
-If you have cloned QuIDBBIDS with ``--recurse-submodules`` you already have `SEPIA <https://github.com/kschan0214/sepia>`__ 
-in your QuIDBBIDS ``dependencies`` subfolder. Alternatively, you can install the QuIDBBIDS dependencies manually, as listed 
-`here <https://github.com/Donders-Institute/quidbbids/blob/main/.gitmodules>`__.
+On first run, QuIDBBIDS creates a version-specific default configuration file at ``~/.quidbbids/v#.#.#/config_default.json``.
 
-Unfortunately, not all (sub)dependencies are available on as git repositories, which makes that you still need to install some 
-of SEPIA's dependencies manually:
+- **Modify settings**: Edit the configuration file directly to adjust the settings to your site specific needs.
+- **Reset to defaults**: Run ``qb.resetconfig()`` in MATLAB to restore the factory default settings.
+
+Dependencies
+------------
+
+QuIDBBIDS automatically detects and uses system-wide installations of its dependencies. If not found,
+it will use versions from the ``dependencies`` folder (populated only when using ``--recurse-submodules``).
+
+See the `.gitmodules <https://github.com/Donders-Institute/QuIDBBIDS/blob/main/.gitmodules>`__ file for
+manual installation instructions for each dependency.
+
+Required Manual Installations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some dependencies cannot be fully installed via Git alone. One notable case is the
+`SEPIA <https://github.com/kschan0214/sepia>`__ toolbox, which requires manual configuration and installation
+of a few (non-git) dependencies of its own. In short, you need to install:
 
 1. `CompileMRI <https://github.com/korbinian90/CompileMRI.jl>`__
 2. `SEGUE <https://xip.uclb.com/product/SEGUE>`__ 
 3. `TKD/iterTik/dirTik <https://xip.uclb.com/product/mri_qsm_tkd>`__ 
 
-As a follow up, edit ``sepia/SpecifyToolboxesDirectory.m`` accordingly. More detailed information on installing SEPIA and its 
-dependencies can be found `here <https://sepia-documentation.readthedocs.io/en/latest/getting_started/Installation.html>`__.
+After installing these, update ``sepia/SpecifyToolboxesDirectory.m`` with the correct paths. Reference information
+on installing SEPIA and its external dependencies can be found in the
+`SEPIA Documentation <https://sepia-documentation.readthedocs.io/en/latest/getting_started/Installation.html>`__.
+
+Optional Dependencies
+~~~~~~~~~~~~~~~~~~~~~
+
+A few tools are required for some of the QuIDBBIDS workers:
+
+* **FreeSurfer (mri_synthstrip)**. FreeSurfer's `mri_synthstrip` is the preferred brain extraction tool used in QuIDBBIDS
+  preprocessing. However, it is not strictly needed, as QuIDBBIDS will use the BET implementation distributed by the (already
+  installed) MEDI toolbox as a fallback.
+* **MRtrix3 (fod2fixel, fixel2voxel, fixel2peaks)**. The diffusion informed myelin-water (DI-MWI) model estimation requires
+  pre-processed BIDS derivative DWI data that follows the `qsirecon <https://qsirecon.readthedocs.io>`__ conventions. In such
+  workflows QuIDBBIDS will convert the qsirecon data to fixel representations, which requires
+  `MRtrix3 <https://www.mrtrix.org/>`__ to be present on your system.
+
+Version Selection
+-----------------
+
+If you have installed QuIDBBIDS with Git, you can rapidly switch between versions:
+
+.. code-block:: console
+
+   cd QuIDBBIDS
+   git tag                                  # List all release versions (e.g., v1.0.0, v1.1.0)
+   git checkout v1.0.1                      # Switch to a specific release
+   git checkout HEAD                        # Or switch to the latest version
+   git submodule update --init --recursive  # Initialize submodules for this version
+
+To use the very latest (unstable) software, you can switch to the ``dev`` branch:
+
+.. code-block:: console
+
+   git switch -c dev origin/dev             # Create and checkout dev branch
+   git switch dev                           # Switch to existing dev branch
+   git submodule update --init --recursive  # Initialize submodules for this version
+
+In case of trouble, to forcefully reset your installation to, say, the latest version run:
+
+.. code-block:: console
+
+   git reset --hard HEAD   # NB: This will discard any local changes you may have made to the repository
+   git submodule update --init --recursive
 
 Updating QuIDBBIDS
 ------------------
 
-If you installed QuIDBBIDS using Git, navigate to your local repository and run:
+To update a Git installed QuIDBBIDS and all its dependencies to the latest version, navigate to your local repository and run:
 
 .. code-block:: console
 
    git pull --tags --recurse-submodules
 
-This updates QuIDBBIDS and all dependencies to the latest version on the current branch.
-To update to a specific release tag instead, use:
+.. note::
 
-.. code-block:: console
-
-   git tag                        # List available versions (e.g., v1.0.0, v1.0.1, v1.1.0)
-   git checkout v1.1.0            # Check out a specific version
-   git submodule update --init --recursive
+   If you are using the ``dev`` branch, then your default config file in your home directory will not be updated by
+   ``git pull``. You should therefore always run ``qb.resetconfig()`` after pulling the dev updates.

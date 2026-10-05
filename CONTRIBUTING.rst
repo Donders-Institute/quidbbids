@@ -68,7 +68,7 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
    .. code-block:: bash
 
       >> runtests('tests')                                   # Run this from the quidbbids directory or use MATLAB's built-in `Test Browser App``
-      $ docs/make html                                       # For the docs, run this to generate the files locally and open `docs/_build/html/index.html`
+      $ docs/make html                                       # After editing doc files, run this to generate a local RTD page: `docs/_build/html/index.html`
       $ git commit -am "A SHORT DESCRIPTION OF THE CHANGES"  # Run this every time you have made a set of changes that belong together
       $ git push -u origin topic_of_your_contribution        # Run this when you are done and the tox tests are passing
 

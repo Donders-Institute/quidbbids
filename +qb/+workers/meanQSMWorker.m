@@ -69,7 +69,7 @@ methods (Access = private)
         %AVERAGE_CHIMAP Computes the S0^2-weighted mean of the QSM Chi-maps over the flip angles
 
         import qb.utils.write_vol
-        import qb.utils.spm_volcd 
+        import qb.utils.spm_vol 
 
         % Get the QSM workitems we need from a colleague (instead of just getting the files, use the filters to get the right runs ourselves)
         [~, S0filter]   = obj.ask_team('S0map');

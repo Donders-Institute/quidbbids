@@ -174,21 +174,10 @@ methods (Access = private)
         MP2RAGE.TIs         = [inv1.InversionTime inv2.InversionTime];      % Inversion times - time between middle of refocusing pulse and excitatoin of the k-space center encoding
         MP2RAGE.FlipDegrees = [inv1.FlipAngle     inv2.FlipAngle];          % Flip angle of the two readouts in degrees
         MP2RAGE.InvEff      = config.InvEff;                                % Inversion efficiency of the adiabatic inversion pulse
-
-        if isstr(config.NumberShots)
-            MP2RAGE.NumberShots = str2num(config.NumberShots);
-        else
-            MP2RAGE.NumberShots = (config.NumberShots);
-
-        end
         assert(~isempty(MP2RAGE.NumberShots) && MP2RAGE.NumberShots > 0, "QuIDBBIDS:MP2RAGEWorker:InvalidNumberShots", "The NumberShots parameter must be a positive integer. Please set it in the configuration file.")
         if isempty(config.EchoSpacing)
             if isfield(inv1, 'RepetitionTimeExcitation')
-                if isstr(inv1.RepetitionTimeExcitation)
-                    config.EchoSpacing = str2num(inv1.RepetitionTimeExcitation);         % TR of the GRE readout in seconds
-                else
-                    config.EchoSpacing = (inv1.RepetitionTimeExcitation);         % TR of the GRE readout in seconds
-                end
+                config.EchoSpacing = (inv1.RepetitionTimeExcitation);       % TR of the GRE readout in seconds
             else
                 config.EchoSpacing = 2 * inv1.EchoTime;                     % 2*EchoTime can be used as a surrogate
             end

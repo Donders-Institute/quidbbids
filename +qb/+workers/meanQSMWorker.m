@@ -8,7 +8,7 @@ properties (Constant)
     description = ["mean QSM worker ."
                    ""
                    "meanQSMWorker combines separately computed Quantitative Susceptibility Mapping (QSM) outputs into a single"
-                   "susceptibility maptaking account the SNR of each acquisition."
+                   "susceptibility map, taking account the SNR of each acquisition."
                    ""
                    "Methods:"
                    "--------"

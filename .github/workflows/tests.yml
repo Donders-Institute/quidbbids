@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [dev]
+    branches: ['*']
   pull_request:
-    branches: [main, dev]
+    branches: ['*']
 
 jobs:
   matlab-tests:

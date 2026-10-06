@@ -8,7 +8,7 @@ properties (Constant)
     description = ["mean QSM worker ."
                    ""
                    "meanQSMWorker combines separately computed Quantitative Susceptibility Mapping (QSM) outputs into a single"
-                   "susceptibility maptaking account the SNR of each acquisition."
+                   "susceptibility map, taking account the SNR of each acquisition."
                    ""
                    "Methods:"
                    "--------"
@@ -22,7 +22,7 @@ properties (Constant)
                    "   The SCR model is appropriate for tissues with relatively homogeneous microstructure or when"
                    "   the primary goal is to obtain average parameter values rather than compartment-specific estimates."
                    "   For myelin water imaging, consider using MCRWorker or MCR_GPUWorker instead."]   % Description should be in ReStructuredText format
-    needs       = ["ME4Dmag", "TB1map_GRE", "brainmask", "S0map", "Chimap", "localfmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["S0map", "Chimap", "localfmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 

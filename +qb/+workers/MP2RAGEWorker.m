@@ -27,8 +27,8 @@ properties (Constant)
                    ".. note::"
                    ""
                    "   Accurate T1 estimation requires careful configuration of ``NumberShots`` (number of slices in"
-                   "   the inversion segment) and ``EchoSpacing`` (TR of the GRE readout). Incorrect values may lead"
-                   "   to systematic biases in T1 estimates, particularly at high field strengths."]    % Description should be in ReStructuredText format
+                   "   the inversion segment) and ``EchoSpacing`` (TR of the GRE readout). Incorrect values lead"
+                   "   to systematic biases in T1 estimates."]    % Description should be in ReStructuredText format
     needs       = ["rawUNIT1", "rawINV1", "rawINV2", "TB1map_anat", "TB1map_angle"]     % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
@@ -166,7 +166,7 @@ methods (Access = private)
         % config.InvEff      - Inversion efficiency of the adiabatic inversion pulse
         % config.EchoSpacing - The RepetitionTimeExcitation value in secs that typically is not given on the json file. Default: twice the echo time
         % config.NumberShots - The number of shots (slices) in the inner loop (inversion segment), the json file doesn't usually accommodate this
-        
+
         % Extract the relevant MP2RAGE parameters from the BIDS metadata
         inv1                = bids.File(char(INV1)).metadata;
         inv2                = bids.File(char(INV2)).metadata;

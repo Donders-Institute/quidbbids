@@ -80,7 +80,7 @@ classdef TestCoordinator < BaseTest
             end
 
             % Ensure get_resumes returns is properly masked when there are raw subject folders in the BIDS folder
-            testCase.verifyEqual(fieldnames(testCase.quidb_megre.resumes), {'MEGREprepWorker'; 'QSMWorker'})
+            testCase.verifyEqual(fieldnames(testCase.quidb_megre.resumes), {'MEGREprepWorker'; 'QSMWorker'; 'meanQSMWorker'})
             testCase.verifyLessThan(length(testCase.quidb_megre.catalog()), 15, "There should be less than fifteen work-items in the catalog")
         end
 

@@ -130,7 +130,7 @@ methods
     end
 
     function manager = get_manager(obj)
-        %GET_MANAGER Initialzes a workflow manager to get work done
+        %GET_MANAGER Initializes a workflow manager to get work done
         %
         % See also: qb.workers.Manager
 

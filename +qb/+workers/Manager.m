@@ -7,7 +7,7 @@ classdef Manager < handle
 % Workflow:
 %   0. User initializes the coordinator, sets config parameters and deliverables, and creates the Manager
 %   1. Manager loads an existing workflow from the output directory (if present) and asks user
-%      what workitems to force, i.e. recompute if already present instead of re-using them.
+%      what workitems to force, i.e. recompute if already present instead of reusing them.
 %   2. Manager assembles a team that can make the deliverables (and asks the user for help if needed)
 %   3. Manager saves the workflow settings in the derivative output folder
 %   4. Manager puts the team to work (subject by subject or in parallel):
@@ -527,7 +527,7 @@ methods (Access = private)
             forcedflow = unique([forcedflow; bfsearch(prunedflow, worker)]);
         end
 
-        % Highligt the forcedflow edges
+        % Highlight the forcedflow edges
         if isvalid(findall(groot, Tag='workflow_axes'))
 
             % Start with a new workflow

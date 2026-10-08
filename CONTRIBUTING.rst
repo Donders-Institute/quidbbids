@@ -40,7 +40,8 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
    .. code-block:: bash
 
       $ python -m venv docs/venv        # Or use any other tool (such as conda)
-      $ source docs/venv/bin/activate   # On Linux, see the documentation for other operating systems
+      $ source docs/venv/bin/activate   # On Linux
+      > .\docs\venv\Scripts\activate    # On Windows, see the documentation for other operating systems
       $ pip install -r docs/requirements.txt
 
 4. When you wish to start working on your contribution, create a new branch:
@@ -63,12 +64,25 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
       $ git submodule add -b [BRANCH] [https://REPO_URL/PACKAGE.git] dependencies/[PACKAGE]
       $ git commit -m "Add [PACKAGE] submodule in dependencies"
 
-6. When you are done with coding, you should then test, commit and push your work to GitHub:
+6. Now you can edit the code as you like. If you are working on the RTD documentation, you can build the html pages locally with:
+
+   .. code-block:: bash
+
+      # Do this once after opening a new terminal
+      $ source docs/venv/bin/activate  # On Linux
+      > .\docs\venv\Scripts\activate   # On Windows, see the documentation for other operating systems
+
+      # Run this every time you made edits and want to see a preview of your changes
+      $ docs/make html                 # Generate the local html pages on Linux
+      > .\docs\make.bat html           # Same as above, but for Windows. See the documentation for other operating systems
+
+   Now you can find a newly generated local html page in `docs/_build/html/index.html`. Open it with any web browser to see a preview of your doc edits.
+
+7. When you are done with coding, you should then test, commit and push your work to GitHub:
 
    .. code-block:: bash
 
       >> runtests('tests')                                   # Run this from the quidbbids directory or use MATLAB's built-in `Test Browser App``
-      $ docs/make html                                       # After editing doc files, run this to generate a local RTD page: `docs/_build/html/index.html`
       $ git commit -am "A SHORT DESCRIPTION OF THE CHANGES"  # Run this every time you have made a set of changes that belong together
       $ git push -u origin topic_of_your_contribution        # Run this when you are done and the tox tests are passing
 

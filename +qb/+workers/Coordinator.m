@@ -23,6 +23,7 @@ end
 methods (Abstract)
     config = get_config(obj, config)   % Reads CONFIG from the configuration file or writes to it if CONFIG is given
     edit_config(obj)                   % Opens a GUI to edit the processing options
+    edit_inclusion(obj)                % Opens a GUI to edit the BIDS inclusion filter
 end
 
 

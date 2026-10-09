@@ -1,5 +1,8 @@
 classdef ConfigEditor < handle
-% ConfigEditor is a GUI-based JSON config editor
+% ConfigEditor is a GUI-based JSON config editor for QuIDBBIDS. It allows users
+% to view and edit configuration parameters in a structured way, with support for
+% searching, resetting, and saving configurations. The General.BIDS(.include)
+% subtree is hidden to avoid issues (as editing it requires re-scanning of BIDS)
 %
 % Input:
 %  CONFIGFILE - If empty or not provided, a file dialog is opened.
@@ -16,7 +19,6 @@ properties
     Fig
     ConfigFile
     Config
-    BIDS
 end
 
 properties (Access = ?TestConfigEditorGUI)
@@ -39,7 +41,7 @@ end
 
 methods
     
-    function obj = ConfigEditor(configfile, config, workers, BIDS)
+    function obj = ConfigEditor(configfile, config, workers)
         % CONFIGEDITORGUI Constructor to validate input and ask for file if needed
         %
         % See the QB.CONFIGEDITOR wrapper for usage
@@ -64,18 +66,11 @@ methods
         obj.Config     = config;
         obj.OrigConfig = config;
 
-        % To be used only for config.General.BIDS.include editing
-        if nargin < 4 || isempty(BIDS)
-            obj.BIDS = struct();
-        else
-            obj.BIDS = BIDS;
-        end
-
         % Set the workers that are to be edited
         if nargin < 3
             workers = {};
         end
-        obj.Workers = workers;
+        obj.Workers = cellstr(workers);
 
         % Build the GUI
         obj.buildGUI()
@@ -174,11 +169,15 @@ methods (Access = ?TestConfigEditorGUI)
     end
 
     function buildSubtree(obj, parentNode, value)
-        % recursively add children to the tree up to leaves
+        % recursively add children to the tree up to leaves, except General.BIDS(.include)
 
         for nm = fieldnames(value)'
             child = value.(nm{1});
-            node  = uitreenode(parentNode, Text=nm{1}, NodeData=child);
+            % Skip/don't built/show if a leaf is about BIDS (as that needs re-scanning)
+            if strcmp(parentNode.Text, 'General') && strcmp(nm{1}, 'BIDS')
+                continue
+            end
+            node = uitreenode(parentNode, Text=nm{1}, NodeData=child);
             if ~obj.isLeaf(child)
                 obj.buildSubtree(node, child)
             end
@@ -301,116 +300,83 @@ methods (Access = ?TestConfigEditorGUI)
             return
         end
         
-        % Check if this leaf is a BIDS include filter and use the separate EditInclude to edit it, else parse robustly
+        % Try robust parsing of the entered user data in the field
+        % - If oldVal is empty: try JSON decode
+        % - If oldVal numeric: try JSON decode or str2num
+        % - If oldVal logical: accept true/false/1/0
+        % - If oldVal is char/string: accept as string (if user provided JSON string decode if quoted)
+        % - For cell/struct/array: prefer jsondecode
         data     = node.NodeData;
         oldVal   = data.value;
         newVal   = oldVal;
         parsedOK = false;
-        if numel(path)==3 && all(strcmp(path, {'General','BIDS','include'}))
-
-            bidsdir = fileparts(fileparts(fileparts(fileparts(obj.ConfigFile))));   % ConfigFile is normally in bidsdir/derivatives/QuIDBBIDS/code/config.json
-            if isempty(fieldnames(obj.BIDS)) && isfolder(bidsdir)
-                w = helpdlg('Scanning BIDS dataset with the inclusion filter...', 'Please wait'); pause(0.1)    % Give time to render the dialog
-                obj.BIDS = bids.layout(char(bidsdir), use_schema        = true, ...
-                                                      index_derivatives = false, ...
-                                                      filter            = obj.Config.General.BIDS.include.value, ...
-                                                      tolerant          = true, ...
-                                                      verbose           = true);
-                if isvalid(w), close(w), end
-            end
-            if ~isempty(fieldnames(obj.BIDS))
-                obj.Fig.Visible = 'off';                                    % Hide main GUI while EditInclude is open
-                cleanup = onCleanup(@() set(obj.Fig, 'Visible', 'on'));     % Ensure main GUI is shown again on function exit
-                newVal             = qb.GUI.EditInclude(obj.Config.General.BIDS.include.value, obj.BIDS).waitForResult();
-                parsedOK           = ~isempty(fieldnames(newVal));
-                obj.ValField.Value = jsonencode(newVal);
-                if ~isequal(obj.Config.General.BIDS.include.value.modality, newVal.modality) || isfield(newVal, 'sub') || isfield(newVal, 'ses')
-                    w = helpdlg('Re-scanning BIDS dataset with the new inclusion filter...', 'Please wait'); pause(0.1) % Give time to render the dialog
-                    obj.BIDS = bids.layout(char(bidsdir), use_schema        = true, ...
-                                                          index_derivatives = false, ...
-                                                          filter            = newVal, ...
-                                                          tolerant          = true, ...
-                                                          verbose           = true);
-                    if isvalid(w), close(w), end
-                end
-            end
-
-        else
-
-            % Try robust parsing:
-            % - If oldVal is empty: try JSON decode
-            % - If oldVal numeric: try JSON decode or str2num
-            % - If oldVal logical: accept true/false/1/0
-            % - If oldVal is char/string: accept as string (if user provided JSON string decode if quoted)
-            % - For cell/struct/array: prefer jsondecode
-            try
-                txt = strip(obj.ValField.Value);
-                if isempty(txt)
-                    newVal   = "";
-                    parsedOK = true;
-                elseif isempty(oldVal) || isequal(oldVal, "")
-                    newVal   = jsondecode(txt);
-                    parsedOK = true;
-                elseif isnumeric(oldVal)
-                    % If user typed JSON array like [1,2,3], jsondecode will work
-                    if startsWith(txt,'[') && endsWith(txt,']') && contains(txt,',')
-                        try
-                            newVal   = jsondecode(txt);
-                            parsedOK = isnumeric(newVal) || islogical(newVal);
-                        catch                   % fallback to str2num
-                            newVal   = str2num(txt); %#ok<ST2NM>
-                            parsedOK = ~isempty(newVal);
-                        end
-                    else
+        try
+            txt = strip(obj.ValField.Value);
+            if isempty(txt)
+                newVal   = "";
+                parsedOK = true;
+            elseif isempty(oldVal) || isequal(oldVal, "")
+                newVal   = jsondecode(txt);
+                parsedOK = true;
+            elseif isnumeric(oldVal)
+                % If user typed JSON array like [1,2,3], jsondecode will work
+                if startsWith(txt,'[') && endsWith(txt,']') && contains(txt,',')
+                    try
+                        newVal   = jsondecode(txt);
+                        parsedOK = isnumeric(newVal) || islogical(newVal);
+                    catch                   % fallback to str2num
                         newVal   = str2num(txt); %#ok<ST2NM>
                         parsedOK = ~isempty(newVal);
                     end
+                else
+                    newVal   = str2num(txt); %#ok<ST2NM>
+                    parsedOK = ~isempty(newVal);
+                end
 
-                elseif islogical(oldVal)
-                    if any(strcmpi(txt,{'true','1'}))
-                        newVal   = true;
-                        parsedOK = true;
-                    elseif any(strcmpi(txt,{'false','0'}))
-                        newVal   = false;
-                        parsedOK = true;
-                    else
-                        try
-                            newVal = jsondecode(txt);
-                            if islogical(newVal)
-                                parsedOK = true;
-                            end
-                        catch
-                        end
-                    end
-
-                elseif ischar(oldVal) || isstring(oldVal)
-                    try         % If user provided JSON string with quotes, decode it
-                        decoded = jsondecode(txt);
-                    catch
-                        decoded = [];
-                    end
-                    if ~isempty(decoded) && ischar(decoded)
-                        newVal = string(decoded);
-                    else        % plain text: keep as string
-                        newVal = string(txt);
-                    end
+            elseif islogical(oldVal)
+                if any(strcmpi(txt,{'true','1'}))
+                    newVal   = true;
                     parsedOK = true;
-
-                else            % struct/cell/other: attempt jsondecode
+                elseif any(strcmpi(txt,{'false','0'}))
+                    newVal   = false;
+                    parsedOK = true;
+                else
                     try
-                        newVal   = jsondecode(txt);
-                        parsedOK = true;
-                    catch       % as a last resort, attempt eval (risky) only for numeric arrays
-                        try
-                            newVal   = str2num(txt); %#ok<ST2NM>
-                            parsedOK = ~isempty(newVal);
-                        catch
+                        newVal = jsondecode(txt);
+                        if islogical(newVal)
+                            parsedOK = true;
                         end
+                    catch
                     end
                 end
-            catch
-                parsedOK = false;
+
+            elseif ischar(oldVal) || isstring(oldVal)
+                try         % If user provided JSON string with quotes, decode it
+                    decoded = jsondecode(txt);
+                catch
+                    decoded = [];
+                end
+                if ~isempty(decoded) && ischar(decoded)
+                    newVal = string(decoded);
+                else        % plain text: keep as string
+                    newVal = string(txt);
+                end
+                parsedOK = true;
+
+            else            % struct/cell/other: attempt jsondecode
+                try
+                    newVal   = jsondecode(txt);
+                    parsedOK = true;
+                catch       % as a last resort, attempt eval (risky) only for numeric arrays
+                    try
+                        newVal   = str2num(txt); %#ok<ST2NM>
+                        parsedOK = ~isempty(newVal);
+                    catch
+                    end
+                end
             end
+        catch
+            parsedOK = false;
         end
 
         if ~parsedOK
@@ -768,7 +734,7 @@ methods (Access = ?TestConfigEditorGUI)
         if isempty(obj.ConfigFile)
             windowTitle = 'QuIDBBIDS Config Editor - No file loaded';
         else
-            pathParts = strsplit(obj.ConfigFile, filesep);
+            pathParts = split(obj.ConfigFile, filesep);
             if length(pathParts) > 5
                 displayPath = fullfile('...', pathParts{end-2:end});
             else

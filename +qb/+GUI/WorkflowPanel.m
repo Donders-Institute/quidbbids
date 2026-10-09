@@ -33,9 +33,10 @@ methods
         mainGrid.Padding       = [20 20 20 10];   % [left bottom right top]
 
         % Config buttons
-        buttonGrid = uigridlayout(mainGrid, [5 1], RowHeight = {'fit', 'fit', 'fit', 'fit', 'fit'});
+        buttonGrid = uigridlayout(mainGrid, [6 1], RowHeight = {'fit', 'fit', 'fit', 'fit', 'fit', 'fit'});
+        uibutton(buttonGrid, Text='🔍 Inclusion', Enable='on',  ButtonPushedFcn=@(~,~) coord.edit_inclusion(), Tooltip='Edit the raw BIDS inclusion filter');
         uibutton(buttonGrid, Text='🛒 Catalog',   Enable='on',  ButtonPushedFcn=@(~,~) obj.set_deliverables(), Tooltip='Select deliverables from the workitems catalog');
-        uibutton(buttonGrid, Text='🔧 Edit',      Enable='off', ButtonPushedFcn=@(~,~) coord.edit_config(),    Tooltip='Edit worker configurations');
+        uibutton(buttonGrid, Text='🔧 Config',    Enable='off', ButtonPushedFcn=@(~,~) coord.edit_config(),    Tooltip='Edit worker configurations');
         uibutton(buttonGrid, Text='📂 Outputdir', Enable='off', ButtonPushedFcn=@(~,~) obj.outputdir(),        Tooltip='Set the directory where output data will be saved');
         uibutton(buttonGrid, Text='📂 Workdir',   Enable='off', ButtonPushedFcn=@(~,~) obj.workdir(),          Tooltip='Set the directory where working data will be saved');
         uibutton(buttonGrid, Text='↺ Reset',      Enable='off', ButtonPushedFcn=@(~,~) obj.reset_config(),     Tooltip='Clear all deliverables and reset the workflow graph');
@@ -63,16 +64,6 @@ methods
 
     end
 
-    function outputdir(obj)
-        % Callback for Outputdir button
-        obj.coord.outputdir = uigetdir(obj.coord.outputdir, 'Select output directory');
-    end
-
-    function workdir(obj)
-        % Callback for Workdir button
-        obj.coord.workdir = uigetdir(obj.coord.workdir, 'Select work directory');
-    end
-
     function set_deliverables(obj)
         % Callback for Catalog button
         
@@ -93,11 +84,53 @@ methods
         end
     end
 
+    function outputdir(obj)
+        % Callback for Outputdir button
+        
+        % Get the new output directory
+        olddir = obj.coord.outputdir;
+        newdir = uigetdir(olddir, 'Select output directory');
+        if isequal(olddir, newdir) || isempty(newdir)
+            return
+        end
+        obj.coord.outputdir = string(newdir);
+
+        % Rename or initialize the output directory
+        if isempty(dir(fullfile(olddir, 'sub-*'))) && isempty(dir(fullfile(olddir, 'logs')))
+            rename(olddir, newdir)
+        elseif ~isfile(fullfile(newdir, 'dataset_description.json'))
+            bids.init(newdir, 'is_derivative', true)
+            copyfile(fullfile(olddir, 'dataset_description.json'), newdir)
+            copyfile(fullfile(olddir, 'code'), newdir)
+        end
+    end
+
+    function workdir(obj)
+        % Callback for Workdir button
+        
+        % Get the new work directory
+        olddir = obj.coord.workdir;
+        newdir = uigetdir(olddir, 'Select work directory');
+        if isequal(olddir, newdir) || isempty(newdir)
+            return
+        end
+        obj.coord.workdir = string(newdir);
+
+        % Rename or initialize the work directory
+        if isempty(dir(fullfile(olddir, 'sub-*')))
+            rename(olddir, newdir)
+        elseif ~isfile(fullfile(newdir, 'dataset_description.json'))
+            bids.init(newdir, 'is_derivative', true)
+            copyfile(fullfile(olddir, 'dataset_description.json'), newdir)
+        end
+    end
+
     function reset_config(obj)
         % Callback for Reset button
-        set(findobj(obj.Fig, Type='uibutton', Enable='on'), Enable='off')
-        set(findobj(obj.Fig, Type='uibutton', Text='🛒 Catalog'), Enable='on')
-        obj.coord.deliverables = "";
+        set(findobj(obj.Fig, Type='uibutton', Enable='on'        ), Enable='off')
+        set(findobj(obj.Fig, Type='uibutton', Text='🔍 Inclusion'), Enable='on')
+        set(findobj(obj.Fig, Type='uibutton', Text='🛒 Catalog'  ), Enable='on')
+        obj.coord.deliverables = [];
         obj.coord.manager      = [];
         obj.coord.config       = obj.coord.get_config();
         obj.coord.resumes      = obj.coord.get_resumes();

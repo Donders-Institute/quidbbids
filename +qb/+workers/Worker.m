@@ -311,7 +311,7 @@ methods
 
     function label = sub(obj)
         %SUB Gets the sub-label from the subject data-structure, e.g. 'sub-001' -> '001'
-        label = strsplit(obj.subject.name, '-');
+        label = split(obj.subject.name, '-');
         label = label{end};
         if isempty(label)
             obj.logger.warning('Subject label could not be determined from subject.name: %s', obj.subject.name)
@@ -320,7 +320,7 @@ methods
 
     function label = ses(obj)
         %SES Gets the ses-label from the subject data-structure, e.g. 'ses-01' -> '01'
-        label = strsplit(obj.subject.session, '-');
+        label = split(obj.subject.session, '-');
         label = label{end};
     end
 

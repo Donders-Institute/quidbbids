@@ -1,4 +1,4 @@
-function [configfile, config] = configeditor(configfile, config, workers, BIDS)
+function [configfile, config] = configeditor(configfile, config, workers)
 % [CONFIGFILE, CONFIG] = CONFIGEDITOR(CONFIGFILE, WORKERS)
 % 
 % Opens a GUI for editing QuIDBBIDS configuration files
@@ -10,7 +10,6 @@ function [configfile, config] = configeditor(configfile, config, workers, BIDS)
 %                then it is loaded from CONFIGFILE.
 %   WORKERS    - Cell array of worker names to edit. If empty or not provided,
 %                all workers are included.
-%   BIDS       - BIDS layout object to be used for editing BIDS inclusion filters
 %
 % Outputs:
 %   CONFIGFILE - Path to the configuration file used
@@ -18,19 +17,18 @@ function [configfile, config] = configeditor(configfile, config, workers, BIDS)
 % 
 % Example:
 %   [configfile, config] = qb.configeditor();
-%   [configfile, config] = qb.configeditor('config.json', {'General', 'QSMWorker'})
+%   [configfile, config] = qb.configeditor('config.json', [], {'General', 'QSMWorker'})
 
 arguments
     configfile {mustBeTextScalar} = ''
     config     struct             = []          % Configuration struct loaded from the config file
-    workers    cell               = {}
-    BIDS       struct             = struct()    % BIDS layout object to be used for editing BIDS inclusion filters
+    workers                       = {}
 end
 
-app = qb.GUI.ConfigEditor(configfile, config, workers, BIDS);
+app = qb.GUI.ConfigEditor(configfile, config, workers);
 
 if nargout
     uiwait(app.Fig);   % Pause until window closes
     configfile = app.ConfigFile;
-    config = app.Config;
+    config     = app.Config;
 end

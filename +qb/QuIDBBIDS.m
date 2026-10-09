@@ -13,8 +13,8 @@ classdef (Sealed) QuIDBBIDS < qb.workers.Coordinator
 %
 % Quick start - Create a QuIDBBIDS object for your BIDS dataset:
 %
-%   quidb = qb.QuIDBBIDS();               % Select BIDS root directory via GUI
-%   quidb = qb.QuIDBBIDS(bids_dir);       % Specify BIDS root directory
+%   quidb = qb.QuIDBBIDS();               % Start the main QuIDBBIDS GUI (Workflow Control)
+%   quidb = qb.QuIDBBIDS(bids_dir);       % Start in CLI mode with the specified BIDS root directory
 %   quidb = qb.QuIDBBIDS(bids_dir, ..);   % See constructor help for more details
 %
 % For comprehensive documentation with tutorials, examples, and API reference:
@@ -22,6 +22,11 @@ classdef (Sealed) QuIDBBIDS < qb.workers.Coordinator
 %   <a href="matlab: web('https://quidbbids.readthedocs.io')">Documentation on Read the Docs</a>
 %
 % For more concise help on using a QuIDBBIDS object and its methods:
+
+
+properties
+    fullBIDS = []   % The full unfiltered BIDS layout
+end
 
 
 methods
@@ -32,7 +37,7 @@ methods
         % OBJ = QuIDBBIDS(BIDSDIR, OUTPUTDIR, CONFIGFILE)
         %
         % Inputs:
-        %   BIDSDIR    - Path to the root BIDS dataset directory. Default = user dialogue
+        %   BIDSDIR    - Path to the root BIDS dataset directory. Default = start the main QuIDBBIDS GUI
         %   OUTPUTDIR  - Path to the QuIDBBIDS derivatives directory where output will be written.
         %                Default: [BIDSDIR]/derivatives/QuIDBBIDS
         %   WORKDIR    - Working directory for intermediate results. Default: [BIDSDIR]/derivatives/QuIDBBIDS_work.
@@ -41,8 +46,8 @@ methods
         %                the QuIDBBIDS folder in your HOME directory. Default: [OUTPUTDIR]/code/config.json
         %
         % Usage:
-        %   quidb = qb.QuIDBBIDS();             % Select BIDS root directory via GUI
-        %   quidb = qb.QuIDBBIDS(bids_dir);     % Specify BIDS root directory
+        %   quidb = qb.QuIDBBIDS();             % Start the main QuIDBBIDS GUI
+        %   quidb = qb.QuIDBBIDS(bids_dir);     % Start in CLI mode with the specified BIDS root directory
         %   etc.
         %
         % See also: qb.QuIDBBIDS (for overview)
@@ -154,12 +159,41 @@ methods
         %
         % See also: qb.QuIDBBIDS (for overview) and qb.edit_config
 
+        % Use a full (unfiltered) BIDS layout for tagging the inclusion
+        icon = get(groot, 'defaultFigureIcon');
+        if isempty(obj.fullBIDS)
+            H = uifigure(Name='QuIDBBIDS Inclusion', Position=[400 400 400 100]);
+            uiprogressdlg(H, Title='Indexing unfiltered BIDS layout', Message='Please wait...', Icon=icon, Indeterminate='on');
+            obj.fullBIDS = bids.layout(char(obj.BIDS.pth), use_schema        = true, ...
+                                                           index_derivatives = false, ...
+                                                           tolerant          = true, ...
+                                                           verbose           = true);
+            close(H)
+        end
+
+        % Open the QuIDBBIDS GUI to edit the inclusion filter
         oldVal = obj.config.General.BIDS.include.value;
-        newVal = qb.GUI.EditInclude(oldVal, obj.BIDS).waitForResult();
-        if ~isequal(newVal.modality, oldVal.modality) || isfield(newVal, 'sub') || isfield(newVal, 'ses')
-            warning("QuIDBBIDS:Config:InclusionChanged", "The root of the BIDS inclusion filter has been changed. Please re-index the BIDS dataset")
+        newVal = qb.GUI.EditInclude(oldVal, obj.fullBIDS).waitForResult();
+        if isequal(oldVal, newVal)
+            return
         end
         obj.config.General.BIDS.include.value = newVal;
+
+        % Re-index the filtered BIDS layout with the new inclusion filter
+        H = uifigure(Name='QuIDBBIDS Inclusion', Position=[400 400 400 100]);
+        P = uiprogressdlg(H, Title='Indexing newly filtered BIDS layout', Message='Please wait...', Icon=icon, Indeterminate='on');
+        cleanup = onCleanup(@() close(H));
+        obj.BIDS = bids.layout(char(obj.BIDS.pth), use_schema        = true, ...
+                                                   index_derivatives = false, ...
+                                                   filter            = newVal, ...
+                                                   tolerant          = true, ...
+                                                   verbose           = true);
+        
+        % Update the resumes and redraw the workflow_mask/graph with the new inclusion filter
+        P.Title          = 'Getting finding workers for the filtered layout';
+        obj.resumes      = obj.get_resumes();
+        obj.deliverables = [];
+        obj.manager      = [];
     end
 
     function edit_config(obj)
@@ -170,7 +204,11 @@ methods
         %
         % See also: qb.QuIDBBIDS (for overview)
 
-        [obj.configfile, obj.config] = qb.configeditor(obj.configfile, obj.config, ['General'; fieldnames(obj.resumes)], obj.BIDS);
+        if isempty(obj.manager)
+            [obj.configfile, obj.config] = qb.configeditor(obj.configfile, obj.config, ['General'; fieldnames(obj.resumes)]);
+        else
+            [obj.configfile, obj.config] = qb.configeditor(obj.configfile, obj.config, ["General", obj.manager.team_members()]);
+        end
     end
 
     function config = get_config(obj, config)

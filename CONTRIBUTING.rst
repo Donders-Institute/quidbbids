@@ -40,7 +40,7 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
    .. code-block:: bash
 
       $ python -m venv docs/venv        # Or use any other tool (such as conda)
-      $ source docs/venv/bin/activate   # On Linux
+      $ source docs/venv/bin/activate   # On Linux and macOS
       > .\docs\venv\Scripts\activate    # On Windows, see the documentation for other operating systems
       $ pip install -r docs/requirements.txt
 
@@ -69,11 +69,11 @@ If you are unsure what that means, here is a set-up workflow you may wish to fol
    .. code-block:: bash
 
       # Do this once after opening a new terminal
-      $ source docs/venv/bin/activate  # On Linux
+      $ source docs/venv/bin/activate  # On Linux and macOS
       > .\docs\venv\Scripts\activate   # On Windows, see the documentation for other operating systems
 
       # Run this every time you made edits and want to see a preview of your changes
-      $ docs/make html                 # Generate the local html pages on Linux
+      $ docs/make html                 # Generate the local html pages on Linux and macOS
       > .\docs\make.bat html           # Same as above, but for Windows. See the documentation for other operating systems
 
    Now you can find a newly generated local html page in `docs/_build/html/index.html`. Open it with any web browser to see a preview of your doc edits.

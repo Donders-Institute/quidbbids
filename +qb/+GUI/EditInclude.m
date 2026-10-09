@@ -79,21 +79,23 @@ methods
 
         % Build the BIDS tree structure (without sidecars and hidden files)
         for file = dir(fullfile(obj.BIDS.pth, "**", "*"))'
-            if file.isdir || (startsWith(file.name, 'sub-') && endsWith(file.name, '.json')) || startsWith(file.name, '.')
-                continue
-            end
-            obj.addNodeToTree(fullfile(file.folder, file.name), obj.Tree)
+            obj.addNodeToTree(file, obj.Tree)
         end
 
         % Find and tag the included files
         obj.tagTree()
     end
     
-    function addNodeToTree(obj, fullPath, parentNode)
+    function addNodeToTree(obj, file, parentNode)
         % Add a file or directory node to the tree using a path->node map
+
+        % Skip sidecars and hidden files
+        if (startsWith(file.name, 'sub-') && endsWith(file.name, '.json')) || startsWith(file.name, '.')
+            return
+        end
         
         subPath = obj.BIDS.pth;
-        for part = strsplit(extractAfter(fullPath, [obj.BIDS.pth filesep]), filesep)                
+        for part = split(extractAfter(fullfile(file.folder,file.name), [obj.BIDS.pth filesep]), filesep)'
             subPath = fullfile(subPath, part{1});
             if isKey(obj.NodeMap, subPath)
                 parentNode = obj.NodeMap(subPath);
@@ -142,7 +144,7 @@ methods
     end
     
     function onCancel(obj)
-        % Callback for Cancel button
+        % Callback for Cancel button & close request
         obj.IncludeResult = obj.IncludeOriginal;
         delete(obj.Fig)
     end

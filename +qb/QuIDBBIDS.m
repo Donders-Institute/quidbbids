@@ -76,7 +76,7 @@ methods
             outputdir = fullfile(bidsdir, "derivatives", "QuIDBBIDS");  % See also: Coordinator constructor
         end
         if ~nargin && isfile(fullfile(outputdir, "code", "config.json")) && ...
-            strcmp(questdlg(["Would you like to reload previously saved settings from:","", outputdir, "","N.B. No will reset them to default",""], 'Config settings', 'Yes', 'No', 'Yes'), 'No')
+            strcmp(questdlg(["Would you like to reload previously saved settings from:","", outputdir, ""], 'Config settings', 'Reload', 'Reset', 'Reload'), 'Reset')
             configfile = "default";
         end
 
@@ -112,13 +112,16 @@ methods
         qb.addpath_deps()
 
         % Get or create the configuration settings
-        default = strcmp(configfile, "default");
-        if strlength(configfile) == 0 || default
+        isdefault = strcmp(configfile, "default");
+        if strlength(configfile) == 0 || isdefault
             P.Title = 'Deleting existing config file(s)';
             configfile = fullfile(outputdir, "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
-            if default && isfile(configfile)
+            if isdefault && isfile(configfile)
                 disp("🗑️ Deleting existing config file(s): " + configfile)
-                delete(configfile, fullfile(outputdir, "code", "workflow.mat"))
+                delete(configfile)
+                if isfile(fullfile(outputdir, "code", "workflow.mat"))
+                    delete(fullfile(outputdir, "code", "workflow.mat"))
+                end
             end
         elseif isfolder(configfile)
             error("QuIDBBIDS:Nifti:InvalidInputArgument", "The configfile must be a file, not a folder: %s", configfile)

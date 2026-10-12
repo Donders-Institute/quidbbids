@@ -174,15 +174,39 @@ methods (Access = private)
         MP2RAGE.TIs         = [inv1.InversionTime inv2.InversionTime];      % Inversion times - time between middle of refocusing pulse and excitatoin of the k-space center encoding
         MP2RAGE.FlipDegrees = [inv1.FlipAngle     inv2.FlipAngle];          % Flip angle of the two readouts in degrees
         MP2RAGE.InvEff      = config.InvEff;                                % Inversion efficiency of the adiabatic inversion pulse
+        if isempty(config.NumberShots)                                      % See also: https://github.com/bids-standard/bids-specification/issues/2435
+            if isfield(inv1, 'NumberShots') && ~isempty(inv1.NumberShots)
+                config.NumberShots = inv1.NumberShots;
+            else
+                if isfield(inv1, 'SlicesPerSlab') && ~isempty(inv1.SlicesPerSlab)
+                    nZSlices = inv1.SlicesPerSlab;
+                elseif isfield(inv1, 'ReconMatrixPE') && ~isempty(inv1.ReconMatrixPE)
+                    nZSlices = inv1.ReconMatrixPE;
+                else
+                    obj.logger.exception("QuIDBBIDS:MP2RAGEWorker:InvalidNumberShots", "'NumberShots' parameter could not be determined. Please set it in the MP2RAGEWorker configuration.")
+                end
+                PF = [];
+                if isfield(inv1, 'SlicePartialFourier') && ~isempty(inv1.SlicePartialFourier)
+                    PF = inv1.SlicePartialFourier;
+                elseif isfield(inv1, 'PartialFourierPE') && ~isempty(inv1.PartialFourierPE)
+                    PF = inv1.PartialFourierPE;
+                end
+                if PF
+                    config.NumberShots = nZSlices * [(PF - 0.5), 0.5];
+                else
+                    config.NumberShots = nZSlices;
+                end
+                obj.logger.verbose("'NumberShots' not found in MP2RAGEWorker settings, using heuristic value: %s", mat2str(config.NumberShots))
+            end
+        end
         MP2RAGE.NumberShots = config.NumberShots;
-        assert(~isempty(MP2RAGE.NumberShots) && MP2RAGE.NumberShots > 0, "QuIDBBIDS:MP2RAGEWorker:InvalidNumberShots", "The NumberShots parameter must be a positive integer. Please set it in the configuration file.")
         if isempty(config.EchoSpacing)
-            if isfield(inv1, 'RepetitionTimeExcitation')
+            if isfield(inv1, 'RepetitionTimeExcitation') && ~isempty(inv1.RepetitionTimeExcitation)
                 config.EchoSpacing = inv1.RepetitionTimeExcitation;         % TR of the GRE readout in seconds
             else
                 config.EchoSpacing = 2 * inv1.EchoTime;                     % 2*EchoTime can be used as a surrogate
+                obj.logger.verbose("'EchoSpacing' not found in MP2RAGEWorker settings, using heuristic 2*TE value: %s", config.EchoSpacing)
             end
-            obj.logger.verbose(['Extracted EchoSpacing: ' num2str(config.EchoSpacing)])
         end
         MP2RAGE.EchoSpacing = config.EchoSpacing;
     end

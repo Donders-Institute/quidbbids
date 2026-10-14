@@ -136,7 +136,7 @@ methods
     function onInputChanged(obj)
         % Callback when input field changes
         try
-            obj.IncludeCurrent = qb.utils.jsondecode(strjoin(obj.InputField.Value, newline));
+            obj.IncludeCurrent = jsondecode(strjoin(obj.InputField.Value, newline));
             obj.tagTree()
         catch ME
             uialert(obj.Fig, sprintf('Invalid JSON format: %s', ME.message), 'Parse Error')

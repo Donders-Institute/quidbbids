@@ -644,6 +644,7 @@ methods (Access = private)
 
     function config = flatvalues(obj, config)
         %FLATVALUES Recursively walks over the tree and replaces the struct("value",VAL, "description",DESC) leaves with VAL
+        % (for convenience in QuIDBBIDS usage)
 
         % Replace the leaf or recurse into each field
         if isfield(config, 'value') && isfield(config, 'description') && numel(fieldnames(config)) == 2

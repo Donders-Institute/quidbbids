@@ -239,8 +239,8 @@ The dictionary matching code is based on: https://github.com/JosePMarques/MP2RAG
 .. note::
 
    Accurate T1 estimation requires careful configuration of ``NumberShots`` (number of slices in
-   the inversion segment) and ``EchoSpacing`` (TR of the GRE readout). Incorrect values may lead
-   to systematic biases in T1 estimates, particularly at high field strengths.
+   the inversion segment) and ``EchoSpacing`` (TR of the GRE readout). Incorrect values lead
+   to systematic biases in T1 estimates.
 
 Properties
 ----------
@@ -343,9 +343,8 @@ SCRWorker
 
 Single Compartment Relaxometry (SCR) worker for combined relaxometry and susceptibility analysis.
 
-SCRWorker jointly estimates R1, R2* and M0 from multi-echo variable flip angle (VFA) GRE data, and
-combines separately computed Quantitative Susceptibility Mapping (QSM) outputs into a single
-susceptibility map. SCR assumes a single tissue compartment, suitable for applications where
+SCRWorker jointly estimates R1, R2* and M0 from multi-echo variable flip angle (VFA) GRE data.
+SCR assumes a single tissue compartment, suitable for applications where
 multi-compartment modeling is not required or when computational efficiency is prioritized.
 
 Methods:
@@ -357,10 +356,6 @@ Methods:
    Gauss-Newton refinement on the exact signal equation. Transmit field (B1+) inhomogeneity is
    accounted for. The fit runs on the CPU and supports variable flip angles as well as variable
    repetition and echo times.
-
-2. Chi Map Averaging:
-   Computes the weighted mean of the susceptibility (Chi) maps across flip angles. The weighting
-   uses S0^2 to emphasize voxels with higher signal intensity.
 
 .. note::
 
@@ -375,9 +370,9 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - ME4Dmag, TB1map_GRE, brainmask, S0map, Chimap, localfmask
+     - ME4Dmag, TB1map_GRE, brainmask
    - - ``makes``
-     - R2starmap_SCR, R1map_SCR, M0map_SCR, meanChimap
+     - R2starmap_SCR, R1map_SCR, M0map_SCR
    - - ``usesGPU``
      - false
 
@@ -440,7 +435,7 @@ meanQSMWorker
 mean QSM worker .
 
 meanQSMWorker combines separately computed Quantitative Susceptibility Mapping (QSM) outputs into a single
-susceptibility maptaking account the SNR of each acquisition.
+susceptibility map, taking account the SNR of each acquisition.
 
 Methods:
 --------
@@ -462,7 +457,7 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - ME4Dmag, TB1map_GRE, brainmask, S0map, Chimap, localfmask
+     - S0map, Chimap, localfmask
    - - ``makes``
      - meanChimap
    - - ``usesGPU``

@@ -415,6 +415,8 @@ methods
         %
         % See also: bids.query, obj.query_ses
 
+        import qb.utils.setfields
+
         % Parse the filter input
         bfilter = struct();
         if ~isempty(varargin) && isstruct(varargin{1})
@@ -422,18 +424,26 @@ methods
             varargin(1) = [];
         end
         if mod(length(varargin),2) ~= 0
-            obj.logger.exception('QUERY_SUB expects the FILTER to be either a struct, or name-value pairs or a struct followed by name-value pairs')
+            obj.logger.exception('QUERY_SUB/SES expects the FILTER to be either a struct, or name-value pairs or a struct followed by name-value pairs')
         end
 
         % Check if there is any data to query
+        layout = bids.layout(layout);  % Ensure layout is a bids.layout object
         if ~isfield(layout, 'subjects') || ~isfield(layout.subjects, 'name') || ~ismember(obj.subject.name, {layout.subjects.name})
             result = {};
             bfiles = {};
             return
         end
 
-        % Do the query with the subject + any additional filters added
-        result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), varargin{:}));
+        % Use the global (QuIDBBIDS) include filter for the raw BIDS layout
+        if ~isfield(layout, 'include') || layout.pth ~= obj.BIDS.pth
+            layout.include = struct();
+        end
+
+        % Do the query with the subject + any additional filters added, on top of the global include filter from the layout
+        bfilter = setfields(bfilter, 'sub',obj.sub(), varargin{:});
+        bfilter = [fieldnames(bfilter), struct2cell(bfilter)]';         % Convert to name-value pairs
+        result  = bids.query(layout, query, setfields(layout.include, bfilter{:}));
 
         % Postprocess the query result (i.e. fix the quirky bids.query behavior)
         switch query
@@ -453,7 +463,7 @@ methods
                     bfiles{n} = bids.File(result{n});
                 end
             else
-                obj.logger.warning("The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
+                obj.logger.error("The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
             end
         end
     end
@@ -481,46 +491,12 @@ methods
         %
         % See also: bids.query, obj.query_sub
 
-        % Parse the filter input
-        bfilter = struct();
+        % Handle struct input: if first varargin is a struct, insert ses filter into it
         if ~isempty(varargin) && isstruct(varargin{1})
-            bfilter = varargin{1};
-            varargin(1) = [];
-        end
-        if mod(length(varargin),2) ~= 0
-            obj.logger.exception('QUERY_SES expects the FILTER to be either a struct, or name-value pairs or a struct followed by name-value pairs')
-        end
-
-        % Check if there is any data to query
-        if ~isfield(layout, 'subjects') || ~isfield(layout.subjects, 'name') || ~ismember(obj.subject.name, {layout.subjects.name})
-            result = {};
-            bfiles = {};
-            return
-        end
-
-        % Do the query with the subject/session + any additional filters added
-        result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), 'ses',obj.ses(), varargin{:}));
-
-        % Postprocess the query result (i.e. fix the quirky bids.query behavior)
-        switch query
-            case {'metadata', 'dependencies'}
-                if isscalar(result) && ~iscell(result)
-                    result = {result};  % Always return a cell array
-                end
-        end
-        if size(result,2)==0 || size(result,1)>1
-            result = result';           % Always return a row array
-        end
-
-        if nargout > 1
-            bfiles = cell(size(result));
-            if strcmp(query, 'data')
-                for n = 1:numel(result)
-                    bfiles{n} = bids.File(result{n});
-                end
-            else
-                obj.logger.warning("The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
-            end
+            varargin{1}.ses = obj.ses();
+            [result, bfiles] = obj.query_sub(layout, query, varargin{:});
+        else
+            [result, bfiles] = obj.query_sub(layout, query, 'ses',obj.ses(), varargin{:});
         end
     end
 

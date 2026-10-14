@@ -52,9 +52,7 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        include                  = obj.config.General.BIDS.include;
-        obj.bidsfilter.rawMEGRE  = setfields(include, ...
-                                          modality = 'anat', ...
+        obj.bidsfilter.rawMEGRE  = struct(modality = 'anat', ...
                                           echo     = 1:999, ...
                                           suffix   = 'MEGRE');
         obj.bidsfilter.brainmask = struct(modality = 'anat', ...
@@ -71,8 +69,8 @@ methods (Access = protected)
         obj.bidsfilter.ME4Dphase = setfield(obj.bidsfilter.ME4Dmag, part='phase');
         
         % Constrain the raw input filters based on the BIDS include config
-        if all(cellfun('isempty', regexp(include.suffix, 'MEGRE')))
-            obj.bidsfilter.rawMEGRE = setfields(include, suffix='');    % MEGRE data is not to be included
+        if isfield(obj.BIDS,'include') && isfield(obj.BIDS.include,'suffix') && all(cellfun(@isempty, regexp(obj.BIDS.include.suffix, 'MEGRE')))
+            obj.bidsfilter.rawMEGRE = setfields(obj.BIDS.include, suffix='');    % MEGRE data is not to be included
         end
     end
 

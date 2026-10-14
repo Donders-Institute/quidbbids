@@ -204,15 +204,18 @@ classdef TestWorkers < BaseTest
             [result, bfiles] = worker.query_ses(testCase.BIDS, 'data');
             testCase.verifyClass(result, 'cell')
             testCase.verifyTrue(isrow(result), 'Result should be a row cell array')
+            testCase.verifySize(result, size(bfiles), 'Result and bfiles should have the same size')
             
             % Test query_ses with additional filters
             [result, bfiles] = worker.query_ses(testCase.BIDS, 'data', 'modality', 'anat');
             testCase.verifyClass(result, 'cell')
+            testCase.verifySize(result, size(bfiles), 'Result and bfiles should have the same size')
             
             % Test query_ses with struct filter
             filter = struct(modality = 'anat');
             [result, bfiles] = worker.query_ses(testCase.BIDS, 'data', filter);
             testCase.verifyClass(result, 'cell')
+            testCase.verifySize(result, size(bfiles), 'Result and bfiles should have the same size')
             
             % Test query_ses with metadata query
             result = worker.query_ses(testCase.BIDS, 'metadata');

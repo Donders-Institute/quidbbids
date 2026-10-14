@@ -14,13 +14,13 @@ function s = setfields(s, varargin)
 %
 %   Inputs:
 %       S                                       - Input struct
-%       field1 = value1, field2 = value2, ...   - Named Field-values to set
+%       field1=value1, field2=value2, ...       - Named Field-values to set
 %       'field1', value1, 'field2', value2, ... - Field-value pairs to set
 %
 %   See also: setfield
 
 if mod(length(varargin), 2) ~= 0
-    error('QuIDBBIDS:setfields:InvalidInput', 'Field-value pairs must be provided in pairs')
+    error('QuIDBBIDS:setfields:InvalidInput', 'Field-value pairs must be provided in pairs, but I got %d argument(s)', length(varargin));
 end
 
 for k = 1:2:length(varargin)

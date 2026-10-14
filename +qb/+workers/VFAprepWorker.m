@@ -65,9 +65,7 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        include                    = obj.config.General.BIDS.include;
-        obj.bidsfilter.rawMEVFA    = setfields(include, ...
-                                            modality = 'anat', ...
+        obj.bidsfilter.rawMEVFA    = struct(modality = 'anat', ...
                                             echo     = 1:999, ...
                                             flip     = 1:999, ...
                                             suffix   = '(VFA|MPM)');
@@ -95,8 +93,8 @@ methods (Access = protected)
         obj.bidsfilter.ME4Dphase   = parent.bidsfilter.ME4Dphase;
 
         % Constrain the raw input filters based on the BIDS include config (e.g. to disable the use of VFA data if only MPM data is included)
-        if all(cellfun('isempty', regexp(include.suffix, '(VFA|MPM)')))
-            obj.bidsfilter.rawMEVFA = setfields(include, suffix='');        % VFA data is not to be included
+        if isfield(obj.BIDS,'include') && isfield(obj.BIDS.include,'suffix') && all(cellfun(@isempty, regexp(obj.BIDS.include.suffix, '(VFA|MPM)')))
+            obj.bidsfilter.rawMEVFA = setfields(obj.BIDS.include, suffix='');        % VFA data is not to be included
         end
     end
 
@@ -121,17 +119,16 @@ methods
         end
 
         % Get the work done. For now, only process mt-off images, in the future we could also include mt-on images
-        include = obj.config.General.BIDS.include;
         for bfilter = {setfields(obj.bidsfilter.rawMEVFA, suffix='VFA'), setfields(obj.bidsfilter.rawMEVFA, mt='off', suffix='MPM')}
-            if all(cellfun('isempty', regexp(include.suffix, bfilter{1}.suffix)))              % A bit of an ugly hack, for now
+            if all(cellfun(@isempty, regexp(obj.BIDS.include.suffix, bfilter{1}.suffix)))  % TODO: A bit of an ugly hack, for now...
                 continue
             end
             if ~isempty(obj.query_ses(obj.BIDS, 'data', bfilter{1}))
                 obj.denoise_raw(bfilter{1})                                                 % Processing step 5a
                 obj.make_syntheticT1_M0(bfilter{1})                                         % Processing step 1
                 obj.coreg_VFA_B1_2synthetic(bfilter{1})                                     % Processing step 2+5b
-                create_brainmask(obj, obj.BIDS_ses(), bfilter{1})                          % Processing step 3
-                merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDS_ses()) % Processing step 4
+                create_brainmask(obj, obj.BIDS_ses(), bfilter{1})                           % Processing step 3
+                merge_MEVFAfiles(obj, setfield(bfilter{1}, desc='temp3D'), obj.BIDS_ses())  % Processing step 4
             else
                 obj.logger.verbose("No raw %s data found for: ", bfilter{1}.suffix, obj.subject.name)
             end

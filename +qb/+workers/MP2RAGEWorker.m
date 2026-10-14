@@ -43,7 +43,8 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.rawUNIT1    = setfields(obj.config.General.BIDS.include, modality='anat', suffix='UNIT1');
+        obj.bidsfilter.rawUNIT1    = struct(modality = 'anat', ...
+                                            suffix   = 'UNIT1');
         obj.bidsfilter.rawINV1     = setfields(obj.bidsfilter.rawUNIT1, inv=1, suffix='MP2RAGE');
         obj.bidsfilter.rawINV2     = setfields(obj.bidsfilter.rawINV1,  inv=2);
         obj.bidsfilter.R1map       = struct(modality = 'anat', ...

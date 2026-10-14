@@ -135,6 +135,7 @@ methods
                                           filter            = config.General.BIDS.include.value, ...
                                           tolerant          = true, ...
                                           verbose           = true);
+        BIDS.include = config.General.BIDS.include.value;       % Add the global include filter to the BIDS layout for later use in qb.workers.Worker.query_sub()/ses()
         obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
 
         % Add project metadata to the output folders
@@ -174,7 +175,7 @@ methods
             close(H)
         end
 
-        % Open the QuIDBBIDS GUI to edit the inclusion filter
+        % Open the QuIDBBIDS GUI to edit the global inclusion filter
         oldVal = obj.config.General.BIDS.include.value;
         newVal = qb.GUI.EditInclude(oldVal, obj.fullBIDS).waitForResult();
         if isequal(oldVal, newVal)
@@ -182,7 +183,7 @@ methods
         end
         obj.config.General.BIDS.include.value = newVal;
 
-        % Re-index the filtered BIDS layout with the new inclusion filter
+        % Re-index the filtered BIDS layout with the new global inclusion filter
         H = uifigure(Name='QuIDBBIDS Inclusion', Position=[400 400 400 100]);
         P = uiprogressdlg(H, Title='Indexing newly filtered BIDS layout', Message='Please wait...', Icon=icon, Indeterminate='on');
         cleanup = onCleanup(@() close(H));
@@ -191,6 +192,7 @@ methods
                                                    filter            = newVal, ...
                                                    tolerant          = true, ...
                                                    verbose           = true);
+        obj.BIDS.include = newVal;      % Add the new global include filter to the BIDS layout for later use in qb.workers.Worker.query_sub()/ses()
         
         % Update the resumes and redraw the workflow_mask/graph with the new inclusion filter
         P.Title          = 'Getting finding workers for the filtered layout';

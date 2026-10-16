@@ -29,8 +29,10 @@ methods
         obj.jobIDs   = jobIDs;
         if obj.coord.config.General.useHPC.value || obj.coord.config.General.useParallel.value
             % obj.fig = qb.GUI.DashboardHPC(obj.coord, obj.workitem, obj.jobIDs); % TODO: implement
-            obj.fig = waitbar(length(obj.completed)/length(obj.jobIDs.keys), sprintf('Completed "%s" jobs (%d/%d)', obj.workitem, length(obj.completed), length(obj.jobIDs.keys)), Name='QuIDBBIDS WIP dashboard');   % WIP dummy handle object
-            set(findall(obj.fig, Type='Text'), Interpreter='none')
+            obj.fig = uifigure(Name='', Position=[400 400 400 100]);
+            P = uiprogressdlg(obj.fig, Title="Processing: " + workitem, Message='Completed jobs...', Icon=get(groot,'defaultFigureIcon'));
+            P.Value = length(obj.completed) / length(obj.jobIDs.keys);
+            P.Tag   = 'progressbar';
         else
             obj.fig = timer;    % Lightweight dummy handle object
             close(obj.fig)
@@ -76,7 +78,9 @@ methods
         %UPDATE Updates the dashboard figure (if any)
         if isvalid(obj.fig)
             % TODO: implement
-            waitbar(length(obj.completed)/length(obj.jobIDs.keys), obj.fig, sprintf('Completed "%s" jobs (%d/%d)', obj.workitem, length(obj.completed), length(obj.jobIDs.keys)))
+            P       = findobj(obj.fig, Tag='progressbar');
+            P.Value = length(obj.completed) / length(obj.jobIDs.keys);
+            P.Title = "Processing: " + obj.workitem;
         end
     end
     

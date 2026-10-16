@@ -428,10 +428,10 @@ methods
         end
 
         % Check if there is any data to query
-        bfiles = {};
-        result = {};
         layout = bids.layout(layout);  % Ensure layout is a bids.layout object
         if ~isfield(layout, 'subjects') || ~isfield(layout.subjects, 'name') || ~ismember(obj.subject.name, {layout.subjects.name})
+            result = {};
+            bfiles = {};
             return
         end
 
@@ -456,10 +456,14 @@ methods
             result = result';           % Always return a row array
         end
 
-        % Return the associated bids.File objects
-        if nargout > 1 && strcmp(query, 'data')
-            for n = numel(result):-1:1
-                bfiles{n} = bids.File(result{n});
+        if nargout > 1
+            bfiles = cell(size(result));
+            if strcmp(query, 'data')
+                for n = 1:numel(result)
+                    bfiles{n} = bids.File(result{n});
+                end
+            else
+                obj.logger.error("The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
             end
         end
     end
@@ -490,9 +494,13 @@ methods
         % Handle struct input: if first varargin is a struct, insert ses filter into it
         if ~isempty(varargin) && isstruct(varargin{1})
             varargin{1}.ses = obj.ses();
+        else
+            varargin = [{'ses', obj.ses()}, varargin];  % Insert ses filter into name-value pairs
+        end
+        if nargout > 1
             [result, bfiles] = obj.query_sub(layout, query, varargin{:});
         else
-            [result, bfiles] = obj.query_sub(layout, query, 'ses',obj.ses(), varargin{:});
+            result = obj.query_sub(layout, query, varargin{:});
         end
     end
 

@@ -30,7 +30,7 @@ methods
         obj.jobIDs   = jobIDs;
         if obj.coord.config.General.useHPC.value || obj.coord.config.General.useParallel.value
             % obj.fig = qb.GUI.DashboardHPC(obj.coord, obj.workitem, obj.jobIDs); % TODO: implement
-            obj.fig        = uifigure(Name='', Position=[400 400 400 100]);
+            obj.fig        = uifigure(Name=['Workflow Dashboard - ' coord.BIDS.pth], Position=[400 400 400 100]);
             obj.pbar       = uiprogressdlg(obj.fig, Title="Processing: " + workitem, Message='Completed jobs...', Icon=get(groot,'defaultFigureIcon'));
             obj.pbar.Value = length(obj.completed) / length(obj.jobIDs.keys);
         else

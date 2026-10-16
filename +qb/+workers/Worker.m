@@ -428,15 +428,15 @@ methods
         end
 
         % Check if there is any data to query
+        bfiles = {};
+        result = {};
         layout = bids.layout(layout);  % Ensure layout is a bids.layout object
         if ~isfield(layout, 'subjects') || ~isfield(layout.subjects, 'name') || ~ismember(obj.subject.name, {layout.subjects.name})
-            result = {};
-            bfiles = {};
             return
         end
 
         % Use the global (QuIDBBIDS) include filter for the raw BIDS layout
-        if ~isfield(layout, 'include') || layout.pth ~= obj.BIDS.pth
+        if ~isfield(layout, 'include') || ~strcmp(layout.pth, obj.BIDS.pth)
             layout.include = struct();
         end
 
@@ -456,14 +456,10 @@ methods
             result = result';           % Always return a row array
         end
 
-        if nargout > 1
-            bfiles = cell(size(result));
-            if strcmp(query, 'data')
-                for n = 1:numel(result)
-                    bfiles{n} = bids.File(result{n});
-                end
-            else
-                obj.logger.error("The BFILES output can only be used with queries for 'data', not with queries for '%s'", query)
+        % Return the associated bids.File objects
+        if nargout > 1 && strcmp(query, 'data')
+            for n = numel(result):-1:1
+                bfiles{n} = bids.File(result{n});
             end
         end
     end

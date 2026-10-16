@@ -10,6 +10,7 @@ properties
     jobIDs      % A subses map with qsubfeval job identifiers
     completed = string.empty()   % The list of subses keys of jobs that have completed
     fig         % The dashboard figure (if any)
+    pbar        % The progress dialog handle (if any)
 end
 
 
@@ -29,10 +30,9 @@ methods
         obj.jobIDs   = jobIDs;
         if obj.coord.config.General.useHPC.value || obj.coord.config.General.useParallel.value
             % obj.fig = qb.GUI.DashboardHPC(obj.coord, obj.workitem, obj.jobIDs); % TODO: implement
-            obj.fig = uifigure(Name='', Position=[400 400 400 100]);
-            P = uiprogressdlg(obj.fig, Title="Processing: " + workitem, Message='Completed jobs...', Icon=get(groot,'defaultFigureIcon'));
-            P.Value = length(obj.completed) / length(obj.jobIDs.keys);
-            P.Tag   = 'progressbar';
+            obj.fig        = uifigure(Name='', Position=[400 400 400 100]);
+            obj.pbar       = uiprogressdlg(obj.fig, Title="Processing: " + workitem, Message='Completed jobs...', Icon=get(groot,'defaultFigureIcon'));
+            obj.pbar.Value = length(obj.completed) / length(obj.jobIDs.keys);
         else
             obj.fig = timer;    % Lightweight dummy handle object
             close(obj.fig)
@@ -76,11 +76,10 @@ methods
     
     function update(obj)
         %UPDATE Updates the dashboard figure (if any)
-        if isvalid(obj.fig)
+        if isvalid(obj.fig) && isvalid(obj.pbar)
             % TODO: implement
-            P       = findobj(obj.fig, Tag='progressbar');
-            P.Value = length(obj.completed) / length(obj.jobIDs.keys);
-            P.Title = "Processing: " + obj.workitem;
+            obj.pbar.Value = length(obj.completed) / length(obj.jobIDs.keys);
+            obj.pbar.Title = "Processing: " + obj.workitem;
         end
     end
     

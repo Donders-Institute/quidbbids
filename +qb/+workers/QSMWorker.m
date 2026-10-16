@@ -135,16 +135,21 @@ methods
             sepiaIO(input, output, char(mask), param)
 
             % Bluntly rename mask files to make them BIDS valid (bids-matlab fails on the original files)
-            for srcmask = dir([output '*_mask_*'])'
-                bname  = extractBefore(srcmask.name, bfile.extension);
-                source = fullfile(srcmask.folder, srcmask.name);
-                target = fullfile(srcmask.folder, [replace(bname, '_mask_', '_label-') '_mask' bfile.extension]);
+            for srcfile = dir([output '*_mask_*'])'
+                bname  = extractBefore(srcfile.name, '.');
+                ext    = extractAfter(srcfile.name, bname);
+                source = fullfile(srcfile.folder, srcfile.name);
+                target = fullfile(srcfile.folder, [replace(bname, '_mask_', '_label-') '_mask' ext]);
                 obj.logger.verbose('-> Renaming %s -> %s', source, target)
                 movefile(source, target)
             end
-
-            % Add a JSON sidecar file for the S0map
-            bids.util.jsonencode([output '_S0map.json'], bfile.metadata)
+            % Do the same for the ME4DUnwrapped files (SEPIA outputs them without a suffix, which is not BIDS valid)
+            for srcfile = dir([output '*-ME4DUnwrapped*'])'
+                source = fullfile(srcfile.folder, srcfile.name);
+                target = fullfile(srcfile.folder, [replace(srcfile.name, '-ME4DUnwrapped', '-ME4D_unwrapped')]);
+                obj.logger.verbose('-> Renaming %s -> %s', source, target)
+                movefile(source, target)
+            end
 
         end
     end

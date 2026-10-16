@@ -90,8 +90,8 @@ methods
 
         % Check the number of items we got: TODO: FIXME: multi-run acquisitions
         if numel(unique([length(unwrapped), length(fieldmap)])) > 1
-            obj.logger.exception('%s received an ambiguous number of ME4Dmag, unwrapped or fieldmaps:%s', obj.name, ...
-                                    sprintf('\n%s', unwrapped{:}, fieldmap{:}))
+            obj.logger.exception('%s received an ambiguous number of unwrapped (%d) or fieldmaps (%d):%s', obj.name, ...
+                                 length(unwrapped), length(fieldmap), sprintf('\n%s', unwrapped{:}, fieldmap{:}))
         end
         if length(ME4Dmag) < 2
             obj.logger.exception('%s received data for only %d flip angles', obj.name, length(ME4Dmag))

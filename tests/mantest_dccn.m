@@ -61,7 +61,7 @@ if ismember("MCR-MWI_VFA", datasets)
 
     % Then run the GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',10*36e2, 'options','--partition=gpu --gres=gpu:1'};
-    quidb.deliverables = ["R1map", "R2starmap", "Chimap", "MWFmap"];
+    quidb.deliverables = ["R1map_SCR", "R2starmap", "Chimap", "MWFmap"];
     quidb.get_manager()
     quidb.manager.start_workflow()
 
@@ -92,7 +92,7 @@ if ismember("Hamburg_MPM", datasets)
 
     % Then run the GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1 --constraint=nomig'};    % MIG/NOMIG -> Crashes with NVML errors on partitioned GPUs
-    quidb.deliverables = ["R1map", "R2starmap", "Chimap", "MWFmap"];
+    quidb.deliverables = ["R1map_SCR", "R2starmap", "Chimap", "MWFmap"];
     quidb.get_manager()
     quidb.manager.start_workflow()
 

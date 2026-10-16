@@ -38,7 +38,7 @@ config_default = qb.resetconfig(false);
 
 % Write or read the study configuration data (create if needed)
 if nargin > 1 && ~isempty(fieldnames(config))   % Write JSON
-    disp("💾 Writing configuration to: " + configfile)
+    disp("💾 Writing configuration: " + configfile)
     [~,~] = mkdir(fileparts(configfile));
     fid = fopen(configfile, 'w');
     fprintf(fid, '%s', jsonencode(config, 'PrettyPrint', true));

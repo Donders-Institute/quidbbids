@@ -53,4 +53,4 @@ for wfile = dir(fullfile(worker_dir, "*Worker*.m"))'
 
 end
 
-disp("Writing worker documentation to: " + output_file)
+disp("💾 Writing worker documentation: " + output_file)

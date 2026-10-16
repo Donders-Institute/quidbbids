@@ -154,6 +154,9 @@ methods (Static)
 
         import qb.utils.spm_vol
 
+        % Installation test: Wrong usage of mri_synthstrip returns 2, no installation returns 1
+        [has_synthstrip, ~] = system('mri_synthstrip -i');
+
         % Process all acq/runs independently
         for acq = obj.query_ses(BIDS, 'acquisitions', bfilter)
             bfilter.acq = char(acq);
@@ -168,7 +171,7 @@ methods (Static)
                     specs = setfield(obj.bidsfilter.brainmask, desc=sprintf('VFA%02d', bfile.metadata.FlipAngle));    % Add desc -> (flip)mask is a temporary file
                     bfile = obj.bfile_set(bfile, specs);
                     [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
-                    if system('mri_synthstrip -i') > 1      % Wrong usage of mri_synthstrip returns 2, no installation returns 1
+                    if has_synthstrip > 1
                         obj.run_command(sprintf('mri_synthstrip -i "%s" -m "%s"', char(echo1), bfile.path));        % [status,out] = system('echo $CUDA_VISIBLE_DEVICES') does not detect if pytorch was compiled with CUDA support
                         mask = spm_read_vols(spm_vol(bfile.path)) & mask;
                         delete(bfile.path)                  % Delete the temporary mask file

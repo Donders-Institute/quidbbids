@@ -432,7 +432,7 @@ methods
 
         % Save the workflow settings to the workflowfile
         if ~isfile(workflowfile)
-            fprintf('💾 Saving workflow settings to: %s\n', workflowfile)
+            fprintf('💾 Writing workflow settings: %s\n', workflowfile)
         else
             fprintf('💾 Overwriting workflow settings in: %s\n', workflowfile)
         end

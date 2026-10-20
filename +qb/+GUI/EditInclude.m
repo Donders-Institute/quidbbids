@@ -40,7 +40,7 @@ methods
         % Build the GUI and file tree from the root directory
 
         % Create figure
-        obj.Fig = uifigure(Name=['BIDS Include Editor - ' coord.BIDS.pth], Position=[200 200 800 500], CloseRequestFcn=@(src, evt) obj.onCancel());
+        obj.Fig = uifigure(Name=['BIDS Include Editor - ' coord.BIDS.pth], Position=[200 200 800 600], CloseRequestFcn=@(src, evt) obj.onCancel());
 
         % Main grid
         mainGrid = uigridlayout(obj.Fig, [1 2]);
@@ -87,7 +87,7 @@ methods
         treeGrid.Padding     = [0 0 0 0];
         uilabel(treeGrid, Text='Data inclusion tree');
         obj.Tree             = uitree(treeGrid);
-        obj.Tree.Tooltip     = 'Tree view of the BIDS data structure. Green arrows indicate included files/folders';
+        obj.Tree.Tooltip     = 'Tree view of the BIDS data structure. Green circles indicate included files/folders';
 
         % Build the BIDS tree structure (without sidecars and hidden files)
         for file = dir(fullfile(coord.BIDS.pth, "**", "*"))'

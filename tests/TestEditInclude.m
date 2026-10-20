@@ -15,6 +15,7 @@ classdef TestEditInclude < BaseTest
             % Initialize BIDS layout once for all test methods
             testCase.coord = qb.QuIDBBIDS(fullfile(testCase.BidsExamplesRepo, 'qmri_vfa'));
             testCase.coord.fullBIDS = testCase.coord.BIDS;
+            close(gcf)
         end
     end
 
@@ -26,13 +27,12 @@ classdef TestEditInclude < BaseTest
             testCase.coord.exclude = struct('modality', {{'fmap'}}, 'suffix', {{'phase1'}});
             
             gui = qb.GUI.EditInclude(testCase.coord);
-            gui.Fig.Visible = 'off';
             
             % Verify properties are set
             testCase.verifyClass(gui, 'qb.GUI.EditInclude')
             testCase.verifyClass(gui.NodeMap, 'containers.Map')
             
-            delete(gui)
+            close(gui.Fig)
         end
 
         function testTreeStructure(testCase)
@@ -41,7 +41,6 @@ classdef TestEditInclude < BaseTest
             testCase.coord.exclude = struct('modality', {{'fmap'}}, 'suffix', {{'phase1'}});
             
             gui = qb.GUI.EditInclude(testCase.coord);
-            gui.Fig.Visible = 'off';
             
             % Verify tree has root nodes
             testCase.verifyGreaterThan(length(gui.Tree.Children), 0, 'Tree should have root nodes')
@@ -50,7 +49,7 @@ classdef TestEditInclude < BaseTest
             nodeTexts = {gui.Tree.Children.Text};
             testCase.verifyTrue(any(contains(nodeTexts, 'sub-')))
             
-            delete(gui)
+            close(gui.Fig)
         end
 
         function testIncludeFilter(testCase)
@@ -60,13 +59,12 @@ classdef TestEditInclude < BaseTest
             testCase.coord.exclude = struct('modality', {{'fmap'}}, 'suffix', {{'phase1'}});
             
             gui = qb.GUI.EditInclude(testCase.coord);
-            gui.Fig.Visible = 'off';
             
             % Verify the include field contains the JSON representation
             expectedJSON = jsonencode(include, 'PrettyPrint', true);
             testCase.verifyEqual(strjoin(gui.IncludeField.Value, newline), expectedJSON)
             
-            delete(gui)
+            close(gui.Fig)
         end
 
         function testNodeMap(testCase)
@@ -75,7 +73,6 @@ classdef TestEditInclude < BaseTest
             testCase.coord.exclude = struct('modality', {{'fmap'}}, 'suffix', {{'phase1'}});
             
             gui = qb.GUI.EditInclude(testCase.coord);
-            gui.Fig.Visible = 'off';
             
             % Verify NodeMap is not empty
             testCase.verifyGreaterThan(length(keys(gui.NodeMap)), 0, 'NodeMap should have entries')
@@ -96,7 +93,7 @@ classdef TestEditInclude < BaseTest
             testCase.verifyTrue(~isempty(allValues), 'NodeMap should have values')
             testCase.verifyClass(allValues{1}, 'matlab.ui.container.TreeNode')
             
-            delete(gui)
+            close(gui.Fig)
         end
 
         function testReset(testCase)
@@ -107,7 +104,6 @@ classdef TestEditInclude < BaseTest
             testCase.coord.exclude = struct('modality', {{'dwi'}}, 'suffix', {{'dwi'}});
             
             gui = qb.GUI.EditInclude(testCase.coord);
-            gui.Fig.Visible = 'off';
             
             % Modify the current include
             gui.IncludeCurrent = modified;
@@ -122,7 +118,7 @@ classdef TestEditInclude < BaseTest
             expectedValue = jsonencode(original, 'PrettyPrint', true);
             testCase.verifyEqual(actualValue, expectedValue)
             
-            delete(gui)
+            close(gui.Fig)
         end
 
         function testDone(testCase)
@@ -132,7 +128,6 @@ classdef TestEditInclude < BaseTest
             testCase.coord.exclude = struct('modality', {{'dwi'}}, 'suffix', {{'dwi'}});
             
             gui = qb.GUI.EditInclude(testCase.coord);
-            gui.Fig.Visible = 'off';
             
             % Modify the current include by creating a new struct
             gui.IncludeCurrent = struct('modality', {{'fmap'}}, 'suffix', {{'VFA'}});
@@ -143,8 +138,6 @@ classdef TestEditInclude < BaseTest
             % Verify result is set to the current value (not the original)
             testCase.verifyEqual(gui.IncludeResult.modality, gui.IncludeCurrent.modality)
             testCase.verifyEqual(gui.IncludeResult.suffix, gui.IncludeCurrent.suffix)
-            
-            delete(gui)
         end
 
         function testCancel(testCase)
@@ -154,7 +147,6 @@ classdef TestEditInclude < BaseTest
             testCase.coord.exclude = struct('modality', {{'dwi'}}, 'suffix', {{'dwi'}});
             
             gui = qb.GUI.EditInclude(testCase.coord);
-            gui.Fig.Visible = 'off';
             
             % Modify the current include
             gui.IncludeCurrent = struct('modality', {{'fmap'}}, 'suffix', {{'VFA'}});
@@ -164,8 +156,6 @@ classdef TestEditInclude < BaseTest
             
             % Verify result is the original
             testCase.verifyEqual(gui.IncludeResult, original)
-            
-            delete(gui)
         end
     end
 

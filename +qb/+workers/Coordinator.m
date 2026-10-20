@@ -6,6 +6,9 @@ classdef (Abstract) Coordinator < handle
 
 properties
     BIDS                        % BIDS layout object from bids-matlab
+    include                     % A bidsfilter for pruning the BIDS layout
+    exclude                     % A bidsfilter for pruning the BIDS layout
+    fullBIDS                    % The complete unfiltered BIDS layout
     outputdir                   % BIDSApp derivatives subdirectory where the output is stored
     workdir                     % Working directory for intermediate results
     deliverables = strings(1,0) % The end products (workitems) requested by the user, for full list of possible deliverables, see obj.catalog()
@@ -23,29 +26,32 @@ end
 methods (Abstract)
     config = get_config(obj, config)   % Reads CONFIG from the configuration file or writes to it if CONFIG is given
     edit_config(obj)                   % Opens a GUI to edit the processing options
-    edit_inclusion(obj)                % Opens a GUI to edit the BIDS inclusion filter
 end
 
 
 methods
 
-    function obj = Coordinator(BIDS, outputdir, workdir, configfile)
+    function obj = Coordinator(bidsdir, outputdir, workdir, configfile, include, exclude)
         % Constructor for the abstract Coordinator class
         %
         % Inputs:
-        %   BIDS       - BIDS layout object from bids-matlab
+        %   BIDSDIR    - Path to the BIDS directory
         %   OUTPUTDIR  - Path to the derivatives bidsapp subdirectory where output will be written
         %   WORKDIR    - Working directory for intermediate results. Default: outputdir/[APPNAME]_work
         %   CONFIGFILE - Path to a configuration file with workflow settings
+        %   INCLUDE    - A bidsfilter for pruning the BIDS layout
+        %   EXCLUDE    - A bidsfilter for pruning the BIDS layout
 
         arguments
-            BIDS        struct
+            bidsdir     {mustBeTextScalar}
             outputdir   {mustBeTextScalar} = ""
             workdir     {mustBeTextScalar} = ""
             configfile  {mustBeTextScalar} = ""
+            include     struct = struct()
+            exclude     struct = struct(exclude=struct(modality={}))
         end
 
-        % Close all old QuIDBBIDS figures
+        % Close all old GUI figures
         for H = findall(groot, Tag='workflow_axes')'
             close(ancestor(H, 'Figure'))
         end
@@ -79,6 +85,7 @@ methods
             if char(obj.configfile)
                 configfile = string(obj.configfile);
             else
+                [~, ~]     = mkdir(fullfile(outputdir, "code"));
                 configfile = fullfile(outputdir, "code", "config.json");
             end
         end
@@ -91,17 +98,25 @@ methods
             bids.init(char(workdir), 'is_derivative', true)
         end
 
-        % Set the properties
-        obj.BIDS       = BIDS;
+        % Set the properties and scan the BIDS layout
         obj.outputdir  = outputdir;
         obj.workdir    = workdir;
         obj.configfile = configfile;
         obj.config     = obj.get_config();
-        obj.resumes    = obj.get_resumes();     % TODO: Fix overwriting loaded properties
+        obj.include    = include;
+        obj.exclude    = exclude;
+        obj.BIDS       = bids.layout(char(bidsdir), filter=obj.include, verbose=true);
+
+        % Filter the BIDS layout more thoroughly/deeply
+        obj.pruneBIDS()
+
+        % Update the resumes and draw the workflow mask graph
+        obj.resumes = obj.get_resumes();
 
         % Save the workflow mask graph
         H = findall(groot, Tag='workflow_mask');
         if isvalid(H)
+            [~,~] = mkdir(fileparts(obj.configfile));
             exportgraphics(H.Parent, regexprep(obj.configfile, "(.*)config(.*)\.json$", "$1workflow_mask$2.png"))
         end
     end
@@ -443,6 +458,81 @@ methods
             save(workflowfile, 'coord')
         end
         obj.workflowfile = workflowfile;
+    end
+
+    function edit_inclusion(obj)
+        % Opens a GUI to edit the BIDS inclusion filters for the dataset
+        %
+        % Usage:
+        %   obj = obj.edit_inclusion();
+        %
+        % See also: qb.QuIDBBIDS (for overview) and qb.edit_config
+
+        % Use a full (unfiltered) BIDS layout for tagging the inclusion
+        icon = get(groot, 'defaultFigureIcon');
+        if isempty(obj.fullBIDS)
+            H = uifigure(Name='BIDS data inclusion', Position=[400 400 400 100]);
+            uiprogressdlg(H, Title='Indexing full BIDS layout', Message='Please wait...', Icon=icon, Indeterminate='on');
+            obj.fullBIDS = bids.layout(char(obj.BIDS.pth), verbose=true);
+            close(H)
+        end
+
+        % Open the QuIDBBIDS GUI to edit the global inclusion filter
+        oldInclude = obj.include;
+        oldExclude = obj.exclude;
+        [obj.include, obj.exclude] = qb.GUI.EditInclude(obj).waitForResult();
+        if isequal(oldInclude, obj.include) && isequal(oldExclude, obj.exclude)
+            return
+        end
+
+        % Re-index the filtered BIDS layout with the new global inclusion filter
+        H = uifigure(Name='BIDS data inclusion', Position=[400 400 400 100]);
+        P = uiprogressdlg(H, Title='Indexing newly filtered BIDS layout', Message='Please wait...', Icon=icon, Indeterminate='on');
+        cleanup = onCleanup(@() close(H));
+        obj.BIDS = bids.layout(char(obj.BIDS.pth), filter=obj.include, verbose=true);
+        
+        % Filter the BIDS layout more thoroughly/deeply
+        obj.pruneBIDS()
+
+        % Update the resumes and redraw the workflow_mask/graph with the new inclusion filter
+        P.Title          = 'Getting finding workers for the filtered layout';
+        obj.resumes      = obj.get_resumes();
+        obj.deliverables = [];
+        obj.manager      = [];
+    end
+
+    function result = pruneBIDS(obj, BIDS, include, exclude)
+        %PRUNEBIDS Remove matching items from the BIDS layout. Can also be used as a static function to prune
+        % any BIDS layout with a given include/exclude filter.
+
+        arguments
+            obj
+            BIDS    struct = obj.BIDS
+            include struct = obj.include
+            exclude struct = obj.exclude
+        end
+
+        % Use bids.query to get all matching items
+        if ~isempty(BIDS.subjects)
+            included = bids.query(BIDS, 'data', include);
+            excluded = bids.query(BIDS, 'data', exclude);
+        end
+
+        % Remove items from the BIDS layout that are not included or that are excluded (based on matching filenames)
+        for subject = 1:numel(BIDS.subjects)
+            for modality = string(fieldnames(BIDS.subjects(subject)))'
+                if isstruct(BIDS.subjects(subject).(modality)) && isfield(BIDS.subjects(subject).(modality), 'filename')    % Skip non-modality fields like 'name', 'path', etc.
+                    filenames = fullfile(BIDS.subjects(subject).path, modality, {BIDS.subjects(subject).(modality).filename});
+                    BIDS.subjects(subject).(modality)(~ismember(filenames, included) | ismember(filenames, excluded)) = [];
+                end
+            end
+        end
+
+        if nargout
+            result = BIDS;
+        else
+            obj.BIDS = BIDS;
+        end
     end
 
 end

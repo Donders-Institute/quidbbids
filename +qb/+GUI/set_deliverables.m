@@ -4,6 +4,7 @@ function deliverables = set_deliverables(items, descriptions, deliverables)
     % See also: qb.workers.Coordinator.catalog
 
     if isempty(items)
+        warndlg('No deliverables available for this dataset', 'Set Deliverables')
         return
     end
 

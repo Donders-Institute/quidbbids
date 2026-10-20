@@ -8,34 +8,39 @@ classdef EditInclude < handle
 
 properties
     Fig
-    BIDS
-    InputField
+    coord
+    IncludeField
+    ExcludeField
     Tree
     IncludeOriginal
     IncludeCurrent
     IncludeResult
+    ExcludeOriginal
+    ExcludeCurrent
+    ExcludeResult
     NodeMap
-    Arrow = fullfile(matlabroot,'toolbox','matlab','icons','greenarrowicon.gif');  % -> Include tagging icon (alternative: help_gs.png)
+    Arrow = fullfile(matlabroot,'toolbox','matlab','icons','greencircleicon.gif');  % -> Include tagging icon (alternative: help_gs.png)
 end
 
 methods
     
-    function obj = EditInclude(include, BIDS)
+    function obj = EditInclude(coord)
         % Constructor
         arguments
-            include struct
-            BIDS    struct
+            coord qb.workers.Coordinator
         end
         
-        obj.BIDS            = BIDS;
-        obj.IncludeOriginal = include;
-        obj.IncludeCurrent  = include;
+        obj.coord           = coord;
+        obj.IncludeOriginal = coord.include;
+        obj.IncludeCurrent  = coord.include;
+        obj.ExcludeOriginal = coord.exclude;
+        obj.ExcludeCurrent  = coord.exclude;
         obj.NodeMap         = containers.Map();
         
         % Build the GUI and file tree from the root directory
 
         % Create figure
-        obj.Fig = uifigure(Name=['BIDS Include Editor - ' obj.BIDS.pth], Position=[200 200 800 500], CloseRequestFcn=@(src, evt) obj.onCancel());
+        obj.Fig = uifigure(Name=['BIDS Include Editor - ' coord.BIDS.pth], Position=[200 200 800 500], CloseRequestFcn=@(src, evt) obj.onCancel());
 
         % Main grid
         mainGrid = uigridlayout(obj.Fig, [1 2]);
@@ -44,22 +49,29 @@ methods
         mainGrid.ColumnSpacing = 20;
         mainGrid.Padding       = [20 20 20 10];   % [left bottom right top]
 
-        %--- INCLUDE AREA
-        includeGrid = uigridlayout(mainGrid, [3 1]);
-        includeGrid.ColumnWidth = {'1x'};
-        includeGrid.RowHeight   = {20, '1x', 'fit'};
-        includeGrid.RowSpacing  = 5;
-        includeGrid.Padding     = [0 0 0 0];
+        %--- FILTER AREA
+        filterGrid = uigridlayout(mainGrid, [5 1]);
+        filterGrid.ColumnWidth = {'1x'};
+        filterGrid.RowHeight   = {20, '1x', 20, '1x', 'fit'};
+        filterGrid.RowSpacing  = 5;
+        filterGrid.Padding     = [0 0 0 0];
 
-        % Input label and field
-        uilabel(includeGrid, Text='Include filter');
-        obj.InputField                 = uitextarea(includeGrid);
-        obj.InputField.Value           = jsonencode(obj.IncludeCurrent, 'PrettyPrint',true);
-        obj.InputField.ValueChangedFcn = @(src, evt) obj.onInputChanged();
-        obj.InputField.Tooltip         = 'Edit the BIDS include filter in JSON format. Click outside the box to apply your changes';
+        % Include label and field
+        uilabel(filterGrid, Text='Include filter');
+        obj.IncludeField                 = uitextarea(filterGrid);
+        obj.IncludeField.Value           = jsonencode(obj.IncludeCurrent, 'PrettyPrint',true);
+        obj.IncludeField.ValueChangedFcn = @(src, evt) obj.onIncludeChanged();
+        obj.IncludeField.Tooltip         = 'Edit the BIDS include filter in JSON format. Click outside the box to apply your changes';
+
+        % Exclude label and field
+        uilabel(filterGrid, Text='Exclude filter');
+        obj.ExcludeField                 = uitextarea(filterGrid);
+        obj.ExcludeField.Value           = jsonencode(obj.ExcludeCurrent, 'PrettyPrint',true);
+        obj.ExcludeField.ValueChangedFcn = @(src, evt) obj.onExcludeChanged();
+        obj.ExcludeField.Tooltip         = 'Edit the BIDS exclude filter in JSON format. Click outside the box to apply your changes';
 
         % Buttons
-        buttonGrid = uigridlayout(includeGrid, [1 3]);
+        buttonGrid = uigridlayout(filterGrid, [1 3]);
         buttonGrid.RowHeight   = {'fit'};
         buttonGrid.ColumnWidth = {60, 60, 60};
         buttonGrid.Padding     = [0 0 0 10];   % [left bottom right top]
@@ -78,7 +90,7 @@ methods
         obj.Tree.Tooltip     = 'Tree view of the BIDS data structure. Green arrows indicate included files/folders';
 
         % Build the BIDS tree structure (without sidecars and hidden files)
-        for file = dir(fullfile(obj.BIDS.pth, "**", "*"))'
+        for file = dir(fullfile(coord.BIDS.pth, "**", "*"))'
             obj.addNodeToTree(file, obj.Tree)
         end
 
@@ -94,8 +106,8 @@ methods
             return
         end
         
-        subPath = obj.BIDS.pth;
-        for part = split(extractAfter(fullfile(file.folder,file.name), [obj.BIDS.pth filesep]), filesep)'
+        subPath = obj.coord.BIDS.pth;
+        for part = split(extractAfter(fullfile(file.folder,file.name), [obj.coord.BIDS.pth filesep]), filesep)'
             subPath = fullfile(subPath, part{1});
             if isKey(obj.NodeMap, subPath)
                 parentNode = obj.NodeMap(subPath);
@@ -127,16 +139,27 @@ methods
 
     function tagTree(obj)
         % Queries the BIDS folder and tags the tree based on the IncludeCurrent filter
-        included = string(bids.query(obj.BIDS, 'data', obj.IncludeCurrent));
+        BIDS = obj.coord.pruneBIDS(obj.coord.fullBIDS, obj.IncludeCurrent, obj.ExcludeCurrent);
+        included = string(bids.query(BIDS, 'data'));
         for node = obj.Tree.Children'
             obj.tagNode(node, included)
         end
     end
     
-    function onInputChanged(obj)
-        % Callback when input field changes
+    function onIncludeChanged(obj)
+        % Callback when include field changes
         try
-            obj.IncludeCurrent = jsondecode(strjoin(obj.InputField.Value, newline));
+            obj.IncludeCurrent = jsondecode(strjoin(obj.IncludeField.Value, newline));
+            obj.tagTree()
+        catch ME
+            uialert(obj.Fig, sprintf('Invalid JSON format: %s', ME.message), 'Parse Error')
+        end
+    end
+    
+    function onExcludeChanged(obj)
+        % Callback when exclude field changes
+        try
+            obj.ExcludeCurrent = jsondecode(strjoin(obj.ExcludeField.Value, newline));
             obj.tagTree()
         catch ME
             uialert(obj.Fig, sprintf('Invalid JSON format: %s', ME.message), 'Parse Error')
@@ -146,26 +169,31 @@ methods
     function onCancel(obj)
         % Callback for Cancel button & close request
         obj.IncludeResult = obj.IncludeOriginal;
+        obj.ExcludeResult = obj.ExcludeOriginal;
         delete(obj.Fig)
     end
     
     function onReset(obj)
         % Callback for Reset button
-        obj.InputField.Value = jsonencode(obj.IncludeOriginal, PrettyPrint=true);
-        obj.IncludeCurrent   = obj.IncludeOriginal;
+        obj.IncludeField.Value = jsonencode(obj.IncludeOriginal, PrettyPrint=true);
+        obj.ExcludeField.Value = jsonencode(obj.ExcludeOriginal, PrettyPrint=true);
+        obj.IncludeCurrent     = obj.IncludeOriginal;
+        obj.ExcludeCurrent     = obj.ExcludeOriginal;
         obj.tagTree()
     end
     
     function onDone(obj)
         % Callback for Done button
         obj.IncludeResult = obj.IncludeCurrent;
+        obj.ExcludeResult = obj.ExcludeCurrent;
         delete(obj.Fig)
     end
     
-    function result = waitForResult(obj)
+    function [include, exclude] = waitForResult(obj)
         % Wait for user to click Done or Cancel and return the include filter (as a struct)
         waitfor(obj.Fig)
-        result = obj.IncludeResult;
+        include = obj.IncludeResult;
+        exclude = obj.ExcludeResult;
     end
     
 end

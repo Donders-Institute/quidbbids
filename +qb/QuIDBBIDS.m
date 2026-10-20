@@ -24,11 +24,6 @@ classdef (Sealed) QuIDBBIDS < qb.workers.Coordinator
 % For more concise help on using a QuIDBBIDS object and its methods:
 
 
-properties
-    fullBIDS = []   % The full unfiltered BIDS layout
-end
-
-
 methods
 
     function obj = QuIDBBIDS(bidsdir, outputdir, workdir, configfile)
@@ -128,15 +123,9 @@ methods
         end
         config = get_config(configfile);    % Cannot call obj.get_config directly because obj is not yet fully constructed / the superclass has not yet been called
 
-        % Initialize the BIDS layout and call the superclass constructor
+        % Call the superclass constructor
         P.Title = "Indexing: " + bidsdir;
-        BIDS = bids.layout(char(bidsdir), use_schema        = true, ...
-                                          index_derivatives = false, ...
-                                          filter            = config.General.BIDS.include.value, ...
-                                          tolerant          = true, ...
-                                          verbose           = true);
-        BIDS.include = config.General.BIDS.include.value;       % Add the global include filter to the BIDS layout for later use in qb.workers.Worker.query_sub()/ses()
-        obj@qb.workers.Coordinator(BIDS, outputdir, workdir, configfile)
+        obj@qb.workers.Coordinator(bidsdir, outputdir, workdir, configfile, config.General.BIDS.include.value, config.General.BIDS.exclude.value);
 
         % Add project metadata to the output folders
         obj.metadata = metadata;
@@ -153,52 +142,6 @@ methods
     function delete(obj)
         % Destructor for the QuIDBBIDS coordinator
         set(groot, defaultFigureIcon='remove')
-    end
-
-    function edit_inclusion(obj)
-        % Opens a GUI to edit the BIDS inclusion filters for the dataset
-        %
-        % Usage:
-        %   obj = obj.edit_inclusion();
-        %
-        % See also: qb.QuIDBBIDS (for overview) and qb.edit_config
-
-        % Use a full (unfiltered) BIDS layout for tagging the inclusion
-        icon = get(groot, 'defaultFigureIcon');
-        if isempty(obj.fullBIDS)
-            H = uifigure(Name='QuIDBBIDS Inclusion', Position=[400 400 400 100]);
-            uiprogressdlg(H, Title='Indexing unfiltered BIDS layout', Message='Please wait...', Icon=icon, Indeterminate='on');
-            obj.fullBIDS = bids.layout(char(obj.BIDS.pth), use_schema        = true, ...
-                                                           index_derivatives = false, ...
-                                                           tolerant          = true, ...
-                                                           verbose           = true);
-            close(H)
-        end
-
-        % Open the QuIDBBIDS GUI to edit the global inclusion filter
-        oldVal = obj.config.General.BIDS.include.value;
-        newVal = qb.GUI.EditInclude(oldVal, obj.fullBIDS).waitForResult();
-        if isequal(oldVal, newVal)
-            return
-        end
-        obj.config.General.BIDS.include.value = newVal;
-
-        % Re-index the filtered BIDS layout with the new global inclusion filter
-        H = uifigure(Name='QuIDBBIDS Inclusion', Position=[400 400 400 100]);
-        P = uiprogressdlg(H, Title='Indexing newly filtered BIDS layout', Message='Please wait...', Icon=icon, Indeterminate='on');
-        cleanup = onCleanup(@() close(H));
-        obj.BIDS = bids.layout(char(obj.BIDS.pth), use_schema        = true, ...
-                                                   index_derivatives = false, ...
-                                                   filter            = newVal, ...
-                                                   tolerant          = true, ...
-                                                   verbose           = true);
-        obj.BIDS.include = newVal;      % Add the new global include filter to the BIDS layout for later use in qb.workers.Worker.query_sub()/ses()
-        
-        % Update the resumes and redraw the workflow_mask/graph with the new inclusion filter
-        P.Title          = 'Getting finding workers for the filtered layout';
-        obj.resumes      = obj.get_resumes();
-        obj.deliverables = [];
-        obj.manager      = [];
     end
 
     function edit_config(obj)

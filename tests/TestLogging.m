@@ -19,8 +19,7 @@ classdef TestLogging < BaseTest
             BIDS = bids.layout(testCase.TempDir);
 
             % Create any concrete worker
-            config.General.BIDS.include = struct();
-            worker = qb.workers.B1prepWorker(BIDS, BIDS.subjects(1), config, '', testCase.TempDir);
+            worker = qb.workers.B1prepWorker(BIDS, BIDS.subjects(1), struct(), '', testCase.TempDir);
 
             testCase.Logger = worker.logger;
         end

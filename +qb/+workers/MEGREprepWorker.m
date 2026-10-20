@@ -67,11 +67,6 @@ methods (Access = protected)
                                           part     = 'mag', ...
                                           desc     = 'ME4D');
         obj.bidsfilter.ME4Dphase = setfield(obj.bidsfilter.ME4Dmag, part='phase');
-        
-        % Constrain the raw input filters based on the BIDS include config
-        if isfield(obj.BIDS,'include') && isfield(obj.BIDS.include,'suffix') && all(cellfun(@isempty, regexp(obj.BIDS.include.suffix, 'MEGRE')))
-            obj.bidsfilter.rawMEGRE = setfields(obj.BIDS.include, suffix='');    % MEGRE data is not to be included
-        end
     end
 
 end

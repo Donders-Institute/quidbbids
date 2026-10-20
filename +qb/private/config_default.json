@@ -6,7 +6,8 @@
     "HPC": {"value": ["memreq",10e9, "timreq",36e3], "description": "HPC resource requirements: memory in bytes (1Gb = 1e9), time in seconds. Any option that goes into qsubfeval() can be added, such as:\n [.., \"options\", \"--partition=gpu40g --gres=gpu:1\"]"},
     "useParallel": {"value": false, "description": "true = use parfeval for processing subjects in parallel (this option will be ignored if useHPC == true). NB: This may require a huge amount of working memory if many subjects are processed in parallel, so make sure to adjust the number of workers in parpool accordingly."},
     "BIDS": {
-      "include": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "VFA", "MPM", "UNIT1", "MP2RAGE", "TB1TFL", "TB1RFM"]}, "description": "A selection filter with BIDS entities (subjects, sessions, suffix, etc) for including raw BIDS data in the workflow (regular expressions are allowed). This enables users to flexibly deal with datasets that may otherwise have conflicts or ambiguities, i.e. limit the workflow to a compatible subset of their data"}
+      "include": {"value": {"modality": ["anat", "fmap"], "suffix": ["MEGRE", "VFA", "MPM", "UNIT1", "MP2RAGE", "TB1TFL", "TB1RFM"]}, "description": "A selection filter with BIDS entities (subjects, sessions, suffix, etc) for including raw BIDS data in the workflow (regular expressions are allowed). This enables users to flexibly deal with datasets that may otherwise have conflicts or ambiguities, i.e. limit the workflow to a compatible subset of their data"},
+      "exclude": {"value": {"modality": "anat", "mt": "on"}, "description": "A selection filter with BIDS entities (subjects, sessions, suffix, etc) for excluding raw BIDS data in the workflow (regular expressions are allowed). This enables users to flexibly deal with datasets that may otherwise have conflicts or ambiguities, i.e. limit the workflow to a compatible subset of their data"}
     }
   },
 

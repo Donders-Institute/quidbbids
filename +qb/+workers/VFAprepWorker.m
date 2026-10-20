@@ -91,11 +91,6 @@ methods (Access = protected)
         obj.bidsfilter.brainmask   = parent.bidsfilter.brainmask;
         obj.bidsfilter.ME4Dmag     = parent.bidsfilter.ME4Dmag;
         obj.bidsfilter.ME4Dphase   = parent.bidsfilter.ME4Dphase;
-
-        % Constrain the raw input filters based on the BIDS include config (e.g. to disable the use of VFA data if only MPM data is included)
-        if isfield(obj.BIDS,'include') && isfield(obj.BIDS.include,'suffix') && all(cellfun(@isempty, regexp(obj.BIDS.include.suffix, '(VFA|MPM)')))
-            obj.bidsfilter.rawMEVFA = setfields(obj.BIDS.include, suffix='');        % VFA data is not to be included
-        end
     end
 
 end
@@ -118,11 +113,8 @@ methods
             return
         end
 
-        % Get the work done. For now, only process mt-off images, in the future we could also include mt-on images
+        % Get the VFA and MPM work done
         for bfilter = {setfields(obj.bidsfilter.rawMEVFA, suffix='VFA'), setfields(obj.bidsfilter.rawMEVFA, mt='off', suffix='MPM')}
-            if all(cellfun(@isempty, regexp(obj.BIDS.include.suffix, bfilter{1}.suffix)))  % TODO: A bit of an ugly hack, for now...
-                continue
-            end
             if ~isempty(obj.query_ses(obj.BIDS, 'data', bfilter{1}))
                 obj.denoise_raw(bfilter{1})                                                 % Processing step 5a
                 obj.make_syntheticT1_M0(bfilter{1})                                         % Processing step 1

@@ -2,7 +2,7 @@ classdef TestEditInclude < BaseTest
     % TestEditInclude - Tests for qb.GUI.EditInclude
 
     properties
-        BIDS            % BIDS layout for current test method
+        coord           % Coordinator for current test method
     end
 
     methods (TestClassSetup)
@@ -13,7 +13,8 @@ classdef TestEditInclude < BaseTest
             end
             
             % Initialize BIDS layout once for all test methods
-            testCase.BIDS = bids.layout(fullfile(testCase.BidsExamplesRepo, 'qmri_vfa'));
+            testCase.coord = qb.QuIDBBIDS(fullfile(testCase.BidsExamplesRepo, 'qmri_vfa'));
+            testCase.coord.fullBIDS = testCase.coord.BIDS;
         end
     end
 
@@ -21,9 +22,10 @@ classdef TestEditInclude < BaseTest
         
         function testConstructor(testCase)
             % Test basic EditInclude construction
-            include = struct('modality', {{'anat', 'fmap'}}, 'suffix', {{'MEGRE', 'VFA'}});
+            testCase.coord.include = struct('modality', {{'anat', 'fmap'}}, 'suffix', {{'MEGRE', 'VFA'}});
+            testCase.coord.exclude = struct('modality', {{'fmap'}}, 'suffix', {{'phase1'}});
             
-            gui = qb.GUI.EditInclude(include, testCase.BIDS);
+            gui = qb.GUI.EditInclude(testCase.coord);
             gui.Fig.Visible = 'off';
             
             % Verify properties are set
@@ -35,9 +37,10 @@ classdef TestEditInclude < BaseTest
 
         function testTreeStructure(testCase)
             % Test that the tree is built correctly
-            include = struct('modality', {{'anat'}}, 'suffix', {{'MEGRE'}});
+            testCase.coord.include = struct('modality', {{'anat'}}, 'suffix', {{'MEGRE'}});
+            testCase.coord.exclude = struct('modality', {{'fmap'}}, 'suffix', {{'phase1'}});
             
-            gui = qb.GUI.EditInclude(include, testCase.BIDS);
+            gui = qb.GUI.EditInclude(testCase.coord);
             gui.Fig.Visible = 'off';
             
             % Verify tree has root nodes
@@ -53,22 +56,25 @@ classdef TestEditInclude < BaseTest
         function testIncludeFilter(testCase)
             % Test that the include filter JSON field is populated correctly
             include = struct('modality', {{'anat'}}, 'suffix', {{'MEGRE'}});
+            testCase.coord.include = include;
+            testCase.coord.exclude = struct('modality', {{'fmap'}}, 'suffix', {{'phase1'}});
             
-            gui = qb.GUI.EditInclude(include, testCase.BIDS);
+            gui = qb.GUI.EditInclude(testCase.coord);
             gui.Fig.Visible = 'off';
             
-            % Verify the input field contains the JSON representation
+            % Verify the include field contains the JSON representation
             expectedJSON = jsonencode(include, 'PrettyPrint', true);
-            testCase.verifyEqual(strjoin(gui.InputField.Value, newline), expectedJSON)
+            testCase.verifyEqual(strjoin(gui.IncludeField.Value, newline), expectedJSON)
             
             delete(gui)
         end
 
         function testNodeMap(testCase)
             % Test that NodeMap is populated with paths and tree nodes
-            include = struct('modality', {{'anat'}}, 'suffix', {{'MEGRE'}});
+            testCase.coord.include = struct('modality', {{'anat'}}, 'suffix', {{'MEGRE'}});
+            testCase.coord.exclude = struct('modality', {{'fmap'}}, 'suffix', {{'phase1'}});
             
-            gui = qb.GUI.EditInclude(include, testCase.BIDS);
+            gui = qb.GUI.EditInclude(testCase.coord);
             gui.Fig.Visible = 'off';
             
             % Verify NodeMap is not empty
@@ -97,8 +103,10 @@ classdef TestEditInclude < BaseTest
             % Test that reset restores the original include filter
             original = struct('modality', {{'anat'}}, 'suffix', {{'MEGRE'}});
             modified = struct('modality', {{'fmap'}}, 'suffix', {{'VFA'}});
+            testCase.coord.include = original;
+            testCase.coord.exclude = struct('modality', {{'dwi'}}, 'suffix', {{'dwi'}});
             
-            gui = qb.GUI.EditInclude(original, testCase.BIDS);
+            gui = qb.GUI.EditInclude(testCase.coord);
             gui.Fig.Visible = 'off';
             
             % Modify the current include
@@ -109,8 +117,8 @@ classdef TestEditInclude < BaseTest
             
             % Verify it's back to original
             testCase.verifyEqual(gui.IncludeCurrent, original)
-            % InputField.Value is a cell array of strings - convert to char for comparison
-            actualValue = strjoin(gui.InputField.Value, newline);
+            % IncludeField.Value is a cell array of strings - convert to char for comparison
+            actualValue = strjoin(gui.IncludeField.Value, newline);
             expectedValue = jsonencode(original, 'PrettyPrint', true);
             testCase.verifyEqual(actualValue, expectedValue)
             
@@ -120,8 +128,10 @@ classdef TestEditInclude < BaseTest
         function testDone(testCase)
             % Test that Done sets the result
             include = struct('modality', {{'anat'}}, 'suffix', {{'MEGRE'}});
+            testCase.coord.include = include;
+            testCase.coord.exclude = struct('modality', {{'dwi'}}, 'suffix', {{'dwi'}});
             
-            gui = qb.GUI.EditInclude(include, testCase.BIDS);
+            gui = qb.GUI.EditInclude(testCase.coord);
             gui.Fig.Visible = 'off';
             
             % Modify the current include by creating a new struct
@@ -140,8 +150,10 @@ classdef TestEditInclude < BaseTest
         function testCancel(testCase)
             % Test that Cancel restores the original
             original = struct('modality', {{'anat'}}, 'suffix', {{'MEGRE'}});
+            testCase.coord.include = original;
+            testCase.coord.exclude = struct('modality', {{'dwi'}}, 'suffix', {{'dwi'}});
             
-            gui = qb.GUI.EditInclude(original, testCase.BIDS);
+            gui = qb.GUI.EditInclude(testCase.coord);
             gui.Fig.Visible = 'off';
             
             % Modify the current include

@@ -415,8 +415,6 @@ methods
         %
         % See also: bids.query, obj.query_ses
 
-        import qb.utils.setfields
-
         % Parse the filter input
         bfilter = struct();
         if ~isempty(varargin) && isstruct(varargin{1})
@@ -435,15 +433,8 @@ methods
             return
         end
 
-        % Use the global (QuIDBBIDS) include filter for the raw BIDS layout
-        if ~isfield(layout, 'include') || ~strcmp(layout.pth, obj.BIDS.pth)
-            layout.include = struct();
-        end
-
-        % Do the query with the subject + any additional filters added, on top of the global include filter from the layout
-        bfilter = setfields(bfilter, 'sub',obj.sub(), varargin{:});
-        bfilter = [fieldnames(bfilter), struct2cell(bfilter)]';         % Convert to name-value pairs
-        result  = bids.query(layout, query, setfields(layout.include, bfilter{:}));
+        % Do the query with the subject + any additional filters added
+        result = bids.query(layout, query, qb.utils.setfields(bfilter, 'sub',obj.sub(), varargin{:}));
 
         % Postprocess the query result (i.e. fix the quirky bids.query behavior)
         switch query

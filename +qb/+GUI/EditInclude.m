@@ -139,6 +139,8 @@ methods
 
     function tagTree(obj)
         % Queries the BIDS folder and tags the tree based on the IncludeCurrent filter
+        P = uiprogressdlg(obj.Fig, Title='Building the data inclusion tree', Message='Please wait...', Icon=get(groot,'defaultFigureIcon'), Indeterminate='on');
+        cleanup = onCleanup(@() close(P));
         BIDS = obj.coord.pruneBIDS(obj.coord.fullBIDS, obj.IncludeCurrent, obj.ExcludeCurrent);
         included = string(bids.query(BIDS, 'data'));
         for node = obj.Tree.Children'

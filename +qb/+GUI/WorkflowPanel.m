@@ -34,9 +34,9 @@ methods
 
         % Config buttons
         buttonGrid = uigridlayout(mainGrid, [6 1], RowHeight = {'fit', 'fit', 'fit', 'fit', 'fit', 'fit'});
-        uibutton(buttonGrid, Text='🔍 Inclusion', Enable='on',  ButtonPushedFcn=@(~,~) coord.edit_inclusion(), Tooltip='Edit the raw BIDS inclusion filter');
+        uibutton(buttonGrid, Text='🔍 Inclusion', Enable='on',  ButtonPushedFcn=@(~,~) obj.edit_inclusion(),   Tooltip='Edit the raw BIDS inclusion filter');
         uibutton(buttonGrid, Text='🛒 Catalog',   Enable='on',  ButtonPushedFcn=@(~,~) obj.set_deliverables(), Tooltip='Select deliverables from the workitems catalog');
-        uibutton(buttonGrid, Text='🔧 Config',    Enable='off', ButtonPushedFcn=@(~,~) coord.edit_config(),    Tooltip='Edit worker configurations');
+        uibutton(buttonGrid, Text='🔧 Config',    Enable='off', ButtonPushedFcn=@(~,~) obj.edit_config(),      Tooltip='Edit worker configurations');
         uibutton(buttonGrid, Text='📂 Outputdir', Enable='off', ButtonPushedFcn=@(~,~) obj.outputdir(),        Tooltip='Set the directory where output data will be saved');
         uibutton(buttonGrid, Text='📂 Workdir',   Enable='off', ButtonPushedFcn=@(~,~) obj.workdir(),          Tooltip='Set the directory where working data will be saved');
         uibutton(buttonGrid, Text='↺ Reset',      Enable='off', ButtonPushedFcn=@(~,~) obj.reset_config(),     Tooltip='Clear all deliverables and reset the workflow graph');
@@ -160,6 +160,30 @@ methods
         obj.coord.manager.start_workflow()
         if isvalid(dlg), close(dlg), end
         uialert(obj.Fig, 'The workflow has completed', 'QuIDBBIDS info', Icon='info')
+    end
+
+    function edit_inclusion(obj)
+        % Callback for Inclusion button
+        
+        % Disable the button until done
+        button = findobj(obj.Fig, Type='uibutton', Text='🔍 Inclusion');
+        button.Enable = 'off';
+        cleanup = onCleanup(@() set(button, Enable='on'));
+        
+        % Call the coordinator method
+        obj.coord.edit_inclusion()
+    end
+
+    function edit_config(obj)
+        % Callback for Config button
+        
+        % Disable the button until done
+        button = findobj(obj.Fig, Type='uibutton', Text='🔧 Config');
+        button.Enable = 'off';
+        cleanup = onCleanup(@() set(button, Enable='on'));
+        
+        % Call the coordinator method
+        obj.coord.edit_config()
     end
     
 end

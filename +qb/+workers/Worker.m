@@ -355,7 +355,7 @@ methods
         filter.sub = {obj.sub()};
         [~,~] = mkdir(fullfile(workdir, "sub-" + obj.sub()));
 
-        BIDS = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, varargin{:});
+        BIDS = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_dependencies',false, varargin{:});
     end
 
     function BIDS = BIDS_ses(obj, workdir, varargin)
@@ -389,7 +389,7 @@ methods
         end
         [~,~] = mkdir(fullfile(workdir, subsesdir));        
 
-        BIDS = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, varargin{:});
+        BIDS = bids.layout(char(workdir), 'filter',filter, 'use_schema',false, 'index_dependencies',false, varargin{:});
     end
 
     function [result, bfiles] = query_sub(obj, layout, query, varargin)

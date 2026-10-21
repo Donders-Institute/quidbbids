@@ -25,7 +25,8 @@ end
 methods
     
     function obj = EditInclude(coord)
-        % Constructor
+        % Constructor to build the GUI and file tree from the root directory
+
         arguments
             coord qb.workers.Coordinator
         end
@@ -36,8 +37,6 @@ methods
         obj.ExcludeOriginal = coord.exclude;
         obj.ExcludeCurrent  = coord.exclude;
         obj.NodeMap         = containers.Map();
-        
-        % Build the GUI and file tree from the root directory
 
         % Create figure
         obj.Fig = uifigure(Name=['BIDS Include Editor - ' coord.BIDS.pth], Position=[200 200 800 600], CloseRequestFcn=@(src, evt) obj.onCancel());
@@ -90,9 +89,11 @@ methods
         obj.Tree.Tooltip     = 'Tree view of the BIDS data structure. Green circles indicate included files/folders';
 
         % Build the BIDS tree structure (without sidecars and hidden files)
+        P = uiprogressdlg(obj.Fig, Title='Building the data inclusion tree', Message='Please wait...', Icon=get(groot,'defaultFigureIcon'), Indeterminate='on');
         for file = dir(fullfile(coord.BIDS.pth, "**", "*"))'
             obj.addNodeToTree(file, obj.Tree)
         end
+        close(P)
 
         % Find and tag the included files
         obj.tagTree()

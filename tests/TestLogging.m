@@ -16,7 +16,7 @@ classdef TestLogging < BaseTest
 
             % BIDS struct
             bids.init(testCase.TempDir)
-            BIDS = bids.layout(testCase.TempDir);
+            BIDS = bids.layout(testCase.TempDir, index_dependencies=false);
 
             % Create any concrete worker
             worker = qb.workers.B1prepWorker(BIDS, BIDS.subjects(1), struct(), '', testCase.TempDir);

@@ -18,7 +18,7 @@ classdef TestWorkers < BaseTest
             end
             
             % Initialize BIDS layout once for all test methods
-            testCase.BidsLayout = bids.layout(fullfile(testCase.BidsExamplesRepo, 'qmri_vfa'));
+            testCase.BidsLayout = bids.layout(fullfile(testCase.BidsExamplesRepo, 'qmri_vfa'), index_dependencies=false);
             
             % Load configuration once for all test methods
             configFile = fullfile(fileparts(fileparts(mfilename('fullpath'))), '+qb', 'private', 'config_default.json');

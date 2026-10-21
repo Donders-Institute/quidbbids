@@ -105,7 +105,7 @@ methods
         obj.config     = obj.get_config();
         obj.include    = include;
         obj.exclude    = exclude;
-        obj.BIDS       = bids.layout(char(bidsdir), filter=obj.include, verbose=true);
+        obj.BIDS       = bids.layout(char(bidsdir), filter=obj.include, index_dependencies=false, verbose=true);
 
         % Filter the BIDS layout more thoroughly/deeply
         obj.pruneBIDS()
@@ -473,7 +473,7 @@ methods
         if isempty(obj.fullBIDS)
             H = uifigure(Name='BIDS data inclusion', Position=[400 400 400 100]);
             uiprogressdlg(H, Title='Indexing full BIDS layout', Message='Please wait...', Icon=icon, Indeterminate='on');
-            obj.fullBIDS = bids.layout(char(obj.BIDS.pth), verbose=true);
+            obj.fullBIDS = bids.layout(char(obj.BIDS.pth), index_dependencies=false, verbose=true);
             close(H)
         end
 
@@ -489,7 +489,7 @@ methods
         H = uifigure(Name='BIDS data inclusion', Position=[400 400 400 100]);
         P = uiprogressdlg(H, Title='Indexing newly filtered BIDS layout', Message='Please wait...', Icon=icon, Indeterminate='on');
         cleanup = onCleanup(@() close(H));
-        obj.BIDS = bids.layout(char(obj.BIDS.pth), filter=obj.include, verbose=true);
+        obj.BIDS = bids.layout(char(obj.BIDS.pth), filter=obj.include, index_dependencies=false, verbose=true);
         
         % Filter the BIDS layout more thoroughly/deeply
         obj.pruneBIDS()

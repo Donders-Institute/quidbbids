@@ -165,7 +165,7 @@
         "radius": {"value": [12,11,10,9,8,7,6,5,4,3,2,1], "description": "Vector of radii of the spherical mean value operation in descending order"}
       },
       "qsm": {
-        "reference_tissue": {"value": "CSF", "description": "Magnetic susceptibility map in ppm"},
+        "reference_tissue": {"value": "None", "description": "Magnetic susceptibility map in ppm"},
         "method": {"value": "MRI Suscep. Calc.", "description": "Method for dipole field inversion"},
         "solver": {"value": "Iterative Tikhonov", "description": "Methods to be used for dipole field inversion"},
         "lambda": {"value": 0.05, "description": "Regularisation parameter for Tikhonov algorithms"},

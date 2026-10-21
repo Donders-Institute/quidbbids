@@ -135,7 +135,7 @@ methods
             sepiaIO(input, output, char(mask), param)
 
             % Bluntly rename mask files to make them BIDS valid (bids-matlab fails on the original files)
-            for srcfile = dir([fileparts(output) '*_mask_*'])'  % SEPIA eats `desc-val` -> fileparts(output)
+            for srcfile = dir(fullfile(fileparts(output), '*_mask_*'))'     % SEPIA eats `desc-val` -> fileparts(output)
                 bname  = extractBefore(srcfile.name, '.');
                 ext    = extractAfter(srcfile.name, bname);
                 source = fullfile(srcfile.folder, srcfile.name);
@@ -145,7 +145,7 @@ methods
             end
 
             % Do the same for the ME4DUnwrapped files (SEPIA outputs them without a suffix, which is not BIDS valid)
-            for srcfile = dir([fileparts(output) '*-ME4DUnwrapped*'])'  % SEPIA eats `desc-val` -> fileparts(output)
+            for srcfile = dir(fullfile(fileparts(output), '*-ME4DUnwrapped*'))'     % SEPIA eats `desc-val` -> fileparts(output)
                 source = fullfile(srcfile.folder, srcfile.name);
                 target = fullfile(srcfile.folder, [replace(srcfile.name, '-ME4DUnwrapped', '-ME4D_unwrapped')]);
                 obj.logger.verbose('-> Renaming %s -> %s', source, target)

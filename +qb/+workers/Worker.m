@@ -566,23 +566,26 @@ methods
     end
 
     function [status, output] = run_command(obj, command, silent)
-        %RUN_COMMAND Executes a shell command and display its output.
+        %RUN_COMMAND Executes a shell command and displays its output.
         %
-        %   [STATUS, OUTPUT] = RUN_COMMAND(COMMAND) prints the specified shell
-        %   COMMAND to the console, executes it using SYSTEM(), and returns the
-        %   STATUS and OUTPUT.
+        % [STATUS, OUTPUT] = RUN_COMMAND(COMMAND) prints the specified shell
+        % COMMAND to the console, executes it using SYSTEM(), and returns the
+        % STATUS and OUTPUT.
         %
-        %   If the command fails (i.e., STATUS ~= 0), an error is raised with
-        %   a message containing the exit status and the command's output.
+        % If the command fails (i.e., STATUS ~= 0), an error is raised with
+        % a message containing the exit status and the command's output.
         %
-        %   Inputs:
-        %       COMMAND - A string containing the shell command to execute.
-        %       SILENT  - If true, suppress output unless there is an error.
-        %                 Default = false.
+        % Inputs:
+        %    COMMAND - A string containing the shell command to execute.
+        %    SILENT  - If true, suppress output unless there is an error.
+        %              Default = false.
         %
-        %   Outputs:
-        %       STATUS  - Exit code returned by the SYSTEM command.
-        %       OUTPUT  - Command-line output returned by the SYSTEM command.
+        % Outputs:
+        %    STATUS  - Exit code returned by the SYSTEM command.
+        %    OUTPUT  - Command-line output returned by the SYSTEM command.
+        % 
+        % Note that this function is a security risk if the command is
+        % constructed from untrusted user input. Use with caution...
 
         arguments
             obj

@@ -50,13 +50,13 @@ methods (Access = protected)
                                               part     = '', ...
                                               desc     = 'gacelle', ...
                                               suffix   = 'MWFmap');
-        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap,   label='free2myelinwater', suffix='ExchRate');
-        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap,   label='fitted',           suffix='mask');
-        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap,   label='myelinwater',      suffix='M0Map');
-        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map,                           suffix='R2starmap');
-        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map, label='freewater');
-        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map,                           suffix='T1map');
-        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map,                           suffix='R1map');
+        obj.bidsfilter.FMW_exrate    = setfields(obj.bidsfilter.MWFmap,       label='free2myelinwater', suffix='ExchRate');
+        obj.bidsfilter.FitMask       = setfields(obj.bidsfilter.MWFmap,       label='fitted',           suffix='mask');
+        obj.bidsfilter.MW_M0map      = setfields(obj.bidsfilter.MWFmap,       label='myelinwater',      suffix='M0Map');
+        obj.bidsfilter.MW_R2starmap  = setfields(obj.bidsfilter.MW_M0map,                               suffix='R2starmap');
+        obj.bidsfilter.FW_M0map      = setfields(obj.bidsfilter.MW_M0map,     label='freewater');
+        obj.bidsfilter.FW_T1map      = setfields(obj.bidsfilter.FW_M0map,                               suffix='T1map');
+        obj.bidsfilter.FW_R1map      = setfields(obj.bidsfilter.FW_M0map,                               suffix='R1map');
         obj.bidsfilter.IAW_R2starmap = setfields(obj.bidsfilter.MW_R2starmap, label='axonalwater');
     end
 
@@ -103,8 +103,7 @@ methods
             obj.logger.exception('%s expected %d brainmasks but got:%s', obj.name, length(ME4Dmag), sprintf(' %s', localfmask{:}))
         end
 
-        % Read the protocol of each acquisition. This is done before allocating because acquisitions
-        % may differ in TR and in the number of echoes 
+        % Read the protocol of each acquisition. This is done before allocating because acquisitions may differ in TR and in the number of echoes
         for n = 1:length(ME4Dmag)
             bfile = bids.File(ME4Dmag{n});                  % For reading metadata, parsing entities, etc
             FA(n) = bfile.metadata.FlipAngle;               %#ok<AGROW>
@@ -139,13 +138,7 @@ methods
         TE1  = reshape(cellfun(@(te) te(1), TE), 1, 1, 1, []);                      % First echo time of each acquisition
         pini = unwrappedPhase(:,:,:,te_indexrange(:,1)) - 2*pi*totalField .* TE1;   % Dimensions: [x,y,z,FA]
         pini = polyfit3D_NthOrder(double(mean(pini(:,:,:,1:end-1), 4)), mask, 6);
-
-        clear unwrappedPhase  % not used after this line
-
-        if ~isVTR
-            img            = reshape(img,            [dims(1:3) nTE(1) length(ME4Dmag)]);   % Back to [x,y,z,TE,FA] for gpuMCRMWI
-            dims           = size(img);
-        end
+        clear unwrappedPhase                                                    % not used after this line
 
         % Construct the fixed parameters and extra data for the MCR model
         fixed_params      = obj.config.MCR_GPUWorker.fixed_params;
@@ -159,23 +152,23 @@ methods
         % We need to override isEPG for VTR, and mutating obj.config would leak the change into other subjects processed in the same session
         fitting = obj.config.MCR_GPUWorker.fitting; 
         if isVTR
-            extraData.te_indexrange = te_indexrange;
+            if ~exist('gpuMCRMWI_VFAVTR', 'class')
+                obj.logger.exception('%s found a variable-TR protocol but gpuMCRMWI_VFAVTR is not on the MATLAB-path.\nPossible solution:\ngit submodule update --init dependencies/vTR-qMRI', obj.name)
+            end
             if fitting.isEPG
                 obj.logger.warning('%s: the EPG-X networks assume a single TR for all flip angles, using the Bloch-McConnell solution instead', obj.name)
                 fitting.isEPG = false;
             end
+            obj.logger.info('%s detected a variable protocol (TR = [%s] ms), using gpuMCRMWI_VFAVTR', obj.name, num2str(TR*1e3, ' %.1f'))
+            extraData.te_indexrange = te_indexrange;
+            objGPU = gpuMCRMWI_VFAVTR(TE, TR, FA, fixed_params);
+        else
+            img    = reshape(img, [dims(1:3) nTE(1) length(ME4Dmag)]);          % Back to [x,y,z,TE,FA] for gpuMCRMWI
+            dims   = size(img);
+            objGPU = gpuMCRMWI(TE{1}, TR(1), FA, fixed_params);
         end
 
        % Estimate the MCR model (variable-TR protocols need the vTR-qMRI implementation)
-        if isVTR
-            if ~exist('gpuMCRMWI_VFAVTR', 'class')
-                obj.logger.exception('%s found a variable-TR protocol but gpuMCRMWI_VFAVTR is not on the MATLAB-path.\nPossible solution:\ngit submodule update --init dependencies/vTR-qMRI', obj.name)
-            end
-            obj.logger.info('%s detected a variable protocol (TR = [%s] ms), using gpuMCRMWI_VFAVTR', obj.name, num2str(TR*1e3, ' %.1f'))
-            objGPU = gpuMCRMWI_VFAVTR(TE, TR, FA, fixed_params);
-        else
-            objGPU = gpuMCRMWI(TE{1}, TR(1), FA, fixed_params);
-        end
         askadam_mcr = objGPU.estimate(img, mask, extraData, fitting);
 
         % Extract and save the output data

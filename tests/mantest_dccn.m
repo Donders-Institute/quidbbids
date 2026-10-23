@@ -65,6 +65,22 @@ if ismember("MCR-MWI_VFA", datasets)
     quidb.get_manager()
     quidb.manager.start_workflow()
 
+    % Expected warnings (due to missing data):
+    % ⛔ QuIDBBIDS warnings found for sub-003_ses-mri01:
+    % | [22-Oct-2026 22:48:03] More than one T1w "withinGRE" reference image found, using: /project/3032002.02/testdata/bids_MCR-MWI_VFA/derivatives/QuIDBBIDS_work/sub-003/ses-mri01/anat/sub-003_ses-mri01_echo-1_flip-3_space-withinGRE_desc-synthetic_T1w.nii.gz
+    % ⛔ QuIDBBIDS errors found for sub-002_ses-mri01:
+    % | [22-Oct-2026 22:54:41] DWIprepWorker could not produce the requested DWItheta item (sub-002/ses-mri01)
+    % | [22-Oct-2026 22:54:42] DWIprepWorker could not produce the requested DWIicvf item (sub-002/ses-mri01)
+    % | [22-Oct-2026 22:54:44] DWIprepWorker could not produce the requested DWIff item (sub-002/ses-mri01)
+    % ⛔ QuIDBBIDS errors found for sub-002_ses-mri02:
+    % | [22-Oct-2026 22:54:40] DWIprepWorker could not produce the requested DWItheta item (sub-002/ses-mri02)
+    % | [22-Oct-2026 22:54:41] DWIprepWorker could not produce the requested DWIicvf item (sub-002/ses-mri02)
+    % | [22-Oct-2026 22:54:43] DWIprepWorker could not produce the requested DWIff item (sub-002/ses-mri02)
+    % ⛔ QuIDBBIDS errors found for sub-003_ses-mri02:
+    % | [22-Oct-2026 22:52:51] DWIprepWorker could not produce the requested DWItheta item (sub-003/ses-mri02)
+    % | [22-Oct-2026 22:52:53] DWIprepWorker could not produce the requested DWIicvf item (sub-003/ses-mri02)
+    % | [22-Oct-2026 22:52:55] DWIprepWorker could not produce the requested DWIff item (sub-003/ses-mri02)    
+
     % Make QC reports
     if isunix
         system(sprintf(['(module load bidscoin; cd %s;' ...

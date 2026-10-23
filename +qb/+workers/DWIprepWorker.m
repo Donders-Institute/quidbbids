@@ -138,7 +138,7 @@ methods
                         obj.logger.error('No QSIRecon T1w reference image found for: %s. Cannot coregister the "ACPC" files to the "withinGRE" space.', fullfile(qsiprepdir, obj.sub_ses()))
                         return
                     elseif length(T1src) > 1
-                        obj.logger.warning('More than one T1w "ACPC" reference image found, using the first image: %s', T1src{1})
+                        obj.logger.warning('%d T1w "ACPC" reference images found, using the first image: %s', length(T1src), T1src{1})
                     end
                     T1tgt = obj.ask_team('syntheticT1');
                     if isempty(T1tgt)
@@ -147,7 +147,7 @@ methods
                     end
                     if length(T1tgt) > 1
                         T1tgt = T1tgt(round(length(T1tgt)/2));      % If there are multiple T1w "withinGRE" images (flips), use the middle one
-                        obj.logger.warning('More than one T1w "withinGRE" reference image found, using: %s', T1tgt{1})
+                        obj.logger.warning('%d (VFA) T1w "withinGRE" reference images found, using the middle one: %s', length(T1tgt), T1tgt{1})
                     end
                     Vtgt = spm_vol(T1tgt{1});
                     Vsrc = spm_vol(T1src{1});

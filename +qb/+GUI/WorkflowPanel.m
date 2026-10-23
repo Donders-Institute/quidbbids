@@ -154,7 +154,7 @@ methods
         % Disable user interaction
         set(findobj(obj.Fig, Type='uibutton', Enable='on'), Enable='off')
         cleanup = onCleanup(@() set(findobj(obj.Fig, Type='uibutton', Enable='off'), Enable='on'));
-        dlg = helpdlg('Starting the workflow', 'Please wait');
+        dlg = helpdlg('Starting the workflow', 'Please wait...⌛');
 
         % Start the workflow
         obj.coord.manager.start_workflow()

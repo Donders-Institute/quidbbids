@@ -286,7 +286,7 @@ methods
             obj.create_team()
         end
 
-        % Clear the worker error/warning logs
+        % Clear old worker error/warning logs
         for member = obj.team_members()
             for suffix = ["warnings", "errors"]
                 for logfile = dir(fullfile(obj.coord.outputdir, 'logs', member, sprintf('sub-*_%s.log', suffix)))'

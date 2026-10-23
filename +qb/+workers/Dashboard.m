@@ -83,13 +83,14 @@ methods
         end
     end
     
-    function subjects = has_warnings(obj, verbose, level_)
+    function subjects = has_warnings(obj, verbose, level_, cleanup)
         %HAS_WARNINGS Returns the list of subjects that encountered warnings
         
         arguments
             obj
             verbose  (1,1) logical = false
             level_   string {mustBeMember(level_, ["warnings", "errors"])} = "warnings"
+            cleanup  (1,1) logical = true
         end
         
         subjects = string.empty();
@@ -101,6 +102,9 @@ methods
                     if verbose
                         fprintf("\n⛔ QuIDBBIDS %s found for %s:\n", level_, subses)
                         fprintf('| %s\n', readlines(logfile))
+                    end
+                    if cleanup
+                        delete(logfile)
                     end
                 end
             end

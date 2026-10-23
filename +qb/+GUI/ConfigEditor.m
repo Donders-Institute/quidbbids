@@ -224,7 +224,7 @@ methods (Access = ?TestConfigEditorGUI)
             workerName  = path{1};  % Top-level key (e.g., 'QSMWorker')
             treeName    = path{2};  % Second-level key (e.g., 'QSM' or 'R2starmap')
             subtreeName = path{3};  % Third-level key (e.g., 'qsm' or 'r2s')
-            if ischar(node.NodeData.value) && strcmp(workerName, 'QSMWorker') && ismember(subtreeName, {'unwrap','bfr','qsm'})
+            if ischar(node.NodeData.value) && strcmp(workerName, 'QSMWorker') && ismember(subtreeName, {'unwrap','bfr','qsm','r2s'})
                 tf = true;
             end
         end
@@ -404,8 +404,8 @@ methods (Access = ?TestConfigEditorGUI)
         cleanup = onCleanup(@() set(obj.Fig, 'Visible', 'on'));     % Ensure main GUI is shown again on function exit
         try
             w = helpdlg({sprintf('Opening SEPIA GUI for configuring "%s.%s.%s" settings', path{1:3});''; ...
-                        'Initialization can be slow, please wait a few seconds...⌛';''; ... 
-                        sprintf('NB: This overwrites all current "%s.%s.%s" settings', path{1:3});''}, 'SEPIA Config Editor');
+                         'Initialization can be slow, please wait a few seconds...⌛';''; ... 
+                         sprintf('NB: This overwrites all current "%s.%s.%s" settings', path{1:3});''}, 'SEPIA Config Editor');
             pause(0.1)      % Give time to render the dialog
             h = sepia();    % Opens the full SEPIA GUI
         catch ME
@@ -415,9 +415,10 @@ methods (Access = ?TestConfigEditorGUI)
         % Show only the subtree (path{3}) tab of the SEPIA GUI
         eventdata.OldValue = h.TabGroup.SelectedTab;
         for tab = fieldnames(h.Tabs)'
-            if ~( strcmp(tab, path{3}) || ...
-                    (strcmp(tab,'phaseUnwrap') && strcmp(path{3}, 'unwrap')) || ...
-                    (strcmp(tab,'bkgRemoval')  && strcmp(path{3}, 'bfr')))
+            if ~(strcmp(tab, path{3}) || ...
+                (strcmp(tab,'phaseUnwrap') && strcmp(path{3}, 'unwrap')) || ...
+                (strcmp(tab,'bkgRemoval')  && strcmp(path{3}, 'bfr')) || ...
+                (strcmp(tab,'r2star')      && strcmp(path{3}, 'r2s')))
                 h.Tabs.(char(tab)).Parent = [];
                 continue
             end

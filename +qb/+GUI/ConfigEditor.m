@@ -223,7 +223,7 @@ methods (Access = ?TestConfigEditorGUI)
             node        = obj.Tree.SelectedNodes;
             workerName  = path{1};  % Top-level key (e.g., 'QSMWorker')
             treeName    = path{2};  % Second-level key (e.g., 'qsm' or 'r2s')
-            if ischar(node.NodeData.value) && strcmp(workerName, 'QSMWorker') && ismember(treeName, {'unwrap','bfr','qsm','r2s'})
+            if ischar(node.NodeData.value) && ismember(workerName, {'QSMWorker','R2starWorker'}) && ismember(treeName, {'unwrap','bfr','qsm','r2s'})
                 tf = true;
             end
         end
@@ -254,6 +254,9 @@ methods (Access = ?TestConfigEditorGUI)
                 obj.DescArea.Value = {jsonencode(data.description)};
             end
             obj.ValField.Value = obj.valueToStringForDisplay(data.value);
+        elseif strlength(qb.workers.help(node.Text)) > 0
+            obj.DescArea.Value = cellstr(qb.workers.help(node.Text));
+            obj.ValField.Value = '';
         else
             obj.DescArea.Value = {'(not editable)'};
             obj.ValField.Value = '';

@@ -54,7 +54,7 @@ methods (Access = protected)
         obj.bidsfilter.unwrapped  = setfields(obj.bidsfilter.Chimap, part='phase',       suffix='unwrapped');
         obj.bidsfilter.localfmask = setfields(obj.bidsfilter.Chimap, label='localfield', suffix='mask');
 
-        % Set the custom "Parent" config key set to "QSMWorker"
+        % Set a custom "Parent" config key set to "QSMWorker"
         obj.config.Parent = 'QSMWorker';
     end
 

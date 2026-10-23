@@ -16,7 +16,7 @@ properties (Constant)
                    ""
                    ".. note::"
                    ""
-                   "   SEPIA has its own working directory structure. QSMWorker temporarily switches to the"
+                   "   SEPIA has its own working directory structure. R2starWorker temporarily switches to the"
                    "   SEPIA directory for processing and renames output files to ensure BIDS compatibility."
                    "   The SEPIA toolbox must be installed and configured."] % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
@@ -45,7 +45,7 @@ methods (Access = protected)
         obj.bidsfilter.T2starmap = setfields(obj.bidsfilter.R2starmap, suffix='T2starmap');
         obj.bidsfilter.S0map     = setfields(obj.bidsfilter.R2starmap, suffix='S0map');
 
-        % Set the custom "Parent" config key set and replace the QSMWorker config with my own config
+        % Set a custom "Parent" config key set and replace the QSMWorker config with my own config
         obj.config.Parent    = 'R2starWorker';
         obj.config.QSMWorker = obj.config.R2starWorker;
     end

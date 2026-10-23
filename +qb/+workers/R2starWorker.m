@@ -32,6 +32,12 @@ methods (Access = protected)
 
         import qb.utils.setfields
 
+        % SEPIA should have a directory of its own (we cannot control it's output very well)
+        obj.workdir = replace(obj.workdir, "QuIDBBIDS", "SEPIA");
+        if ~isempty(obj.workdir) && ~isfile(fullfile(obj.workdir, 'dataset_description.json'))
+            bids.init(char(obj.workdir), 'is_derivative', true)
+        end
+
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
         obj.bidsfilter.R2starmap = struct(modality = 'anat', ...
                                           echo     = [], ...
@@ -39,7 +45,7 @@ methods (Access = protected)
         obj.bidsfilter.T2starmap = setfields(obj.bidsfilter.R2starmap, suffix='T2starmap');
         obj.bidsfilter.S0map     = setfields(obj.bidsfilter.R2starmap, suffix='S0map');
 
-        % Set the custom "Parent" config key set to "R2starWorker" and replace the QSMWorker config with my own config
+        % Set the custom "Parent" config key set and replace the QSMWorker config with my own config
         obj.config.Parent    = 'R2starWorker';
         obj.config.QSMWorker = obj.config.R2starWorker;
     end

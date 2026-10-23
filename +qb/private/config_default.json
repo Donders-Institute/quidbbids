@@ -180,19 +180,7 @@
       },
       "r2s": {
         "method": {"value": "Trapezoidal", "description": "R2* fitting method"},
-        "s0mode": {"value": "1st echo", "description": "S0 estimation mode"},
-        "maxIter": {"value": 200, "description": "Maximum no. of iterations allowed"},
-        "fcnTol": {"value": 1e-4, "description": "Function tolerance threshold"},
-        "stepTol": {"value": 1e-4, "description": "Step size tolerance"},
-        "numMagn": {"value": true, "description": "Use magnitude-only fitting"},
-        "isWeighted": {"value": true, "description": "Use weighted fitting"},
-        "weightMethod": {"value": "quadratic_1stEcho", "description": "Weighting scheme Options: '1stEcho' or 'quadratic_1stEcho'"},
-        "isExchange": {"value": true, "description": "Include water exchange model"},
-        "isEPG": {"value": true, "description": "Use EPG-X simulation"},
-        "npulse": {"value": 50, "description": "Number of pulses in EPG model"},
-        "rfphase": {"value": 150, "description": "RF phase increment (degrees). Philips = 150"},
-        "isT1mw": {"value": false, "description": "Fit myelin water T1"},
-        "T1mw": {"value": 0.234, "description": "Fixed myelin water T1 (seconds)"}
+        "s0mode": {"value": "1st echo", "description": "S0 estimation mode"}
       }
     }
   }

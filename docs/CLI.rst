@@ -22,8 +22,8 @@ To initialize the QuIDBBIDS coordinator, create a ``QuIDBBIDS`` object by provid
       [..]         : [..]
 
    >> quidb.resumes.R2R1R2sWorker                          % NB: Only ever edit the `preferred` field
-           handle: @qb.workers.R1R2sWorker
-             name: "R1R2sWorker"
+           handle: @qb.workers.R1R2starWorker
+             name: "R1R2starWorker"
       description: [24×1 string]
             makes: ["R2starmap" "M0map" "R1map"]
             needs: ["ME4Dmag" "TB1map_GRE" "brainmask"]
@@ -46,7 +46,7 @@ parameter of the MP2RAGEWorker and modify it to ``192``, and use your HPC you ca
             General: [1×1 struct]
        B1prepWorker: [1×1 struct]
       MP2RAGEWorker: [1×1 struct]
-        R1R2sWorker: [1×1 struct]
+        R1R2starWorker: [1×1 struct]
           MCRWorker: [1×1 struct]
           QSMWorker: [1×1 struct]
 

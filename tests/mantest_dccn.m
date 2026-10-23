@@ -48,7 +48,7 @@ end
 %% MCR-MWI_VFA
 if ismember("MCR-MWI_VFA", datasets)
     quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_MCR-MWI_VFA'), "", "", "default")
-    quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
+    quidb.resumes.R1R2starWorker.preferred = true;     % Optional, else GUI usage
     quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
     quidb.config.VFAprepWorker.denoising.method.value = "tMPPCA";
     quidb.config.General.useHPC.value = true;
@@ -95,14 +95,14 @@ end
 %% Hamburg_MPM
 if ismember("Hamburg_MPM", datasets)
     quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_Hamburg_MPM'), "", "", "default")
-    quidb.resumes.R1R2sWorker.preferred = true;     % Optional, else GUI usage
+    quidb.resumes.R1R2starWorker.preferred = true;     % Optional, else GUI usage
     quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
     quidb.config.General.useHPC.value = true;
     quidb.config.B1prepWorker.FAscaling.value = 100;
     quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
 
     % First run the non-GPU part of the workflow
-    % quidb.deliverables = [quidb.resumes.R1R2sWorker.needs, quidb.resumes.MCR_GPUWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.deliverables = p;
+    % quidb.deliverables = [quidb.resumes.R1R2starWorker.needs, quidb.resumes.MCR_GPUWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.deliverables = p;
     % quidb.get_manager()
     % quidb.manager.start_workflow()
 

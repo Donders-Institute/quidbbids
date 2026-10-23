@@ -58,7 +58,7 @@
     "B1correctM0": {"value": 0, "description": "0 = no correction; 1/2/3 applies a left-right, front-back or up-down flipped transmit field as an approximation of the receive field. Only use this option if the anatomical data is well centered in the field of view (as provided by auto-align) and if the bias Field correction was enabled on the scanner"}
   },
 
-  "R1R2sWorker": {
+  "R1R2starWorker": {
     "fitting": {
       "iteration": {"value": 4000, "description": "Maximum number of GPU fitting iterations"},
       "convergenceWindow": {"value": 25, "description": "Window size for estimating convergence (> 100 iterations for more robust estimate)"},

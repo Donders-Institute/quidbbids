@@ -163,7 +163,7 @@ Open MATLAB and follow these steps:
                   General: [1×1 struct]
              B1prepWorker: [1×1 struct]
             MP2RAGEWorker: [1×1 struct]
-              R1R2sWorker: [1×1 struct]
+              R1R2starWorker: [1×1 struct]
                 MCRWorker: [1×1 struct]
                 QSMWorker: [1×1 struct]
 

@@ -294,12 +294,12 @@ Properties
    - - ``usesGPU``
      - false
 
-R1R2sWorker
+R1R2starWorker
 ~~~~~~~~~~~
 
 Joint R1 and R2* mapping worker using GPU-accelerated estimation for multi-echo GRE data.
 
-R1R2sWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip Angle (VFA) and
+R1R2starWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip Angle (VFA) and
 Multi-Parameter Mapping (MPM) multi-echo GRE data using a joint estimation model. The simultaneous fitting
 of R1 and R2* parameters improves accuracy by accounting for the interdependence of these relaxation
 parameters, particularly important at high field strengths where both T1 and T2* effects are significant.

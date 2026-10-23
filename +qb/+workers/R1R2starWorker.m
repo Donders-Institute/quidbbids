@@ -1,5 +1,5 @@
-classdef (Sealed) R1R2sWorker < qb.workers.Worker
-%R1R2SWORKER Runs MCR workflow on the GPU
+classdef (Sealed) R1R2starWorker < qb.workers.Worker
+%R1R2STARWORKER Runs MCR workflow on the GPU
 %
 % See also: qb.workers.Worker (for base interface), qb.QuIDBBIDS (for overview)
 
@@ -7,7 +7,7 @@ classdef (Sealed) R1R2sWorker < qb.workers.Worker
 properties (Constant)
     description = ["Joint R1 and R2* mapping worker using GPU-accelerated estimation for multi-echo GRE data."
                    ""
-                   "R1R2sWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip Angle (VFA) and"
+                   "R1R2starWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip Angle (VFA) and"
                    "Multi-Parameter Mapping (MPM) multi-echo GRE data using a joint estimation model. The simultaneous fitting"
                    "of R1 and R2* parameters improves accuracy by accounting for the interdependence of these relaxation"
                    "parameters, particularly important at high field strengths where both T1 and T2* effects are significant."
@@ -104,7 +104,7 @@ methods
         extraData     = [];
         extraData.b1  = B1;
         objGPU        = gpuJointR1R2starMapping(TE, TR, FA);
-        askadam_R1R2s = objGPU.estimate(img, mask, extraData, obj.config.R1R2sWorker.fitting);
+        askadam_R1R2s = objGPU.estimate(img, mask, extraData, obj.config.R1R2starWorker.fitting);
 
         % Save the output data
         V(1).dim = dims(1:3);

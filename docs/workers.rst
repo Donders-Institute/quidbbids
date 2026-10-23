@@ -273,7 +273,6 @@ Processing Steps:
 1. Phase Unwrapping: Resolves phase wraps in the multi-echo phase data
 2. Background Field Removal: Separates local tissue phase from background field contributions
 3. Susceptibility Inversion: Converts local field maps to susceptibility maps
-4. R2* Mapping: Computes R2* relaxation rate maps from multi-echo magnitude decay
 
 .. note::
 
@@ -290,12 +289,12 @@ Properties
    - - ``needs``
      - ME4Dmag, ME4Dphase, brainmask
    - - ``makes``
-     - R2starmap, T2starmap, S0map, Chimap, fieldmap, unwrapped, localfmask
+     - Chimap, fieldmap, unwrapped, localfmask
    - - ``usesGPU``
      - false
 
 R1R2starWorker
-~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 Joint R1 and R2* mapping worker using GPU-accelerated estimation for multi-echo GRE data.
 
@@ -337,6 +336,37 @@ Properties
      - R2starmap_SCR, M0map_SCR, R1map_SCR
    - - ``usesGPU``
      - true
+
+R2starWorker
+~~~~~~~~~~~~
+
+R2* relaxometry worker using the SEPIA toolbox.
+
+R2starWorker computes R2* (transverse relaxation rate) maps from multi-echo gradient-recalled
+echo (GRE) magnitude data. R2* mapping is a quantitative MRI technique that provides information
+about tissue microstructure and iron content.
+
+The worker leverages the SEPIA toolbox (Susceptibility and Phase Imaging Application) to process
+the multi-echo GRE data and generate quantitative R2* maps.
+
+.. note::
+
+   SEPIA has its own working directory structure. QSMWorker temporarily switches to the
+   SEPIA directory for processing and renames output files to ensure BIDS compatibility.
+   The SEPIA toolbox must be installed and configured.
+
+Properties
+----------
+
+.. list-table::
+   :widths: 25 75
+
+   - - ``needs``
+     - ME4Dmag, brainmask
+   - - ``makes``
+     - R2starmap, T2starmap, S0map
+   - - ``usesGPU``
+     - false
 
 SCRWorker
 ~~~~~~~~~

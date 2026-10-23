@@ -219,12 +219,11 @@ methods (Access = ?TestConfigEditorGUI)
 
     function tf = isSepiaMenu(obj, path)
         tf = false;
-        if numel(path) >= 3
+        if numel(path) >= 2
             node        = obj.Tree.SelectedNodes;
             workerName  = path{1};  % Top-level key (e.g., 'QSMWorker')
-            treeName    = path{2};  % Second-level key (e.g., 'QSM' or 'R2starmap')
-            subtreeName = path{3};  % Third-level key (e.g., 'qsm' or 'r2s')
-            if ischar(node.NodeData.value) && strcmp(workerName, 'QSMWorker') && ismember(subtreeName, {'unwrap','bfr','qsm','r2s'})
+            treeName    = path{2};  % Second-level key (e.g., 'qsm' or 'r2s')
+            if ischar(node.NodeData.value) && strcmp(workerName, 'QSMWorker') && ismember(treeName, {'unwrap','bfr','qsm','r2s'})
                 tf = true;
             end
         end
@@ -403,31 +402,31 @@ methods (Access = ?TestConfigEditorGUI)
         obj.Fig.Visible = 'off';                                    % Hide main GUI while SEPIA is open
         cleanup = onCleanup(@() set(obj.Fig, 'Visible', 'on'));     % Ensure main GUI is shown again on function exit
         try
-            w = helpdlg({sprintf('Opening SEPIA GUI for configuring "%s.%s.%s" settings', path{1:3});''; ...
+            w = helpdlg({sprintf('Opening SEPIA GUI for configuring "%s.%s" settings', path{1:2});''; ...
                          'Initialization can be slow, please wait a few seconds...⌛';''; ... 
-                         sprintf('NB: This overwrites all current "%s.%s.%s" settings', path{1:3});''}, 'SEPIA Config Editor');
+                         sprintf('NB: This overwrites all current "%s.%s" settings', path{1:2});''}, 'SEPIA Config Editor');
             pause(0.1)      % Give time to render the dialog
             h = sepia();    % Opens the full SEPIA GUI
         catch ME
             errordlg(['Failed to open SEPIA GUI: ' ME.message], 'Editor Error')
         end
         
-        % Show only the subtree (path{3}) tab of the SEPIA GUI
+        % Show only the subtree (path{2}) tab of the SEPIA GUI
         eventdata.OldValue = h.TabGroup.SelectedTab;
         for tab = fieldnames(h.Tabs)'
-            if ~(strcmp(tab, path{3}) || ...
-                (strcmp(tab,'phaseUnwrap') && strcmp(path{3}, 'unwrap')) || ...
-                (strcmp(tab,'bkgRemoval')  && strcmp(path{3}, 'bfr')) || ...
-                (strcmp(tab,'r2star')      && strcmp(path{3}, 'r2s')))
+            if ~(strcmp(tab, path{2}) || ...                    % TODO: Check if a `qsm` line needs to be added here
+                (strcmp(tab,'phaseUnwrap') && strcmp(path{2}, 'unwrap')) || ...
+                (strcmp(tab,'bkgRemoval')  && strcmp(path{2}, 'bfr')) || ...
+                (strcmp(tab,'r2star')      && strcmp(path{2}, 'r2s')))
                 h.Tabs.(char(tab)).Parent = [];
                 continue
             end
             eventdata.NewValue     = h.Tabs.(char(tab));
             h.TabGroup.SelectedTab = h.Tabs.(char(tab));
             h.TabGroup.SelectionChangedFcn(h.TabGroup, eventdata)
-            % currentData = obj.Config.(path{1}).(path{2}).(path{3});   % Too complex, use SEPIA defaults
-            % h.load_config(currentData)                                % Too complex, use SEPIA defaults
-            h.pushbutton_loadConfig.Visible = 'off';                    % Too complex, use SEPIA defaults
+            % currentData = obj.Config.(path{1}).(path{2});     % Too complex, use SEPIA defaults
+            % h.load_config(currentData)                        % Too complex, use SEPIA defaults
+            h.pushbutton_loadConfig.Visible = 'off';            % Too complex, use SEPIA defaults
             h.pushbutton_start.String       = 'Done';
             h.dataIO.edit.output.String     = tempname;
             h.StepsPanel.dataIO.Visible     = 'off';
@@ -441,8 +440,8 @@ methods (Access = ?TestConfigEditorGUI)
         % Update the config with the new parameters
         if isvalid(h.fig)
             if isfield(h.fig.UserData, 'algorParam') && ~isempty(h.fig.UserData.algorParam)
-                obj.Config.(path{1}).(path{2}).(path{3}) = obj.make_leaves(h.fig.UserData.algorParam.(path{3}));
-                obj.refreshSubtree(path(1:3))
+                obj.Config.(path{1}).(path{2}) = obj.make_leaves(h.fig.UserData.algorParam.(path{2}));
+                obj.refreshSubtree(path(1:2))
             end
             delete([h.dataIO.edit.output.String '*'])   % Cleanup SEPIA's temp configfiles
             close(h.fig)
@@ -481,8 +480,8 @@ methods (Access = ?TestConfigEditorGUI)
 
         % For SEPIA menu, reset the parent subtree, else just the leaf
         if obj.isSepiaMenu(path)
-            obj.Config = obj.setValueInConfig(obj.Config, path(1:3), obj.OrigConfig.(path{1}).(path{2}).(path{3}));
-            obj.refreshSubtree(path(1:3))
+            obj.Config = obj.setValueInConfig(obj.Config, path(1:2), obj.OrigConfig.(path{1}).(path{2}));
+            obj.refreshSubtree(path(1:2))
         else
             leaf = obj.OrigConfig;
             for i = 1:numel(path)

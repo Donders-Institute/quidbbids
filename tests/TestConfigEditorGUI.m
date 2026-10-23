@@ -180,10 +180,9 @@ classdef TestConfigEditorGUI < BaseTest
             gui.Fig.Visible = 'off';
 
             % Find the specific leaf node in the tree
-            qsmNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
-            qsmSubNode = qsmNode.Children(strcmp({qsmNode.Children.Text}, 'QSM'));
-            bfrNode    = qsmSubNode.Children(strcmp({qsmSubNode.Children.Text}, 'bfr'));
-            leafNode   = bfrNode.Children(strcmp({bfrNode.Children.Text}, 'refine_order'));
+            qsmNode  = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
+            bfrNode  = qsmNode.Children(strcmp({qsmNode.Children.Text}, 'bfr'));
+            leafNode = bfrNode.Children(strcmp({bfrNode.Children.Text}, 'refine_order'));
 
             % Update the tree node directly (this is what the UI would do)
             nodeData          = leafNode.NodeData;
@@ -191,18 +190,18 @@ classdef TestConfigEditorGUI < BaseTest
             leafNode.NodeData = nodeData;
 
             % Also update the main config to keep them in sync
-            path = {'QSMWorker', 'QSM', 'bfr', 'refine_order'};
+            path = {'QSMWorker', 'bfr', 'refine_order'};
             gui.Config = gui.setValueInConfig(gui.Config, path, nodeData);
 
             % Verify both tree and config are updated
             testCase.verifyEqual(leafNode.NodeData.value, 999)
-            testCase.verifyEqual(gui.Config.QSMWorker.QSM.bfr.refine_order.value, 999)
+            testCase.verifyEqual(gui.Config.QSMWorker.bfr.refine_order.value, 999)
 
             % Save and load back and verify the change persisted
             gui.saveConfig()
             savedConfig = jsondecode(fileread(testCase.TempJSONFile));
-            testCase.verifyEqual(savedConfig.QSMWorker.QSM.bfr.refine_order.value, 999)
-            testCase.verifyEqual(savedConfig.QSMWorker.QSM.qsm.lambda.value, 0.05)  % unchanged
+            testCase.verifyEqual(savedConfig.QSMWorker.bfr.refine_order.value, 999)
+            testCase.verifyEqual(savedConfig.QSMWorker.qsm.lambda.value, 0.05)  % unchanged
 
             delete(gui)
         end
@@ -248,10 +247,9 @@ classdef TestConfigEditorGUI < BaseTest
             testCase.verifyEqual(stringNode.NodeData.value, originalValue)
             
             %--- Test 3: Numeric array
-            qsmNode    = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
-            qsmSubNode = qsmNode.Children(strcmp({qsmNode.Children.Text}, 'QSM'));
-            bfrNode    = qsmSubNode.Children(strcmp({qsmSubNode.Children.Text}, 'bfr'));
-            arrayNode  = bfrNode.Children(strcmp({bfrNode.Children.Text}, 'radius'));
+            qsmNode   = gui.RootNodes(strcmp({gui.RootNodes.Text}, 'QSMWorker'));
+            bfrNode   = qsmNode.Children(strcmp({qsmNode.Children.Text}, 'bfr'));
+            arrayNode = bfrNode.Children(strcmp({bfrNode.Children.Text}, 'radius'));
             gui.Tree.SelectedNodes = arrayNode;
             originalArrayValue     = arrayNode.NodeData.value;
             
@@ -269,7 +267,7 @@ classdef TestConfigEditorGUI < BaseTest
             testCase.verifyEqual(arrayNode.NodeData.value, originalArrayValue)
             
             %--- Test 4: Logical values
-            unwrapNode  = qsmSubNode.Children(strcmp({qsmSubNode.Children.Text}, 'unwrap'));
+            unwrapNode  = qsmNode.Children(strcmp({qsmNode.Children.Text}, 'unwrap'));
             logicalNode = unwrapNode.Children(strcmp({unwrapNode.Children.Text}, 'isEddyCorrect'));
             gui.Tree.SelectedNodes = logicalNode;
             originalLogicalValue   = logicalNode.NodeData.value;

@@ -36,7 +36,6 @@ properties (Access = ?TestConfigEditorGUI)
     SearchField
     SearchMatches       % cell array of nodes that match
     SearchIndex = 0
-    SearchResultsLabel  % uilabel for search results counter
 end
 
 methods
@@ -88,57 +87,54 @@ end
 methods (Access = ?TestConfigEditorGUI)
 
     function buildGUI(obj)
-        % build GUI layout with uifigure
+        % build GUI layout with uifigure and uigridlayout
 
-        % Create main uifigure
-        obj.Fig = uifigure(Position=[300 100 745 650]);
+        % Create main uifigure with grid layout
+        obj.Fig = uifigure(Position=[300 200 900 500]);
         obj.updateWindowTitle()
 
-        % Left panel (tree + search)
-        leftX = 20; leftW = 360;        % Tree area rectangle in pixels
-        
-        % Create search label and field
-        uilabel(obj.Fig, Text='Search:', Position=[leftX 607 50 22], HorizontalAlignment='left');
-        obj.SearchField = uieditfield(obj.Fig, Position=[leftX+50 606 leftW-50 24], ValueChangingFcn=@(src,evt)obj.onSearchLive(evt), ValueChangedFcn=@(src,evt)obj.onSearchEnter(evt), Value='');
-        
-        % Prev/Next buttons
-        uibutton(obj.Fig, Text='◀', Position=[leftX    572 40 24], ButtonPushedFcn=@(~,~)obj.searchPrev());
-        uibutton(obj.Fig, Text='▶', Position=[leftX+45 572 40 24], ButtonPushedFcn=@(~,~)obj.searchNext());
+        % Main 1x2 grid: left panel (tree+search) | right panel (editor)
+        mainGrid = uigridlayout(obj.Fig, [1 2], ColumnWidth={230, '1x'});
 
-        % Search results counter
-        obj.SearchResultsLabel = uilabel(obj.Fig, Text='', Position=[leftX+95 572 80 24], HorizontalAlignment='left');
+        % === LEFT PANEL: Search + Tree ===
+        leftPanel = uigridlayout(mainGrid, [3 1], RowHeight={20, 20, '1x'});
+        % leftPanel.ColumnWidth = {'1x'};
 
-        % Info label for search state
-        uilabel(obj.Fig, Text='(supports *, ? and regex wildcards)', Position=[leftX+130 572 220 24], FontAngle='italic', HorizontalAlignment='left');
+        % Row 1: Search controls
+        searchRow = uigridlayout(leftPanel, [1 2], ColumnWidth={50 '1x'}, ColumnSpacing=0, Padding=[0 0 0 0]);
+        uilabel(searchRow, Text='Search:', HorizontalAlignment='left');
+        obj.SearchField = uieditfield(searchRow, ValueChangingFcn=@(src,evt)obj.onSearchLive(evt), ...
+            ValueChangedFcn=@(src,evt)obj.onSearchEnter(evt), Value='');
 
-        % Tree (use uitree within uifigure)
-        obj.Tree = uitree(obj.Fig, Position=[leftX 20 leftW 536], Multiselect='off', SelectionChangedFcn=@(src,evt)obj.nodeSelected(evt));
+        % Row 2: Navigation + info
+        navRow = uigridlayout(leftPanel, [1 3], ColumnWidth={40, 40, '1x'}, ColumnSpacing=5, Padding=[0 0 0 0]);
+        uibutton(navRow, Text='◀', ButtonPushedFcn=@(~,~)obj.searchPrev());
+        uibutton(navRow, Text='▶', ButtonPushedFcn=@(~,~)obj.searchNext());
+        uilabel(navRow, Text='(supports wildcards)', FontAngle='italic', HorizontalAlignment='center');
 
-        % Right panel (Description and edit area)
-        rpX = leftX + leftW + 20;
-        rpW = 745 - rpX - 20;
-        topY = 606 + 24;
-        txtAreaH = 175;
+        % Row 3: Tree
+        obj.Tree = uitree(leftPanel, Multiselect='off', SelectionChangedFcn=@(src,evt)obj.nodeSelected(evt));
 
-        % Description box
-        obj.DescArea = uitextarea(obj.Fig, Position=[rpX, topY - txtAreaH, rpW, txtAreaH], Editable='off');
+        % === RIGHT PANEL: Description, Value, Buttons ===
+        rightPanel = uigridlayout(mainGrid, [2 1], RowHeight={'1x' 'fit'}, RowSpacing=10);
+        rightPanel.ColumnWidth = {'1x'};
+        rightPanel.Padding = [0 0 0 0];
 
-        % Value label (10 px below textarea)
-        valueLabelY  = topY - txtAreaH - 10 - 22;
-        obj.ValLabel = uilabel(obj.Fig, Text='Value:', Position=[rpX valueLabelY 200 22], HorizontalAlignment='left');
+        % Top section: Description, Value label, Value field + Reset
+        topSection = uigridlayout(rightPanel, [3 1], RowHeight={'1x' 'fit' 'fit'}, RowSpacing=5);
+        obj.DescArea = uitextarea(topSection, Editable='off');
+        obj.ValLabel = uilabel(topSection, Text='Value:', HorizontalAlignment='left');
 
-        % Value edit field
-        obj.ValField = uieditfield(obj.Fig, Position=[rpX valueLabelY - 40 rpW 40], ValueChangedFcn=@(src,~)obj.updateLeafFromField());
+        valRow = uigridlayout(topSection, [1 2], ColumnWidth={'1x' 70}, Padding=[0 0 0 0]);
+        obj.ValField = uieditfield(valRow, ValueChangedFcn=@(src,~)obj.updateLeafFromField());
+        uibutton(valRow, Text='↺ Reset', ButtonPushedFcn=@(~,~)obj.resetLeaf());
 
-        % Reset button
-        btnY = 20; btnH = 30; btnW = 70; gap = 15;
-        uibutton(obj.Fig, Text='↺ Reset', Position=[rpX+rpW-btnW valueLabelY-83 btnW btnH], ButtonPushedFcn=@(~,~)obj.resetLeaf());
-
-        % Bottom row buttons
-        uibutton(obj.Fig, Text='Reset All', Position=[rpX              btnY btnW btnH], ButtonPushedFcn=@(~,~)obj.resetAll());
-        uibutton(obj.Fig, Text='✗ Cancel',  Position=[rpX+1*(btnW+gap) btnY btnW btnH], ButtonPushedFcn=@(~,~)close(obj.Fig));
-        uibutton(obj.Fig, Text='📂 Load',   Position=[rpX+2*(btnW+gap) btnY btnW btnH], ButtonPushedFcn=@(~,~)obj.loadConfig());
-        uibutton(obj.Fig, Text='💾 Save',   Position=[rpX+3*(btnW+gap) btnY btnW btnH], ButtonPushedFcn=@(~,~)obj.saveConfig());
+        % Bottom section: Buttons row
+        btnRow = uigridlayout(rightPanel, [1 4], ColumnWidth={70 70 70 70});
+        uibutton(btnRow, Text='Reset All', ButtonPushedFcn=@(~,~)obj.resetAll());
+        uibutton(btnRow, Text='✗ Cancel',  ButtonPushedFcn=@(~,~)close(obj.Fig));
+        uibutton(btnRow, Text='📂 Load',   ButtonPushedFcn=@(~,~)obj.loadConfig());
+        uibutton(btnRow, Text='💾 Save',   ButtonPushedFcn=@(~,~)obj.saveConfig());
     end
 
     function populateTree(obj)
@@ -254,12 +250,11 @@ methods (Access = ?TestConfigEditorGUI)
                 obj.DescArea.Value = {jsonencode(data.description)};
             end
             obj.ValField.Value = obj.valueToStringForDisplay(data.value);
-        elseif strlength(qb.workers.help(node.Text)) > 0
-            obj.DescArea.Value = cellstr(qb.workers.help(node.Text));
-            obj.ValField.Value = '';
+            obj.ValField.Editable = true;
         else
-            obj.DescArea.Value = {'(not editable)'};
-            obj.ValField.Value = '';
+            obj.DescArea.Value = cellstr(qb.workers.help(node.Text));
+            obj.ValField.Value = '(not applicable)';
+            obj.ValField.Editable = false;
         end
     end
 
@@ -582,70 +577,54 @@ methods (Access = ?TestConfigEditorGUI)
 
     %% SEARCH: Find any node matching pattern
     function updateSearchMatches(obj, pattern)
+        % Collect all nodes whose Text matches the (wildcard) pattern.
+        % Wildcards: * = any number of characters, ? = any single character.
+        % All other characters are matched literally. Matching is case-insensitive
+        % and anchored to the whole node name.
+
         obj.SearchMatches = {};
-        obj.SearchIndex = 0;            
-        if isempty(pattern)
+        obj.SearchIndex   = 0;
+        pattern = lower(strip(string(pattern)));
+        if strlength(pattern) == 0
             return
         end
-        
-        % Convert search query to regex pattern with smart wildcard handling
-        pattern = lower(strip(pattern));
-        pattern = replace(pattern, '*', '.*'); % Convert * to .* for regex
-        pattern = replace(pattern, '?', '.');  % Convert ? to . for regex
-        if ~startsWith(pattern, '^')
-            pattern = ['^', pattern];
-        end
-        if ~endsWith(pattern, '$')
-            pattern = [pattern, '$'];
-        end
+
+        % Escape regex special characters first, then translate the wildcards
+        pattern = char(pattern);
+        pattern = regexprep(pattern, '([\\^$|+()\[\]{}])', '\\$1');     % Escape regex specials, except * ? and . (keys are struct fieldnames so can't contain dots)
+        pattern = regexprep(pattern, '\*', '.*');                       % * => any number of characters
+        pattern = regexprep(pattern, '\?', '.');                        % ? => any single character (a typed . does the same)
+        pattern = ['^' pattern '$'];
 
         % Search across all nodes in tree
-        fprintf('Searching for pattern: "%s"\n', pattern) % Debug
-        roots = obj.RootNodes;
-        for r = 1:numel(roots)
-            obj.collectMatchingNodes(roots(r), pattern);
+        for r = 1:numel(obj.RootNodes)
+            obj.collectMatchingNodes(obj.RootNodes(r), pattern);
         end
 
-        % Show what we found
-        fprintf('Found %d matches:\n', numel(obj.SearchMatches))
-        for i = 1:numel(obj.SearchMatches)
-            node = obj.SearchMatches{i};
-            if obj.isLeaf(node.NodeData)
-                % For leaf nodes, show the value
-                valueStr = obj.valueToStringForDisplay(node.NodeData.value);
-                fprintf('  Match %d: %s = %s\n', i, node.Text, valueStr)
-            else
-                % For non-leaf nodes, just show the key
-                fprintf('  Match %d: %s (non-editable)\n', i, node.Text)
-            end
-        end
-        
-        % If matches found, select first
+        % If matches found, point to the first one
         if ~isempty(obj.SearchMatches)
             obj.SearchIndex = 1;
         end
     end
 
     function onSearchLive(obj, evt)
+        % Live search while typing (never touches the contents of the search field)
 
-        obj.updateSearchMatches(strip(evt.Value))
+        obj.updateSearchMatches(evt.Value)
 
         if ~isempty(obj.SearchMatches)
-            obj.SearchIndex = 1;
             obj.selectMatch(1);
-        else
-            obj.updateSearchResultsLabel(true)
         end
     end
 
     function onSearchEnter(obj, evt)
+        % Search when pressing enter / leaving the search field
 
-        obj.updateSearchMatches(strip(evt.Value))
+        obj.updateSearchMatches(evt.Value)
 
         if ~isempty(obj.SearchMatches)
-            obj.SearchIndex = 1;
             obj.selectMatch(1)
-        else
+        elseif ~isempty(strip(evt.Value))
             uialert(obj.Fig,'No matches found','Search', Icon='warning');
         end
     end
@@ -663,48 +642,36 @@ methods (Access = ?TestConfigEditorGUI)
     end
 
     function selectMatch(obj, idx)
+        % Select the idx-th match and show only the branch leading to it
+
         if isempty(obj.SearchMatches) || idx < 1 || idx > numel(obj.SearchMatches)
             return
         end
         node = obj.SearchMatches{idx};
-        obj.expandParents(node)                         % Make node visible (expand parents)
+        collapse(obj.Tree)                              % Close everything that was opened before
+        obj.expandParents(node)                         % Open only the path to the match
         obj.Tree.SelectedNodes = node;                  % Select node
         obj.nodeSelected(struct(SelectedNodes = node))  % Update UI display manually
         obj.SearchIndex = idx;
-        obj.updateSearchResultsLabel()                  % Update SearchIndex and results label
         drawnow                                         % Force UI update to ensure tree renders expanded state
     end
 
     function updateSearchResultsLabel(obj, reset)
-        % Simple search results counter
+        % Reset the search state (clear search bar and matches)
         
         if nargin > 1 && reset
-            % Clear the search bar and matches
             obj.SearchField.Value   = '';
             obj.SearchMatches       = {};
             obj.SearchIndex         = 0;
         end
-        
-        if isempty(obj.SearchMatches)
-            obj.SearchResultsLabel.Text = '';
-        else
-            obj.SearchResultsLabel.Text = sprintf('%d/%d', obj.SearchIndex, numel(obj.SearchMatches));
-        end
     end
 
-    function expandParents(obj, node)
-        % Expand parents up to top to make the node visible
+    function expandParents(~, node)
+        % Expand only the ancestors of node (and not the tree itself), so that node becomes visible
+
         cur = node.Parent;
-        while ~isempty(cur) && ~isa(cur,'uitree')
-            try
-                if isprop(cur, 'Expanded')
-                    cur.Expanded = true;
-                elseif ismethod(cur, 'expand')
-                    cur.expand();
-                end
-            catch
-                % If expansion fails, continue anyway
-            end
+        while ~isempty(cur) && isa(cur, 'matlab.ui.container.TreeNode')
+            expand(cur)                                     % Expand this node only (no 'all' option)
             cur = cur.Parent;
         end
     end

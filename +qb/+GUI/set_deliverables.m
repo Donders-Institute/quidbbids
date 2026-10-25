@@ -12,16 +12,20 @@ function deliverables = set_deliverables(items, descriptions, deliverables)
     data = table(ismember(items, deliverables)', items', descriptions', VariableNames=["Selected", "Items", "Descriptions"]);
 
     % Create the GUI
-    H = uifigure(Name='Select your deliverables', Position=[200 200 900 450], WindowStyle='modal');
+    H = uifigure(Name='Select your deliverables', Position=[200 100 1000 650], WindowStyle='modal');
 
-    % Create table with checkboxes
-    T = uitable(H, Data=data, Position=[20 50 860 380], ColumnWidth={25, 160, 'auto'}, SelectionType='row', ...
+    % Main grid: table | buttons
+    grid = uigridlayout(H, [2 1], RowHeight={'1x' 'fit'}, Padding=20, RowSpacing=15);
+
+    % Row 1: Table
+    T = uitable(grid, Data=data, ColumnWidth={25, 160, 'auto'}, SelectionType='row', ...
                 ColumnEditable=[true false false], ColumnName=["", "Deliverable", "Description"]);
 
-    % Add control buttons
-    uibutton(H, Position=[20 15 90 22],  Text='✓ Done',   FontWeight='bold', ButtonPushedFcn=@(~,~) uiresume(H));
-    uibutton(H, Position=[120 15 90 22], Text='↺ Reset',  FontWeight='bold', ButtonPushedFcn=@(~,~) reset_callback(T, deliverables));
-    uibutton(H, Position=[220 15 90 22], Text='✗ Cancel', FontWeight='bold', ButtonPushedFcn=@(~,~) close(H));
+    % Row 2: Buttons
+    btnGrid = uigridlayout(grid, [1 3], ColumnWidth={90 90 90}, Padding=[0 0 0 0]);
+    uibutton(btnGrid, Text='✓ Done',   FontWeight='bold', ButtonPushedFcn=@(~,~) uiresume(H));
+    uibutton(btnGrid, Text='↺ Reset',  FontWeight='bold', ButtonPushedFcn=@(~,~) reset_callback(T, deliverables));
+    uibutton(btnGrid, Text='✗ Cancel', FontWeight='bold', ButtonPushedFcn=@(~,~) close(H));
 
     % Wait for user
     uiwait(H)

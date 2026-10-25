@@ -5,12 +5,14 @@ classdef (Sealed) MCRWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Multi-Compartment Relaxometry (MCR) worker for myelin water imaging (MWI) and Diffusion-Informed MWI (DI-MWI) analysis."
+    description = ["Multi-Compartment Relaxometry (MCR) worker for myelin water imaging (MWI) and"
+                   "Diffusion-Informed MWI (DI-MWI) analysis."
                    ""
-                   "MCRWorker implements the MCR framework, combining complex multi-echo GRE data (VFA or MPM acquisitions)"
-                   "with coregistered B1 transmit field maps to estimate myelin water fraction (MWF) and other quantitative microstructural"
-                   "parameters. The model simultaneously fits T1, T2*, and proton density across multiple compartments (myelin water,"
-                   "intra/extra-axonal water, and free water) while accounting for B1 inhomogeneities and field map inhomogeneities."
+                   "MCRWorker implements the MCR framework, combining complex multi-echo GRE data (VFA or MPM"
+                   "acquisitions) with coregistered B1 transmit field maps to estimate myelin water fraction (MWF)"
+                   "and other quantitative microstructural parameters. The model simultaneously fits T1, T2*,"
+                   "and proton density across multiple compartments (myelin water, intra/extra-axonal water,"
+                   "and free water) while accounting for B1 inhomogeneities and field map inhomogeneities."
                    ""
                    "Theoretical Framework:"
                    "----------------------"
@@ -22,14 +24,15 @@ properties (Constant)
                    ""
                    ".. note::"
                    ""
-                   "   MCRWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors (DWItheta,"
-                   "   DWIicvf, DWIff) are available from DWIprepWorker, the DI-MWI model incorporates fiber orientation"
-                   "   and compartment fraction information to improve parameter estimation specificity."
+                   "   MCRWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors"
+                   "   (DWItheta, DWIicvf, DWIff) are available from DWIprepWorker, the DI-MWI model incorporates"
+                   "   fiber orientation and compartment fraction information to improve parameter estimation"
+                   "   specificity."
                    ""
                    ".. tip::"
                    ""
-                   "   The ``ortho`` deliverables are just 3 orthogonal slices (to speed up computation) and can be used"
-                   "   for a fast and shallow quality control."]    % Description should be in ReStructuredText format
+                   "   The ``ortho`` deliverables are just 3 orthogonal slices (to speed up computation) and"
+                   "   can be used for a fast and shallow quality control."]    % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "DWItheta", "DWIicvf", "DWIff"]           % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

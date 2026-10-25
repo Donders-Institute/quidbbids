@@ -5,12 +5,14 @@ classdef (Sealed) R1R2starWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Joint R1 and R2* mapping worker using GPU-accelerated estimation for multi-echo GRE data."
+    description = ["Joint R1 and R2* mapping worker using GPU-accelerated estimation for multi-echo GRE"
+                   "data."
                    ""
-                   "R1R2starWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip Angle (VFA) and"
-                   "Multi-Parameter Mapping (MPM) multi-echo GRE data using a joint estimation model. The simultaneous fitting"
-                   "of R1 and R2* parameters improves accuracy by accounting for the interdependence of these relaxation"
-                   "parameters, particularly important at high field strengths where both T1 and T2* effects are significant."
+                   "R1R2starWorker generates quantitative R1 (1/T1) and R2* (1/T2*) maps from Variable Flip"
+                   "Angle (VFA) and Multi-Parameter Mapping (MPM) multi-echo GRE data using a joint estimation"
+                   "model. The simultaneous fitting of R1 and R2* parameters improves accuracy by accounting for"
+                   "the interdependence of these relaxation parameters, particularly important at high field"
+                   "strengths where both T1 and T2* effects are significant."
                    ""
                    "Theoretical Framework:"
                    "----------------------"
@@ -18,7 +20,8 @@ properties (Constant)
                    "The joint R1-R2* estimation is implemented using the Gacelle toolbox:"
                    "Gacelle, K. S. Chan et al., Imaging Neuroscience 2026"
                    ""
-                   "Documentation: https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html"
+                   "Documentation:"
+                   "https://gacelle.readthedocs.io/en/latest/supported_models/JointR1R2star.html"
                    ""
                    "Methods:"
                    "--------"
@@ -29,8 +32,9 @@ properties (Constant)
                    ""
                    ".. note::"
                    ""
-                   "   - The joint estimation approach is advantageous when T1 and T2* are correlated, or in the context of"
-                   "     low SNR thanks to harvesting all available data SNR and possibility of using spatial regularization."
+                   "   - The joint estimation approach is advantageous when T1 and T2* are correlated, or in"
+                   "     the context of low SNR thanks to harvesting all available data SNR and possibility"
+                   "     of using spatial regularization."
                    "   - Requires GPU hardware with CUDA support."]   % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns. TODO: Ask Jose which mask to use
     usesGPU     = true

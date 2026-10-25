@@ -5,27 +5,29 @@ classdef (Sealed) SCRWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["Single Compartment Relaxometry (SCR) worker for combined relaxometry and susceptibility analysis."
+    description = ["Single Compartment Relaxometry (SCR) worker for combined relaxometry and"
+                   "susceptibility analysis."
                    ""
-                   "SCRWorker jointly estimates R1, R2* and M0 from multi-echo variable flip angle (VFA) GRE data."
-                   "SCR assumes a single tissue compartment, suitable for applications where"
+                   "SCRWorker jointly estimates R1, R2* and M0 from multi-echo variable flip angle (VFA) GRE"
+                   "data. SCR assumes a single tissue compartment, suitable for applications where"
                    "multi-compartment modeling is not required or when computational efficiency is prioritized."
                    ""
                    "Methods:"
                    "--------"
                    ""
                    "1. Joint R1, R2* and M0 Mapping:"
-                   "   Fits the spoiled GRE signal equation to all echoes of all flip angles simultaneously, using a"
-                   "   Pade approximation of the T1 recovery term to obtain a closed-form estimate, followed by"
-                   "   Gauss-Newton refinement on the exact signal equation. Transmit field (B1+) inhomogeneity is"
-                   "   accounted for. The fit runs on the CPU and supports variable flip angles as well as variable"
-                   "   repetition and echo times."
+                   "   Fits the spoiled GRE signal equation to all echoes of all flip angles simultaneously,"
+                   "   using a Pade approximation of the T1 recovery term to obtain a closed-form estimate,"
+                   "   followed by Gauss-Newton refinement on the exact signal equation. Transmit field"
+                   "   (B1+) inhomogeneity is accounted for. The fit runs on the CPU and supports variable flip"
+                   "   angles as well as variable repetition and echo times."
                    ""
                    ".. note::"
                    ""
-                   "   The SCR model is appropriate for tissues with relatively homogeneous microstructure or when"
-                   "   the primary goal is to obtain average parameter values rather than compartment-specific estimates."
-                   "   For myelin water imaging, consider using MCRWorker or MCR_GPUWorker instead."]   % Description should be in ReStructuredText format
+                   "   The SCR model is appropriate for tissues with relatively homogeneous microstructure or"
+                   "   when the primary goal is to obtain average parameter values rather than"
+                   "   compartment-specific estimates. For myelin water imaging, consider using MCRWorker or"
+                   "   MCR_GPUWorker instead."]   % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "TB1map_GRE", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

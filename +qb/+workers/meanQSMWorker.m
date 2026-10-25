@@ -5,23 +5,24 @@ classdef (Sealed) meanQSMWorker < qb.workers.Worker
 
 
 properties (Constant)
-    description = ["mean QSM worker ."
+    description = ["mean QSM worker."
                    ""
-                   "meanQSMWorker combines separately computed Quantitative Susceptibility Mapping (QSM) outputs into a single"
-                   "susceptibility map, taking account the SNR of each acquisition."
+                   "meanQSMWorker combines separately computed Quantitative Susceptibility Mapping (QSM)"
+                   "outputs into a single susceptibility map, taking account the SNR of each acquisition."
                    ""
                    "Methods:"
                    "--------"
                    ""
                    "Chi Map Averaging:"
-                   "   Computes the weighted mean of the susceptibility (Chi) maps across flip angles. The weighting"
-                   "   uses S0^2 to emphasize voxels with higher signal intensity."
+                   "   Computes the weighted mean of the susceptibility (Chi) maps across flip angles."
+                   "   The weighting uses S0^2 to emphasize voxels with higher signal intensity."
                    ""
                    ".. note::"
                    ""
-                   "   The SCR model is appropriate for tissues with relatively homogeneous microstructure or when"
-                   "   the primary goal is to obtain average parameter values rather than compartment-specific estimates."
-                   "   For myelin water imaging, consider using MCRWorker or MCR_GPUWorker instead."]   % Description should be in ReStructuredText format
+                   "   The SCR model is appropriate for tissues with relatively homogeneous microstructure"
+                   "   or when the primary goal is to obtain average parameter values rather than"
+                   "   compartment-specific estimates. For myelin water imaging, consider using MCRWorker or"
+                   "   MCR_GPUWorker instead."]   % Description should be in ReStructuredText format
     needs       = ["S0map", "Chimap", "localfmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

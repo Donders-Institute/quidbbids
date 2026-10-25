@@ -5,9 +5,11 @@ classdef (Sealed) DWIprepWorker < qb.workers.Worker
 
 properties (Constant)
     description = ["Preprocesses QSIRecon derivative data to generate DWI model parameters for DI-MWI analysis."
-                   "DWIprepWorker converts QSIRecon outputs (NODDI and MSMT-CSD models) into standardized workitems representing"
-                   "fiber/neurite theta (polar angle relative to B0), fiber fraction (ff), and intracellular volume fraction (icvf)."
-                   "The generated maps are coregistered to MEGRE/VFA space for use in downstream DI-MWI modeling."
+                   ""
+                   "DWIprepWorker converts QSIRecon outputs (NODDI and MSMT-CSD models) into standardized"
+                   "workitems representing fiber/neurite theta (polar angle relative to B0), fiber fraction (ff),"
+                   "and intracellular volume fraction (icvf). The generated maps are coregistered to MEGRE/VFA"
+                   "space for use in downstream DI-MWI modeling."
                    ""
                    "Supported methods:"
                    "------------------"
@@ -25,9 +27,9 @@ properties (Constant)
                    "MRtrix3 - Constrained Spherical Deconvolution"
                    "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
                    ""
-                   "- Requires: QSIRecon workflow with any of the ``mrtrix`` reconstruction specifications that produces FOD maps,"
-                   "  plus installation of MRtrix3 (fod2fixel, fixel2voxel, fixel2peaks), plus the ``NODDI`` reconstruction"
-                   "  (as described above)"
+                   "- Requires: QSIRecon workflow with any of the ``mrtrix`` reconstruction specifications"
+                   "  that produces FOD maps, plus installation of MRtrix3 (fod2fixel, fixel2voxel, fixel2peaks),"
+                   "  plus the ``NODDI`` reconstruction (as described above)"
                    "- Outputs:"
                    ""
                    "  - DWItheta (smallest polar angles between fixel directions and the B0 field)"
@@ -44,8 +46,9 @@ properties (Constant)
                    ".. note::"
                    ""
                    "   DWIprepWorker does NOT run QSIRecon itself; QSIRecon derivatives must be precomputed."
-                   "   QSIPrep/QSIRecon output directories must be configured in the config file or else the downstream DI-MWI model"
-                   "   estimations will be performed without the diffusion information (which may lead to suboptimal results)."]  % Description should be in ReStructuredText format
+                   "   QSIPrep/QSIRecon output directories must be configured in the config file or else"
+                   "   the downstream DI-MWI model estimations will be performed without the diffusion"
+                   "   information (which may lead to suboptimal results)."]  % Description should be in ReStructuredText format
     needs       = ["syntheticT1", "derivICVF", "derivFDir", "derivFOD"]     % List of workitems (excluding derivative data) the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end

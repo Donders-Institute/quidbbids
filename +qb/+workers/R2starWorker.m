@@ -7,18 +7,18 @@ classdef (Sealed) R2starWorker < qb.workers.Worker
 properties (Constant)
     description = ["R2* relaxometry worker using the SEPIA toolbox."
                    ""
-                   "R2starWorker computes R2* (transverse relaxation rate) maps from multi-echo gradient-recalled"
-                   "echo (GRE) magnitude data. R2* mapping is a quantitative MRI technique that provides information"
-                   "about tissue microstructure and iron content."
+                   "R2starWorker computes R2* (transverse relaxation rate) maps from multi-echo"
+                   "gradient-recalled echo (GRE) magnitude data. R2* mapping is a quantitative MRI technique"
+                   "that provides information about tissue microstructure and iron content."
                    ""
-                   "The worker leverages the SEPIA toolbox (Susceptibility and Phase Imaging Application) to process"
-                   "the multi-echo GRE data and generate quantitative R2* maps."
+                   "The worker leverages the SEPIA toolbox (Susceptibility and Phase Imaging Application) to"
+                   "process the multi-echo GRE data and generate quantitative R2* maps."
                    ""
                    ".. note::"
                    ""
-                   "   SEPIA has its own working directory structure. R2starWorker temporarily switches to the"
-                   "   SEPIA directory for processing and renames output files to ensure BIDS compatibility."
-                   "   The SEPIA toolbox must be installed and configured."] % Description should be in ReStructuredText format
+                   "   SEPIA has its own working directory structure. R2starWorker temporarily switches to"
+                   "   the SEPIA directory for processing and renames output files to ensure BIDS"
+                   "   compatibility. The SEPIA toolbox must be installed and configured."] % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "brainmask"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
@@ -47,7 +47,7 @@ methods (Access = protected)
 
         % Set a custom "Parent" config key set and replace the QSMWorker config with my own config
         obj.config.Parent    = 'R2starWorker';
-        obj.config.QSMWorker = obj.config.R2starWorker;
+        % obj.config.QSMWorker = obj.config.R2starWorker;
     end
 
 end

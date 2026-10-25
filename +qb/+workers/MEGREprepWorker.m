@@ -70,6 +70,8 @@ methods (Access = protected)
                                           echo     = [], ...
                                           part     = 'mag', ...
                                           desc     = 'ME4D');
+
+        % NB: ME4Dphase data depends on rawMEGRE phase data being present, but is not strictly required for QSM/R2star workflows.
         obj.bidsfilter.ME4Dphase = setfield(obj.bidsfilter.ME4Dmag, part='phase');
     end
 
@@ -121,23 +123,19 @@ methods (Static)
                 bfilter.run = run;
                 for flip = str2double(obj.query_ses(BIDS, 'flips', bfilter))
                     bfilter.flip = flip;
+                    for part = string(obj.query_ses(BIDS, 'parts', bfilter))
 
-                    % Get the mag/phase echo images for this flip angle & run
-                    [magfiles,   magbfiles]   = obj.query_ses(BIDS, 'data',  bfilter, part='mag');
-                    [phasefiles, phasebfiles] = obj.query_ses(BIDS, 'data',  bfilter, part='phase');
+                        % Get the mag/phase echo images for this flip angle & run
+                        [dfiles, bfiles] = obj.query_ses(BIDS, 'data',  bfilter, part=char(part));
 
-                    % Sort the mag/phase files by their echo index
-                    [~, magidx]   = sort(cellfun(@(s) s.metadata.EchoNumber, magbfiles));
-                    [~, phaseidx] = sort(cellfun(@(s) s.metadata.EchoNumber, phasebfiles));
-                    
-                    % Create the 4D mag and phase QSM/MCR input data
-                    bfile = obj.bfile_set(magfiles{1}, obj.bidsfilter.ME4Dmag);
-                    obj.logger.info("-> Merging echo-1..%d mag images -> %s", length(magfiles), bfile.filename)
-                    file_merge(magfiles(magidx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
+                        % Sort the mag/phase files by their echo index
+                        [~, idx] = sort(cellfun(@(bf) bf.metadata.EchoNumber, bfiles));
 
-                    bfile = obj.bfile_set(phasefiles{1}, obj.bidsfilter.ME4Dphase);
-                    obj.logger.info("-> Merging echo-1..%d phase images -> %s", length(phasefiles), bfile.filename)
-                    file_merge(phasefiles(phaseidx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
+                        % Create the 4D mag/phase QSM/MCR input data
+                        bfile = obj.bfile_set(dfiles{1}, obj.bidsfilter.("ME4D" + part));
+                        obj.logger.info("-> Merging echo-1..%d %s images -> %s", length(dfiles), part, bfile.filename)
+                        file_merge(dfiles(idx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
+                    end
                 end
             end
         end
@@ -215,9 +213,13 @@ methods (Static)
                         bfilter.flip = flips(n);
                     end
                     magfile        = char(obj.query_ses(BIDSW, 'data', bfilter));
+                    phasefile      = char(obj.query_ses(BIDSW, 'data', bfilter, part='phase'));
                     V_m{n}         = spm_vol(magfile);
-                    V_p{n}         = spm_vol(replace(magfile, 'part-mag', 'part-phase'));
-                    img(:,:,:,:,n) = single(spm_read_vols(V_m{n}) .* exp(1i * qb.utils.read_vols_phase(V_p{n})));   % Read phase data in radians
+                    V_p{n}         = spm_vol(phasefile);
+                    img(:,:,:,:,n) = single(spm_read_vols(V_m{n}));
+                    if phasefile
+                        img(:,:,:,:,n) = img(:,:,:,:,n) .* exp(1i * qb.utils.read_vols_phase(V_p{n})); % Read phase data in radians
+                    end
                 end
 
                 % Get the mask
@@ -238,8 +240,10 @@ methods (Static)
 
                 % Save the denoised data (in-place)
                 for n = 1:size(flips,2)
-                    write_vol_denoised(V_m{n},   abs(img(:,:,:,:,n)))
-                    write_vol_denoised(V_p{n}, angle(img(:,:,:,:,n)))
+                    write_vol_denoised(V_m{n}, abs(img(:,:,:,:,n)))
+                    if ~isempty(V_p{n})
+                        write_vol_denoised(V_p{n}, angle(img(:,:,:,:,n)))
+                    end
                 end
 
             end

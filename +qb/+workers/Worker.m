@@ -447,6 +447,7 @@ methods
             result = result';           % Always return a row array
         end
 
+        % Get the associated bids.File objects if requested
         if nargout > 1
             bfiles = cell(size(result));
             if strcmp(query, 'data')

@@ -75,7 +75,7 @@ methods (Access = private)
         [~, Chifilter]  = obj.ask_team('Chimap');
         [~, maskfilter] = obj.ask_team('localfmask');
 
-        % Index the (special) SEPIA workdir layout (only for obj.subject)
+        % Index the (special) SEPIA workdir layout
         BIDSWS = obj.BIDS_ses(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
 
         % Process all runs independently

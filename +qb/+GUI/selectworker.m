@@ -28,7 +28,7 @@ function chosen = selectworker(workers, workitem)
 
     % Create figure
     fig = uifigure(Name="Choose the Worker that should make your """ + workitem + """", Position=[100 100 900 700]);
-    uialert(fig, ["There are multiple workers that can produce:", "", workitem, "", "Please select the worker you want to use"], "Create team")
+    uialert(fig, ["There are multiple workers that can produce:", "", workitem, "", "Please select the worker you want to use"], "Create team", icon='info')
 
     % Main 1x2 grid: left (selection + buttons) | right (info + tables)
     mainGrid = uigridlayout(fig, [1 2], ColumnWidth={rbWidth, '1x'}, Padding=20*ones(1,4), ColumnSpacing=spacing);

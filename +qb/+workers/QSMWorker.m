@@ -73,6 +73,10 @@ methods
         % NB: This worker is a wrapper around the SEPIA toolbox and is therefore also leveraged by the
         %     R2starWorker to perform the actual work. The R2starWorker passes its own configuration to
         %     the QSMWorker with the custom "Parent" key set to "R2starWorker".
+        %
+        %     Another way to think about it is that the QSMWorker is a SEPIA worker that advertises
+        %     itself as a QSM worker. The R2starWorker internally calls the QSMWorker, but advertises
+        %     itself as an R2* worker. The R2starWorker does not need phase data, but the QSMWorker does.
 
         arguments
             obj

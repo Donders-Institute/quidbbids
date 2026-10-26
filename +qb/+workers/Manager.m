@@ -352,8 +352,6 @@ methods
             % Copy the deliverables to the output directory
             obj.copy_to_outputdir(Worker(args{:}), product, subjects)
         end
-
-        % Unblock the start button in the GUI (if any)
         fprintf("============= Finished workflow at %s =============\n\n", datetime('now'))
     end
 

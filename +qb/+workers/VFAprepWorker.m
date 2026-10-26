@@ -269,7 +269,7 @@ methods
 
                 % Get the denoised data (if applicable)
                 if strlength(obj.config.(obj.name).denoising.method)
-                    denoised_magf   = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part={'mag',''}, id='temp'));
+                    denoised_magf   = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part={{'mag',''}}, id='temp'));
                     denoised_phasef = obj.query_ses(BIDSW, 'data', struct(acq=char(acq), run=run, part='phase', id='temp'));
                     for m = length(denoised_magf):-1:1
                         denoised_mag(:,:,:,:,m)   = single(spm_read_vols(spm_vol(denoised_magf{m})));

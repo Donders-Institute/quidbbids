@@ -173,11 +173,6 @@
   },
 
   "R2starWorker": {
-    "general": {
-      "isBET": {"value": 0, "description": "Logical value of performing brain extraction in SEPIA"},
-      "isRefineBrainMask": {"value": 0, "description": "Exclude high R2* voxels from the edge of the brain mask"},
-      "isInvert": {"value": 0, "description": "Use conjugate of the complex-valued data for processing"}
-    },
     "r2s": {
       "method": {"value": "Trapezoidal", "description": "R2* fitting method"},
       "s0mode": {"value": "1st echo", "description": "S0 estimation mode"}

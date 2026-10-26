@@ -68,7 +68,7 @@ methods (Access = protected)
                                           suffix   = 'mask');
         obj.bidsfilter.ME4Dmag   = struct(modality = 'anat', ...
                                           echo     = [], ...
-                                          part     = 'mag', ...
+                                          part     = {{'mag',''}}, ...
                                           desc     = 'ME4D');
 
         % NB: ME4Dphase data depends on rawMEGRE phase data being present, but is not strictly required for QSM/R2star workflows.
@@ -132,7 +132,7 @@ methods (Static)
                         [~, idx] = sort(cellfun(@(bf) bf.metadata.EchoNumber, bfiles));
 
                         % Create the 4D mag/phase QSM/MCR input data
-                        bfile = obj.bfile_set(dfiles{1}, obj.bidsfilter.("ME4D" + part));
+                        bfile = obj.bfile_set(dfiles{1}, setfield(obj.bidsfilter.ME4Dmag, part=part));
                         obj.logger.info("-> Merging echo-1..%d %s images -> %s", length(dfiles), part, bfile.filename)
                         file_merge(dfiles(idx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
                     end
@@ -163,9 +163,9 @@ methods (Static)
 
                 % Combine all (echo-1) masks to create a minimal brain mask (using mri_synthstrip or BET)
                 mask = true;
-                for echo1 = obj.query_ses(BIDS, 'data', bfilter, echo=1, run=run, part='mag')     % This will loop over flips (NB: and possibly more)
+                for echo1 = obj.query_ses(BIDS, 'data', bfilter, echo=1, run=run, part={'mag',''})                  % This will loop over flips (NB: and possibly more). Assume part='' -> magnitude data
                     bfile = bids.File(char(echo1));
-                    specs = setfield(obj.bidsfilter.brainmask, desc=sprintf('VFA%02d', bfile.metadata.FlipAngle));    % Add desc -> (flip)mask is a temporary file
+                    specs = setfield(obj.bidsfilter.brainmask, desc=sprintf('VFA%02d', bfile.metadata.FlipAngle));  % Add desc -> (flip)mask is a temporary file
                     bfile = obj.bfile_set(bfile, specs);
                     [~,~] = mkdir(fileparts(bfile.path));   % Ensure the output directory exists
                     if has_synthstrip > 1

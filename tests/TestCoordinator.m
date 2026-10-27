@@ -84,5 +84,28 @@ classdef TestCoordinator < BaseTest
             testCase.verifyLessThan(length(testCase.quidb_megre.catalog()), 15, "There should be less than fifteen work-items in the catalog")
         end
 
+        function testPruneBIDS(testCase)
+            % In quidb_megre, the MEGRE files have no acq, so they should match: acq=''
+
+            % Query with include filter list: acq={'', 'foo'}
+            include = struct(acq={{'', 'foo'}}, suffix='MEGRE');
+            exclude = struct(echo='foo');    % Dummy filter -> no exlusion
+            pBIDS   = testCase.quidb_megre.pruneBIDS(testCase.quidb_megre.BIDS, include, exclude);
+            data    = bids.query(pBIDS, 'data');
+            
+            % Verify that all MEGRE files are included
+            testCase.verifyEqual(numel(data), 8, "Should have 8 MEGRE files with acq={'', 'foo'} include filter")
+            testCase.verifyTrue(contains(data{2}, 'echo-02'), "The second remaining file should be echo-02")
+
+            % Query with exclude filter list: echo=2:4
+            exclude = struct(echo=2:4);     % Exclude echo-02, echo-03, echo-04
+            pBIDS   = testCase.quidb_megre.pruneBIDS(testCase.quidb_megre.BIDS, include, exclude);
+            data    = bids.query(pBIDS, 'data');
+            
+            % Verify that the echo-02/03/04 MEGRE files are pruned
+            testCase.verifyEqual(numel(data), 5, "Should have 5 MEGRE files after excluding echo-02/03/04")
+            testCase.verifyTrue(contains(data{2}, 'echo-05'), "The second remaining file should be echo-05")
+        end
+
     end
 end

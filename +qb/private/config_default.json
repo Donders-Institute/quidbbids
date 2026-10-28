@@ -16,9 +16,9 @@
       "method": {"value": "", "description": "Denoising method. Options: '' (no denoising), 'MPPCA' (Marchenko–Pastur PCA), 'tMPPCA' (tensor Marchenko–Pastur PCA; this is however not useful for MEGRE data)."},
       "kernel": {"value": [5,5,5], "description": "Size of the sliding window (patch) used for the PCA, specified as [x y z]."}
     },
-    "BET": {
-      "FractionalThreshold": {"value": 0.5, "description": "Fractional intensity threshold (0->1). Smaller values give larger brain outline estimates"},
-      "GradientThreshold": {"value": 0, "description": "Vertical gradient in fractional intensity threshold (-1->1). Positive values give larger brain outline at bottom, smaller at top"}
+    "brainmask": {
+      "method": {"value": "mri_synthstrip", "description": "Method for brain extraction. Options: 'mri_synthstrip' (requires FreeSurfer), 'HD-BET' (requires HD-BET), 'BET' (FSL - as distributed in the MEDI toolbox)"},
+      "options": {"value": "", "description": "Additional options passed to the selected brain extraction method. The available options depend on the method:\n\n(1) mri_synthstrip: command-line flags appended to the command, such as '--no-cuda' to disable GPU usage, '--border 2' to add a 2-voxel border around the brain mask, or '--no-csf' to exclude CSF from the segmentation.\n\n(2) HD-BET: command-line flags appended to the command, such as '-device cpu' to run on CPU instead of GPU, '--disable_tta' to disable test-time augmentation for faster inference, or '--save-mask' to additionally save the mask.\n\n(3) BET (MEDI toolbox): space-separated numeric arguments passed to the BET function, e.g. '0.3 -0.1' sets the fractional intensity threshold to 0.3 and the vertical gradient threshold to -0.1 (leave empty for defaults; see `help BET` for more information on the available options)."}
     }
   },
 
@@ -27,9 +27,9 @@
       "method": {"value": "", "description": "Denoising method. Options: '' (no denoising), 'MPPCA' (Marchenko–Pastur PCA), 'tMPPCA' (tensor Marchenko–Pastur PCA)."},
       "kernel": {"value": [5,5,5], "description": "Size of the sliding window (patch) used for the PCA, specified as [x y z]."}
     },
-    "BET": {
-      "FractionalThreshold": {"value": 0.5, "description": "Fractional intensity threshold (0->1). Smaller values give larger brain outline estimates"},
-      "GradientThreshold": {"value": 0, "description": "Vertical gradient in fractional intensity threshold (-1->1). Positive values give larger brain outline at bottom, smaller at top"}
+    "brainmask": {
+      "method": {"value": "mri_synthstrip", "description": "Method for brain extraction. Options: 'mri_synthstrip' (requires FreeSurfer), 'HD-BET' (requires HD-BET), 'BET' (FSL - as distributed in the MEDI toolbox)"},
+      "options": {"value": "", "description": "Additional options passed to the selected brain extraction method. The available options depend on the method:\n\n(1) mri_synthstrip: command-line flags appended to the command, such as '--no-cuda' to disable GPU usage, '--border 2' to add a 2-voxel border around the brain mask, or '--no-csf' to exclude CSF from the segmentation.\n\n(2) HD-BET: command-line flags appended to the command, such as '-device cpu' to run on CPU instead of GPU, '--disable_tta' to disable test-time augmentation for faster inference, or '--save-mask' to additionally save the mask.\n\n(3) BET (MEDI toolbox): space-separated numeric arguments passed to the BET function, e.g. '0.3 -0.1' sets the fractional intensity threshold to 0.3 and the vertical gradient threshold to -0.1 (leave empty for defaults; see `help BET` for more information on the available options)."}
     }
   },
 

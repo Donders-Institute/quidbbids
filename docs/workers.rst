@@ -194,8 +194,8 @@ Processing Steps:
 
 1. Brain Mask Generation:
    Creates a brain mask for each MEGRE acquisition using the echo-1 magnitude image as
-   input to mri_synthstrip (FreeSurfer) or BET (FSL). Individual masks are combined to
-   produce a minimal output mask suitable for QSM processing.
+   input to mri_synthstrip (FreeSurfer), HD-BET, or BET (FSL). Individual masks are
+   combined to produce a minimal output mask suitable for QSM processing.
 
 2. Multi-Echo Merging:
    Merges all echo images (magnitude and phase) for each acquisition into 4D NIfTI
@@ -209,9 +209,11 @@ Processing Steps:
 
 .. note::
 
-   The brain mask generation uses mri_synthstrip which requires FreeSurfer to be
-   installed and configured. If not available, then BET is used as a fallback.
-   Denoising is applied in-place to the merged 4D files when enabled.
+   * If the brain mask generation uses ``mri_synthstrip``, then FreeSurfer needs to be
+     installed and configured. The same applies if ``HD-BET`` is used. If neither is
+     available, then ``BET`` can be used as a fallback, as this is already included in
+     the MEDI toolbox.
+   * Denoising is applied in-place to the merged 4D files when enabled.
 
 Properties
 ----------

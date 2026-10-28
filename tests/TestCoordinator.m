@@ -89,7 +89,7 @@ classdef TestCoordinator < BaseTest
 
             % Query with include filter list: acq={'', 'foo'}
             include = struct(acq={{'', 'foo'}}, suffix='MEGRE');
-            exclude = struct(echo='foo');    % Dummy filter -> no exlusion
+            exclude = struct(echo='foo');    % Dummy filter -> no exclusion
             pBIDS   = testCase.quidb_megre.pruneBIDS(testCase.quidb_megre.BIDS, include, exclude);
             data    = bids.query(pBIDS, 'data');
             

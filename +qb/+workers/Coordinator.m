@@ -473,7 +473,7 @@ methods
         if isempty(obj.fullBIDS)
             H = uifigure(Name='BIDS data inclusion', Position=[400 400 400 100]);
             uiprogressdlg(H, Title='Indexing full BIDS layout', Message='Please wait...', Icon=icon, Indeterminate='on');
-            obj.fullBIDS = bids.layout(char(obj.BIDS.pth), index_dependencies=false, verbose=true);
+            obj.fullBIDS = bids.layout(char(obj.BIDS.pth), index_dependencies=false, verbose=true);     % TODO: Include use_schema=false when this issue is fixed: https://github.com/bids-standard/bids-matlab/issues/827
             close(H)
         end
 

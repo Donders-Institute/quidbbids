@@ -301,7 +301,7 @@ methods
                 obj.draw_workflow();        % Recreate the workflow graph if it was closed by the user
             end
             workers    = fieldnames(obj.coord.resumes);
-            BIDSW      = bids.layout(char(obj.coord.workdir), use_schema=false, index_derivatives=false, index_dependencies=false, verbose=false);
+            BIDSW      = bids.layout(char(obj.coord.workdir), use_schema=false, index_dependencies=false, verbose=false);
             forcedflow = obj.forced_workflow();
             exportgraphics(get(findall(groot,Tag='workflow_graph'),'Parent'), regexprep(obj.coord.workflowfile, "(.*)\.mat$", "$1.png"))
 
@@ -558,7 +558,7 @@ methods (Access = private)
         end
         
         labels = extractAfter({subjects.name}, 'sub-');
-        BIDSW  = bids.layout(char(worker.workdir), filter=struct(sub={labels}), use_schema=false, index_derivatives=false, index_dependencies=false, verbose=false);
+        BIDSW  = bids.layout(char(worker.workdir), filter=struct(sub={labels}), use_schema=false, index_dependencies=false, verbose=false);
         for source = string(bids.query(BIDSW, 'data', worker.bidsfilter.(deliverable)))'
             target = bids.File(char(source));
             target.entities.tag = char(worker.config.General.tag);

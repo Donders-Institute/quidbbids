@@ -21,7 +21,7 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - rawTB1map_famp, rawTB1map_anat
+     - raw_TB1map_famp, raw_TB1map_anat
    - - ``makes``
      - TB1map_angle, TB1map_anat
    - - ``usesGPU``
@@ -83,7 +83,7 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - syntheticT1, derivICVF, derivFDir, derivFOD
+     - syntheticT1, deriv_ICVF, deriv_FDir, deriv_FOD
    - - ``makes``
      - DWItheta, DWIicvf, DWIff
    - - ``usesGPU``
@@ -222,7 +222,7 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - rawMEGRE
+     - raw_MEGRE
    - - ``makes``
      - brainmask, ME4Dmag, ME4Dphase
    - - ``usesGPU``
@@ -266,7 +266,7 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - rawUNIT1, rawINV1, rawINV2, TB1map_anat, TB1map_angle
+     - raw_UNIT1, raw_INV1, raw_INV2, TB1map_anat, TB1map_angle
    - - ``makes``
      - R1map, M0map, MP2RAGE_T1w
    - - ``usesGPU``
@@ -485,7 +485,7 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - TB1map_anat, TB1map_angle, rawMEVFA
+     - raw_MEVFA, TB1map_anat, TB1map_angle
    - - ``makes``
      - syntheticT1, M0map_echo1, TB1map_GRE, TB1anat_GRE, brainmask, ME4Dmag, ME4Dphase
    - - ``usesGPU``

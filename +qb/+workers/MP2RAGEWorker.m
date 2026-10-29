@@ -32,7 +32,7 @@ properties (Constant)
                    "   Accurate T1 estimation requires careful configuration of ``NumberShots``"
                    "   (number of slices in the inversion segment) and ``EchoSpacing`` (TR of the GRE"
                    "   readout). Incorrect values lead to systematic biases in T1 estimates."]    % Description should be in ReStructuredText format
-    needs       = ["rawUNIT1", "rawINV1", "rawINV2", "TB1map_anat", "TB1map_angle"]     % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["raw_UNIT1", "raw_INV1", "raw_INV2", "TB1map_anat", "TB1map_angle"]     % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -48,8 +48,8 @@ methods (Access = protected)
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
         obj.bidsfilter.raw_UNIT1   = struct(modality = 'anat', ...
                                             suffix   = 'UNIT1');
-        obj.bidsfilter.raw_INV1    = setfields(obj.bbidsfilter.raw_NIT1, inv=1, suffix='MP2RAGE');
-        obj.bidsfilter.raw_INV2    = setfields(obj.bbidsfilter.raw_NV1,  inv=2);
+        obj.bidsfilter.raw_INV1    = setfields(obj.bidsfilter.raw_UNIT1, inv=1, suffix='MP2RAGE');
+        obj.bidsfilter.raw_INV2    = setfields(obj.bidsfilter.raw_INV1,  inv=2);
         obj.bidsfilter.R1map       = struct(modality = 'anat', ...
                                             part     = '', ...
                                             space    = 'MP2RAGE', ...

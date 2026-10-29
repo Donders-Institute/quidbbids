@@ -40,7 +40,7 @@ materializes in practice.
 
    A basic workflow instantiation with user-specified deliverables ``Chimap``, ``R2starmap``, and ``R1map``
    that are collaboratively produced by a team of workers (blue nodes). Raw input data (grey nodes prefixed with
-   ``raw*``, e.g., ``rawMEGRE``) appear at the top, and the output deliverables (orange nodes) at the bottom. The
+   ``raw_*``, e.g., ``raw_MEGRE``) appear at the top, and the output deliverables (orange nodes) at the bottom. The
    raw data are read from the user-provided BIDS dataset, while the intermediate workitems (green nodes) are
    saved in the derivative ``QuIDBBIDS_work`` folder. Finally, the specified output deliverables are stored in the
    ``QuIDBBIDS`` derivative folder.

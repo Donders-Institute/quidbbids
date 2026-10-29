@@ -44,7 +44,7 @@ properties (Constant)
                    "     available, then ``BET`` can be used as a fallback, as this is already included in"
                    "     the MEDI toolbox."
                    "   * Denoising is applied in-place to the merged 4D files when enabled."] % Description should be in ReStructuredText format
-    needs       = "rawMEGRE";   % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = "raw_MEGRE";   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 

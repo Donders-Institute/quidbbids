@@ -56,7 +56,7 @@ properties (Constant)
                    "   coregistration) are skipped. VFAprepWorker automatically detects available data types"
                    "   from the BIDS configuration. Processing is performed independently for each acquisition,"
                    "   run, and flip angle combination."]   % Description should be in ReStructuredText format
-    needs       = ["TB1map_anat", "TB1map_angle", "rawMEVFA"]   % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["raw_MEVFA", "TB1map_anat", "TB1map_angle"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 

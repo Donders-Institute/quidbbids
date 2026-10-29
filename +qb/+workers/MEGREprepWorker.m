@@ -58,7 +58,7 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.rawMEGRE  = struct(modality = 'anat', ...
+        obj.bidsfilter.raw_MEGRE = struct(modality = 'anat', ...
                                           echo     = 1:999, ...
                                           suffix   = 'MEGRE');
         obj.bidsfilter.brainmask = struct(modality = 'anat', ...
@@ -91,10 +91,10 @@ methods
         end
 
         % Get the work done
-        if ~isempty(obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawMEGRE))
-            qb.workers.MEGREprepWorker.create_brainmask(obj, obj.BIDS, obj.bidsfilter.rawMEGRE) % Processing step 1
-            obj.merge_MEVFAfiles(obj, obj.bidsfilter.rawMEGRE, obj.BIDS, false)                 % Processing step 2
-            qb.workers.MEGREprepWorker.denoise_MPPCA(obj)                                       % Processing step 3
+        if ~isempty(obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.raw_MEGRE))
+            qb.workers.MEGREprepWorker.create_brainmask(obj, obj.BIDS, obj.bidsfilter.raw_MEGRE) % Processing step 1
+            obj.merge_MEVFAfiles(obj, obj.bidsfilter.raw_MEGRE, obj.BIDS, false)                 % Processing step 2
+            qb.workers.MEGREprepWorker.denoise_MPPCA(obj)                                        % Processing step 3
         else
             obj.logger.verbose("No raw MEGRE data found for: " + obj.subject.name)
         end
@@ -188,7 +188,7 @@ methods (Static)
                             end
                             mask = BET(spm_read_vols(Hdr), Hdr.dim, abs(Par(7:9)), opts{:}) & mask;
                         otherwise
-                            obj.logger.exception("Unknown brainmask.method: " + conf.method)
+                            obj.logger.exception("Unknown brainmask.method: " + conf.method + ". Must be one of: mri_synthstrip, HD-BET, BET")
                     end
                 end
 

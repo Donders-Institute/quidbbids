@@ -172,7 +172,7 @@ methods
     end
 
     function [items, descriptions] = catalog(obj, resumes)
-        %CATALOG Gets or displays a list of all the workitems the workers in RESUMES can make,
+        %CATALOG Gets or displays a string array of all the workitems the workers in RESUMES can make,
         % along with their DESCRIPTIONS
         %
         % Examples
@@ -249,12 +249,12 @@ methods
             % Create the full workflow graph and store it for later use
             [fullworkflow, H] = create_workflow();
 
-            % Discard workers that depend on missing input data
+            % Discard workers that depend on missing raw input data (checking derivative data is too intricate)
             allDiscarded = strings(1,0);                        % The node names of all discarded nodes in the FULLWORKFLOW graph
             for name = string(fieldnames(resumes))'
-                if ismember(name, fieldnames(resumes)) && ~obj.has_rawdata(resumes.(name))  % NAME may have been removed in a previous iteration of this loop
-                    rawdata      = resumes.(name).needs(startsWith(resumes.(name).needs, ["raw"," deriv"]));
-                    allDiscarded = [allDiscarded, rawdata];     %#ok<AGROW> Add the missing raw input workitem nodes
+                if ismember(name, fieldnames(resumes)) && ~obj.has_rawdata(resumes.(name))          % NAME may have been removed in a previous iteration of this loop
+                    discard      = resumes.(name).needs(startsWith(resumes.(name).needs, "raw_"));
+                    allDiscarded = [allDiscarded, discard];     %#ok<AGROW> Add the missing raw input workitem nodes
                     discardworkers(name)
                 end
             end
@@ -305,7 +305,7 @@ methods
             if nargout > 1
                 nodeTypes                                                            = ones(size([workerNames, workitems])); % Workers
                 nodeTypes(nrWorkers+1:end)                                           = 2;                                    % Workitems
-                nodeTypes(nrWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 3;                                    % Raw/deriv data
+                nodeTypes(nrWorkers + find(startsWith(workitems, ["raw_", "deriv_"]))) = 3;                                  % Raw/deriv data
                 A = findall(groot, Tag='workflow_axes');
                 if isempty(A)
                     A = axes(Tag='workflow_axes');
@@ -332,8 +332,8 @@ methods
             end
         end
 
-        function discardworkers(nodeName)
-            %DISCARDWORKERS Finds all workers that uniquely depend on the given WORKERNAME by:
+        function discardworkers(workerNode)
+            %DISCARDWORKERS Finds all workers that uniquely depend on WORKERNODE by:
             %
             % 1. Creating a reduced workflow graph with workitem nodes that have indegree > 1 removed
             % 2. Performing bfsearch on the reduced graph to find reachable nodes
@@ -355,8 +355,8 @@ methods
             multiNodes = workflow.Nodes.Name(find((1:nrNodes) > nrWorkers & indegree(workflow, 1:nrNodes) > 1));
             workflow   = rmnode(workflow, multiNodes);
 
-            % Find all nodes reachable from WORKERNAME in the reduced graph, i.e. its unique downstream nodes
-            downstream = bfsearch(workflow, nodeName)';
+            % Find all nodes reachable from WORKERNODE in the reduced graph, i.e. its unique downstream nodes
+            downstream = bfsearch(workflow, workerNode)';
             
             % Extract worker names from remaining downstream nodes and remove them from RESUMES
             for wName = downstream(ismember(downstream, workerNames))
@@ -550,7 +550,7 @@ methods (Access = protected)
 
         worker_ = worker.handle(obj.BIDS, struct(), obj.config);
         for workitem = worker.needs
-            if startsWith(workitem, 'raw') && isempty(bids.query(obj.BIDS, 'data', worker_.bidsfilter.(workitem)))
+            if startsWith(workitem, "raw_") && isempty(bids.query(obj.BIDS, 'data', worker_.bidsfilter.(workitem)))
                 has_data = false;
                 fprintf('⚠ No "%s" input data found for %s\n', workitem, worker.name)  % The wide Unicode character may not display correctly in all environments
                 return

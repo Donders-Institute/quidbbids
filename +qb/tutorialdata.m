@@ -5,7 +5,7 @@ function tutorialdata(tutorialdir)
     %   tutorialdata() - Downloads the dataset to a folder named 'tutorialdata' in the current working directory.
     %   tutorialdata('path/to/folder') - Downloads the dataset to the specified folder.
 
-    arguments (Input)
+    arguments
         tutorialdir {mustBeTextScalar, mustBeNonempty} = 'tutorialdata'     % Directory where the tutorial data will be stored (will be created if it doesn't exist)
     end
 

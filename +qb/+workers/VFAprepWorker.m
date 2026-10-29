@@ -70,7 +70,7 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.rawMEVFA    = struct(modality = 'anat', ...
+        obj.bidsfilter.raw_MEVFA   = struct(modality = 'anat', ...
                                             echo     = 1:999, ...
                                             flip     = 1:999, ...
                                             suffix   = '(VFA|MPM)');
@@ -114,12 +114,12 @@ methods
         import qb.utils.setfields
         import qb.workers.MEGREprepWorker.*
 
-        if isempty(obj.bidsfilter.rawMEVFA.suffix)
+        if isempty(obj.bidsfilter.raw_MEVFA.suffix)
             return
         end
 
         % Get the VFA and MPM work done
-        for bfilter = {setfields(obj.bidsfilter.rawMEVFA, suffix='VFA'), setfields(obj.bidsfilter.rawMEVFA, mt='off', suffix='MPM')}
+        for bfilter = {setfields(obj.bidsfilter.raw_MEVFA, suffix='VFA'), setfields(obj.bidsfilter.raw_MEVFA, mt='off', suffix='MPM')}
             if ~isempty(obj.query_ses(obj.BIDS, 'data', bfilter{1}))
                 obj.denoise_raw(bfilter{1})                                                 % Processing step 5a
                 obj.make_syntheticT1_M0(bfilter{1})                                         % Processing step 1

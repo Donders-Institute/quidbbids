@@ -102,8 +102,8 @@ methods
         % Find and select one capable worker per workitem
         for workitem = string(workitems(:)')                % The workitem with optional regexp pattern
 
-            % Filter out the raw/deriv workitems
-            if startsWith(workitem, ["raw", "deriv"])
+            % Filter out the raw/deriv workitems (as they are not made by QuIDBBIDS)
+            if startsWith(workitem, ["raw_", "deriv_"])
                 continue
             end
 
@@ -434,10 +434,10 @@ methods
         end
 
         % Node types: 1=worker(blue), 2=workitem(green), 3=deliverable(orange), 4=raw/deriv(grey)
-        nodeTypes                                                           = ones(size(nodes));
-        nodeTypes(nWorkers+1:end)                                           = 2;
-        nodeTypes(deliverableNodes)                                         = 3;
-        nodeTypes(nWorkers + find(startsWith(workitems, ["raw", "deriv"]))) = 4;
+        nodeTypes                                                             = ones(size(nodes));
+        nodeTypes(nWorkers+1:end)                                             = 2;
+        nodeTypes(deliverableNodes)                                           = 3;
+        nodeTypes(nWorkers + find(startsWith(workitems, ["raw_", "deriv_"]))) = 4;
 
         % Plot the workflow graph
         A = findall(groot, Tag='workflow_axes');

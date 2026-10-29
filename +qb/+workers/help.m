@@ -5,6 +5,14 @@ function helptext = help(items)
 %   qb.workers.help('QSMWorker')
 %   qb.workers.help(["R1map", "localfmask"])
 
+arguments (Input)
+    items {mustBeText}
+end
+
+arguments (Output)
+    helptext string
+end
+
 items        = string(items);
 descriptions = strings(size(items));
 glossfile    = fullfile(fileparts(mfilename('fullpath')), 'glossary.json');

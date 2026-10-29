@@ -10,8 +10,12 @@ function Phase = read_vols_phase(V)
 % Output:
 %   Phase - phase data in radians
 
-arguments
+arguments (Input)
     V   {mustBeA(V, {'char', 'string', 'struct'})}
+end
+
+arguments (Output)
+    Phase (:,:,:) double
 end
 
 if ischar(V) || isstring(V)

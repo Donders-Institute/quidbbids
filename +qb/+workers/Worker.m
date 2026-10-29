@@ -94,7 +94,7 @@ methods
 
     function workitems = makes(obj)
         workitems = string(fieldnames(obj.bidsfilter)');
-        workitems = workitems(~startsWith(workitems, ["raw", "deriv"]));
+        workitems = workitems(~startsWith(workitems, ["raw_", "deriv_"]));
         if isempty(workitems)
             obj.logger.warning('%s does not seem to make anything!', obj.name)
         end
@@ -146,7 +146,7 @@ methods
                     try
                         obj.logger.info("%s is set-up to use GPU: %s (%s)", obj.name, gpuDevice().Name, gpuDevice().ComputeCapability)
                     catch ME
-                        obj.logger.warning("%s\n%s", getReport(ME))
+                        obj.logger.warning("On host '%s':\n%s", java.net.InetAddress.getLocalHost.getHostName(), getReport(ME))
                         validateGPU
                     end
                 else

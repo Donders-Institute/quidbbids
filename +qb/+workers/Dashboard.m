@@ -66,7 +66,7 @@ methods
             elseif obj.coord.config.General.useParallel.value && ismember(obj.jobIDs(subses).State, {'finished','failed'})
                 completed(end+1) = subses;                  %#ok<AGROW>
                 if strcmp(obj.jobIDs(subses).State, 'failed')
-                    warning("QuIDBBIDS:Dashboard:JobMonitor", "Producing %s for subject %s failed:\n%s", obj.workitem, subses, getReport(obj.jobIDs(subses).Error,'extended'))
+                    warning("QuIDBBIDS:Dashboard:JobMonitor", "Producing %s for subject %s failed:\n%s", obj.workitem, subses, getReport(obj.jobIDs(subses).Error))
                 end
             end
         end

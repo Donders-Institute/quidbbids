@@ -36,7 +36,7 @@ methods
         obj.IncludeCurrent  = coord.include;
         obj.ExcludeOriginal = coord.exclude;
         obj.ExcludeCurrent  = coord.exclude;
-        obj.NodeMap         = containers.Map();
+        obj.NodeMap         = dictionary(string.empty, matlab.ui.container.TreeNode.empty);
 
         % Create figure
         obj.Fig = uifigure(Name=['BIDS Include Editor - ' coord.BIDS.pth], Position=[200 200 800 600], CloseRequestFcn=@(src, evt) obj.onCancel());
@@ -110,7 +110,7 @@ methods
         subPath = obj.coord.BIDS.pth;
         for part = split(extractAfter(fullfile(file.folder,file.name), [obj.coord.BIDS.pth filesep]), filesep)'
             subPath = fullfile(subPath, part{1});
-            if isKey(obj.NodeMap, subPath)
+            if ismember(subPath, keys(obj.NodeMap))
                 parentNode = obj.NodeMap(subPath);
             else
                 newNode              = uitreenode(parentNode, Text=part{1});
@@ -143,7 +143,7 @@ methods
         P = uiprogressdlg(obj.Fig, Title='Building the data inclusion tree', Message='Please wait...', Icon=get(groot,'defaultFigureIcon'), Indeterminate='on');
         cleanup = onCleanup(@() close(P));
         BIDS = obj.coord.pruneBIDS(obj.coord.fullBIDS, obj.IncludeCurrent, obj.ExcludeCurrent);
-        included = string(bids.query(BIDS, 'data'));
+        included = bids.query(BIDS, 'data');
         for node = obj.Tree.Children'
             obj.tagNode(node, included)
         end

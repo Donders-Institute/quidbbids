@@ -46,10 +46,10 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.rawUNIT1    = struct(modality = 'anat', ...
+        obj.bidsfilter.raw_UNIT1   = struct(modality = 'anat', ...
                                             suffix   = 'UNIT1');
-        obj.bidsfilter.rawINV1     = setfields(obj.bidsfilter.rawUNIT1, inv=1, suffix='MP2RAGE');
-        obj.bidsfilter.rawINV2     = setfields(obj.bidsfilter.rawINV1,  inv=2);
+        obj.bidsfilter.raw_INV1    = setfields(obj.bbidsfilter.raw_NIT1, inv=1, suffix='MP2RAGE');
+        obj.bidsfilter.raw_INV2    = setfields(obj.bbidsfilter.raw_NV1,  inv=2);
         obj.bidsfilter.R1map       = struct(modality = 'anat', ...
                                             part     = '', ...
                                             space    = 'MP2RAGE', ...
@@ -83,12 +83,12 @@ methods
         end
 
         % Process all runs independently. TODO: think about multi-echo?
-        for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.rawUNIT1)
+        for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.raw_UNIT1)
 
             % Load the raw MP2RAGE headers & data (https://bids-specification.readthedocs.io/en/stable/appendices/qmri.html#unit1-images)
-            UNIT1 = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawUNIT1, run=char(run));      % bids-matlab doesn't understand this: part='(mag)?'
-            INV1  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV1,  run=char(run));      % idem
-            INV2  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.rawINV2,  run=char(run));      % idem
+            UNIT1 = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.raw_UNIT1, run=char(run));   % bids-matlab doesn't understand this: part='(mag)?'
+            INV1  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.raw_INV1,  run=char(run));   % idem
+            INV2  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.raw_INV2,  run=char(run));   % idem
             if length(UNIT1) ~= 1 || length(INV1) ~= 1 || length(INV2) ~= 1
                 obj.logger.error("Expected one UNIT1, INV1 and INV2 file for run %s, but got %d, %d and %d files", char(run), length(UNIT1), length(INV1), length(INV2))
             end

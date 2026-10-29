@@ -30,7 +30,7 @@ classdef TestEditInclude < BaseTest
             
             % Verify properties are set
             testCase.verifyClass(gui, 'qb.GUI.EditInclude')
-            testCase.verifyClass(gui.NodeMap, 'containers.Map')
+            testCase.verifyClass(gui.NodeMap, 'dictionary')
             
             close(gui.Fig)
         end
@@ -91,7 +91,7 @@ classdef TestEditInclude < BaseTest
             % Verify that values are uitreenode objects
             allValues = values(gui.NodeMap);
             testCase.verifyTrue(~isempty(allValues), 'NodeMap should have values')
-            testCase.verifyClass(allValues{1}, 'matlab.ui.container.TreeNode')
+            testCase.verifyClass(allValues(1), 'matlab.ui.container.TreeNode')
             
             close(gui.Fig)
         end

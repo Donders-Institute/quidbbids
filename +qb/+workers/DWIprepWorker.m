@@ -48,8 +48,8 @@ properties (Constant)
                    "   DWIprepWorker does NOT run QSIRecon itself; QSIRecon derivatives must be precomputed."
                    "   QSIPrep/QSIRecon output directories must be configured in the config file or else"
                    "   the downstream DI-MWI model estimations will be performed without the diffusion"
-                   "   information (which may lead to suboptimal results)."]  % Description should be in ReStructuredText format
-    needs       = ["syntheticT1", "derivICVF", "derivFDir", "derivFOD"]     % List of workitems (excluding derivative data) the worker needs. Workitems can contain regexp patterns
+                   "   information (which may lead to suboptimal results)."]    % Description should be in ReStructuredText format
+    needs       = ["syntheticT1", "deriv_ICVF", "deriv_FDir", "deriv_FOD"]      % List of workitems (excluding derivative data) the worker needs. Workitems can contain regexp patterns
     usesGPU     = false
 end
 
@@ -63,12 +63,12 @@ methods (Access = protected)
         import qb.utils.setfields
 
         % Construct the bidsfilters (each key is a workitem produced by get_work_done(), and can be used in ask_team())
-        obj.bidsfilter.derivICVF = obj.config.DWIprepWorker.BFilterICVF;
-        obj.bidsfilter.derivFDir = obj.config.DWIprepWorker.BFilterFDir;
-        obj.bidsfilter.derivFOD  = obj.config.DWIprepWorker.BFilterFOD;
-        obj.bidsfilter.DWItheta  = struct(modality='dwi', space='withinGRE', param='theta', suffix='dwimap');
-        obj.bidsfilter.DWIicvf   = setfields(obj.bidsfilter.DWItheta, param='icvf');
-        obj.bidsfilter.DWIff     = setfields(obj.bidsfilter.DWItheta, param='fiberfraction');
+        obj.bidsfilter.deriv_ICVF = obj.config.DWIprepWorker.BFilterICVF;
+        obj.bidsfilter.deriv_FDir = obj.config.DWIprepWorker.BFilterFDir;
+        obj.bidsfilter.deriv_FOD  = obj.config.DWIprepWorker.BFilterFOD;
+        obj.bidsfilter.DWItheta   = struct(modality='dwi', space='withinGRE', param='theta', suffix='dwimap');
+        obj.bidsfilter.DWIicvf    = setfields(obj.bidsfilter.DWItheta, param='icvf');
+        obj.bidsfilter.DWIff      = setfields(obj.bidsfilter.DWItheta, param='fiberfraction');
     end
     
 end
@@ -123,8 +123,8 @@ methods
             for run = str2double(obj.query_ses(NODDI, 'runs'))
                 
                 % Query the NODDI icvf and fdir files for the current acquisition and run
-                icvf = obj.query_ses(NODDI, 'data', obj.bidsfilter.derivICVF, acq=char(acq), run=char(run));
-                fdir = obj.query_ses(NODDI, 'data', obj.bidsfilter.derivFDir, acq=char(acq), run=char(run));
+                icvf = obj.query_ses(NODDI, 'data', obj.bidsfilter.deriv_ICVF, acq=char(acq), run=char(run));
+                fdir = obj.query_ses(NODDI, 'data', obj.bidsfilter.deriv_FDir, acq=char(acq), run=char(run));
                 if isempty(icvf)
                     obj.logger.verbose('No QSIRecon acq-%s_run-%s icvf-files found in: %s..', char(acq), char(run), fullfile(NODDIdir, obj.sub_ses()))
                     continue
@@ -166,7 +166,7 @@ methods
 
                     case 'MRtrix3'
                         % Query MRtrix FOD from QSIRecon derivatives
-                        fod  = obj.query_ses(MRtrix, 'data', obj.bidsfilter.derivFOD, acq=char(acq), run=char(run));
+                        fod  = obj.query_ses(MRtrix, 'data', obj.bidsfilter.deriv_FOD, acq=char(acq), run=char(run));
                         fdir = replace(fod, '.mif', '.nii');
                         if length(fod) ~= 1
                             obj.logger.error('Expected one MRtrix3 FOD file for acq-%s_run-%s but found %d', char(acq), char(run), length(fod));

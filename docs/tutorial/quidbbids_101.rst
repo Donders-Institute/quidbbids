@@ -126,18 +126,26 @@ Open MATLAB and follow these steps:
       **Inspect a worker's resume**
  
       Each worker has a "resume" that describes what it can make and what it needs as input.
-      For example, to see what the ``QSMWorker`` does:
- 
+      For example, to see what the ``R2starWorker`` (which makes the ``R2starmap``) does:
+
       .. code-block:: matlab
- 
-         >> quidb.resumes.QSMWorker
-                 handle: @qb.workers.QSMWorker
-                   name: "QSMWorker"
-            description: "I am your SEPIA expert that can make shiny QSM and R2-star images for you ;-)"
-                  makes: ["R2starmap"  "T2starmap"  "S0map"  "Chimap"  ...]
-                  needs: ["ME4Dmag"  "ME4Dphase"  "brainmask"]
+
+         >> quidb.resumes.R2starWorker
+                 handle: @qb.workers.R2starWorker
+                   name: "R2starWorker"
+            description: "R2* relaxometry worker using the SEPIA toolbox. [...]"
+                  makes: ["R2starmap"  "T2starmap"  "S0map"]
+                  needs: ["ME4Dmag"  "brainmask"]
                 usesGPU: 0
               preferred: 0
+
+      and the ``QSMWorker`` (which makes the ``Chimap``) additionally needs the phase data:
+
+      .. code-block:: matlab
+
+         >> quidb.resumes.QSMWorker
+                  makes: ["Chimap"  "fieldmap"  "unwrapped"  "localfmask"]
+                  needs: ["ME4Dmag"  "ME4Dphase"  "brainmask"]
  
       The ``makes`` field lists all the products this worker can produce, and ``needs`` lists the
       inputs it requires (which other workers will provide automatically).
@@ -164,6 +172,7 @@ Open MATLAB and follow these steps:
              B1prepWorker: [1×1 struct]
             MP2RAGEWorker: [1×1 struct]
               R1R2starWorker: [1×1 struct]
+             R2starWorker: [1×1 struct]
                 MCRWorker: [1×1 struct]
                 QSMWorker: [1×1 struct]
 
@@ -186,18 +195,18 @@ Open MATLAB and follow these steps:
  
          >> quidb.edit_config()
  
-      .. figure:: _static/configeditor.png
+      .. figure:: ../_static/configeditor.png
  
          The QuIDBBIDS configuration editor. Left panel: settings organised by worker.
          Right panel: description and editable value for the selected parameter.
 
-3. **Select the worker** — Since multiple workers can produce these maps, tell QuIDBBIDS
-   which one to use. For standard MEGRE data, the ``QSMWorker`` (which uses SEPIA) is the
-   right choice:
- 
+3. **Select the workers** — Tell QuIDBBIDS which worker to use for each map: the ``QSMWorker``
+   for the ``Chimap`` and the ``R2starWorker`` for the ``R2starmap`` (both use SEPIA):
+
    .. code-block:: matlab
- 
-      >> quidb.resumes.QSMWorker.preferred = true;
+
+      >> quidb.resumes.QSMWorker.preferred    = true;
+      >> quidb.resumes.R2starWorker.preferred = true;
 
    It is also possible to skip this step but a selection window will pop up when you start the
    manager, asking you to choose a worker. Skipping this step is therefore not recommended for
@@ -214,9 +223,10 @@ Open MATLAB and follow these steps:
 5. **Run!** — Create the manager and start the workflow:
  
    .. code-block:: matlab
- 
+
       >> quidb.get_manager()
-      >> quidb.manager.start_workflow()
+      >> quidb.manager.start_workflow()                          % All subjects
+      >> quidb.manager.start_workflow(["sub-100"])               % ...or only specific subjects
 
    QuIDBBIDS will now process each subject in your dataset. It automatically handles all
    intermediate steps: creating brain masks, merging echoes, running SEPIA for phase
@@ -230,7 +240,8 @@ Open MATLAB and follow these steps:
  
    >> quidb = qb.QuIDBBIDS('/path/to/my_bids_dataset');
    >> quidb.deliverables = ["Chimap", "R2starmap"];
-   >> quidb.resumes.QSMWorker.preferred = true;
+   >> quidb.resumes.QSMWorker.preferred    = true;   % makes the Chimap
+   >> quidb.resumes.R2starWorker.preferred = true;   % makes the R2starmap
    >> quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
    >> quidb.get_manager()
    >> quidb.manager.start_workflow()
@@ -287,7 +298,7 @@ From here you can:
 - **Add more deliverables** — Request ``"R1map"``, ``"MWFmap"``, or ``"MP2RAGE_T1w"`` depending
   on your data
 - **Customise processing** — Explore all settings with ``quidb.config`` or the
-  :doc:`graphical config editor </GUI>`
+  :doc:`graphical config editor <../GUI>`
 - **Scale up** — Enable HPC processing to run all subjects in parallel
-- **Read the docs** — Check out the :doc:`/CLI` and :doc:`/architecture` pages to understand how it
+- **Read the docs** — Check out the :doc:`../CLI` and :doc:`../architecture` pages to understand how it
   works under the hood and how to customise it for your needs.

@@ -13,20 +13,27 @@ QuIDBBIDS architecture
    ``2``, and ``4`` into a team and directs them to process the input data (“anat” and “fmap”), collaboratively
    producing workitems ``1–6``. Finally, the manager initiates a controller to verify successful completion.
 
-.. figure:: ./_static/workflow_graph.png
+Workflow Control Panel
+----------------------
 
-   A QuIDBBIDS workflow instantiation with user-specified deliverables ``Chimap``, ``R2starmap``, and ``R1map``
-   that are collaboratively produced by a team of workers (blue nodes). Raw input data (grey nodes prefixed with
-   ``raw*``, e.g., ``rawMEGRE``) appear at the top, and the output deliverables (orange nodes) at the bottom.
+.. figure:: ./_static/workflow_control_panel.png
+   :alt: The Workflow Control Panel
+
+   The main QuIDBBIDS GUI: setup buttons on the left, the workflow graph in the center (raw input data as grey
+   nodes prefixed with ``raw*``, e.g. ``rawMEGRE``, at the top; the team of workers as blue nodes in the middle;
+   the deliverables such as ``Chimap``, ``R2starmap`` and ``R1map`` as orange nodes at the bottom), workflow
+   control buttons (Load/Save/Start) at the bottom left, and a summary table of the dataset and settings at the
+   bottom right.
 
 Configuration editor
 --------------------
 
 .. figure:: ./_static/configeditor.png
+   :alt: The QuIDBBIDS config editor
 
    Left panel: The General QuIDBBIDS settings as well as the settings for the individual workers. In this
-   example the user navigated to the ``MP2RAGEWorker`` and selected the ``NumberShots`` parameter. Right panel:
-   The description of the selected parameter (top) with a box to edit its value (bottom).
+   example the user navigated to a ``QSMWorker`` SEPIA menu item, whose value opens the native SEPIA GUI when
+   edited. Right panel: the description of the selected parameter (top) with a box to edit its value (bottom).
 
 QuIDBBIDS data
 --------------

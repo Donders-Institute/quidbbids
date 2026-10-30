@@ -107,9 +107,9 @@ methods
         qb.addpath_deps()
 
         % Get or create the configuration settings
+        P.Title   = 'Getting configuration settings';
         isdefault = strcmp(configfile, "default");
         if strlength(configfile) == 0 || isdefault
-            P.Title = 'Deleting existing config file(s)';
             configfile = fullfile(outputdir, "code", "config.json");  % A bit of a hack because obj is not yet fully constructed
             if isdefault && isfile(configfile)
                 disp("🗑️ Deleting existing config file(s): " + configfile)

@@ -4,13 +4,13 @@ Tutorial data
 Prerequisites
 -------------
 Install QuIDBBIDS(and its dependencies), in your MATLAB environment,
-you can find the installation instruction on the :doc:`/installation` page
+you can find the installation instruction on the :doc:`../installation` page
 
 .. note::
  
    Make sure that the QuIDBBIDS folder (without subfolders) is on your MATLAB path.
-   You can verify this by typing ``qb.QuIDBBIDS`` in the MATLAB command window — it
-   should not return an error.
+   You can verify this by typing ``doc qb.QuIDBBIDS`` in the MATLAB command window — it
+   should show the documentation for the QuIDBBIDS class.
 
 BIDS formatted data
 -------------------

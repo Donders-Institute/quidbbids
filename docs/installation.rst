@@ -82,8 +82,9 @@ Optional Dependencies
 A few tools are required for some of the QuIDBBIDS workers:
 
 * **FreeSurfer (mri_synthstrip)**. FreeSurfer's `mri_synthstrip` is the preferred brain extraction tool used in QuIDBBIDS
-  preprocessing. However, it is not strictly needed, as QuIDBBIDS can also use a HD-BET installation or the BET
-  implementation distributed by the (already installed) MEDI toolbox.
+  preprocessing. However, it is not strictly needed, as QuIDBBIDS can also use a `HD-BET <https://github.com/MIC-DKFZ/HD-BET>`__
+  installation or the BET implementation distributed by the (already installed) MEDI toolbox. See the config settings of the
+  ``MEGREprepWorker`` and the ``VFAprepWorker`` for details on how to select the brain extraction tool.
 * **MRtrix3 (fod2fixel, fixel2voxel, fixel2peaks)**. The diffusion informed myelin-water (DI-MWI) model estimation requires
   pre-processed BIDS derivative DWI data that follows the `qsirecon <https://qsirecon.readthedocs.io>`__ conventions. In such
   workflows QuIDBBIDS will convert the qsirecon data to fixel representations, which requires

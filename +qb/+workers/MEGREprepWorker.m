@@ -175,9 +175,11 @@ methods (Static)
                             mask = spm_read_vols(spm_vol(bfile.path)) & mask;
                             delete(bfile.path)              % Delete the temporary mask file
                         case 'hd-bet'
-                            obj.run_command(sprintf('hd-bet -i "%s" -o "%s" %s', char(echo1), bfile.path, conf.options));
-                            mask = spm_read_vols(spm_vol(bfile.path)) & mask;
-                            delete(bfile.path)              % Delete the temporary mask file
+                            output = [erase(bfile.path,'.gz') '.gz'];               % HD-BET hardcodes the extension to .nii.gz
+                            obj.run_command(sprintf('hd-bet -i "%s" -o "%s" --save_bet_mask --no_bet_image %s', char(echo1), output, conf.options));
+                            output = replace(output, '_bet.nii.gz', '.nii.gz');     % HD-BET adds a _bet suffix to the output name for the mask name
+                            mask   = spm_read_vols(spm_vol(output)) & mask;
+                            delete(output)                  % Delete the temporary mask file
                         case 'bet'
                             Hdr = spm_vol(char(echo1));
                             Par = spm_imatrix(Hdr.mat);

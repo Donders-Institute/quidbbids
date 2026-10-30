@@ -15,7 +15,7 @@ arguments (Input)
 end
 
 arguments (Output)
-    Phase (:,:,:) double
+    Phase double
 end
 
 if ischar(V) || isstring(V)

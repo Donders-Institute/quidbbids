@@ -335,15 +335,18 @@ methods
 
                 % Ask the worker to fetch the deliverable for this subject
                 args = {obj.coord.BIDS, subject, obj.coord.config, obj.coord.workdir, obj.coord.outputdir, obj.team};
-                fprintf('▶ Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)  % The wide Unicode character may not display correctly in all environments
-                if obj.coord.config.General.useHPC.value
-                    jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: deliverables are passed directly instead of calling fetch()
-                elseif obj.coord.config.General.useParallel.value
-                    jobIDs(obj.sub_ses(subject)) = parfeval(Worker, 0, args{:}, product);
+                if isempty(Worker(args{:}).collect(product))
+                    fprintf('▶ Manager dispatched %s to make the "%s" deliverable for %s/%s\n', name, product, subject.name, subject.session)  % The wide Unicode character may not display correctly in all environments
+                    if obj.coord.config.General.useHPC.value
+                        jobIDs(obj.sub_ses(subject)) = qsubfeval(Worker, args{:}, product, obj.coord.config.General.HPC.value{:}, 'batch', batch);  % NB: deliverables are passed directly instead of calling fetch()
+                    elseif obj.coord.config.General.useParallel.value
+                        jobIDs(obj.sub_ses(subject)) = parfeval(Worker, 0, args{:}, product);
+                    else
+                        Worker(args{:}).fetch(product);      % TODO: Catch the work done (at some point)
+                    end
                 else
-                    Worker(args{:}).fetch(product);      % TODO: Catch the work done (at some point)
+                    fprintf('⏭️ The %s "%s" deliverable has already been made for %s/%s\n', name, product, subject.name, subject.session)
                 end
-
             end
 
             % Monitor the progress of the workers until all work is done and report any errors or warnings

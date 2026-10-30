@@ -100,13 +100,23 @@ methods
         end
     end
 
+    function work = collect(obj, workitem)
+        %COLLECT Queries for the workitem in the subject/session work-folder (without doing any work)
+        %
+        % Inputs:
+        %   WORKITEM - Name of the work item that needs to be collected
+        %
+        % Output:
+        %   WORK     - A cell array of the workitem path(s) if it exists, otherwise an empty cell array
+
+        work = obj.query_ses(obj.BIDS_ses(), 'data', obj.bidsfilter.(workitem));
+    end
+
     function work = fetch(obj, workitem)
         %FETCH Gets the workitem.
         %
         % FETCH first tries to collect the workitem but if it doesn't exist then locks the work
         % folder, gets the work done (-> obj.get_work_done()), unlocks it and write a done-file.
-        %
-        % For your convenience, an explicit fetch_[workitem]() interface may also be exposed.
         %
         % Inputs:
         %   WORKITEM - Name of the work item that needs to be fetched
@@ -128,7 +138,7 @@ methods
         end
 
         % See if we can collect the requested workitem
-        work = obj.query_ses(obj.BIDS_ses(), 'data', obj.bidsfilter.(workitem));
+        work = obj.collect(workitem);
         if isempty(work)
 
             obj.logger.info("==> %s has started %s work on: %s", obj.name, workitem, obj.subject.path)
@@ -184,7 +194,7 @@ methods
             end
 
             % Collect the requested workitem
-            work = obj.query_ses(obj.BIDS_ses(), 'data', obj.bidsfilter.(workitem));
+            work = obj.collect(workitem);
             if ~isempty(work)
                 obj.done()
                 obj.logger.info(obj.name + " has finished working on: " + obj.subject.path)

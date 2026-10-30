@@ -46,7 +46,7 @@ methods
         end
 
         % Set and load existing workflow data into OBJ
-        obj.coord = coord;                      % The coordinator that help the manager with administrative tasks
+        obj.coord = coord;
         obj.load_properties()
 
         % Create the team and workflow
@@ -168,17 +168,20 @@ methods
     function load_properties(obj)
         %LOAD_PROPERTIES Loads all manager properties from the workflowfile
 
+        % Load the manager settings from the workflowfile
         workflowfile = obj.coord.workflowfile;
         if ~isfile(workflowfile)
+            fprintf('⚠ No workflowfile found at: %s\n', workflowfile)
             return
         end
-
-        % Load the manager settings from the workflowfile
         load(workflowfile, 'mgr')
 
         % Set the manager data
         if exist('mgr', 'var')
             for property = string(fieldnames(mgr)')
+                if strcmp(property, 'coord')
+                    continue    % The manager receives the coordinator handle in the constructor, so we don't want to overwrite it
+                end
                 obj.(property) = mgr.(property);
             end
         end
@@ -465,6 +468,8 @@ methods
         grey   = [0.7 0.7 0.7];
         colormap(A, [blue; green; orange; grey])
         title(A, 'Workflow graph')
+        text(A, 0.5, -0.02, 'Hover over items for help, click on a worker to force recomputing its output', ...
+             Units='normalized', HorizontalAlignment='center', VerticalAlignment='top', FontSize=10, Color=[0.5 0.5 0.5])
 
         % Add datatips for the workers and workitems
         H.DataTipTemplate.Interpreter = 'none';

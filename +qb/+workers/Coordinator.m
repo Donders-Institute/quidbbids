@@ -185,7 +185,7 @@ methods
             resumes struct = obj.resumes
         end
 
-        makes = [];
+        makes = string.empty(1,0);
         for worker = string(fieldnames(resumes))'
             makes = [makes, resumes.(worker).makes];       %#ok<AGROW>
         end
@@ -411,6 +411,11 @@ methods
         % Set the workflow settings
         if exist('coord', 'var')
             for property = string(fieldnames(coord)')
+                if ismember(property, ["outputdir", "workdir", "configfile", "workflowfile"]) && ...
+                        ~isempty(coord.(property)) && ~isfile(coord.(property)) && ~isfolder(coord.(property))
+                    fprintf('⚠ Skipping property "%s" as it is not a valid file or folder path: %s\n', property, coord.(property))
+                    continue        % Skip properties that are not valid file paths
+                end
                 obj.(property) = coord.(property);
             end
         end
@@ -440,7 +445,7 @@ methods
 
         % Collect the selected workflow settings
         for property = string(properties(obj)')
-            if ~ismember(property, {'BIDS','config'})
+            if ~ismember(property, ["BIDS","config"])
                 coord.(property) = obj.(property);
             end
         end

@@ -460,7 +460,7 @@ methods
                  ArrowSize    = 10, ...
                  Interpreter  = 'none', ...
                  Tag          = 'workflow_graph');
-        addlistener(H, 'Hit', @(src, event) obj.setforce(src, event, workflow));
+        addlistener(H, 'Hit', @(src, event) obj.editprops(src, event, workflow));
         A.Tag  = 'workflow_axes';                           % Restore the axes tag (plot removes it)
         blue   = [0.16 0.5 0.73];   % = RTD blue #2980B9
         green  = [0 0.8 0];
@@ -496,21 +496,33 @@ end
 
 methods (Access = private)
 
-    function setforce(obj, src, event, workflow)
+    function editprops(obj, src, event, workflow)
         
         % Find the node that is closest to the clickpoint, but not too far away
         [dist, nodeIdx] = min((src.XData - event.IntersectionPoint(1)).^2 + (src.YData - event.IntersectionPoint(2)).^2);
-        nodeName        = workflow.Nodes.Name{nodeIdx};
-        if dist > 0.25^2 || ~contains(nodeName, "Worker")
+        if dist > 0.25^2
             return
         end
 
-        % Add/remove the node from the force-list
-        switch questdlg("Do you want to force recomputing the output of: " + nodeName, 'Set/unset force')
-            case 'Yes'
-                obj.force = [obj.force, nodeName];
-            case 'No'
-                obj.force(obj.force == nodeName) = [];
+        % Show a popup menu for the clicked node
+        nodeName = workflow.Nodes.Name{nodeIdx};
+        if contains(nodeName, "Worker")     % Add/remove the node from the force-list
+            switch questdlg("Do you want to force recomputing the output of: " + nodeName, 'Set/unset force')
+                case 'Yes'
+                    obj.force = [obj.force, nodeName];
+                case 'No'
+                    obj.force(obj.force == nodeName) = [];
+            end
+        else                                % Must be a workitem -> Add/remove the item from the deliverables list
+            switch questdlg("Do you want '" + nodeName + "' to be a workflow deliverable?", 'Set/unset deliverable')
+                case 'Yes'
+                    obj.coord.deliverables = [obj.coord.deliverables, nodeName];
+                case 'No'
+                    obj.coord.deliverables(obj.coord.deliverables == nodeName) = [];
+            end
+            % Redraw the workflow graph to reflect the new deliverable list
+            obj.draw_workflow()
+            obj.forced_workflow();
         end
     end
 

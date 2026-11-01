@@ -46,7 +46,7 @@ methods
 
         % Control buttons
         buttonGrid = uigridlayout(mainGrid, [2 1], RowHeight = {'fit', 'fit'});
-        uibutton(buttonGrid, Text='📂 Load', Enable='off', ButtonPushedFcn=@(~,~) obj.load_workflow(),  Tooltip='Load previously saved workflow settings');
+        uibutton(buttonGrid, Text='📂 Load', Enable='on',  ButtonPushedFcn=@(~,~) obj.load_workflow(),  Tooltip='Load previously saved workflow settings');
         uibutton(buttonGrid, Text='💾 Save', Enable='off', ButtonPushedFcn=@(~,~) obj.save_workflow(),  Tooltip='Save your workflow settings');
         uibutton(buttonGrid, Text='▶ Start', Enable='off', ButtonPushedFcn=@(~,~) obj.start_workflow(), Tooltip='Save and start the workflow');
 
@@ -58,7 +58,6 @@ methods
             if isempty(obj.coord.manager)
                 obj.coord.get_manager()
             end
-            obj.coord.manager = qb.workers.Manager(coord);
             set(findobj(obj.Fig, Type='uibutton', Enable='off'), Enable='on')
         end
 
@@ -70,18 +69,17 @@ methods
         % Get new deliverables
         olddeliverables = obj.coord.deliverables;
         obj.coord.set_deliverables()
-        newdeliverables = obj.coord.deliverables;
-        if isequal(olddeliverables, newdeliverables)
+        if isequal(olddeliverables, obj.coord.deliverables)
             return
         end
 
         % Update the workflow manager and enable the GUI buttons
-        obj.coord.get_manager()     % Initializing a new manager will draw a new workflow in the GUI
-        if isempty(newdeliverables)
-            obj.reset_config()
+        if isempty(obj.coord.manager)
+            obj.coord.get_manager()                 % Initializing a new manager will draw a new workflow in the GUI
         else
-            set(findobj(obj.Fig, Type='uibutton', Enable='off'), Enable='on')
+            obj.coord.manager.draw_workflow(true);  % Redraw the workflow in the GUI
         end
+        set(findobj(obj.Fig, Type='uibutton', Enable='off'), Enable='on')
     end
 
     function outputdir(obj)
@@ -130,6 +128,7 @@ methods
         set(findobj(obj.Fig, Type='uibutton', Enable='on'        ), Enable='off')
         set(findobj(obj.Fig, Type='uibutton', Text='🔍 Inclusion'), Enable='on')
         set(findobj(obj.Fig, Type='uibutton', Text='🛒 Catalog'  ), Enable='on')
+        set(findobj(obj.Fig, Type='uibutton', Text='📂 Load'     ), Enable='on')
         obj.coord.deliverables = [];
         obj.coord.manager      = [];
         obj.coord.config       = obj.coord.get_config();
@@ -138,8 +137,19 @@ methods
     
     function load_workflow(obj)
         % Callback for Load button
+
+        % Check for an empty manager (e.g. after reset_config)
+        if isempty(obj.coord.manager)
+            obj.coord.get_manager()
+        end
+
+        % Load the workflow properties from the saved file
         obj.coord.load_properties()
         obj.coord.manager.load_properties()
+
+        % Redraw the workflow graph in the GUI
+        obj.coord.manager.draw_workflow(true);
+        set(findobj(obj.Fig, Type='uibutton', Enable='off'), Enable='on')
     end
     
     function save_workflow(obj)

@@ -190,8 +190,10 @@ methods
             makes = [makes, resumes.(worker).makes];       %#ok<AGROW>
         end
         if nargout
-            items        = unique(makes);
-            descriptions = qb.workers.help(items);
+            items = unique(makes);
+            if nargout > 1
+                descriptions = qb.workers.help(items);
+            end
         else
             qb.workers.help(unique(makes))
         end
@@ -411,6 +413,9 @@ methods
         % Set the workflow settings
         if exist('coord', 'var')
             for property = string(fieldnames(coord)')
+                if strcmp(property, 'manager')
+                    continue        % Keep the live manager handle (the saved one is a stale deserialized object)
+                end
                 if ismember(property, ["outputdir", "workdir", "configfile", "workflowfile"]) && ...
                         ~isempty(coord.(property)) && ~isfile(coord.(property)) && ~isfolder(coord.(property))
                     fprintf('⚠ Skipping property "%s" as it is not a valid file or folder path: %s\n', property, coord.(property))

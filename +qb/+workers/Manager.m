@@ -538,7 +538,7 @@ methods (Access = private)
         grey   = [0.7 0.7 0.7];
         colormap(A, [blue; green; orange; grey])
         title(A, 'Workflow graph')
-        text(A, 0.5, -0.02, 'Hover over items for help, click on a worker to force recomputing its output', ...
+        text(A, 0.5, 0.98, 'Hover over items for help, click on a worker to force recomputing its output', ...
              Units='normalized', HorizontalAlignment='center', VerticalAlignment='top', FontSize=10, Color=[0.5 0.5 0.5])
 
         % Add datatips for the workers and workitems

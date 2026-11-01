@@ -5,6 +5,7 @@ classdef WorkflowPanel < handle
 properties
     Fig
     coord
+    InfoTable
 end
 
 methods
@@ -23,7 +24,7 @@ methods
         end
 
         % Create a GUI figure
-        obj.Fig = uifigure(Name=['Workflow Control Panel - ' coord.BIDS.pth], Position=[200 200 800 500]);
+        obj.Fig = uifigure(Name=['Workflow Control Panel - ' coord.BIDS.pth], Position=[200 200 900 560]);
 
         % Main grid
         mainGrid               = uigridlayout(obj.Fig, [2 2]);
@@ -45,10 +46,14 @@ methods
         uiaxes(mainGrid, Tag='workflow_axes', XTick=[], YTick=[], Box='on');
 
         % Control buttons
-        buttonGrid = uigridlayout(mainGrid, [2 1], RowHeight = {'fit', 'fit'});
+        buttonGrid = uigridlayout(mainGrid, [3 1], RowHeight = {'fit', 'fit', 'fit'});
         uibutton(buttonGrid, Text='📂 Load', Enable='on',  ButtonPushedFcn=@(~,~) obj.load_workflow(),  Tooltip='Load previously saved workflow settings');
         uibutton(buttonGrid, Text='💾 Save', Enable='off', ButtonPushedFcn=@(~,~) obj.save_workflow(),  Tooltip='Save your workflow settings');
         uibutton(buttonGrid, Text='▶ Start', Enable='off', ButtonPushedFcn=@(~,~) obj.start_workflow(), Tooltip='Save and start the workflow');
+
+        % Info table in the lower-right cell (4th child of the 2x2 grid -> auto-placed in row 2, column 2).
+        infoGrid      = uigridlayout(mainGrid, [1 1]);      % This helps to center the table in the cell
+        obj.InfoTable = uitable(infoGrid, RowName=[], ColumnName=[], ColumnWidth={'fit', 'auto'}, Tooltip='Summary of the BIDS dataset and workflow settings');
 
         % Redraw the full workflow in the GUI
         coord.get_resumes();
@@ -59,8 +64,10 @@ methods
                 obj.coord.get_manager()
             end
             set(findobj(obj.Fig, Type='uibutton', Enable='off'), Enable='on')
+            obj.coord.manager.draw_workflow(true);
         end
 
+        obj.update_info()
     end
 
     function set_deliverables(obj)
@@ -80,6 +87,7 @@ methods
             obj.coord.manager.draw_workflow(true);  % Redraw the workflow in the GUI
         end
         set(findobj(obj.Fig, Type='uibutton', Enable='off'), Enable='on')
+        obj.update_info()
     end
 
     function outputdir(obj)
@@ -101,6 +109,7 @@ methods
             copyfile(fullfile(olddir, 'dataset_description.json'), newdir)
             copyfile(fullfile(olddir, 'code'), newdir)
         end
+        obj.update_info()
     end
 
     function workdir(obj)
@@ -121,6 +130,7 @@ methods
             bids.init(newdir, 'is_derivative', true)
             copyfile(fullfile(olddir, 'dataset_description.json'), newdir)
         end
+        obj.update_info()
     end
 
     function reset_config(obj)
@@ -133,6 +143,7 @@ methods
         obj.coord.manager      = [];
         obj.coord.config       = obj.coord.get_config();
         obj.coord.resumes      = obj.coord.get_resumes();
+        obj.update_info()
     end
     
     function load_workflow(obj)
@@ -150,6 +161,7 @@ methods
         % Redraw the workflow graph in the GUI
         obj.coord.manager.draw_workflow(true);
         set(findobj(obj.Fig, Type='uibutton', Enable='off'), Enable='on')
+        obj.update_info()
     end
     
     function save_workflow(obj)
@@ -182,6 +194,7 @@ methods
         
         % Call the coordinator method
         obj.coord.edit_inclusion()
+        obj.update_info()
     end
 
     function edit_config(obj)
@@ -195,7 +208,17 @@ methods
         % Call the coordinator method
         obj.coord.edit_config()
     end
-    
+
+    function update_info(obj)
+        %UPDATE_INFO Refreshes the Dataset tab with a summary of the BIDS dataset and workflow settings
+        c = obj.coord;
+        obj.InfoTable.Data = [
+            "Subjects [Sessions]", sprintf("%d [%d]", numel(c.BIDS.subjects), numel(c.BIDS.sessions))
+            "Deliverables",        join(c.deliverables, ", ")
+            "Outputdir",           c.outputdir + "   (tag='" + c.config.General.tag.value + "')"
+            "Workdir",             c.workdir];
+    end
+
 end
 
 end

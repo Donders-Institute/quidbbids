@@ -170,9 +170,13 @@ Additionally, you can get help about the workers and workitems using the ``qb.wo
    localfmask : Local field mask for susceptibility mapping
 
    >> qb.workers.help('QSMWorker')
-   QSMWorker : Quantitative Susceptibility Mapping (QSM) and R2* relaxometry worker using the SEPIA toolbox.
+   QSMWorker : Quantitative Susceptibility Mapping (QSM) and R2* relaxometry worker using the SEPIA
+   toolbox.
 
    QSMWorker performs QSM reconstruction and R2* mapping from multi-echo GRE magnitude and phase data.
-   QSM is a post-processing technique that converts MRI phase data into quantitative susceptibility maps,
-   enabling the study of tissue magnetic properties such as iron content, calcium, and myelin.
+   QSM is a post-processing technique that converts MRI phase data into quantitative susceptibility
+   maps, enabling the study of tissue magnetic properties such as iron content, calcium, and myelin.
    [..]
+
+   needs:   ME4Dmag, ME4Dphase, brainmask
+   usesGPU: false

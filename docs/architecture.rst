@@ -143,29 +143,45 @@ how the manager assembles the team:
 Base-class methods
 ^^^^^^^^^^^^^^^^^^
 
-Besides the abstract ``get_work_done()``, the base class provides these important helper methods to use inside it:
+Besides the abstract ``get_work_done()``, the base class provides these helper methods to use inside it. The most
+important ones (as illustrated in the skeleton above, see the methods help for details):
 
-* ``get_work_done(obj, workitem)`` — the abstract method where all the real work happens. The work is done for
-  just one subject/session at a time (``obj.subject``); you do not need to loop over subjects or sessions — the
+* ``get_work_done()`` — the abstract method where all the real work happens. The work is done for just one
+  subject/session at a time (``obj.subject``); you do not need to loop over subjects or sessions — the
   QuIDBBIDS framework takes care of that, as well as of locking, done-files, and reuse of existing results.
-* ``ask_team(workitem)`` — ask a teammate to produce a needed input workitem (supports regexp patterns); returns
+* ``ask_team()`` — ask a teammate to produce a needed input workitem (supports regexp patterns); returns
   the produced file(s) and their bidsfilter.
-* ``query_ses(layout, query, filter)`` / ``query_sub(...)`` — thin wrappers around ``bids.query`` that add the
-  current subject (and session) filter and always return row cell arrays; ``bidsfilter`` structs are used as the
-  filter, e.g. ``obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.raw_MEGRE)``.
-* ``bfile_set(bfile, specs, rootdir)`` — construct the output ``bids.File`` (entities/suffix/path) in the
-  workdir, e.g. ``obj.bfile_set(bfile, obj.bidsfilter.MyDeliverable)``.
-* ``logger()`` — the worker's logger (``obj.logger.info/warning/error/...``); logs end up in
-  ``derivatives/QuIDBBIDS/logs/<Worker>/``.
+* ``query_ses()`` / ``query_sub()`` — thin wrappers around ``bids.query`` that add the current subject (and session)
+  filter and always return row cell arrays; ``bidsfilter`` structs are used as the filter, e.g.
+  ``obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.raw_MEGRE)``.
+* ``bfile_set()`` — construct the output ``bids.File`` for a workitem: it updates the entities, suffix, and path
+  of an input file according to ``specs`` (usually the worker's own ``bidsfilter`` entry, e.g.
+  ``obj.bfile_set(raw{1}, obj.bidsfilter.MyDeliverable)``). Always use this function to create deliverable filenames
+  — it is strongly discouraged to assemble output filenames by hand.
+* ``run_command()`` — run a shell command; always use this instead of calling ``system()`` directly, so that the
+  command and its output are captured in the worker log and a non-zero exit status is logged as an error. Only build
+  the command from trusted input — it is a security risk otherwise.
+* ``logger()`` — the worker's logger; always display messages via ``obj.logger.verbose/info/warning/error/exception(...)``
+  instead of ``fprintf()``, ``disp()``, ``warning()``, etc., so that messages are also written to the per-subject
+  log files in ``derivatives/QuIDBBIDS/logs/<Worker>/``.
+
+.. dropdown:: Other base-class methods
+
+   * ``BIDS_sub()`` / ``BIDS_ses()`` — a tolerant (no schema validation) ``bids.layout()`` of the workdir
+     restricted to the current subject (or subject and session), e.g. to query intermediate workitems.
+   * ``sub()`` / ``ses()`` / ``sub_ses()`` — the current subject/session labels, e.g. ``sub()`` gives ``'001'``
+     for ``'sub-001'`` and ``sub_ses()`` gives the ``'sub-001_ses-01'`` prefix; handy for filenames and log messages.
+
+   Methods such as ``fetch()``, ``lock()``/``unlock()``, and ``done()``/``is_done()`` are internal framework
+   machinery (driven by ``ask_team()`` and the manager) — do not call them from a worker.
 
 Utility functions
 ^^^^^^^^^^^^^^^^^
 
-The ``+qb/+utils`` folder provides helper functions that are not base-class methods. For instance, for writing
-the output image, use ``qb.utils.write_vol(V, Y, bfile)`` — a wrapper around SPM's ``spm_write_vol`` (see the
-`SPM documentation <https://www.fil.ion.ucl.ac.uk/spm/>`__ for the volume header ``V`` / ``spm_vol``) and
-bids-matlab's ``bids.File`` (see the `bids-matlab documentation <https://bids-matlab.readthedocs.io>`__). On top of
-those it adds:
+The ``+qb/+utils`` folder provides helper functions that are useful for common tasks. For instance, for
+writing the output image, use ``qb.utils.write_vol()`` — a wrapper around SPM's ``spm_write_vol`` (see the
+`SPM documentation <https://www.fil.ion.ucl.ac.uk/spm/>`__) and bids-matlab's ``bids.File`` (see the
+`bids-matlab documentation <https://bids-matlab.readthedocs.io>`__). On top of those the utilities add:
 
 * 4D/5D support — each volume of a 4D/5D data array ``Y`` is written as a separate 3D file (SPM itself only
   handles single 3D volumes)
@@ -173,6 +189,17 @@ those it adds:
 * BIDS metadata sidecars — when ``bfile`` is a ``bids.File``, the JSON sidecar with its metadata is saved as well
 * convenience header — ``V`` may also be just a voxel-size vector ``[vx vy vz]`` (then ``bfile`` is required)
 * sensible datatypes — float32 by default, uint8 without scaling for logical data, or explicit via a 4th argument
+
+See the methods help for details.
+
+.. dropdown:: Other utility functions
+
+   * ``qb.utils.spm_vol()`` — like SPM's ``spm_vol``, but does not warn for compressed ``.nii.gz`` files
+   * ``qb.utils.read_vols_phase()`` — read phase image data in radians, accounting for Siemens phase scaling
+     (values stored in the 0–4096 range)
+   * ``qb.utils.setfields()`` — set multiple fields of a struct in one call; creates fields that do not exist yet
+   * ``qb.utils.file_merge()`` — concatenate 3D volumes into a single 4D NIfTI
+     (``.nii``/``.nii.gz``) and write a JSON sidecar (wrapper around ``spm_file_merge``)
 
 .. tip::
 

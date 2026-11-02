@@ -48,7 +48,8 @@ input data is missing — those discarded workers and their subtrees are highlig
    The workflow "mask": all registered workers and workitems, with the workers/subtrees that are discarded because
    their raw input data is missing from the dataset highlighted in orange.
 
-Once you select your deliverables, the manager then assembles the team of remaining workers that can produce them:
+Once you select your deliverables (and workers, if applicable), the manager then assembles the team of remaining
+workers that can produce them:
 
 .. figure:: ./_static/workflow_graph.png
    :width: 96%

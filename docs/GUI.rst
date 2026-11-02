@@ -13,16 +13,16 @@ an interactive approach to workflow configuration and execution. To launch it in
 
 .. note::
 
-   All sub-GUIs described below can also be opened directly from the MATLAB command line (see :doc:`CLI`). Because
-   ``QuIDBBIDS`` is a handle class, a sub-GUI called from your object always shares its state, so GUI and command line
-   line stay in sync. Available calls:
+   All sub-GUIs described in the sections below can also be opened directly from the MATLAB command line (see :doc:`CLI`).
+   Because ``QuIDBBIDS`` is a handle class, a sub-GUI called from your object always shares its state, so GUI and command
+   line line stay in sync. Available calls:
 
    .. code-block:: matlab
 
       >> quidb = qb.QuIDBBIDS();    % Assign the QuIDBBIDS object (pass a BIDS folder to start directly in CLI mode)
-      >> quidb.edit_inclusion()     % Open the BIDS include/exclude filter editor
-      >> quidb.set_deliverables()   % Open the Deliverables catalog GUI
-      >> quidb.edit_config()        % Open the config editor
+      >> quidb.edit_inclusion()     % Open the BIDS include/exclude filter editor -> [🔍 Inclusion]
+      >> quidb.set_deliverables()   % Open the deliverables selection GUI         -> [🛒 Catalog]
+      >> quidb.edit_config()        % Open the config editor                      -> [🔧 Config]
 
    You can always (re)open the main GUI from an assigned QuIDBBIDS object:
 
@@ -36,27 +36,28 @@ The Workflow Control Panel that now opened is organized in the areas shown in th
    :alt: The Workflow Control Panel
 
    The Workflow Control Panel: setup buttons on the left, the workflow graph in the center, the workflow control
-   buttons (Load/Save/Start) at the bottom left, and a summary table of the dataset and settings at the bottom right.
+   buttons (:guilabel:`📂 Load`/:guilabel:`💾 Save`/:guilabel:`▶ Start`) at the bottom left, and a summary table
+   of the dataset and settings at the bottom right.
 
 * **Left panel — setup buttons.** These buttons guide you through the workflow setup step by step; they are
   enabled or disabled depending on how far you are in the setup process:
 
-  * *Inclusion* — Edit the BIDS include/exclude filter that selects which raw data are used in the workflow.
+  * :guilabel:`🔍 Inclusion` — Edit the BIDS include/exclude filter that selects which raw data are used in the workflow.
     Opens the inclusion editor GUI (see below).
-  * *Catalog* — Select your deliverables (output items such as ``R1map`` and ``MWFmap``) from the catalog of
+  * :guilabel:`🛒 Catalog` — Select your deliverables (output items such as ``R1map`` and ``MWFmap``) from the catalog of
     workitems that the available workers can produce for your dataset. Opens the deliverables GUI (see below).
     Selecting deliverables builds the workflow team and draws the workflow graph in the center panel.
-  * *Config* — Edit the processing settings and options per worker. Opens the config editor GUI (see below).
-  * *Outputdir* — Set the directory where the output data (deliverables) will be saved.
-  * *Workdir* — Set the directory where intermediate working data will be saved.
-  * *Reset* — Clear all deliverables and reset the workflow graph and configuration to the defaults.
+  * :guilabel:`🔧 Config` — Edit the processing settings and options per worker. Opens the config editor GUI (see below).
+  * :guilabel:`📂 Outputdir` — Set the directory where the output data (deliverables) will be saved.
+  * :guilabel:`📂 Workdir` — Set the directory where intermediate working data will be saved.
+  * :guilabel:`↺ Reset` — Clear all deliverables and reset the workflow graph and configuration to the defaults.
 
 * **Center panel — workflow graph.** When the panel opens, the center first shows the *workflow mask*: all
   registered workers and workitems, with the ones discarded because their input data is missing from your dataset
-  greyed out. Only after you select deliverables (*Catalog*) or load saved settings (*Load*) does the center switch
-  to the *workflow graph* of the assembled team (as in the figure above): raw input data at the top (grey nodes
-  prefixed with ``raw_``, e.g. ``raw_MEGRE``), the selected team of workers in the middle (blue nodes), and the
-  output deliverables at the bottom (orange nodes, e.g. ``Chimap`` and ``R1map``). The graph is redrawn
+  greyed out. Only after you select deliverables (:guilabel:`🛒 Catalog`) or load saved settings (:guilabel:`📂 Load`)
+  does the center switch to the *workflow graph* of the assembled team (as in the figure above): raw input data at the top
+  (grey nodes prefixed with ``raw_``, e.g. ``raw_MEGRE``), the selected team of workers in the middle (blue nodes), and
+  the output deliverables at the bottom (orange nodes, e.g. ``Chimap`` and ``R1map``). The graph is redrawn
   automatically when you change the inclusion filter or the deliverables. Hover over a node to see what it does;
   click a worker node to force recomputing its output (dotted lines), or click a workitem node to add/remove it from
   the deliverables.
@@ -66,22 +67,22 @@ The Workflow Control Panel that now opened is organized in the areas shown in th
 
 * **Bottom-left panel — workflow control buttons:**
 
-  * *Load* — Load previously saved workflow settings (both the coordinator and the manager properties).
-  * *Save* — Save your current workflow settings.
-  * *Start* — Save the settings and start the workflow. All buttons are disabled while the workflow runs; when
+  * :guilabel:`📂 Load` — Load previously saved workflow settings (both the coordinator and the manager properties).
+  * :guilabel:`💾 Save` — Save your current workflow settings.
+  * :guilabel:`▶ Start` — Save the settings and start the workflow. All buttons are disabled while the workflow runs; when
     the workflow has completed, an info dialog is shown.
 
 The sub-GUIs described in the sections below are launched from the buttons in the Workflow Control Panel.
 
 Inclusion editor
 ----------------
-The *Inclusion* button in the Workflow Control Panel opens a GUI to edit the include and exclude filters that
+The :guilabel:`🔍 Inclusion` button in the Workflow Control Panel opens a GUI to edit the include and exclude filters that
 determine which raw BIDS data are included in the workflow.
 
 The GUI shows two JSON text areas — one for the include filter and one for the exclude filter — next to a tree
 view of your BIDS dataset. As you edit the filters, the tree is updated live and included files and folders are
-tagged with a green-dot icon. Use *Reset* to restore the original filters, *Cancel* to discard your changes, or
-*Done* to apply them. When applied, the BIDS dataset is re-indexed with the new filter and the workflow graph in
+tagged with a green-dot icon. Use :guilabel:`↺ Reset` to restore the original filters, :guilabel:`✗ Cancel` to discard your changes, or
+:guilabel:`✓ Done` to apply them. When applied, the BIDS dataset is re-indexed with the new filter and the workflow graph in
 the Workflow Control Panel is redrawn.
 
 .. figure:: ./_static/include_editor.png
@@ -92,11 +93,11 @@ the Workflow Control Panel is redrawn.
 
 Deliverables catalog
 --------------------
-The *Catalog* button in the Workflow Control Panel opens a GUI with a table of all workitems that the available
+The :guilabel:`🛒 Catalog` button in the Workflow Control Panel opens a GUI with a table of all workitems that the available
 workers can produce for your dataset, together with their descriptions.
 
-Tick the checkboxes of the deliverables you want (e.g. ``R1map`` and ``MWFmap``) and press *Done* (or *Reset* to
-restore the previous selection, *Cancel* to discard). If multiple workers can produce one of your deliverables, a
+Tick the checkboxes of the deliverables you want (e.g. ``R1map`` and ``MWFmap``) and press :guilabel:`✓ Done` (or :guilabel:`↺ Reset` to
+restore the previous selection, :guilabel:`✗ Cancel` to discard). If multiple workers can produce one of your deliverables, a
 worker-selection GUI pops up in which you can choose the worker to use, showing each candidate's description, the
 workitems it needs, and the workitems it makes.
 
@@ -109,7 +110,7 @@ workitems it needs, and the workitems it makes.
 Processing settings and options
 -------------------------------
 All configuration settings and options for processing the data can be set per worker with a GUI — the config
-editor — launched from the *Config* button in the Workflow Control Panel:
+editor — launched from the :guilabel:`🔧 Config` button in the Workflow Control Panel:
 
 .. figure:: ./_static/configeditor.png
    :alt: The QuIDBBIDS config editor
@@ -150,6 +151,6 @@ particular interest:
 Run the workflow
 ----------------
 
-To run the workflow from the GUI, press the *Start* button in the Workflow Control Panel. This saves your settings
+To run the workflow from the GUI, press the :guilabel:`▶ Start` button in the Workflow Control Panel. This saves your settings
 and starts the workflow; all buttons are disabled while the workflow runs. See :doc:`CLI` for running the workflow
 from the command line (including forcefully re-running (subtrees of) workflows).

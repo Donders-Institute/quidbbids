@@ -4,21 +4,33 @@ Graphical User Interface
 The main window: Workflow Control Panel
 ---------------------------------------
 QuIDBBIDS provides a main graphical user interface (GUI) — the *Workflow Control Panel* — for users that prefer
-an interactive approach to workflow configuration and execution. To launch it, initialize the QuIDBBIDS coordinator
-without input arguments and select your BIDS folder in the file dialog:
+an interactive approach to workflow configuration and execution. To launch it in GUI mode, call
+``qb.QuIDBBIDS()`` with no input arguments and select your BIDS folder in the file dialog:
 
 .. code-block:: matlab
 
-   >> quidb = qb.QuIDBBIDS();    % Select your BIDS folder to launch the Workflow Control Panel
+   >> qb.QuIDBBIDS();            % Initialize the Workflow Control Panel
 
-If you initialized QuIDBBIDS from the command line, you can open the Workflow Control Panel at any time with:
+.. note::
 
-.. code-block:: matlab
+   All sub-GUIs described below can also be opened directly from the MATLAB command line (see :doc:`CLI`). Because
+   ``QuIDBBIDS`` is a handle class, a sub-GUI called from your object always shares its state, so GUI and command line
+   line stay in sync. Available calls:
 
-   >> quidb = qb.QuIDBBIDS('/path/to/bids/dataset');   % Initialize in CLI mode
-   >> quidb.start_GUI()                                % Open the Workflow Control Panel
+   .. code-block:: matlab
 
-The Workflow Control Panel is organized in the areas shown in the figure below:
+      >> quidb = qb.QuIDBBIDS();    % Assign the QuIDBBIDS object (pass a BIDS folder to start directly in CLI mode)
+      >> quidb.edit_inclusion()     % Open the BIDS include/exclude filter editor
+      >> quidb.set_deliverables()   % Open the Deliverables catalog GUI
+      >> quidb.edit_config()        % Open the config editor
+
+   You can always (re)open the main GUI from an assigned QuIDBBIDS object:
+
+   .. code-block:: matlab
+
+      >> quidb.start_GUI()          % Open the Workflow Control Panel (with current settings)
+
+The Workflow Control Panel that now opened is organized in the areas shown in the figure below:
 
 .. figure:: ./_static/workflow_control_panel.png
    :alt: The Workflow Control Panel
@@ -39,12 +51,15 @@ The Workflow Control Panel is organized in the areas shown in the figure below:
   * *Workdir* — Set the directory where intermediate working data will be saved.
   * *Reset* — Clear all deliverables and reset the workflow graph and configuration to the defaults.
 
-* **Center panel — workflow graph.** A graphical representation of the workflow for your dataset (center of the
-  figure above): raw input data at the top (grey nodes prefixed with ``raw*``, e.g. ``rawMEGRE``), the selected team
-  of workers in the middle (blue nodes), and the output deliverables at the bottom (orange nodes, e.g. ``Chimap``
-  and ``R1map``). The graph is redrawn automatically when you change the inclusion filter or the deliverables.
-  Hover over a node to see what it does; click a worker node to force recomputing its output, or click a workitem
-  node to add/remove it from the deliverables.
+* **Center panel — workflow graph.** When the panel opens, the center first shows the *workflow mask*: all
+  registered workers and workitems, with the ones discarded because their input data is missing from your dataset
+  greyed out. Only after you select deliverables (*Catalog*) or load saved settings (*Load*) does the center switch
+  to the *workflow graph* of the assembled team (as in the figure above): raw input data at the top (grey nodes
+  prefixed with ``raw_``, e.g. ``raw_MEGRE``), the selected team of workers in the middle (blue nodes), and the
+  output deliverables at the bottom (orange nodes, e.g. ``Chimap`` and ``R1map``). The graph is redrawn
+  automatically when you change the inclusion filter or the deliverables. Hover over a node to see what it does;
+  click a worker node to force recomputing its output (dotted lines), or click a workitem node to add/remove it from
+  the deliverables.
 
 * **Bottom-right — info table.** A summary of the BIDS dataset and current workflow settings: number of
   subjects/sessions, the selected deliverables, and the output and working directories.
@@ -56,17 +71,12 @@ The Workflow Control Panel is organized in the areas shown in the figure below:
   * *Start* — Save the settings and start the workflow. All buttons are disabled while the workflow runs; when
     the workflow has completed, an info dialog is shown.
 
-The sub-GUIs described in the sections below are launched from the buttons in the Workflow Control Panel, but can
-also be called directly from the MATLAB command window.
+The sub-GUIs described in the sections below are launched from the buttons in the Workflow Control Panel.
 
 Inclusion editor
 ----------------
-The *Inclusion* button in the Workflow Control Panel (or calling ``edit_inclusion()``) opens a GUI to edit the
-include and exclude filters that determine which raw BIDS data are included in the workflow:
-
-.. code-block:: matlab
-
-   >> quidb.edit_inclusion()   % Opens the BIDS inclusion editor GUI
+The *Inclusion* button in the Workflow Control Panel opens a GUI to edit the include and exclude filters that
+determine which raw BIDS data are included in the workflow.
 
 The GUI shows two JSON text areas — one for the include filter and one for the exclude filter — next to a tree
 view of your BIDS dataset. As you edit the filters, the tree is updated live and included files and folders are
@@ -82,12 +92,8 @@ the Workflow Control Panel is redrawn.
 
 Deliverables catalog
 --------------------
-The *Catalog* button in the Workflow Control Panel (or calling ``set_deliverables()``) opens a GUI with a table
-of all workitems that the available workers can produce for your dataset, together with their descriptions:
-
-.. code-block:: matlab
-
-   >> quidb.set_deliverables()   % Opens the deliverables selection GUI
+The *Catalog* button in the Workflow Control Panel opens a GUI with a table of all workitems that the available
+workers can produce for your dataset, together with their descriptions.
 
 Tick the checkboxes of the deliverables you want (e.g. ``R1map`` and ``MWFmap``) and press *Done* (or *Reset* to
 restore the previous selection, *Cancel* to discard). If multiple workers can produce one of your deliverables, a
@@ -103,13 +109,7 @@ workitems it needs, and the workitems it makes.
 Processing settings and options
 -------------------------------
 All configuration settings and options for processing the data can be set per worker with a GUI — the config
-editor — which can be launched from the *Config* button in the Workflow Control Panel, by calling the
-``edit_config()`` method from your ``QuIDBBIDS`` object, or by directly calling the ``configeditor()`` function:
-
-.. code-block:: matlab
-
-   >> quidb.edit_config()  % Opens a GUI to edit the settings of your dataset
-   >> qb.configeditor()    % Opens a GUI to edit the settings of any dataset
+editor — launched from the *Config* button in the Workflow Control Panel:
 
 .. figure:: ./_static/configeditor.png
    :alt: The QuIDBBIDS config editor
@@ -151,11 +151,5 @@ Run the workflow
 ----------------
 
 To run the workflow from the GUI, press the *Start* button in the Workflow Control Panel. This saves your settings
-and starts the workflow; all buttons are disabled while the workflow runs.
-
-Alternatively, from the command line, initialize the manager and start the workflow:
-
-.. code-block:: matlab
-
-   >> quidb.get_manager()
-   >> quidb.manager.start_workflow()   % NB: See the CLI section to forcefully re-running (subtrees of) workflows
+and starts the workflow; all buttons are disabled while the workflow runs. See :doc:`CLI` for running the workflow
+from the command line (including forcefully re-running (subtrees of) workflows).

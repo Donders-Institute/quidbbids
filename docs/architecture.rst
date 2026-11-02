@@ -39,16 +39,25 @@ implementing new methods in Worker modules, as illustrated below.
   requested. Throughout execution, standardized logs ensure traceability and reproducibility.
 
 Below is a real-world workflow example, illustrating how the right-hand side of the above architecture diagram
-materializes in practice.
+materializes in practice. First, the coordinator filters the full worker pool against the actual data in your BIDS
+dataset: it applies the include/exclude filters to the BIDS layout and discards every worker whose required raw
+input data is missing — those discarded workers and their subtrees are highlighted in orange in the mask below:
+
+.. figure:: ./_static/workflow_mask.png
+
+   The workflow "mask": all registered workers and workitems, with the workers/subtrees that are discarded because
+   their raw input data is missing from the dataset highlighted in orange.
+
+Once you select your deliverables, the manager then assembles the team of remaining workers that can produce them:
 
 .. figure:: ./_static/workflow_graph.png
+   :width: 96%
 
    A basic workflow instantiation with user-specified deliverables ``Chimap``, ``R2starmap``, and ``R1map``
    that are collaboratively produced by a team of workers (blue nodes). Raw input data (grey nodes prefixed with
-   ``raw_*``, e.g., ``raw_MEGRE``) appear at the top, and the output deliverables (orange nodes) at the bottom. The
-   raw data are read from the user-provided BIDS dataset, while the intermediate workitems (green nodes) are
-   saved in the derivative ``QuIDBBIDS_work`` folder. Finally, the specified output deliverables are stored in the
-   ``QuIDBBIDS`` derivative folder.
+   ``raw_*``, e.g., ``raw_MEGRE``) appear at the top, and the output deliverables (orange nodes) at the bottom.
+   The dotted lines mark the downstream edges of forced workers: their outputs (and everything downstream of them)
+   will be recomputed, even if results already exist in the work folder.
 
 The QuIDBBIDS workflow is designed to be modular and flexible, allowing users to easily customize and extend
 the processing workflow by adding new Worker modules or customizing existing ones. This architecture resembles

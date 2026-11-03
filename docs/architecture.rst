@@ -5,11 +5,6 @@ Inspired by human role-based workflows, QuIDBBIDS defines a hierarchy of special
 Manager, and Worker — designed to minimize workflow and BIDS-related overhead for developers
 implementing new methods in Worker modules, as illustrated below.
 
-.. note::
-
-   A Controller module for automated quality control (QC) is planned but still work in progress —
-   see the stub in ``+qb/+workers/Controller.m``.
-
 .. figure:: ./_static/workflow_diagram.png
    :width: 80%
 
@@ -37,6 +32,11 @@ implementing new methods in Worker modules, as illustrated below.
   worker module, allowing them to request required work-items from their peers. Upstream workers are triggered
   recursively when their outputs are needed, and existing items are reused unless forced recomputation is
   requested. Throughout execution, standardized logs ensure traceability and reproducibility.
+
+.. note::
+
+   A Controller module for automated quality control (QC) is planned but still work in progress —
+   see the stub in ``+qb/+workers/Controller.m``.
 
 Below is a real-world workflow example, illustrating how the right-hand side of the above architecture diagram
 materializes in practice. First, the coordinator filters the full worker pool against the actual data in your BIDS
@@ -140,6 +140,18 @@ how the manager assembles the team:
   ``"QSMWorker": {...}``), as ``{"value": ..., "description": ...}`` leaves. Inside the worker, ``obj.config`` is
   automatically flattened, so use e.g. ``obj.config.MyWorker.myparam`` directly.
 
+.. note::
+
+   For the manager to dynamically assemble the workflow team, what a worker ``needs`` and ``makes`` (the ``needs``
+   property and the ``bidsfilter`` keys) must be *static*: they may not depend on the actual data in the BIDS
+   dataset or on the config settings — even though ``initialize()`` has access to both. The coordinator builds the
+   worker resumes (and draws the workflow mask/graph) before any data is processed, so data- or settings-dependent
+   needs/bidsfilters would break the team assembly.
+
+   Likewise, every workitem declared in ``bidsfilter`` (i.e. listed by ``makes()``) is a promise: whenever a
+   teammate requests it via ``ask_team()``, the worker must *always* produce it. Other workers count on these
+   workitems being made — never make their existence conditional on the data or worker configuration settings.
+
 Base-class methods
 ^^^^^^^^^^^^^^^^^^
 
@@ -181,13 +193,13 @@ Utility functions
 The ``+qb/+utils`` folder provides helper functions that are useful for common tasks. For instance, for
 writing the output image, use ``qb.utils.write_vol()`` — a wrapper around SPM's ``spm_write_vol`` (see the
 `SPM documentation <https://www.fil.ion.ucl.ac.uk/spm/>`__) and bids-matlab's ``bids.File`` (see the
-`bids-matlab documentation <https://bids-matlab.readthedocs.io>`__). On top of those the utilities add:
+`bids-matlab documentation <https://bids-matlab.readthedocs.io>`__). On top of those the utilities add features
+such as:
 
 * 4D/5D support — each volume of a 4D/5D data array ``Y`` is written as a separate 3D file (SPM itself only
   handles single 3D volumes)
 * ``.nii.gz`` support — the output is gzipped when the filename ends in ``.gz`` (plain ``.nii`` otherwise)
 * BIDS metadata sidecars — when ``bfile`` is a ``bids.File``, the JSON sidecar with its metadata is saved as well
-* convenience header — ``V`` may also be just a voxel-size vector ``[vx vy vz]`` (then ``bfile`` is required)
 * sensible datatypes — float32 by default, uint8 without scaling for logical data, or explicit via a 4th argument
 
 See the methods help for details.

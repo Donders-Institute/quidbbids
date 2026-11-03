@@ -17,7 +17,6 @@
    GUI
    CLI
    workers
-   options
 
 .. toctree::
    :maxdepth: 3
@@ -26,13 +25,13 @@
 
    tutorial/tutorialdata
    tutorial/quidbbids_101
-   tutorial/quidbbids_102
 
 .. toctree::
    :maxdepth: 3
    :hidden:
    :caption: Miscellaneous  
 
+   troubleshooting
    screenshots
    CHANGELOG
    contributing

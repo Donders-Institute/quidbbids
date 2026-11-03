@@ -3,7 +3,7 @@ Command Interface
 
 The QuIDBBIDS workflow can be executed directly from the MATLAB command line, scripts or functions. The paragraphs
 below describe a minimal example of how to initialize and run a QuIDBBIDS workflow for all subjects in a BIDS dataset, 
-requesting R1, R2*, and MWF maps as output:
+requesting R1, R2*, and MWF maps as output.
 
 .. note::
 

@@ -28,7 +28,7 @@ qb.resetconfig;             % Useful when running the development version
 if ismember("ABRIM_MEGRE", datasets)
     quidb = qb.QuIDBBIDS(fullfile(testdata, 'bids_ABRIM_MEGRE'), "", "", "default")
     quidb.deliverables = ["Chimap", "R2starmap", "MP2RAGE_T1w"];
-    quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
+    quidb.config.R2starWorker.unwrap.isEddyCorrect.value = 1;
     quidb.config.MEGREprepWorker.denoising.method.value = "MPPCA";
     quidb.config.MP2RAGEWorker.NumberShots.value = 176;
     quidb.config.General.useHPC.value = true;
@@ -99,7 +99,7 @@ if ismember("Hamburg_MPM", datasets)
     quidb.resumes.MCR_GPUWorker.preferred = true;   % Optional, else GUI usage
     quidb.config.General.useHPC.value = true;
     quidb.config.B1prepWorker.FAscaling.value = 100;
-    quidb.config.QSMWorker.QSM.unwrap.isEddyCorrect.value = 1;
+    quidb.config.R2starWorker.unwrap.isEddyCorrect.value = 1;
 
     % First run the non-GPU part of the workflow
     % quidb.deliverables = [quidb.resumes.R1R2starWorker.needs, quidb.resumes.MCR_GPUWorker.needs];  % Alternatively: p=[]; for fn = fieldnames(quidb.resumes)', if quidb.resumes.(char(fn)).usesGPU, p = [p, quidb.resumes.(char(fn)).needs]; end, end, quidb.deliverables = p;

@@ -295,6 +295,8 @@ Processing Steps:
    contributions
 3. Susceptibility Inversion: Converts local field maps to susceptibility maps
 
+More help on the methods and settings can be found in the `SEPIA documentation <https://sepia-documentation.readthedocs.io/en/stable/gui/Sepia-One-stop-QSM-processing.html>`__.
+
 .. note::
 
    SEPIA has its own working directory structure. QSMWorker temporarily switches to
@@ -373,6 +375,8 @@ that provides information about tissue microstructure and iron content.
 
 The worker leverages the SEPIA toolbox (Susceptibility and Phase Imaging Application) to
 process the multi-echo GRE data and generate quantitative R2* maps.
+
+More help on the methods and settings can be found in the `SEPIA documentation <https://sepia-documentation.readthedocs.io/en/stable/gui/R2star-mapping-standalone.html>`__.
 
 .. note::
 

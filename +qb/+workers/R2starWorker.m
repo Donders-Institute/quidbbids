@@ -14,6 +14,9 @@ properties (Constant)
                    "The worker leverages the SEPIA toolbox (Susceptibility and Phase Imaging Application) to"
                    "process the multi-echo GRE data and generate quantitative R2* maps."
                    ""
+                   "More help on the methods and settings can be found in the `SEPIA documentation " + ...
+                   "<https://sepia-documentation.readthedocs.io/en/stable/gui/R2star-mapping-standalone.html>`__."
+                   ""
                    ".. note::"
                    ""
                    "   SEPIA has its own working directory structure. R2starWorker temporarily switches to"
@@ -44,10 +47,6 @@ methods (Access = protected)
                                           suffix   = 'R2starmap');
         obj.bidsfilter.T2starmap = setfields(obj.bidsfilter.R2starmap, suffix='T2starmap');
         obj.bidsfilter.S0map     = setfields(obj.bidsfilter.R2starmap, suffix='S0map');
-
-        % Set a custom "Parent" config key set and replace the QSMWorker config with my own config
-        obj.config.Parent    = 'R2starWorker';
-        % obj.config.QSMWorker = obj.config.R2starWorker;
     end
 
 end
@@ -65,6 +64,7 @@ methods
 
         % Get the workitem directly from the QSMWorker using my own config
         QSMworker = qb.workers.QSMWorker(obj.BIDS, obj.subject, obj.config, obj.workdir, obj.outputdir, obj.team);
+        QSMworker.config.Parent = 'R2starWorker';       % For more details, see: QSMWorker.get_work_done()
         QSMworker.get_work_done(workitem)
     end
 

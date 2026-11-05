@@ -25,6 +25,9 @@ properties (Constant)
                    "   contributions"
                    "3. Susceptibility Inversion: Converts local field maps to susceptibility maps"
                    ""
+                   "More help on the methods and settings can be found in the `SEPIA documentation " + ...
+                   "<https://sepia-documentation.readthedocs.io/en/stable/gui/Sepia-One-stop-QSM-processing.html>`__."
+                   ""
                    ".. note::"
                    ""
                    "   SEPIA has its own working directory structure. QSMWorker temporarily switches to"
@@ -58,7 +61,7 @@ methods (Access = protected)
         obj.bidsfilter.unwrapped  = setfields(obj.bidsfilter.Chimap, part='phase',       suffix='unwrapped');
         obj.bidsfilter.localfmask = setfields(obj.bidsfilter.Chimap, label='localfield', suffix='mask');
 
-        % Set a custom "Parent" config key set to "QSMWorker"
+        % Set a custom "Parent" config key set to "QSMWorker" (see get_work_done() for details)
         obj.config.Parent = 'QSMWorker';
     end
 
@@ -71,8 +74,8 @@ methods
         %GET_WORK_DONE Does the work to produce the WORKITEM and recruits other workers as needed
         %
         % NB: This worker is a wrapper around the SEPIA toolbox and is therefore also leveraged by the
-        %     R2starWorker to perform the actual work. The R2starWorker passes its own configuration to
-        %     the QSMWorker with the custom "Parent" key set to "R2starWorker".
+        %     R2starWorker to perform the actual work. After initialization, the R2starWorker overwrites
+        %     the `config.Parent` key to "R2starWorker" (so that the right configuration is being used).
         %
         %     Another way to think about it is that the QSMWorker is a SEPIA worker that advertises
         %     itself as a QSM worker. The R2starWorker internally calls the QSMWorker, but advertises
@@ -138,7 +141,7 @@ methods
             input(3).name = '';
             input(4).name = [output '_header.mat'];
             obj.logger.info("--> Running SEPIA %s workflow for %s/%s", workitem, obj.subject.name, obj.subject.session)
-            sepiaIO(input, output, char(mask), obj.config.QSMWorker)
+            sepiaIO(input, output, char(mask), obj.config.(obj.config.Parent))
 
             % Bluntly rename mask files to make them BIDS valid (bids-matlab fails on the original files)
             for srcfile = dir([erase(output, regexpPattern('_desc-.*')) '*_mask_*'])'           % SEPIA eats `desc-val` -> erase(output, ..)

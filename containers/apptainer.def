@@ -124,7 +124,7 @@ From: mathworks/matlab:r2026a
     wget -q "$JULIA_URL" -O /tmp/julia.tar.gz
     mkdir -p /opt/julia && tar -xzf /tmp/julia.tar.gz -C /opt/julia --strip-components=1 && rm /tmp/julia.tar.gz
     ln -s /opt/julia/bin/julia /usr/local/bin/julia
-    julia -e 'using Pkg; Pkg.add("CompileMRI"); Pkg.precompile()'
+    julia -e 'using Pkg; Pkg.add(url="https://github.com/korbinian90/CompileMRI.jl"); Pkg.precompile()'
 
 %runscript
     MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")"

@@ -100,7 +100,8 @@ RUN JULIA_URL="https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%
     && JULIA_URL="${JULIA_URL}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
     && wget -q "$JULIA_URL" -O /tmp/julia.tar.gz \
     && mkdir -p /opt/julia && tar -xzf /tmp/julia.tar.gz -C /opt/julia --strip-components=1 && rm /tmp/julia.tar.gz \
-    && ln -s /opt/julia/bin/julia /usr/local/bin/julia && julia -e 'using Pkg; Pkg.add("CompileMRI"); Pkg.precompile()'
+    && ln -s /opt/julia/bin/julia /usr/local/bin/julia \
+    && julia -e 'using Pkg; Pkg.add(url="https://github.com/korbinian90/CompileMRI.jl"); Pkg.precompile()'
 
 RUN useradd -m -u 1000 quidb && chown -R quidb:quidb /opt/quidbbids /home/quidb
 USER quidb

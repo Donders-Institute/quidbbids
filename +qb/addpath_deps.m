@@ -4,8 +4,8 @@ function addpath_deps()
 % This function automatically handles:
 %   - MATLAB Add-Ons (enables them if installed but disabled)
 %   - Regular dependencies are added recursively with all subfolders
-%   - 'sepia', 'spm', 'bids-matlab' are added with their root folder only,
-%     including running the 'sepia_addpath()' function
+%   - "sepia", "gacelle", "MEDI_toolbox", "spm", "bids-matlab" are added with their root folder only,
+%     and, if available, with their custom addpath function (e.g. sepia_addpath, addpath_gacelle, etc.)
 %
 % See also: ADDPATH, GENPATH, MATLAB.ADDONS
 
@@ -23,15 +23,20 @@ for toolbox = dir(fullfile(rootdir, "dependencies"))'
         continue
     end
 
-    % Enable the add-onn or add the path to the dependency
+    % Enable the add-on or add the path to the dependency
     toolpath = fullfile(rootdir, "dependencies", toolbox.name);
     if toolbox.isdir && length(dir(fullfile(toolpath, '*'))) == 3   % Only a .git file is present if not initialized
         warning('QuIDBBIDS:Dependency:MissingToolbox', 'Empty dependency: %s\nPossible solution:\ngit submodule update --init --recursive', toolpath)
         continue
-    elseif any(strcmp(toolbox.name, ["sepia", "spm", "bids-matlab"]))
-        addtoolbox(toolpath, false)     % Add the rootfolder only
-        if strcmp(toolbox.name, "sepia")
-            sepia_addpath()
+    elseif any(strcmp(toolbox.name, ["sepia", "gacelle", "MEDI_toolbox", "spm", "bids-matlab"]))
+        addtoolbox(toolpath, false)     % Add the rootfolder
+        switch toolbox.name             % Call the toolbox-specific addpath function if available
+            case "sepia"
+                sepia_addpath()
+            case "gacelle"
+                addpath_gacelle()
+            case "MEDI_toolbox"
+                MEDI_set_path()         % NB: Is also called by sepia_addpath() during runtime
         end
     else
         addtoolbox(toolpath, true)      % Add everything

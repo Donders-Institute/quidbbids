@@ -6,6 +6,7 @@
    :caption: Getting started
 
    installation
+   containers
 
 .. toctree::
    :maxdepth: 3

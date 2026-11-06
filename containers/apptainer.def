@@ -1,26 +1,20 @@
 # QuIDBBIDS Apptainer image based on full MATLAB, serving two use cases from one image:
+#   - licensed: an interactive full MATLAB, e.g.
+#       apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server quidbbids.sif matlab
 #   - license-free: the default %runscript runs the mcc-compiled standalone app; the MATLAB installation acts as
 #     the runtime root (a MATLAB installation can replace the MATLAB Runtime), so no license is needed
-#   - licensed: run full MATLAB instead, e.g.
-#       apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server quidbbids.sif matlab -r "..."
 #
-# Run them in CLI or GUI mode (4 combinations):
-#   1. compiled app, CLI (license-free):
-#      apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif --bidsdir /data/bids \
-#          --deliverables MWFmap,Chimap --set MEGREprepWorker.brainmask.method=hd-bet
-#   2. compiled app, GUI (license-free, X11 forwarding over "ssh -X"; folder picker per docs/GUI.rst):
-#      apptainer run --bind /tmp/.X11-unix:/tmp/.X11-unix --env DISPLAY=$DISPLAY --bind /data/bids:/data/bids \
-#          quidbbids-v1.0.0.sif
-#      (on Wayland desktops this works unchanged via XWayland, which provides DISPLAY and /tmp/.X11-unix)
-#   3. full MATLAB, CLI (licensed):
-#      apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server --bind /data/bids:/data/bids \
-#          quidbbids-v1.0.0.sif matlab -batch "addpath('/opt/quidbbids'); quidb = qb.QuIDBBIDS('/data/bids'); \
-#          quidb.interactive = false; quidb.deliverables = 'MWFmap'; \
-#          quidb.get_manager(); quidb.manager.start_workflow()"
-#   4. full MATLAB, GUI (licensed, X11 forwarding; no-arg constructor = GUI mode per docs/GUI.rst):
+# Run mode examples:
+#   1. full MATLAB (licensed): opens a MATLAB command terminal; proceed as on your desktop
+#      (docs/GUI.rst, docs/CLI.rst). Add X11 forwarding for the GUI:
 #      apptainer exec --env DISPLAY=$DISPLAY --env MLM_LICENSE_FILE=27000@your-license-server \
-#          --bind /tmp/.X11-unix:/tmp/.X11-unix --bind /data/bids:/data/bids quidbbids-v1.0.0.sif \
-#          matlab -r "addpath('/opt/quidbbids'); qb.QuIDBBIDS()"
+#          --bind /tmp/.X11-unix:/tmp/.X11-unix --bind /data/bids:/data/bids quidbbids-v1.0.0.sif matlab
+#   2a. compiled app, GUI (license-free, X11 forwarding over "ssh -X"; folder picker per docs/GUI.rst):
+#       apptainer run --bind /tmp/.X11-unix:/tmp/.X11-unix --env DISPLAY=$DISPLAY --bind /data/bids:/data/bids \
+#           quidbbids-v1.0.0.sif
+#   2b. compiled app, CLI (license-free):
+#       apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif --bidsdir /data/bids \
+#           --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 #
 # Build (compiling with mcc needs a MATLAB license at build time):
 # NB: Packages in containers/sepia/external are included as SEPIA dependencies (typically: 'segue' and 'mrisc')
@@ -39,22 +33,18 @@ Bootstrap: docker
 From: mathworks/matlab:r2026a
 
 %help
-    QuIDBBIDS container (compiled app + full MATLAB) with four run modes:
+    QuIDBBIDS container (compiled app + full MATLAB) with these run mode examples:
 
-    1. compiled app, CLI (license-free):
-       apptainer run --bind /data/bids:/data/bids quidbbids.sif --bidsdir /data/bids --deliverables \
-           MWFmap,R1map,R2starmap --set MEGREprepWorker.brainmask.method=hd-bet
-    2. compiled app, GUI (license-free, X11 forwarding):
+    1. full MATLAB (licensed): MATLAB command terminal; proceed as on your desktop (docs/GUI.rst,
+       docs/CLI.rst). Add X11 forwarding for the GUI:
+       apptainer exec --env DISPLAY=$DISPLAY --env MLM_LICENSE_FILE=27000@your-license-server \
+           --bind /tmp/.X11-unix:/tmp/.X11-unix --bind /data/bids:/data/bids quidbbids.sif matlab
+    2a. compiled app, GUI (license-free, X11 forwarding):
        apptainer run --bind /tmp/.X11-unix:/tmp/.X11-unix --env DISPLAY=$DISPLAY \
            --bind /data/bids:/data/bids quidbbids.sif
-    3. full MATLAB, CLI (licensed):
-       apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server --bind /data/bids:/data/bids quidbbids.sif \
-           matlab -batch "addpath('/opt/quidbbids'); quidb = qb.QuIDBBIDS('/data/bids'); quidb.interactive = false; \
-           quidb.deliverables = 'MWFmap'; quidb.get_manager(); quidb.manager.start_workflow()"
-    4. full MATLAB, GUI (licensed, X11 forwarding):
-       apptainer exec --env DISPLAY=$DISPLAY --env MLM_LICENSE_FILE=27000@your-license-server \
-           --bind /tmp/.X11-unix:/tmp/.X11-unix --bind /data/bids:/data/bids quidbbids.sif \
-           matlab -r "addpath('/opt/quidbbids'); qb.QuIDBBIDS()"
+    2b. compiled app, CLI (license-free):
+       apptainer run --bind /data/bids:/data/bids quidbbids.sif --bidsdir /data/bids \
+           --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 
     See "quidbbids --help" for all CLI options.
 
@@ -77,18 +67,30 @@ From: mathworks/matlab:r2026a
 
     # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
     # MLM_LICENSE_FILE is passed in via APPTAINERENV_MLM_LICENSE_FILE at build time
-    apt-get update && apt-get install -y --no-install-recommends git ca-certificates
+    apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core
     git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids
 
     # ---- 2. SEPIA: place its external toolboxes and point SpecifyToolboxesDirectory.m at them ----
     mv /opt/sepia-external $deps/sepia/external
     cp $deps/sepia/SpecifyToolboxesDirectory.template.m $deps/sepia/SpecifyToolboxesDirectory.m
     sed -i -e "s|/path/to|$deps/sepia/external|g" \
-           -e "s|MEDI_HOME *= .*|MEDI_HOME = '$deps/MEDI_toolbox/';|" $deps/sepia/SpecifyToolboxesDirectory.m
+           -e "s|MEDI_HOME *= .*|MEDI_HOME = '$deps/MEDI_toolbox/';|" \
+           -e "s|MRITOOLS_HOME *= .*|MRITOOLS_HOME = '$deps/sepia/external/mritools/';|" \
+           $deps/sepia/SpecifyToolboxesDirectory.m
     # Tensor-MP-PCA (denoising add-on) is not a _HOME var; SEPIA looks for it at SEPIA_HOME/external/Tensor-MP-PCA
     ln -s $deps/Tensor-MP-PCA $deps/sepia/external/Tensor-MP-PCA
 
-    # ---- 3. Compile the standalone app with mcc ----
+    # ---- 3. CompileMRI: Julia-built mritools executables (ROMEO, CLEAR-SWI, ...); MRITOOLS_HOME points here ----
+    JULIA_VERSION=1.11.6
+    JULIA_URL="https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}"
+    JULIA_URL="${JULIA_URL}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz"
+    wget -q "$JULIA_URL" -O /tmp/julia.tar.gz
+    mkdir -p /opt/julia && tar -xzf /tmp/julia.tar.gz -C /opt/julia --strip-components=1 && rm /tmp/julia.tar.gz
+    ln -s /opt/julia/bin/julia /usr/local/bin/julia
+    julia -e "using Pkg; Pkg.add(url=\"https://github.com/korbinian90/CompileMRI.jl\"); Pkg.precompile(); \
+        using CompileMRI; compile(\"$deps/sepia/external/mritools\"; force=true)"
+
+    # ---- 4. Compile the standalone app with mcc ----
     # -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and
     # invisible to mcc's static dependency analysis. Extra -a entries come from the path diff after
     # qb.addpath_deps() + sepia_addpath(<method>) for the SEPIA methods in use, so the deployed path matches the
@@ -98,7 +100,7 @@ From: mathworks/matlab:r2026a
     p0 = split(path, pathsep);
     qb.addpath_deps()
     new = string([]);
-    for m = {'medi','segue','mrisc'}
+    for m = {'medi','segue','mrisc','mritools'}
         sepia_addpath(char(m))
         new = [new, setdiff(split(path, pathsep), [p0, new])];
     end
@@ -110,21 +112,12 @@ From: mathworks/matlab:r2026a
     end
     mcc(a{:})"
 
-    # ---- 4. MRtrix3 (DWIprepWorker calls fod2fixel/fixel2voxel/fixel2peaks via system()) ----
+    # ---- 5. MRtrix3 (DWIprepWorker calls fod2fixel/fixel2voxel/fixel2peaks via system()) ----
     apt-get install -y --no-install-recommends mrtrix3 && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-    # ---- 5. HD-BET (brain extraction via pip; alternative to mri_synthstrip, see docs/installation.rst) ----
+    # ---- 6. HD-BET (brain extraction via pip; alternative to mri_synthstrip, see docs/installation.rst) ----
     pip install --break-system-packages --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
     pip install --break-system-packages --no-cache-dir hd-bet
-
-    # ---- 6. SEPIA dependency that must be compiled: Julia + CompileMRI ----
-    JULIA_VERSION=1.11.6
-    JULIA_URL="https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}"
-    JULIA_URL="${JULIA_URL}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz"
-    wget -q "$JULIA_URL" -O /tmp/julia.tar.gz
-    mkdir -p /opt/julia && tar -xzf /tmp/julia.tar.gz -C /opt/julia --strip-components=1 && rm /tmp/julia.tar.gz
-    ln -s /opt/julia/bin/julia /usr/local/bin/julia
-    julia -e 'using Pkg; Pkg.add(url="https://github.com/korbinian90/CompileMRI.jl"); Pkg.precompile()'
 
 %runscript
     MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")"

@@ -5,11 +5,11 @@ QuIDBBIDS is distributed as a native MATLAB toolbox (see :doc:`installation`), b
 containerized app. This is useful for users that encounter issues with installing QuIDBBIDS and its dependencies
 (e.g. SEPIA), that do not have a MATLAB license, or that want to run QuIDBBIDS in a cloud environment.
 
-The containerized QuIDBBIDS app serves two use cases, each available in a CLI and a GUI variant.
+The containerized QuIDBBIDS app serves two use cases, each available in a GUI and a CLI variant.
 
 1. **Licensed.** If you have a MATLAB license, you can run full MATLAB inside the container exactly as on
-   your desktop: start it with ``matlab`` and drive QuIDBBIDS from the MATLAB command line or the GUIs (see
-   :doc:`CLI` and :doc:`GUI`), with the QuIDBBIDS source tree already on disk at ``/opt/quidbbids``.
+   your desktop: start it with ``matlab`` and drive QuIDBBIDS from the GUI or MATLAB command line (see
+   :doc:`GUI` and :doc:`CLI`), with the QuIDBBIDS source tree already on disk at ``/opt/quidbbids``.
 
 2. **License-free.** If you do not have a MATLAB license, you can run the (MCR compiled) QuIDBBIDS executable
    that is shipped with the container. Its command-line interface mirrors the native API (``quidbbids --help``
@@ -65,49 +65,49 @@ Apptainer usage
 
 .. code-block:: console
 
-   # 1a. full MATLAB, CLI (licensed)
-   apptainer exec --env MLM_LICENSE_FILE=27000@matlab.science.ru.nl --bind /data/bids:/data/bids \
-       quidbbids-v1.0.0.sif matlab -batch "addpath('/opt/quidbbids'); quidb = qb.QuIDBBIDS('/data/bids'); \
-       quidb.interactive = false; quidb.deliverables = 'MWFmap'; quidb.get_manager(); quidb.manager.start_workflow()"
-
-   # 1b. full MATLAB, GUI (licensed, X11 forwarding)
-   apptainer exec --env DISPLAY=$DISPLAY --env MLM_LICENSE_FILE=27000@matlab.science.ru.nl \
+   # 1a. full MATLAB, GUI (licensed, X11 forwarding)
+   apptainer exec --env DISPLAY=$DISPLAY --env MLM_LICENSE_FILE=27000@your-license-server \
        --bind /tmp/.X11-unix:/tmp/.X11-unix --bind /data/bids:/data/bids quidbbids-v1.0.0.sif \
        matlab -r "addpath('/opt/quidbbids'); qb.QuIDBBIDS()"
 
-   # 2a. compiled app, CLI (license-free)
+   # 1b. full MATLAB, CLI (licensed)
+   apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server --bind /data/bids:/data/bids \
+       quidbbids-v1.0.0.sif matlab -batch "addpath('/opt/quidbbids'); quidb = qb.QuIDBBIDS('/data/bids'); \
+       quidb.interactive = false; quidb.deliverables = 'MWFmap'; quidb.get_manager(); quidb.manager.start_workflow()"
+
+   # 2a. compiled app, GUI (license-free; no arguments = GUI mode, folder picker; X11 forwarding)
+   apptainer run --bind /tmp/.X11-unix:/tmp/.X11-unix --env DISPLAY=$DISPLAY \
+       --bind /data/bids:/data/bids quidbbids-v1.0.0.sif
+
+   # 2b. compiled app, CLI (license-free)
    apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif \
        --bidsdir /data/bids --deliverables MWFmap,Chimap \
        --set MEGREprepWorker.brainmask.method=hd-bet
-
-   # 2b. compiled app, GUI (license-free; no arguments = GUI mode, folder picker; X11 forwarding)
-   apptainer run --bind /tmp/.X11-unix:/tmp/.X11-unix --env DISPLAY=$DISPLAY \
-       --bind /data/bids:/data/bids quidbbids-v1.0.0.sif
 
 Docker usage
 ~~~~~~~~~~~~
 
 .. code-block:: console
 
-   # 1a. full MATLAB, CLI (licensed)
-   docker run --rm -e MLM_LICENSE_FILE=27000@matlab.science.ru.nl -v /data/bids:/data/bids \
+   # 1a. full MATLAB, GUI (licensed, X11 forwarding)
+   docker run --rm -e DISPLAY=$DISPLAY -e MLM_LICENSE_FILE=27000@your-license-server \
+       -v /tmp/.X11-unix:/tmp/.X11-unix -v /data/bids:/data/bids --entrypoint matlab quidbbids:v1.0.0 \
+       -r "addpath('/opt/quidbbids'); qb.QuIDBBIDS()"
+
+   # 1b. full MATLAB, CLI (licensed)
+   docker run --rm -e MLM_LICENSE_FILE=27000@your-license-server -v /data/bids:/data/bids \
        --entrypoint matlab quidbbids:v1.0.0 \
        -batch "addpath('/opt/quidbbids'); quidb = qb.QuIDBBIDS('/data/bids'); quidb.interactive = false; \
        quidb.deliverables = 'MWFmap'; quidb.get_manager(); quidb.manager.start_workflow()"
 
-   # 1b. full MATLAB, GUI (licensed, X11 forwarding)
-   docker run --rm -e DISPLAY=$DISPLAY -e MLM_LICENSE_FILE=27000@matlab.science.ru.nl \
-       -v /tmp/.X11-unix:/tmp/.X11-unix -v /data/bids:/data/bids --entrypoint matlab quidbbids:v1.0.0 \
-       -r "addpath('/opt/quidbbids'); qb.QuIDBBIDS()"
+   # 2a. compiled app, GUI (license-free, X11 forwarding)
+   docker run --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \
+       -v /data/bids:/data/bids quidbbids:v1.0.0
 
-   # 2a. compiled app, CLI (license-free)
+   # 2b. compiled app, CLI (license-free)
    docker run --rm -v /data/bids:/data/bids quidbbids:v1.0.0 \
        --bidsdir /data/bids --deliverables MWFmap,Chimap \
        --set MEGREprepWorker.brainmask.method=hd-bet --set VFAprepWorker.brainmask.method=hd-bet
-
-   # 2b. compiled app, GUI (license-free, X11 forwarding)
-   docker run --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \
-       -v /data/bids:/data/bids quidbbids:v1.0.0
 
 .. note::
 

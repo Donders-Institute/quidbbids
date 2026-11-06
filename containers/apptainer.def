@@ -30,10 +30,9 @@
 # GPU workers (MCR_GPUWorker/R1R2starWorker): add --nv (NVIDIA driver); if CUDA libraries are missing, switch the
 # base image to mathworks/matlab-deep-learning:r2026a
 
-# ---- SynthStrip stage: mri_synthstrip (brain extraction) from the official FreeSurfer image ----
-# (use the GPU build, mri_synthstrip/Dockerfile.gpu in freesurfer/freesurfer, on GPU nodes)
+# ---- SynthStrip stage: mri_synthstrip (brain extraction) from the official SynthStrip image ----
 Bootstrap: docker
-From: freesurfer/mri_synthstrip:latest
+From: freesurfer/synthstrip:latest
 Stage: synthstrip
 
 Bootstrap: docker
@@ -61,6 +60,7 @@ From: mathworks/matlab:r2026a
 
 %files from synthstrip
     /freesurfer /freesurfer
+    /usr/local /usr/local
 
 %files
     containers/sepia/external /opt/sepia-external
@@ -69,6 +69,7 @@ From: mathworks/matlab:r2026a
     export SEPIA_TOOLBOXES=/opt/quidbbids/dependencies/sepia/external
     export FREESURFER_HOME=/freesurfer
     export PATH=/freesurfer:${PATH}
+    export PYTHONUSERBASE=/freesurfer/env
 
 %post
     set -e

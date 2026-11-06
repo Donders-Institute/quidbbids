@@ -21,7 +21,7 @@
 [submodule "dependencies/sepia"]
 	path = dependencies/sepia
 	url = https://github.com/kschan0214/sepia.git
-	branch = master
+	branch = release/v1.3.0.1
 [submodule "dependencies/qsub"]
 	path = dependencies/qsub
 	url = https://github.com/fieldtrip/qsub.git

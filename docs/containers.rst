@@ -1,8 +1,8 @@
 Containers
 ==========
 
-QuIDBBIDS is distributed as a native MATLAB toolbox (see :doc:`installation`), but it can also be run as
-a containerized app. This is useful for users that have issues with installing QuIDBBIDS and its dependencies
+QuIDBBIDS is distributed as a native MATLAB toolbox (see :doc:`installation`), but it can also be run as a
+containerized app. This is useful for users that encounter issues with installing QuIDBBIDS and its dependencies
 (e.g. SEPIA), that do not have a MATLAB license, or that want to run QuIDBBIDS in a cloud environment.
 
 The containerized QuIDBBIDS app serves two use cases, each available in a CLI and a GUI variant.
@@ -17,8 +17,8 @@ The containerized QuIDBBIDS app serves two use cases, each available in a CLI an
    MATLAB. It should be noted that the compiled executable may not be able to run all configurable QSM/R2star
    (SEPIA) workflows, as some may involve dynamic path modifications that are not supported in the compiled app.
 
-The GUI variants of both use cases need an X display (X11 forwarding; on Wayland desktops this works unchanged via
-XWayland).
+The GUI variants of both use cases need an X display (X11 forwarding - may need ``xhost +``; on Wayland desktops
+this should work unchanged via XWayland).
 
 Getting the image
 -----------------
@@ -31,11 +31,11 @@ compiled app inside it:
 .. code-block:: console
 
    # Apptainer
-   apptainer pull quidbbids-v1.0.0.sif docker://quidbbids:v1.0.0
-   # or download quidbbids-v1.0.0.sif from the GitHub release page
+   apptainer pull oras://ghcr.io/donders-institute/quidbbids:<version>
+   # Or download from the release page (https://github.com/Donders-Institute/quidbbids/releases)
 
-   # Docker
-   docker pull quidbbids:v1.0.0
+   # Docker - requires root privileges (prefix with `sudo` command if needed)
+   docker pull quidbbids:<version>
 
 To build the image yourself from source, see ``containers/apptainer.def`` / ``containers/Dockerfile``;
 compiling the standalone app with ``mcc`` then requires a MATLAB license at build time

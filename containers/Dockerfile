@@ -34,15 +34,16 @@
 ARG MCR_TAG=r2026a
 ARG MLM_LICENSE_FILE=""
 ARG JULIA_VERSION=1.11.6
-ARG SYNTHSTRIP_IMAGE=freesurfer/mri_synthstrip:latest    # use the GPU build (Dockerfile.gpu) on GPU nodes
+ARG SYNTHSTRIP_IMAGE=freesurfer/synthstrip:latest    # GPU nodes: freesurfer/synthstrip:latest-gpu
 
-# ---- SynthStrip stage: mri_synthstrip (brain extraction) from the official FreeSurfer image ----
+# ---- SynthStrip stage: mri_synthstrip (brain extraction) from the official SynthStrip image ----
 FROM ${SYNTHSTRIP_IMAGE} AS synthstrip
 
 # ---- main image: full MATLAB + compiled app + external tools ----
 FROM mathworks/matlab:${MCR_TAG}
 ARG MLM_LICENSE_FILE
 ENV MLM_LICENSE_FILE=${MLM_LICENSE_FILE} FREESURFER_HOME=/freesurfer PATH=/freesurfer:${PATH}
+ENV PYTHONUSERBASE=/freesurfer/env
 ENV SEPIA_TOOLBOXES=/opt/quidbbids/dependencies/sepia/external
 ENV DEPS=/opt/quidbbids/dependencies
 
@@ -88,6 +89,7 @@ RUN apt-get install -y --no-install-recommends mrtrix3 && apt-get clean && rm -r
 
 # ---- 5. SynthStrip: mri_synthstrip from the stage above (alternative to HD-BET, see docs/installation.rst) ----
 COPY --from=synthstrip /freesurfer /freesurfer
+COPY --from=synthstrip /usr/local /usr/local
 
 # ---- 6. HD-BET (brain extraction via pip; alternative to mri_synthstrip, see docs/installation.rst) ----
 RUN pip install --break-system-packages --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \

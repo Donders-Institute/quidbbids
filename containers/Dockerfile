@@ -27,7 +27,6 @@
 
 ARG MCR_TAG=r2026a
 ARG MLM_LICENSE_FILE=""
-ARG JULIA_VERSION=1.11.6
 ARG SYNTHSTRIP_IMAGE=freesurfer/synthstrip:latest    # GPU nodes: freesurfer/synthstrip:latest-gpu
 
 # ---- SynthStrip stage: mri_synthstrip (brain extraction) from the official SynthStrip image ----
@@ -58,14 +57,16 @@ RUN mv /opt/sepia-external $DEPS/sepia/external \
               $DEPS/sepia/SpecifyToolboxesDirectory.m \
     && ln -s $DEPS/Tensor-MP-PCA $DEPS/sepia/external/Tensor-MP-PCA
 
-# ---- 3. CompileMRI: Julia-built mritools executables (ROMEO, CLEAR-SWI, ...); MRITOOLS_HOME points here ----
-RUN JULIA_URL="https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}" \
-    && JULIA_URL="${JULIA_URL}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz" \
-    && wget -q "$JULIA_URL" -O /tmp/julia.tar.gz \
-    && mkdir -p /opt/julia && tar -xzf /tmp/julia.tar.gz -C /opt/julia --strip-components=1 && rm /tmp/julia.tar.gz \
-    && ln -s /opt/julia/bin/julia /usr/local/bin/julia \
-    && julia -e "using Pkg; Pkg.add(url=\"https://github.com/korbinian90/CompileMRI.jl\"); Pkg.precompile(); \
-        using CompileMRI; compile(\"$DEPS/sepia/external/mritools\"; force=true)"
+# ---- 3. CompileMRI's prebuilt mritools bundle (ROMEO, CLEAR-SWI, ...); MRITOOLS_HOME points here ----
+ARG COMPILEMRI_VERSION=4.9.1
+RUN wget -q "https://github.com/korbinian90/CompileMRI.jl/releases/download/v${COMPILEMRI_VERSION}/"\
+"mritools_linux_x64_${COMPILEMRI_VERSION}.tar.gz" -O /tmp/mritools.tar.gz \
+    && mkdir -p /tmp/mritools $DEPS/sepia/external/mritools \
+    && tar -xzf /tmp/mritools.tar.gz -C /tmp/mritools \
+    && if [ "$(ls -A /tmp/mritools | wc -l)" -eq 1 ] && [ -d /tmp/mritools/* ]; then \
+        mv /tmp/mritools/*/* $DEPS/sepia/external/mritools/; \
+    else mv /tmp/mritools/* $DEPS/sepia/external/mritools/; fi \
+    && rm -rf /tmp/mritools /tmp/mritools.tar.gz
 
 # ---- 4. Compile the standalone app with mcc ----
 # -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and

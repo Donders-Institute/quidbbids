@@ -67,7 +67,7 @@ From: mathworks/matlab:r2026a
 
     # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
     # MLM_LICENSE_FILE is passed in via APPTAINERENV_MLM_LICENSE_FILE at build time
-    apt-get update && apt-get install -y --no-install-recommends fonts-noto-color-emoji fonts-noto-core
+    apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core
     git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids
 
     # ---- 2. SEPIA: place its external toolboxes and point SpecifyToolboxesDirectory.m at them ----
@@ -97,7 +97,8 @@ From: mathworks/matlab:r2026a
     # invisible to mcc's static dependency analysis. Extra -a entries come from the path diff after
     # qb.addpath_deps() + sepia_addpath(<method>) for the SEPIA methods in use, so the deployed path matches the
     # desktop path. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in the repo)
-    rm -f "$deps/EPG-X/Additional_bSSFPX_CEST.m"    # R2026a parse error in this EPG-X script; unused by quidbbids
+    # remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
+    rm -f "$deps/EPG-X/Additional_bSSFPX_CEST.m" "$deps/MEDI_toolbox/README.m" "$deps/MEDI_toolbox/UPDATES.m"
     cd /opt/quidbbids/containers
     matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers')
     p0 = split(path, pathsep);

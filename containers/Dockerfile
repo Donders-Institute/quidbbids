@@ -41,7 +41,7 @@ ENV SEPIA_TOOLBOXES=/opt/quidbbids/dependencies/sepia/external
 ENV DEPS=/opt/quidbbids/dependencies
 
 # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
-RUN apt-get update && apt-get install -y --no-install-recommends fonts-noto-color-emoji fonts-noto-core \
+RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core \
     && git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids
 
 # SEPIA's external toolboxes from the build context (repo root); moved into place in section 2
@@ -75,7 +75,8 @@ RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /t
 # invisible to mcc's static dependency analysis. Extra -a entries come from the path diff after
 # qb.addpath_deps() + sepia_addpath(<method>) for the SEPIA methods in use, so the deployed path matches the
 # desktop path. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in the repo)
-RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m"    # R2026a parse error in this EPG-X script; unused by quidbbids
+# remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
+RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "$DEPS/MEDI_toolbox/UPDATES.m"
 RUN cd /opt/quidbbids/containers \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers') \
     p0 = split(path, pathsep); \

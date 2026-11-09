@@ -80,20 +80,20 @@ RUN export HOME=/root \
 # remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
 RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "$DEPS/MEDI_toolbox/UPDATES.m"
 RUN cd /opt/quidbbids/containers \
-    && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers') \
+    && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'); \
     p0 = split(path, pathsep); \
-    qb.addpath_deps() \
+    qb.addpath_deps(); \
     new = string([]); \
-    for m = {'medi','segue','mrisc','mritools'}
-        sepia_addpath(char(m)) \
+    for m = {'medi','segue','mrisc','mritools'}; \
+        sepia_addpath(char(m)); \
         new = [new; setdiff(split(path, pathsep), [p0; new])]; \
-    end \
+    end; \
     new = new(startsWith(new, '$DEPS'));    % Only our dependencies, not e.g. MATLAB add-on toolboxes \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \
          '-a','/opt/quidbbids/+qb','-a','$DEPS','-a','/opt/quidbbids/project.json'}; \
-    for p = unique(new')
+    for p = unique(new'); \
         a(end+1:end+2) = {'-a', char(p)}; \
-    end \
+    end; \
     mcc(a{:})" \
     && test -f /opt/quidbbids/containers/build/run_quidbbids.sh    # fail the build if mcc did not complete
 

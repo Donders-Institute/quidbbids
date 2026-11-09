@@ -66,7 +66,12 @@ RUN wget -q "https://github.com/korbinian90/CompileMRI.jl/releases/download/v${C
     && rm /tmp/mritools.tar.gz
 
 # ---- 4. Compile the standalone app with mcc ----
-# -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and
+# The mathworks/matlab base image ships MATLAB only; add the Compiler product with MPM first
+RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm \
+    && /tmp/mpm install --root "$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")" \
+        --products MATLAB_Compiler \
+    && rm /tmp/mpm
+# Add -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and
 # invisible to mcc's static dependency analysis. Extra -a entries come from the path diff after
 # qb.addpath_deps() + sepia_addpath(<method>) for the SEPIA methods in use, so the deployed path matches the
 # desktop path. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in the repo)
@@ -77,15 +82,16 @@ RUN cd /opt/quidbbids/containers \
     new = string([]); \
     for m = {'medi','segue','mrisc','mritools'}
         sepia_addpath(char(m)) \
-        new = [new, setdiff(split(path, pathsep), [p0, new])]; \
+        new = [new; setdiff(split(path, pathsep), [p0; new])]; \
     end \
     new = new(startsWith(new, '$DEPS'));    % Only our dependencies, not e.g. MATLAB add-on toolboxes \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \
          '-a','/opt/quidbbids/+qb','-a','$DEPS','-a','/opt/quidbbids/project.json'}; \
-    for p = unique(new)
+    for p = unique(new')
         a(end+1:end+2) = {'-a', char(p)}; \
     end \
-    mcc(a{:})"
+    mcc(a{:})" \
+    && test -f /opt/quidbbids/containers/build/run_quidbbids.sh    # fail the build if mcc did not complete
 
 # ---- 5. MRtrix3 (DWIprepWorker calls fod2fixel/fixel2voxel/fixel2peaks via system()) ----
 RUN apt-get install -y --no-install-recommends mrtrix3 && apt-get clean && rm -rf /var/lib/apt/lists/*

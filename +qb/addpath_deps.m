@@ -34,7 +34,7 @@ for toolbox = dir(fullfile(rootdir, "dependencies"))'
             case "sepia"
                 sepia_addpath()
             case "gacelle"
-                addpath_gacelle()
+                addpath_gacelle();
             case "MEDI_toolbox"
                 MEDI_set_path()         % NB: Is also called by sepia_addpath() during runtime
         end

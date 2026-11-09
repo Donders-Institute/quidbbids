@@ -61,12 +61,9 @@ RUN mv /opt/sepia-external $DEPS/sepia/external \
 ARG COMPILEMRI_VERSION=4.9.1
 RUN wget -q "https://github.com/korbinian90/CompileMRI.jl/releases/download/v${COMPILEMRI_VERSION}/"\
 "mritools_linux_x64_${COMPILEMRI_VERSION}.tar.gz" -O /tmp/mritools.tar.gz \
-    && mkdir -p /tmp/mritools $DEPS/sepia/external/mritools \
-    && tar -xzf /tmp/mritools.tar.gz -C /tmp/mritools \
-    && if [ "$(ls -A /tmp/mritools | wc -l)" -eq 1 ] && [ -d /tmp/mritools/* ]; then \
-        mv /tmp/mritools/*/* $DEPS/sepia/external/mritools/; \
-    else mv /tmp/mritools/* $DEPS/sepia/external/mritools/; fi \
-    && rm -rf /tmp/mritools /tmp/mritools.tar.gz
+    && mkdir -p $DEPS/sepia/external/mritools \
+    && tar -xzf /tmp/mritools.tar.gz -C $DEPS/sepia/external/mritools --strip-components=1 \
+    && rm /tmp/mritools.tar.gz
 
 # ---- 4. Compile the standalone app with mcc ----
 # -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and

@@ -68,7 +68,8 @@ RUN wget -q "https://github.com/korbinian90/CompileMRI.jl/releases/download/v${C
 # ---- 4. Compile the standalone app with mcc ----
 # The mathworks/matlab base image ships MATLAB only; add the Compiler product with MPM first
 RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm \
-    && /tmp/mpm install --root "$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")" \
+    && MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")" \
+    && /tmp/mpm install --matlabroot "$MATLAB_ROOT" --release "$(basename "$MATLAB_ROOT")" \
         --products MATLAB_Compiler \
     && rm /tmp/mpm
 # Add -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and

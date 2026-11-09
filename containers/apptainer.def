@@ -18,8 +18,8 @@
 #
 # Build (compiling with mcc needs a MATLAB license at build time):
 # NB: Packages in containers/sepia/external are included as SEPIA dependencies (typically: 'segue' and 'mrisc')
-#   APPTAINERENV_MLM_LICENSE_FILE=27000@your-license-server \
-#       apptainer build quidbbids-v1.0.0.sif containers/apptainer.def
+#   export APPTAINERENV_MLM_LICENSE_FILE=27000@your-license-server
+#   sudo -E apptainer build quidbbids-v1.0.0.sif containers/apptainer.def
 #
 # GPU workers (MCR_GPUWorker/R1R2starWorker): add --nv (NVIDIA driver); if CUDA libraries are missing, switch the
 # base image to mathworks/matlab-deep-learning:r2026a
@@ -67,7 +67,7 @@ From: mathworks/matlab:r2026a
 
     # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
     # MLM_LICENSE_FILE is passed in via APPTAINERENV_MLM_LICENSE_FILE at build time
-    apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core
+    apt-get update && apt-get install -y --no-install-recommends fonts-noto-color-emoji fonts-noto-core
     git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids
 
     # ---- 2. SEPIA: place its external toolboxes and point SpecifyToolboxesDirectory.m at them ----
@@ -89,15 +89,15 @@ From: mathworks/matlab:r2026a
     rm /tmp/mritools.tar.gz
 
     # ---- 4. Compile the standalone app with mcc ----
-    # The mathworks/matlab base image ships MATLAB only; add the Compiler product with MPM first
     wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm
     MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")"
     /tmp/mpm install --matlabroot "$MATLAB_ROOT" --release "$(basename "$MATLAB_ROOT")" \
         --products MATLAB_Compiler && rm /tmp/mpm
-    # Add -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and
+    # -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and
     # invisible to mcc's static dependency analysis. Extra -a entries come from the path diff after
     # qb.addpath_deps() + sepia_addpath(<method>) for the SEPIA methods in use, so the deployed path matches the
     # desktop path. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in the repo)
+    rm -f "$deps/EPG-X/Additional_bSSFPX_CEST.m"    # R2026a parse error in this EPG-X script; unused by quidbbids
     cd /opt/quidbbids/containers
     matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers')
     p0 = split(path, pathsep);

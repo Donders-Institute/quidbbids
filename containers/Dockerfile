@@ -35,13 +35,13 @@ FROM ${SYNTHSTRIP_IMAGE} AS synthstrip
 # ---- main image: full MATLAB + compiled app + external tools ----
 FROM mathworks/matlab:${MCR_TAG}
 ARG MLM_LICENSE_FILE
-ENV MLM_LICENSE_FILE=${MLM_LICENSE_FILE} FREESURFER_HOME=/freesurfer PATH=/freesurfer:${PATH}
+ENV FREESURFER_HOME=/freesurfer PATH=/freesurfer:${PATH}
 ENV PYTHONUSERBASE=/freesurfer/env
 ENV SEPIA_TOOLBOXES=/opt/quidbbids/dependencies/sepia/external
 ENV DEPS=/opt/quidbbids/dependencies
 
 # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
-RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core \
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-noto-color-emoji fonts-noto-core \
     && git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids
 
 # SEPIA's external toolboxes from the build context (repo root); moved into place in section 2
@@ -66,16 +66,16 @@ RUN wget -q "https://github.com/korbinian90/CompileMRI.jl/releases/download/v${C
     && rm /tmp/mritools.tar.gz
 
 # ---- 4. Compile the standalone app with mcc ----
-# The mathworks/matlab base image ships MATLAB only; add the Compiler product with MPM first
 RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm \
     && MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")" \
     && /tmp/mpm install --matlabroot "$MATLAB_ROOT" --release "$(basename "$MATLAB_ROOT")" \
         --products MATLAB_Compiler \
     && rm /tmp/mpm
-# Add -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and
+# -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and
 # invisible to mcc's static dependency analysis. Extra -a entries come from the path diff after
 # qb.addpath_deps() + sepia_addpath(<method>) for the SEPIA methods in use, so the deployed path matches the
 # desktop path. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in the repo)
+RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m"    # R2026a parse error in this EPG-X script; unused by quidbbids
 RUN cd /opt/quidbbids/containers \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers') \
     p0 = split(path, pathsep); \

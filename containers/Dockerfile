@@ -66,7 +66,9 @@ RUN wget -q "https://github.com/korbinian90/CompileMRI.jl/releases/download/v${C
     && rm /tmp/mritools.tar.gz
 
 # ---- 4. Compile the standalone app with mcc ----
-RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm \
+# HOME must be a writable in-container dir or MATLAB exits at startup
+RUN export HOME=/root \
+    && wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm \
     && MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")" \
     && /tmp/mpm install --matlabroot "$MATLAB_ROOT" --release "$(basename "$MATLAB_ROOT")" \
         --products MATLAB_Compiler \

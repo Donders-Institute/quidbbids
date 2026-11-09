@@ -63,6 +63,7 @@ From: mathworks/matlab:r2026a
 
 %post
     set -e
+    export HOME=/root    # sudo -E leaks the host HOME, which doesn't exist here; MATLAB needs a writable HOME
     deps=/opt/quidbbids/dependencies
 
     # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----

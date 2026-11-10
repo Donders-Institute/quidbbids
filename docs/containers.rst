@@ -2,7 +2,7 @@ Containers
 ==========
 
 QuIDBBIDS is distributed as a native MATLAB toolbox (see :doc:`installation`), but it can also be run as a
-containerized app. This is useful for users that encounter issues with installing QuIDBBIDS and its dependencies
+containerized app. This is useful for users who encounter issues with installing QuIDBBIDS and its dependencies
 (e.g. SEPIA), that do not have a MATLAB license, or that want to run QuIDBBIDS in a cloud environment.
 
 The containerized QuIDBBIDS app serves two use cases, each available in a GUI and a CLI variant.
@@ -14,11 +14,14 @@ The containerized QuIDBBIDS app serves two use cases, each available in a GUI an
 2. **License-free.** If you do not have a MATLAB license, you can run the (MCR compiled) QuIDBBIDS executable
    that is shipped with the container. Its command-line interface mirrors the native API (``quidbbids --help``
    lists the flags), and when started without arguments it opens the same Workflow Control Panel GUI as desktop
-   MATLAB. It should be noted that the compiled executable may not be able to run all configurable QSM/R2star
-   (SEPIA) workflows, as some may involve dynamic path modifications that are not supported in the compiled app.
+   MATLAB.
+   
+   .. note:: The compiled executable may not be able to run all configurable QSM/R2star (SEPIA) workflows, as
+      some of them may involve dynamic path modifications that are not supported in the compiled app.
 
-The GUI variants of both use cases need an X display (X11 forwarding - may need ``xhost +``; on Wayland desktops
-this should work unchanged via XWayland).
+The GUI variants of both use cases need an X display: connect to the host with ``ssh -X`` (or ``-Y``) for X11
+forwarding, and run ``xhost +`` on the host if the X server rejects the connection; on Wayland desktops this
+works unchanged via XWayland.
 
 Getting the image
 -----------------
@@ -70,12 +73,12 @@ Apptainer usage
    apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server \
        --bind /data/bids:/data/bids quidbbids-v1.0.0.sif matlab
 
-   # 2a. compiled app, GUI (license-free; no arguments = GUI mode, folder picker; X11 forwarding)
+   # 2a. compiled app, GUI (license-free; no arguments = GUI mode, folder picker)
    apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif
 
    # 2b. compiled app, CLI (license-free)
-   apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif --bidsdir /data/bids --deliverables MWFmap,Chimap \
-       --set MEGREprepWorker.brainmask.method=hd-bet
+   apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif --bidsdir /data/bids \
+       --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 
 Docker usage
 ~~~~~~~~~~~~
@@ -87,14 +90,13 @@ Docker usage
    docker run --rm -it -e DISPLAY=$DISPLAY -e MLM_LICENSE_FILE=27000@your-license-server \
        -v /tmp/.X11-unix:/tmp/.X11-unix -v /data/bids:/data/bids --entrypoint matlab quidbbids:v1.0.0
 
-   # 2a. compiled app, GUI (license-free, X11 forwarding)
+   # 2a. compiled app, GUI (license-free)
    docker run --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \
        -v /data/bids:/data/bids quidbbids:v1.0.0
 
    # 2b. compiled app, CLI (license-free)
    docker run --rm -v /data/bids:/data/bids quidbbids:v1.0.0 \
-       --bidsdir /data/bids --deliverables MWFmap,Chimap \
-       --set MEGREprepWorker.brainmask.method=hd-bet --set VFAprepWorker.brainmask.method=hd-bet
+       --bidsdir /data/bids --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 
 .. note::
 

@@ -73,27 +73,19 @@ RUN export HOME=/root \
     && /tmp/mpm install --matlabroot "$MATLAB_ROOT" --release "$(basename "$MATLAB_ROOT")" \
         --products MATLAB_Compiler \
     && rm /tmp/mpm
-# -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and
-# invisible to mcc's static dependency analysis. Extra -a entries come from the path diff after
-# qb.addpath_deps() + sepia_addpath(<method>) for the SEPIA methods in use, so the deployed path matches the
-# desktop path. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in the repo)
+# -a bundles +qb, project.json and each top-level dependency dir (bundling every subdir makes the
+# deployed app crash at startup). Workers are instantiated dynamically (str2func) and invisible to
+# mcc's static analysis. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in repo)
 # remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
 RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "$DEPS/MEDI_toolbox/UPDATES.m"
+RUN rm -rf "$DEPS/spm/external" "$DEPS/spm/toolbox" # Huge, not needed
 RUN cd /opt/quidbbids/containers \
-    && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'); \
-    p0 = split(path, pathsep); \
-    qb.addpath_deps(); \
-    new = string([]); \
-    for m = {'medi','segue','mrisc','mritools'}; \
-        sepia_addpath(char(m)); \
-        new = [new; setdiff(split(path, pathsep), [p0; new])]; \
-    end; \
-    new = new(startsWith(new, '$DEPS') & strlength(new) > 0);    % Only our dependencies, not MATLAB add-ons \
+    && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \
-         '-a','/opt/quidbbids/+qb','-a','$DEPS','-a','/opt/quidbbids/project.json'}; \
-    for p = unique(new'); \
-        a(end+1:end+2) = {'-a', char(p)}; \
-    end; \
+         '-a','/opt/quidbbids/+qb','-a','/opt/quidbbids/project.json'}; \
+    for d = fullfile('$DEPS', setdiff({dir('$DEPS').name}, {'.', '..'})), \
+        a(end+1:end+2) = {'-a', char(d)}; \
+    end, \
     mcc(a{:})" \
     && test -f /opt/quidbbids/containers/build/run_quidbbids.sh    # fail the build if mcc did not complete
 

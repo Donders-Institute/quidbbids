@@ -6,7 +6,7 @@
 #
 # Run mode examples:
 #   1. full MATLAB (licensed): opens a MATLAB command terminal; proceed as on your desktop
-#      (docs/GUI.rst, docs/CLI.rst). Add X11 forwarding for the GUI:
+#      (docs/GUI.rst, docs/CLI.rst; the GUI needs an X display, e.g. ssh -X / xhost +)
 #      apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server \
 #          --bind /data/bids:/data/bids quidbbids-v1.0.0.sif matlab
 #   2a. compiled app, GUI (license-free, X11 forwarding over "ssh -X"; folder picker per docs/GUI.rst):
@@ -35,8 +35,8 @@ From: mathworks/matlab:r2026a
     QuIDBBIDS container (compiled app + full MATLAB) with these run mode examples:
 
     1. full MATLAB (licensed): MATLAB command terminal; proceed as on your desktop (docs/GUI.rst,
-       docs/CLI.rst). Add X11 forwarding for the GUI:
-       apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server
+       docs/CLI.rst; the GUI needs an X display, e.g. ssh -X / xhost +)
+       apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server \
            --bind /data/bids:/data/bids quidbbids.sif matlab
     2a. compiled app, GUI (license-free, X11 forwarding):
        apptainer run --bind /data/bids:/data/bids quidbbids.sif
@@ -92,27 +92,19 @@ From: mathworks/matlab:r2026a
     MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")"
     /tmp/mpm install --matlabroot "$MATLAB_ROOT" --release "$(basename "$MATLAB_ROOT")" \
         --products MATLAB_Compiler && rm /tmp/mpm
-    # -a bundles +qb, dependencies and project.json because workers are instantiated dynamically (str2func) and
-    # invisible to mcc's static dependency analysis. Extra -a entries come from the path diff after
-    # qb.addpath_deps() + sepia_addpath(<method>) for the SEPIA methods in use, so the deployed path matches the
-    # desktop path. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in the repo)
+    # -a bundles +qb, project.json and each top-level dependency dir (bundling every subdir makes the
+    # deployed app crash at startup). Workers are instantiated dynamically (str2func) and invisible to
+    # mcc's static analysis. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in repo)
     # remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
     rm -f "$deps/EPG-X/Additional_bSSFPX_CEST.m" "$deps/MEDI_toolbox/README.m" "$deps/MEDI_toolbox/UPDATES.m"
+    rm -rf "$deps/spm/external" "$deps/spm/toolbox" # Huge, not needed
     cd /opt/quidbbids/containers
-    matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'); \
-    p0 = split(path, pathsep); \
-    qb.addpath_deps(); \
-    new = string([]); \
-    for m = {'medi','segue','mrisc','mritools'}; \
-        sepia_addpath(char(m)); \
-        new = [new; setdiff(split(path, pathsep), [p0; new])]; \
-    end; \
-    new = new(startsWith(new, '$deps') & strlength(new) > 0); \
+    matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \
-         '-a','/opt/quidbbids/+qb','-a','$deps','-a','/opt/quidbbids/project.json'}; \
-    for p = unique(new'); \
-        a(end+1:end+2) = {'-a', char(p)}; \
-    end; \
+         '-a','/opt/quidbbids/+qb','-a','/opt/quidbbids/project.json'}; \
+    for d = fullfile('$deps', setdiff({dir('$deps').name}, {'.', '..'})), \
+        a(end+1:end+2) = {'-a', char(d)}; \
+    end, \
     mcc(a{:})"
     test -f /opt/quidbbids/containers/build/run_quidbbids.sh    # fail the build if mcc did not complete
 

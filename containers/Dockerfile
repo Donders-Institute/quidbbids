@@ -14,7 +14,7 @@
 #   2a. compiled app, GUI (license-free, X11 forwarding; folder picker per docs/GUI.rst):
 #       docker run --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v /data/bids:/data/bids quidbbids:v1.0.0
 #   2b. compiled app, CLI (license-free):
-#       docker run --rm -v /data/bids:/data/bids quidbbids:v1.0.0 --bidsdir /data/bids \
+#       docker run --rm -v /data/bids:/data/bids quidbbids:v1.0.0 /data/bids \
 #           --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 #
 # Build (compiling with mcc needs a MATLAB license at build time):

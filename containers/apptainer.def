@@ -12,7 +12,7 @@
 #   2a. compiled app, GUI (license-free, X11 forwarding over "ssh -X"; folder picker per docs/GUI.rst):
 #       apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif
 #   2b. compiled app, CLI (license-free):
-#       apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif --bidsdir /data/bids \
+#       apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif /data/bids \
 #           --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 #
 # Build (compiling with mcc needs a MATLAB license at build time):
@@ -41,7 +41,7 @@ From: mathworks/matlab:r2026a
     2a. compiled app, GUI (license-free, X11 forwarding):
        apptainer run --bind /data/bids:/data/bids quidbbids.sif
     2b. compiled app, CLI (license-free):
-       apptainer run --bind /data/bids:/data/bids quidbbids.sif --bidsdir /data/bids \
+       apptainer run --bind /data/bids:/data/bids quidbbids.sif /data/bids \
            --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 
     See "quidbbids --help" for all CLI options.

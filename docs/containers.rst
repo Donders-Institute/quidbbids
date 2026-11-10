@@ -12,16 +12,12 @@ The containerized QuIDBBIDS app serves two use cases, each available in a GUI an
    :doc:`GUI` and :doc:`CLI`), with the QuIDBBIDS source tree already on disk at ``/opt/quidbbids``.
 
 2. **License-free.** If you do not have a MATLAB license, you can run the (MCR compiled) QuIDBBIDS executable
-   that is shipped with the container. Its command-line interface mirrors the native API (``quidbbids --help``
-   lists the flags), and when started without arguments it opens the same Workflow Control Panel GUI as desktop
+   that is shipped with the container. Its command-line interface mirrors the native API (``--help`` lists
+   the flags), and when started without arguments it opens the same Workflow Control Panel GUI as desktop
    MATLAB.
-   
+
    .. note:: The compiled executable may not be able to run all configurable QSM/R2star (SEPIA) workflows, as
       some of them may involve dynamic path modifications that are not supported in the compiled app.
-
-The GUI variants of both use cases need an X display: connect to the host with ``ssh -X`` (or ``-Y``) for X11
-forwarding, and run ``xhost +`` on the host if the X server rejects the connection; on Wayland desktops this
-works unchanged via XWayland.
 
 Getting the image
 -----------------
@@ -45,58 +41,91 @@ compiling the standalone app with ``mcc`` then requires a MATLAB license at buil
 (``MLM_LICENSE_FILE=port@license-server``), and SEPIA's non-git dependencies must be placed in
 ``containers/sepia/external/`` (e.g. ``segue``, ``mrisc``).
 
-Running
--------
+Running a workflow
+------------------
 
-Below are example commands for running the containerized QuIDBBIDS app. In all cases, bind your BIDS
-dataset folder to ``/data/bids`` inside the container (``--bind /data/bids:/data/bids`` for Apptainer,
-``-v /data/bids:/data/bids`` for Docker). Here ``/data/bids`` is just the conventional mount point for the
-BIDS dataset *root* on the host, e.g. ``/home/me/mystudy/bids``; the container sees it at the same path,
-so pass ``--bidsdir /data/bids`` to the app. Anything QuIDBBIDS writes goes to
-``/data/bids/derivatives/QuIDBBIDS`` (and ``..._work``) by default, i.e. back into your host folder via the
-bind; use ``--outputdir``/``--workdir`` to redirect elsewhere.
+In all commands below, bind your BIDS dataset folder to ``/data/bids`` inside the container
+(``--bind /data/bids:/data/bids`` for Apptainer, ``-v /data/bids:/data/bids`` for Docker). Here
+``/data/bids`` is just the conventional mount point for the BIDS dataset *root* on the host, e.g.
+``/home/me/mystudy/bids``; the container sees it at the same path. Anything QuIDBBIDS writes goes to
+``/data/bids/derivatives/QuIDBBIDS`` (and ``..._work``) by default, i.e. back into your host folder via
+the bind; use ``--outputdir``/``--workdir`` to redirect elsewhere (MCR app) or the corresponding
+QuIDBBIDS properties (licensed mode).
 
-The compiled app's command-line interface mirrors the native MATLAB API (see :doc:`CLI`): ``--bidsdir``
-(required in CLI mode), ``--outputdir``, ``--workdir``, ``--configfile``, ``--deliverables``,
-``--subjects``, ``--prefer``, ``--force``, and repeatable ``--set KEY=VALUE`` (sets
-``config.<KEY>.value``, e.g. ``--set MEGREprepWorker.brainmask.method=hd-bet``). With no arguments the
-GUI mode starts (a folder picker opens, as in :doc:`GUI`). For the full list of flags, run the app with
-``--help``, e.g. ``apptainer run quidbbids-v1.0.0.sif --help`` or ``docker run --rm quidbbids:v1.0.0 --help``.
+Licensed (full MATLAB)
+~~~~~~~~~~~~~~~~~~~~~~
 
-Apptainer usage
-~~~~~~~~~~~~~~~
+Start an interactive MATLAB inside the container and drive QuIDBBIDS from the MATLAB :doc:`CLI`
+or with a :doc:`GUI`, exactly as in a normal MATLAB session with QuIDBBIDS and its
+dependencies fully installed and on the path. Just pass your license server at run time via
+``MLM_LICENSE_FILE``. The main difference is that the data needs to be accessible from within the
+container, and that the GUI needs an X-display: connect to the host with ``ssh -X`` (or ``-Y``), and run
+``xhost +`` on the host if the X-server rejects the connection (on Wayland this works unchanged via
+XWayland).
 
 .. code-block:: console
 
-   # 1. full MATLAB (licensed): interactive MATLAB terminal; use the GUI or the MATLAB command line
-   #    as on your desktop (see :doc:`GUI` and :doc:`CLI`)
+   # Apptainer
    apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server \
        --bind /data/bids:/data/bids quidbbids-v1.0.0.sif matlab
 
-   # 2a. compiled app, GUI (license-free; no arguments = GUI mode, folder picker)
-   apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif
-
-   # 2b. compiled app, CLI (license-free)
-   apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif --bidsdir /data/bids \
-       --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
-
-Docker usage
-~~~~~~~~~~~~
-
-.. code-block:: console
-
-   # 1. full MATLAB (licensed): interactive MATLAB terminal (-it for the TTY); use the GUI or the
-   #    MATLAB command line as on your desktop (see :doc:`GUI` and :doc:`CLI`)
+   # Docker (``-it`` for the terminal; the X11 flags are only needed for the GUI)
    docker run --rm -it -e DISPLAY=$DISPLAY -e MLM_LICENSE_FILE=27000@your-license-server \
        -v /tmp/.X11-unix:/tmp/.X11-unix -v /data/bids:/data/bids --entrypoint matlab quidbbids:v1.0.0
 
-   # 2a. compiled app, GUI (license-free)
+License-free (compiled MCR app)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Graphical User Interface
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The default run command executes the compiled app (no license needed at run time). With no arguments it
+opens the Workflow Control Panel GUI (folder picker, as in :doc:`GUI`): you pick the BIDS dataset,
+choose the deliverables and settings in the panel, and press start to run the workflow - the same
+panels and workers as in desktop MATLAB, writing to the dataset's ``derivatives`` folder. The main difference
+is that you have no MATLAB window, that the data needs to be accessible from within the container, and
+that the GUI needs an X-display: connect to the host with ``ssh -X`` (or ``-Y``) and run ``xhost +`` on
+the host if the X-server rejects the connection (on Wayland this works unchanged via XWayland):
+
+.. code-block:: console
+
+   # Apptainer
+   apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif
+
+   # Docker
    docker run --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \
        -v /data/bids:/data/bids quidbbids:v1.0.0
 
-   # 2b. compiled app, CLI (license-free)
+Command-line Interface
+^^^^^^^^^^^^^^^^^^^^^^
+
+With the BIDS dir as first (positional) argument it runs the MCR app in :doc:`CLI` mode, without a
+MATLAB command window. Therefore you pass all run configuration as options at once; the workflow manager
+is started automatically. Available options (passed after the image name):
+
+- ``--outputdir PATH`` -- output dir (default: ``BIDSDIR/derivatives/QuIDBBIDS``)
+- ``--workdir PATH`` -- work dir (default: ``BIDSDIR/derivatives/QuIDBBIDS_work``)
+- ``--configfile PATH`` -- config file (e.g. ``BIDSDIR/code/quidbbids_config.json``)
+- ``--deliverables LIST`` -- comma-separated deliverables (e.g. ``MWFmap,Chimap``)
+- ``--subjects LIST`` -- comma-separated subjects to process (default: all)
+- ``--prefer LIST`` -- workers to prefer for resumes
+- ``--force LIST`` -- workers to force re-run
+- ``--set KEY=VALUE`` -- set ``config.<KEY>.value`` (repeatable), e.g.
+  ``--set MEGREprepWorker.brainmask.method=hd-bet``
+- ``--help`` -- show the full help
+
+.. code-block:: console
+
+   # Apptainer
+   apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif /data/bids \
+       --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
+
+   # Docker
    docker run --rm -v /data/bids:/data/bids quidbbids:v1.0.0 \
-       --bidsdir /data/bids --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
+       /data/bids --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
+
+For the full list of flags, run the app with ``--help``, e.g. ``apptainer run quidbbids-v1.0.0.sif --help``
+or ``docker run --rm quidbbids:v1.0.0 --help``.
 
 .. note::
 

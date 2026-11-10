@@ -7,11 +7,10 @@
 # Run mode examples:
 #   1. full MATLAB (licensed): opens a MATLAB command terminal; proceed as on your desktop
 #      (docs/GUI.rst, docs/CLI.rst). Add X11 forwarding for the GUI:
-#      apptainer exec --env DISPLAY=$DISPLAY --env MLM_LICENSE_FILE=27000@your-license-server \
-#          --bind /tmp/.X11-unix:/tmp/.X11-unix --bind /data/bids:/data/bids quidbbids-v1.0.0.sif matlab
+#      apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server \
+#          --bind /data/bids:/data/bids quidbbids-v1.0.0.sif matlab
 #   2a. compiled app, GUI (license-free, X11 forwarding over "ssh -X"; folder picker per docs/GUI.rst):
-#       apptainer run --bind /tmp/.X11-unix:/tmp/.X11-unix --env DISPLAY=$DISPLAY --bind /data/bids:/data/bids \
-#           quidbbids-v1.0.0.sif
+#       apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif
 #   2b. compiled app, CLI (license-free):
 #       apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif --bidsdir /data/bids \
 #           --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
@@ -37,11 +36,10 @@ From: mathworks/matlab:r2026a
 
     1. full MATLAB (licensed): MATLAB command terminal; proceed as on your desktop (docs/GUI.rst,
        docs/CLI.rst). Add X11 forwarding for the GUI:
-       apptainer exec --env DISPLAY=$DISPLAY --env MLM_LICENSE_FILE=27000@your-license-server \
-           --bind /tmp/.X11-unix:/tmp/.X11-unix --bind /data/bids:/data/bids quidbbids.sif matlab
+       apptainer exec --env MLM_LICENSE_FILE=27000@your-license-server
+           --bind /data/bids:/data/bids quidbbids.sif matlab
     2a. compiled app, GUI (license-free, X11 forwarding):
-       apptainer run --bind /tmp/.X11-unix:/tmp/.X11-unix --env DISPLAY=$DISPLAY \
-           --bind /data/bids:/data/bids quidbbids.sif
+       apptainer run --bind /data/bids:/data/bids quidbbids.sif
     2b. compiled app, CLI (license-free):
        apptainer run --bind /data/bids:/data/bids quidbbids.sif --bidsdir /data/bids \
            --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
@@ -109,7 +107,7 @@ From: mathworks/matlab:r2026a
         sepia_addpath(char(m)); \
         new = [new; setdiff(split(path, pathsep), [p0; new])]; \
     end; \
-    new = new(startsWith(new, '$deps')); \
+    new = new(startsWith(new, '$deps') & strlength(new) > 0); \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \
          '-a','/opt/quidbbids/+qb','-a','$deps','-a','/opt/quidbbids/project.json'}; \
     for p = unique(new'); \

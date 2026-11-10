@@ -88,7 +88,7 @@ RUN cd /opt/quidbbids/containers \
         sepia_addpath(char(m)); \
         new = [new; setdiff(split(path, pathsep), [p0; new])]; \
     end; \
-    new = new(startsWith(new, '$DEPS'));    % Only our dependencies, not e.g. MATLAB add-on toolboxes \
+    new = new(startsWith(new, '$DEPS') & strlength(new) > 0);    % Only our dependencies, not MATLAB add-ons \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \
          '-a','/opt/quidbbids/+qb','-a','$DEPS','-a','/opt/quidbbids/project.json'}; \
     for p = unique(new'); \

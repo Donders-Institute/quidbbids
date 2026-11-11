@@ -78,7 +78,8 @@ RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /t
 # deployed app crash at startup). Workers are instantiated dynamically (str2func) and invisible to
 # mcc's static analysis. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in repo)
 # remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
-RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "$DEPS/MEDI_toolbox/UPDATES.m"
+RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "$DEPS/MEDI_toolbox/UPDATES.m" \
+    && rm -f $DEPS/FANSI_toolbox/script_*.m    # demo scripts with syntax mcc cannot parse
 RUN rm -rf "$DEPS/spm/external" "$DEPS/spm/toolbox" # Huge, not needed
 RUN cd /opt/quidbbids/containers \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \

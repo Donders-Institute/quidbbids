@@ -111,6 +111,7 @@ From: mathworks/matlab:r2026a
     # mcc's static analysis. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in repo)
     # remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
     rm -f "$deps/EPG-X/Additional_bSSFPX_CEST.m" "$deps/MEDI_toolbox/README.m" "$deps/MEDI_toolbox/UPDATES.m"
+    rm -f $deps/FANSI_toolbox/script_*.m            # demo scripts with syntax mcc cannot parse
     rm -rf "$deps/spm/external" "$deps/spm/toolbox" # Huge, not needed
     cd /opt/quidbbids/containers
     matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \

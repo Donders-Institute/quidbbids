@@ -18,7 +18,7 @@
 #           --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 #
 # Build (compiling with mcc needs a MATLAB license at build time):
-# NB: Packages in containers/sepia/external are included as SEPIA dependencies (typically: 'segue' and 'mrisc')
+# NB: Packages in containers/sepia/external are included as SEPIA dependencies (e.g.: 'segue', 'mrisc' and 'stisuite')
 #   docker build -t quidbbids:v1.0.0 -f containers/Dockerfile . --build-arg MCR_TAG=r2026a \
 #       --build-arg MLM_LICENSE_FILE=27000@your-license-server
 #
@@ -48,14 +48,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-
 COPY containers/sepia/external/ /opt/sepia-external/
 
 # ---- 2. SEPIA: place its external toolboxes and point SpecifyToolboxesDirectory.m at them ----
-# Tensor-MP-PCA (denoising add-on) is not a _HOME var; SEPIA looks for it at SEPIA_HOME/external/Tensor-MP-PCA
 RUN mv /opt/sepia-external $DEPS/sepia/external \
     && cp $DEPS/sepia/SpecifyToolboxesDirectory.template.m $DEPS/sepia/SpecifyToolboxesDirectory.m \
     && sed -i -e "s|/path/to|$DEPS/sepia/external|g" \
+              -e "s|FANSI_HOME *= .*|FANSI_HOME = '$DEPS/FANSI_toolbox/';|" \
               -e "s|MEDI_HOME *= .*|MEDI_HOME = '$DEPS/MEDI_toolbox/';|" \
               -e "s|MRITOOLS_HOME *= .*|MRITOOLS_HOME = '$DEPS/sepia/external/mritools/';|" \
               $DEPS/sepia/SpecifyToolboxesDirectory.m \
-    && ln -s $DEPS/Tensor-MP-PCA $DEPS/sepia/external/Tensor-MP-PCA
+    # Link submodule-based SEPIA dependencies into SEPIA_HOME/external, where SEPIA discovers them
+    && for toolbox in MEDI_toolbox FANSI_toolbox Tensor-MP-PCA; do \
+           ln -s $DEPS/$toolbox $DEPS/sepia/external/$toolbox; \
+       done
 
 # ---- 3. CompileMRI's prebuilt mritools bundle (ROMEO, CLEAR-SWI, ...); MRITOOLS_HOME points here ----
 ARG COMPILEMRI_VERSION=4.9.1
@@ -66,9 +69,7 @@ RUN wget -q "https://github.com/korbinian90/CompileMRI.jl/releases/download/v${C
     && rm /tmp/mritools.tar.gz
 
 # ---- 4. Compile the standalone app with mcc ----
-# HOME must be a writable in-container dir or MATLAB exits at startup
-RUN export HOME=/root \
-    && wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm \
+RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm \
     && MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")" \
     && /tmp/mpm install --matlabroot "$MATLAB_ROOT" --release "$(basename "$MATLAB_ROOT")" \
         --products MATLAB_Compiler \

@@ -46,3 +46,7 @@
 	path = dependencies/vTR-qMRI
 	url = https://github.com/samuelmelke/vTR-qMRI.git
 	branch = main
+[submodule "dependencies/FANSI_toolbox"]
+	path = dependencies/FANSI_toolbox
+	url = https://gitlab.com/cmilovic/FANSI-toolbox.git
+	branch = master

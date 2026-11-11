@@ -14,7 +14,7 @@ arguments
     force logical = true
 end
 
-config_default = fullfile(char(java.lang.System.getProperty("user.home")), ".quidbbids", qb.version(), "config_default.json");
+config_default = fullfile(qb.utils.sysprop("user.home"), ".quidbbids", qb.version(), "config_default.json");
 if ~force && isfile(config_default)
     return
 end

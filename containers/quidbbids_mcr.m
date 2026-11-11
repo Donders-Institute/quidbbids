@@ -4,12 +4,20 @@ function quidbbids_mcr(varargin)
 % calls you would type in MATLAB. CLI mode takes the BIDS dir as the first (positional) argument and runs
 % the workflow; GUI mode (Workflow Control Panel with folder picker) is inferred when run without arguments.
 
+% Force mcc to bundle toolbox functions that are only reached dynamically (SEPIA dispatches the R2* methods
+% via str2func on the method-name strings, so mcc's static analysis never sees these calls)
+%#function lsqnonlin optimoptions lsqcurvefit
+
     % Parse the command line arguments
     opts = struct('bidsdir', "", 'outputdir', "", 'workdir', "", 'configfile', "", 'deliverables', "", ...
                   'subjects', "", 'prefer', "", 'force', "", 'set', {{}}, 'gui', false, 'help', false);
     i = 1;
     while i <= numel(varargin)
         opt = lower(string(varargin{i}));
+        if opt == "-h"                                      % Alias for --help
+            opts.help = true; i = i + 1;
+            continue
+        end
         if ~startsWith(opt, "--")                           % Positional argument: the BIDS dir
             if strlength(opts.bidsdir) > 0
                 error('QuIDBBIDS:UnknownOption', 'Unexpected argument: %s (try --help)', opt);
@@ -34,19 +42,27 @@ function quidbbids_mcr(varargin)
 
     % Show help
     if opts.help || (strlength(opts.bidsdir) == 0 && ~opts.gui)
+        ver = qb.version();                                 % From project.json (bundled into the compiled app)
         disp(strjoin([
-            "QuIDBBIDS - compiled (MCR) app that runs without Matlab license"
+            "  ___       ___ ___  ___ ___ ___ ___  ___"
+            " / _ \ _  _|_ _|   \| _ ) _ )_ _|   \/ __|"
+            "| (_) | || || || |) | _ \ _ \| || |) \__ \"
+            " \__\_\\_,_|___|___/|___/___/___|___/|___/"
             ""
-            "This thin wrapper around qb.QuIDBBIDS can be called from the Apptainer or Docker command line."
-            "It parses the command line arguments and calls the same methods you would call in MATLAB -- see the "
-            "docs/CLI.rst, docs/GUI.rst documentation for more information."
+            "Quantitative Imaging Derived Biomarkers in BIDS"
+            "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾"
+            "This is the entry point for running containerized QuIDBBIDS (v" + ver + ") without a MATLAB"
+            "license. It is a thin wrapper around the mcc-compiled qb.QuIDBBIDS app and can be called"
+            "from the Apptainer or Docker command line. It parses the command line arguments and calls"
+            "the same methods you would call in desktop MATLAB."
             ""
-            "Usage: apptainer run quidbbids-v1.0.0.sif                      # GUI mode (+ data binding + X display)"
-            "       apptainer run quidbbids-v1.0.0.sif BIDSDIR [options]    # CLI mode (+ data binding)"
-            "       docker run quidbbids:v1.0.0                             # GUI mode (+ data binding + X display)"
-            "       docker run quidbbids:v1.0.0 BIDSDIR [options]           # CLI mode (+ data binding)"
+            "Usage:"
+            "  apptainer run quidbbids-<version>.sif                    # GUI mode (+ data binding)"
+            "  apptainer run quidbbids-<version>.sif BIDSDIR [options]  # CLI mode (+ data binding)"
+            "  docker run quidbbids:<version>                           # GUI mode (+ data binding + X display)"
+            "  docker run quidbbids:<version> BIDSDIR [options]         # CLI mode (+ data binding)"
             ""
-            "Options (passed to the app after the image name):"
+            "Options (for CLI mode):"
             "  --outputdir PATH     output dir  (default: BIDSDIR/derivatives/QuIDBBIDS)"
             "  --workdir PATH       work dir    (default: BIDSDIR/derivatives/QuIDBBIDS_work)"
             "  --configfile PATH    config file (e.g. BIDSDIR/code/quidbbids_config.json)"
@@ -56,21 +72,24 @@ function quidbbids_mcr(varargin)
             "  --force LIST         workers to force re-run"
             "  --set KEY=VALUE      set config.<KEY>.value (repeatable), e.g."
             "                       --set MEGREprepWorker.brainmask.method=hd-bet"
-            "  --help               show this help"
+            "  -h, --help           show this help"
             ""
             "Apptainer examples:"
-            "  apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif"
-            "  apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif /data/bids \\"
+            "  apptainer run --bind /data/bids:/data/bids quidbbids-v" + ver + ".sif"
+            "  apptainer run --bind /data/bids:/data/bids quidbbids-v" + ver + ".sif /data/bids \\"
             "      --deliverables MWFmap --configfile /data/bids/code/quidbbids_config.json"
-            "  apptainer run --bind /data/bids:/data/bids quidbbids-v1.0.0.sif /data/bids \\"
+            "  apptainer run --bind /data/bids:/data/bids quidbbids-v" + ver + ".sif /data/bids \\"
             "      --subjects sub-01,sub-02 --set MEGREprepWorker.brainmask.method=hd-bet"
             ""
             "Docker examples:"
-            "  docker run --rm -v /data/bids:/data/bids quidbbids:v1.0.0"
-            "  docker run --rm -v /data/bids:/data/bids quidbbids:v1.0.0 /data/bids \\"
+            "  docker run --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix \\"
+            "      -v /data/bids:/data/bids quidbbids:v" + ver
+            "  docker run --rm -v /data/bids:/data/bids quidbbids:v" + ver + " /data/bids \\"
             "      --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json"
-            "  docker run --rm -v /data/bids:/data/bids quidbbids:v1.0.0 /data/bids \\"
-            "      --subjects sub-01,sub-02 --set MEGREprepWorker.brainmask.method=hd-bet"], newline))
+            "  docker run --rm -v /data/bids:/data/bids quidbbids:v" + ver + " /data/bids \\"
+            "      --subjects sub-01,sub-02 --set MEGREprepWorker.brainmask.method=hd-bet"
+            ""
+            "See also: https://quidbbids.readthedocs.io/en/latest/containers.html"], newline))
         return
     end
 

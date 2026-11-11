@@ -17,7 +17,7 @@ We focus on relaxometry metrics derivable from (multi-echo) gradient-echo and RF
 - Longitudinal Relaxation (R1, both based on variable flip angle GRE and MP2RAGE acquisitions in combination with transmit field B1 maps)
 - Effective Transverse Relaxation (R2*)
 - Magnetic Susceptibility (QSM) 
-- Multi-compartment relaxometry Myelin Water Imaging (MCR-MWI - based on VFA acquisition)
+- Multi-compartment relaxometry Myelin Water Imaging (MCR-MWI -- based on VFA acquisition)
 
 QuIDBBIDS uses a novel declarative framework in which users specify desired (biomarker) outputs, and the software dynamically builds and executes the 
 necessary workflow from a library of modular "workers".

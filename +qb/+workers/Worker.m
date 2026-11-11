@@ -156,7 +156,12 @@ methods
                     try
                         obj.logger.info("%s is set-up to use GPU: %s (%s)", obj.name, gpuDevice().Name, gpuDevice().ComputeCapability)
                     catch ME
-                        obj.logger.warning("On host '%s':\n%s", java.net.InetAddress.getLocalHost.getHostName(), getReport(ME))
+                        if isdeployed                        % Java is unavailable under the MCR
+                            hostname = getenv("HOSTNAME");
+                        else
+                            hostname = char(java.net.InetAddress.getLocalHost.getHostName());
+                        end
+                        obj.logger.warning("On host '%s':\n%s", hostname, getReport(ME))
                         validateGPU
                     end
                 else
@@ -272,7 +277,7 @@ methods
         [~,~]     = mkdir(fileparts(lock_file));
         fid = fopen(lock_file, 'w');
         if fid ~= -1
-            fprintf(fid, "Locked for %s by %s on %s", class(obj), char(java.lang.System.getProperty('user.name')), datetime('now'));
+            fprintf(fid, "Locked for %s by %s on %s", class(obj), qb.utils.sysprop('user.name'), datetime('now'));
             fclose(fid);
         else
             obj.logger.exception("%s could not lock %s", obj.name, lock_file)
@@ -312,7 +317,7 @@ methods
         done_file = obj.statusfile('.done');
         fid = fopen(done_file, 'a');
         if fid ~= -1
-            fprintf(fid, "%s work was done by %s on %s\n", class(obj), char(java.lang.System.getProperty('user.name')), datetime('now'));
+            fprintf(fid, "%s work was done by %s on %s\n", class(obj), qb.utils.sysprop('user.name'), datetime('now'));
             fclose(fid);
         else
             obj.logger.error("%s could not write a done-file in %s", obj.name, done_file)

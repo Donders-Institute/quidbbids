@@ -16,7 +16,7 @@
 #           --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 #
 # Build (compiling with mcc needs a MATLAB license at build time):
-# NB: Packages in containers/sepia/external are included as SEPIA dependencies (typically: 'segue' and 'mrisc')
+# NB: Packages in containers/sepia/external are included as SEPIA dependencies (e.g.: 'segue', 'mrisc' and 'stisuite')
 #   export APPTAINERENV_MLM_LICENSE_FILE=27000@your-license-server
 #   sudo -E apptainer build quidbbids-v1.0.0.sif containers/apptainer.def
 #
@@ -32,7 +32,16 @@ Bootstrap: docker
 From: mathworks/matlab:r2026a
 
 %help
-    QuIDBBIDS container (compiled app + full MATLAB) with these run mode examples:
+      ___       ___ ___  ___ ___ ___ ___  ___
+     / _ \ _  _|_ _|   \| _ ) _ )_ _|   \/ __|
+    | (_) | || || || |) | _ \ _ \| || |) \__ \
+     \__\_\\_,_|___|___/|___/___/___|___/|___/
+    
+    Quantitative Imaging Derived Biomarkers in BIDS
+    ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+    QuIDBBIDS container image with a full MATLAB installation and the mcc-compiled QuIDBBIDS app,
+    serving two run modes: full MATLAB (licensed at run time via MLM_LICENSE_FILE) or the compiled
+    app (license-free). Run mode examples:
 
     1. full MATLAB (licensed): MATLAB command terminal; proceed as on your desktop (docs/GUI.rst,
        docs/CLI.rst; the GUI needs an X display, e.g. ssh -X / xhost +)
@@ -44,7 +53,7 @@ From: mathworks/matlab:r2026a
        apptainer run --bind /data/bids:/data/bids quidbbids.sif /data/bids \
            --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 
-    See "quidbbids --help" for all CLI options.
+    See https://quidbbids.readthedocs.io/en/latest/containers.html for all options and examples
 
 %files from synthstrip
     /freesurfer /freesurfer
@@ -61,7 +70,9 @@ From: mathworks/matlab:r2026a
 
 %post
     set -e
-    export HOME=/root    # sudo -E leaks the host HOME, which doesn't exist here; MATLAB needs a writable HOME
+
+    # sudo -E leaks the host HOME, which doesn't exist here; MATLAB needs a writable HOME
+    export HOME=/root
     deps=/opt/quidbbids/dependencies
 
     # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
@@ -73,11 +84,14 @@ From: mathworks/matlab:r2026a
     mv /opt/sepia-external $deps/sepia/external
     cp $deps/sepia/SpecifyToolboxesDirectory.template.m $deps/sepia/SpecifyToolboxesDirectory.m
     sed -i -e "s|/path/to|$deps/sepia/external|g" \
+           -e "s|FANSI_HOME *= .*|FANSI_HOME = '$deps/FANSI_toolbox/';|" \
            -e "s|MEDI_HOME *= .*|MEDI_HOME = '$deps/MEDI_toolbox/';|" \
            -e "s|MRITOOLS_HOME *= .*|MRITOOLS_HOME = '$deps/sepia/external/mritools/';|" \
            $deps/sepia/SpecifyToolboxesDirectory.m
-    # Tensor-MP-PCA (denoising add-on) is not a _HOME var; SEPIA looks for it at SEPIA_HOME/external/Tensor-MP-PCA
-    ln -s $deps/Tensor-MP-PCA $deps/sepia/external/Tensor-MP-PCA
+    # Link submodule-based SEPIA dependencies into SEPIA_HOME/external, where SEPIA discovers them
+    for toolbox in MEDI_toolbox FANSI_toolbox Tensor-MP-PCA; do
+        ln -s $deps/$toolbox $deps/sepia/external/$toolbox
+    done
 
     # ---- 3. CompileMRI's prebuilt mritools bundle (ROMEO, CLEAR-SWI, ...); MRITOOLS_HOME points here ----
     COMPILEMRI_VERSION=4.9.1

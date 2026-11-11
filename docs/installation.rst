@@ -66,11 +66,11 @@ Required Manual Installations
 
 Some dependencies cannot be fully installed via Git alone. One notable case is the
 `SEPIA <https://github.com/kschan0214/sepia>`__ toolbox, which requires manual configuration and installation
-of a few (non-git) dependencies of its own. In short, you need to install:
+of a few (non-git) dependencies of its own. In short, you should install:
 
-1. `CompileMRI <https://github.com/korbinian90/CompileMRI.jl>`__
-2. `SEGUE <https://xip.uclb.com/product/SEGUE>`__ 
-3. `TKD/iterTik/dirTik <https://xip.uclb.com/product/mri_qsm_tkd>`__ 
+1. `SEGUE <https://xip.uclb.com/product/SEGUE>`__            (phase unwrapping)
+2. `MRISC <https://xip.uclb.com/product/mri_qsm_tkd>`__      (MRI Susceptibility Calculation methods: TKD, iterTik, dirTik)
+3. `STI Suite <https://chunleiliulab.github.io/software/>`__ (phase unwrapping, background field removal, dipole inversion)
 
 After installing these, update ``sepia/SpecifyToolboxesDirectory.m`` with the correct paths. Reference information
 on installing SEPIA and its external dependencies can be found in the

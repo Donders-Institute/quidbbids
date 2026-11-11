@@ -8,16 +8,16 @@ containerized app. This is useful for users who encounter issues with installing
 The containerized QuIDBBIDS app serves two use cases, each available in a GUI and a CLI variant.
 
 1. **Licensed.** If you have a MATLAB license, you can run full MATLAB inside the container exactly as on
-   your desktop: start it with ``matlab`` and drive QuIDBBIDS from the GUI or MATLAB command line (see
-   :doc:`GUI` and :doc:`CLI`), where QuIDBBIDS and its dependencies already have been installed.
+   your desktop: start it with ``matlab`` and drive QuIDBBIDS from the GUI or MATLAB command line, where
+   QuIDBBIDS and its dependencies already have been installed.
 
 2. **License-free.** If you do not have a MATLAB license, you can run the (MCR compiled) QuIDBBIDS executable
-   that is shipped with the container. Its command-line interface mirrors the native API (``--help`` lists
-   the flags), and when started without arguments it opens the same Workflow Control Panel GUI as desktop
-   MATLAB.
+   that is shipped with the container. It calls the same methods you would call in MATLAB (see :doc:`CLI` and
+   :doc:`GUI`; ``--help`` lists the flags): with the BIDS dir as argument it runs in CLI mode, and when
+   started without arguments it opens the same Workflow Control Panel GUI as desktop MATLAB.
 
-   .. note:: The compiled executable may not be able to run all configurable QSM/R2star (SEPIA) workflows, as
-      some of them may involve dynamic path modifications that are not supported in the compiled app.
+   .. note:: The compiled executable may not be able to run all configurable QSM (SEPIA) workflows, as some of
+      them may involve non-free licenses or dynamic path modifications that are not supported in the compiled app.
 
 Getting the image
 -----------------
@@ -33,7 +33,7 @@ app inside it:
    apptainer pull oras://ghcr.io/donders-institute/quidbbids:<version>
    # Or download from the release page (https://github.com/Donders-Institute/quidbbids/releases)
 
-   # Docker - requires root privileges (prefix with `sudo` command if needed)
+   # Docker -- requires root privileges (prefix with `sudo` command if needed)
    docker pull quidbbids:<version>
 
 To build the image yourself from source, see ``containers/apptainer.def`` / ``containers/Dockerfile``;
@@ -83,7 +83,7 @@ Graphical User Interface
 The default run command executes the compiled QuIDBBIDS app, without launching a MATLAB window (no license
 needed at run time). With no arguments it opens the Workflow Control Panel GUI (folder picker, as in
 :doc:`GUI`): you pick the BIDS dataset, choose the deliverables and settings in the panel, and press start
-to run the workflow - all the same as in desktop MATLAB:
+to run the workflow -- all the same as in desktop MATLAB:
 
 .. code-block:: console
 
@@ -97,10 +97,10 @@ to run the workflow - all the same as in desktop MATLAB:
 Command-line Interface
 ^^^^^^^^^^^^^^^^^^^^^^
 
-With the BIDS dir as the first (positional) argument, the app runs in :doc:`CLI` mode - useful for
+With the BIDS directory as the first (positional) argument, the app runs in :doc:`CLI` mode -- useful for
 automated processing or batch jobs. With no MATLAB window or GUI, pass all run configuration as options
-at once; the workflow manager is started automatically. Available options (passed after the bidsdir
-argument):
+at once; the workflow manager is started automatically. Available options (passed after the positional
+bidsdir argument):
 
 - ``--outputdir PATH`` -- output dir (default: ``BIDSDIR/derivatives/QuIDBBIDS``)
 - ``--workdir PATH`` -- work dir (default: ``BIDSDIR/derivatives/QuIDBBIDS_work``)

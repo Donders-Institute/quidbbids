@@ -108,12 +108,7 @@ COPY --from=synthstrip /usr/local /usr/local
 RUN pip install --break-system-packages --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
     && pip install --break-system-packages --no-cache-dir hd-bet
 
-RUN useradd -m -u 1000 quidb && chown -R quidb:quidb /opt/quidbbids /home/quidb
-USER quidb
-WORKDIR /data
-
 # mcc wrapper: run_quidbbids.sh <runtime-root> [args...]; the MATLAB installation in this image acts as the runtime
 # root, so the compiled app runs without a license. Override with --entrypoint matlab for licensed MATLAB use.
 ENTRYPOINT MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")"; \
     exec /opt/quidbbids/containers/build/run_quidbbids.sh "$MATLAB_ROOT" "$@"
-CMD ["--help"]

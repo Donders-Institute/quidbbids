@@ -112,7 +112,7 @@ bidsdir argument):
 - ``--force LIST`` -- workers to force re-run
 - ``--set KEY=VALUE`` -- set ``config.<KEY>.value`` (repeatable), e.g.
   ``--set MEGREprepWorker.brainmask.method=hd-bet``
-- ``--help`` -- show the full help
+- ``-h``, ``--help`` -- show the full help
 
 .. code-block:: console
 

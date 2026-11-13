@@ -13,8 +13,8 @@ The containerized QuIDBBIDS app serves two use cases, each available in a GUI an
 
 2. **License-free.** If you do not have a MATLAB license, you can run the (MCR compiled) QuIDBBIDS executable
    that is shipped with the container. It calls the same methods you would call in MATLAB (see :doc:`CLI` and
-   :doc:`GUI`; ``--help`` lists the flags): with the BIDS dir as argument it runs in CLI mode, and when
-   started without arguments it opens the same Workflow Control Panel GUI as desktop MATLAB.
+   :doc:`GUI`): with the BIDS directory as argument it runs in CLI mode, and when started without arguments it
+   opens the same Workflow Control Panel GUI as desktop MATLAB.
 
    .. note:: The compiled executable may not be able to run all configurable QSM (SEPIA) workflows, as some of
       them may involve non-free licenses or dynamic path modifications that are not supported in the compiled app.

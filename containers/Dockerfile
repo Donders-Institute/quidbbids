@@ -47,7 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-
 # SEPIA's external toolboxes from the build context (repo root); moved into place in section 2
 COPY containers/sepia/external/ /opt/sepia-external/
 
-# ---- 2. SEPIA: place its external toolboxes and point SpecifyToolboxesDirectory.m at them ----
+# ---- 2. SEPIA: point SpecifyToolboxesDirectory.m to the copied and submodule toolboxes ----
 RUN mv /opt/sepia-external $DEPS/sepia/external \
     && cp $DEPS/sepia/SpecifyToolboxesDirectory.template.m $DEPS/sepia/SpecifyToolboxesDirectory.m \
     && sed -i -e "s|/path/to|$DEPS/sepia/external|g" \
@@ -55,9 +55,12 @@ RUN mv /opt/sepia-external $DEPS/sepia/external \
               -e "s|MEDI_HOME *= .*|MEDI_HOME = '$DEPS/MEDI_toolbox/';|" \
               -e "s|MRITOOLS_HOME *= .*|MRITOOLS_HOME = '$DEPS/sepia/external/mritools/';|" \
               $DEPS/sepia/SpecifyToolboxesDirectory.m \
-    # Link submodule-based SEPIA dependencies into SEPIA_HOME/external, where SEPIA discovers them
-    && for toolbox in MEDI_toolbox FANSI_toolbox Tensor-MP-PCA; do \
-           ln -s $DEPS/$toolbox $DEPS/sepia/external/$toolbox; \
+    # Set toolboxes that are not installed to empty, so SEPIA skips them without warnings
+    && for var in $(sed -n "s/^\([A-Za-z]*_HOME\) *=.*/\1/p" $DEPS/sepia/SpecifyToolboxesDirectory.m); do \
+           path=$(sed -n "s/^$var *= *'\([^']*\)'.*/\1/p" $DEPS/sepia/SpecifyToolboxesDirectory.m); \
+           if [ -n "$path" ] && [ ! -d "$path" ]; then \
+               sed -i "s|^$var *= .*|$var = [];|" $DEPS/sepia/SpecifyToolboxesDirectory.m; \
+           fi; \
        done
 
 # ---- 3. CompileMRI's prebuilt mritools bundle (ROMEO, CLEAR-SWI, ...); MRITOOLS_HOME points here ----
@@ -79,7 +82,7 @@ RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /t
 # mcc's static analysis. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in repo)
 # remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
 RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "$DEPS/MEDI_toolbox/UPDATES.m" \
-    && rm -f $DEPS/FANSI_toolbox/script_*.m    # demo scripts with syntax mcc cannot parse
+    && rm -f "$DEPS/FANSI_toolbox"/script_*.m       # demo scripts with syntax mcc cannot parse
 RUN rm -rf "$DEPS/spm/external" "$DEPS/spm/toolbox" # Huge, not needed
 RUN cd /opt/quidbbids/containers \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \

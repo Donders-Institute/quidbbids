@@ -18,7 +18,8 @@
 #           --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 #
 # Build (compiling with mcc needs a MATLAB license at build time):
-# NB: Packages in containers/sepia/external are included as SEPIA dependencies (e.g.: 'segue', 'mrisc' and 'stisuite')
+# NB: Packages in containers/sepia/external are included as SEPIA dependencies (e.g.: 'SEGUE', 'MRISC' and 'STISuite',
+#     i.e. named as the SpecifyToolboxesDirectory.m variables without the '_HOME' suffix)
 #   docker build -t quidbbids:v1.0.0 -f containers/Dockerfile . --build-arg MCR_TAG=r2026a \
 #       --build-arg MLM_LICENSE_FILE=27000@your-license-server
 #
@@ -32,7 +33,7 @@ ARG SYNTHSTRIP_IMAGE=freesurfer/synthstrip:latest    # GPU nodes: freesurfer/syn
 # ---- SynthStrip stage: mri_synthstrip (brain extraction) from the official SynthStrip image ----
 FROM ${SYNTHSTRIP_IMAGE} AS synthstrip
 
-# ---- main image: full MATLAB + compiled app + external tools ----
+# ---- Main image: full MATLAB + compiled app + external tools ----
 FROM mathworks/matlab:${MCR_TAG}
 ARG MLM_LICENSE_FILE
 ENV FREESURFER_HOME=/freesurfer PATH=/freesurfer:${PATH}
@@ -50,26 +51,27 @@ COPY containers/sepia/external/ /opt/sepia-external/
 # ---- 2. SEPIA: point SpecifyToolboxesDirectory.m to the copied and submodule toolboxes ----
 RUN mv /opt/sepia-external $DEPS/sepia/external \
     && cp $DEPS/sepia/SpecifyToolboxesDirectory.template.m $DEPS/sepia/SpecifyToolboxesDirectory.m \
-    && sed -i -e "s|/path/to|$DEPS/sepia/external|g" \
-              -e "s|FANSI_HOME *= .*|FANSI_HOME = '$DEPS/FANSI_toolbox/';|" \
-              -e "s|MEDI_HOME *= .*|MEDI_HOME = '$DEPS/MEDI_toolbox/';|" \
-              -e "s|MRITOOLS_HOME *= .*|MRITOOLS_HOME = '$DEPS/sepia/external/mritools/';|" \
-              $DEPS/sepia/SpecifyToolboxesDirectory.m \
-    # Set toolboxes that are not installed to empty, so SEPIA skips them without warnings
-    && for var in $(sed -n "s/^\([A-Za-z]*_HOME\) *=.*/\1/p" $DEPS/sepia/SpecifyToolboxesDirectory.m); do \
-           path=$(sed -n "s/^$var *= *'\([^']*\)'.*/\1/p" $DEPS/sepia/SpecifyToolboxesDirectory.m); \
-           if [ -n "$path" ] && [ ! -d "$path" ]; then \
-               sed -i "s|^$var *= .*|$var = [];|" $DEPS/sepia/SpecifyToolboxesDirectory.m; \
-           fi; \
-       done
+    && sed -i -E -e "s|^([A-Za-z]+)_HOME *= .*|\1_HOME = '$DEPS/sepia/external/\1/';|" \
+                 -e "s|^FANSI_HOME *= .*|FANSI_HOME = '$DEPS/FANSI_toolbox/';|" \
+                 -e "s|^MEDI_HOME *= .*|MEDI_HOME = '$DEPS/MEDI_toolbox/';|" \
+                 -e "s|^MRITOOLS_HOME *= .*|MRITOOLS_HOME = '$DEPS/sepia/external/MRITOOLS/';|" \
+                 $DEPS/sepia/SpecifyToolboxesDirectory.m
 
 # ---- 3. CompileMRI's prebuilt mritools bundle (ROMEO, CLEAR-SWI, ...); MRITOOLS_HOME points here ----
 ARG COMPILEMRI_VERSION=4.9.1
 RUN wget -q "https://github.com/korbinian90/CompileMRI.jl/releases/download/v${COMPILEMRI_VERSION}/"\
 "mritools_linux_x64_${COMPILEMRI_VERSION}.tar.gz" -O /tmp/mritools.tar.gz \
-    && mkdir -p $DEPS/sepia/external/mritools \
-    && tar -xzf /tmp/mritools.tar.gz -C $DEPS/sepia/external/mritools --strip-components=1 \
+    && mkdir -p $DEPS/sepia/external/MRITOOLS \
+    && tar -xzf /tmp/mritools.tar.gz -C $DEPS/sepia/external/MRITOOLS --strip-components=1 \
     && rm /tmp/mritools.tar.gz
+
+# Set external toolboxes that are not installed to empty, so SEPIA skips them without warnings
+RUN for var in $(sed -n "s/^\([A-Za-z]*_HOME\) *=.*/\1/p" $DEPS/sepia/SpecifyToolboxesDirectory.m); do \
+        path=$(sed -n "s/^$var *= *'\([^']*\)'.*/\1/p" $DEPS/sepia/SpecifyToolboxesDirectory.m); \
+        if [ -n "$path" ] && [ ! -d "$path" ]; then \
+            sed -i "s|^$var *= .*|$var = [];|" $DEPS/sepia/SpecifyToolboxesDirectory.m; \
+        fi; \
+    done
 
 # ---- 4. Compile the standalone app with mcc ----
 RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm \
@@ -82,8 +84,9 @@ RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /t
 # mcc's static analysis. NB: mcc emits build/quidbbids AND build/run_quidbbids.sh (generated, not in repo)
 # remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
 RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "$DEPS/MEDI_toolbox/UPDATES.m" \
-    && rm -f "$DEPS/FANSI_toolbox"/script_*.m       # demo scripts with syntax mcc cannot parse
-RUN rm -rf "$DEPS/spm/external" "$DEPS/spm/toolbox" # Huge, not needed
+    && rm -f "$DEPS/FANSI_toolbox"/script_*.m               # Demo scripts with syntax mcc cannot parse \
+    && rm -rf "$DEPS/spm/external" "$DEPS/spm/toolbox"      # Huge, not needed
+    && find "$DEPS/sepia/external" -name sfb3D_A.m -delete  # STI Suite HTML 404 page misnamed .m, breaks mcc \
 RUN cd /opt/quidbbids/containers \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \
@@ -92,7 +95,7 @@ RUN cd /opt/quidbbids/containers \
         a(end+1:end+2) = {'-a', char(d)}; \
     end, \
     mcc(a{:})" \
-    && test -f /opt/quidbbids/containers/build/run_quidbbids.sh    # fail the build if mcc did not complete
+    && test -f /opt/quidbbids/containers/build/run_quidbbids.sh    # Fail the build if mcc did not complete
 
 # ---- 5. MRtrix3 (DWIprepWorker calls fod2fixel/fixel2voxel/fixel2peaks via system()) ----
 RUN apt-get install -y --no-install-recommends mrtrix3 && apt-get clean && rm -rf /var/lib/apt/lists/*

@@ -10,3 +10,7 @@ docs/_build
 *.pyc
 .DS_Store
 Thumbs.db
+
+# User-supplied SEPIA toolboxes for container builds (see docs/containers.rst)
+containers/sepia/external/*
+!containers/sepia/external/README.md

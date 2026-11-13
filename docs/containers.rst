@@ -39,7 +39,8 @@ app inside it:
 To build the image yourself from source, see ``containers/apptainer.def`` / ``containers/Dockerfile``;
 compiling the standalone app with ``mcc`` then requires a MATLAB license at build time
 (``MLM_LICENSE_FILE=port@license-server``), and SEPIA's non-git dependencies must be placed in
-``containers/sepia/external/`` (e.g. ``segue``, ``mrisc``).
+``containers/sepia/external/``, each in a folder named after its ``SpecifyToolboxesDirectory.m`` variable
+without the ``_HOME`` suffix (e.g. ``containers/sepia/external/SEGUE/``, ``MRISC/``, ``STISuite/``).
 
 Running a workflow
 ------------------

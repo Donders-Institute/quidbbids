@@ -119,6 +119,7 @@ From: mathworks/matlab:r2026a
     rm -f "$deps/FANSI_toolbox"/script_*.m                  # Demo scripts with syntax mcc cannot parse
     rm -rf "$deps/spm/external" "$deps/spm/toolbox"         # Huge, not needed
     find "$deps/sepia/external" -name sfb3D_A.m -delete     # STI Suite HTML 404 page misnamed .m, breaks mcc
+    cp "$deps/spm/Contents.m" "$deps/spm/Contents.txt"      # spm_version reads Contents.txt when deployed (as in spm_make_standalone.m)
     cd /opt/quidbbids/containers
     matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \

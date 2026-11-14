@@ -60,7 +60,7 @@ methods
 
         % Check the input
         if strlength(bidsdir) == 0
-            if usejava('swing')                             % Avoid unit-test exceptions
+            if usejava('desktop') || isdeployed         % Desktop GUI or compiled app; false in headless (-batch) unit tests
                 bidsdir = uigetdir(pwd, "Select the root BIDS directory");
             end
             if isequal(bidsdir, 0) || strlength(bidsdir) == 0
@@ -82,7 +82,7 @@ methods
             r = sscanf(rel, '%d.%d.%d');
             if any((v<r) & (cumsum(v~=r)==1))
                 msg = sprintf('Your QuIDBBIDS version is v%s, but the latest released version is v%s', ver, rel);
-                if usejava('swing')                         % Avoid unit-test exceptions
+                if usejava('desktop') || isdeployed         % Desktop GUI or compiled app; false in headless (-batch) unit tests
                     helpdlg(msg, 'QuIDBBIDS Info')
                 end
                 warning('QuIDBBIDS:UpdateAvailable', msg)   %#ok<SPWRN>

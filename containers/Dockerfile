@@ -41,12 +41,13 @@ ENV FREESURFER_HOME=/freesurfer PATH=/freesurfer:${PATH}
 ENV PYTHONUSERBASE=/freesurfer/env
 ENV SEPIA_TOOLBOXES=/opt/quidbbids/dependencies/sepia/external
 ENV DEPS=/opt/quidbbids/dependencies
-# Point the MCR at the JRE bundled with the MATLAB installation, so the JVM can start in the
-# compiled app (needed e.g. by SEPIA's NIfTI toolbox gunzip on .nii.gz); also baked in at mcc time
-ENV MATLAB_JAVA=/opt/matlab/${MCR_TAG}/sys/java/jre/glnxa64/jre
+# R2026a ships an unsupported Java 8 JRE and R2026b+ ships none; either way, point the MCR at the
+# installed modern JRE so the JVM can start in the compiled app (needed e.g. by SEPIA's NIfTI
+# toolbox gunzip on .nii.gz); also baked into the app at mcc time
+ENV MATLAB_JAVA=/usr/lib/jvm/default-java
 
 # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
-RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core \
+RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core default-jre-headless \
     && git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids
 
 # SEPIA's external toolboxes from the build context (repo root); moved into place in section 2

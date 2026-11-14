@@ -79,6 +79,10 @@ From: mathworks/matlab:r2026a
     # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
     # MLM_LICENSE_FILE is passed in via APPTAINERENV_MLM_LICENSE_FILE at build time
     apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core
+    # Point MATLAB/MCR at the JRE bundled with the MATLAB installation; the compiled app's JRE path
+    # is baked in at mcc time, so this must be set during the build as well
+    MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")"
+    export MATLAB_JAVA="$MATLAB_ROOT/sys/java/jre/glnxa64/jre"
     git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids
 
     # ---- 2. SEPIA: point SpecifyToolboxesDirectory.m to the copied and submodule toolboxes ----
@@ -139,4 +143,5 @@ From: mathworks/matlab:r2026a
 
 %runscript
     MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")"
+    export MATLAB_JAVA="$MATLAB_ROOT/sys/java/jre/glnxa64/jre"    # Let the MCR start the JVM (needed e.g. for gunzip on .nii.gz)
     exec /opt/quidbbids/containers/build/run_quidbbids.sh "$MATLAB_ROOT" "$@"

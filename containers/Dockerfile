@@ -35,11 +35,15 @@ FROM ${SYNTHSTRIP_IMAGE} AS synthstrip
 
 # ---- Main image: full MATLAB + compiled app + external tools ----
 FROM mathworks/matlab:${MCR_TAG}
+ARG MCR_TAG
 ARG MLM_LICENSE_FILE
 ENV FREESURFER_HOME=/freesurfer PATH=/freesurfer:${PATH}
 ENV PYTHONUSERBASE=/freesurfer/env
 ENV SEPIA_TOOLBOXES=/opt/quidbbids/dependencies/sepia/external
 ENV DEPS=/opt/quidbbids/dependencies
+# Point the MCR at the JRE bundled with the MATLAB installation, so the JVM can start in the
+# compiled app (needed e.g. by SEPIA's NIfTI toolbox gunzip on .nii.gz); also baked in at mcc time
+ENV MATLAB_JAVA=/opt/matlab/${MCR_TAG}/sys/java/jre/glnxa64/jre
 
 # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
 RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core \

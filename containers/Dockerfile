@@ -90,10 +90,12 @@ RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /t
 # remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
 RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "$DEPS/MEDI_toolbox/UPDATES.m" \
     && rm -f "$DEPS/FANSI_toolbox"/script_*.m               # Demo scripts with syntax mcc cannot parse \
-    && rm -rf "$DEPS/spm/external" "$DEPS/spm/toolbox"      # Huge, not needed
+    && rm -rf "$DEPS/spm/external" "$DEPS/spm/toolbox" "$DEPS/spm/@gifti"  # Not needed; @gifti/private/zstream.m has an unresolvable com.mathworks import that breaks mcc \
     && find "$DEPS/sepia/external" -name sfb3D_A.m -delete  # STI Suite HTML 404 page misnamed .m, breaks mcc \
     && cp "$DEPS/spm/Contents.m" "$DEPS/spm/Contents.txt"   # spm_version reads Contents.txt when deployed (as in spm_make_standalone.m) \
+# NB: unset MATLAB_JAVA for mcc - a JVM at build time makes depfun fail on Java imports (e.g. spm/@gifti/private/zstream.m)
 RUN cd /opt/quidbbids/containers \
+    && unset MATLAB_JAVA \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \
          '-a','/opt/quidbbids/+qb','-a','/opt/quidbbids/project.json'}; \

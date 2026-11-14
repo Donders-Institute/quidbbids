@@ -80,7 +80,8 @@ From: mathworks/matlab:r2026a
     # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
     # MLM_LICENSE_FILE is passed in via APPTAINERENV_MLM_LICENSE_FILE at build time
     apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core default-jre-headless
-    export MATLAB_JAVA=/usr/lib/jvm/default-java    # also baked into the compiled app at mcc time
+    # NB: MATLAB_JAVA is deliberately NOT set here: a JVM at build time makes mcc fail resolving Java
+    # imports (e.g. spm/@gifti/private/zstream.m); it is set at runtime via %environment instead
     git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids
 
     # ---- 2. SEPIA: point SpecifyToolboxesDirectory.m to the copied and submodule toolboxes ----
@@ -119,7 +120,7 @@ From: mathworks/matlab:r2026a
     # remove non-code .m files that mcc cannot parse (text readme/changelog/script files)
     rm -f "$deps/EPG-X/Additional_bSSFPX_CEST.m" "$deps/MEDI_toolbox/README.m" "$deps/MEDI_toolbox/UPDATES.m"
     rm -f "$deps/FANSI_toolbox"/script_*.m                  # Demo scripts with syntax mcc cannot parse
-    rm -rf "$deps/spm/external" "$deps/spm/toolbox"         # Huge, not needed
+    rm -rf "$deps/spm/external" "$deps/spm/toolbox" "$deps/spm/@gifti"  # Not needed; @gifti/private/zstream.m has an unresolvable com.mathworks import that breaks mcc
     find "$deps/sepia/external" -name sfb3D_A.m -delete     # STI Suite HTML 404 page misnamed .m, breaks mcc
     cp "$deps/spm/Contents.m" "$deps/spm/Contents.txt"      # spm_version reads Contents.txt when deployed (as in spm_make_standalone.m)
     cd /opt/quidbbids/containers

@@ -47,7 +47,7 @@ ENV DEPS=/opt/quidbbids/dependencies
 ENV MATLAB_JAVA=/usr/lib/jvm/default-java
 
 # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
-RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core default-jre-headless \
+RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core default-jre \
     && git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids
 
 # SEPIA's external toolboxes from the build context (repo root); moved into place in section 2

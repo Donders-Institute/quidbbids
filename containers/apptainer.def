@@ -79,7 +79,7 @@ From: mathworks/matlab:r2026a
 
     # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
     # MLM_LICENSE_FILE is passed in via APPTAINERENV_MLM_LICENSE_FILE at build time
-    apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core default-jre-headless
+    apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core default-jre
     # NB: MATLAB_JAVA is deliberately NOT set here: a JVM at build time makes mcc fail resolving Java
     # imports (e.g. spm/@gifti/private/zstream.m); it is set at runtime via %environment instead
     git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids

@@ -4,9 +4,12 @@ function quidbbids_mcr(varargin)
 % calls you would type in MATLAB. CLI mode takes the BIDS dir as the first (positional) argument and runs
 % the workflow; GUI mode (Workflow Control Panel with folder picker) is inferred when run without arguments.
 
-% Force mcc to bundle toolbox functions that are only reached dynamically (SEPIA dispatches the R2* methods
-% via str2func on the method-name strings, so mcc's static analysis never sees these calls)
-%#function lsqnonlin optimoptions lsqcurvefit
+% Force mcc to bundle code that is only reached dynamically, invisible to mcc's static analysis:
+% - SEPIA dispatches the R2* methods via str2func on method-name strings
+% - Coordinator instantiates each *Worker class via qb.workers.(name)(...) + str2func(class(worker)), so
+%   declare the concrete worker classes (the abstract base and handle classes are reached statically) to
+%   bundle their transitive toolbox deps (e.g. padarray). Add new *Worker classes here when created.
+%#function lsqnonlin optimoptions lsqcurvefit qb.workers.B1prepWorker qb.workers.DWIprepWorker qb.workers.MCRWorker qb.workers.MCR_GPUWorker qb.workers.MEGREprepWorker qb.workers.MP2RAGEWorker qb.workers.QSMWorker qb.workers.R1R2starWorker qb.workers.R2starWorker qb.workers.SCRWorker qb.workers.VFAprepWorker qb.workers.meanQSMWorker
 
     % Parse the command line arguments
     opts = struct('bidsdir', "", 'outputdir', "", 'workdir', "", 'configfile', "", 'deliverables', "", ...

@@ -91,6 +91,7 @@ RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "
     && cp "$DEPS/spm/Contents.m" "$DEPS/spm/Contents.txt"   # spm_version reads Contents.txt when deployed (as in spm_make_standalone.m) \
     && find "$DEPS/sepia/utils/nifti/NIfTI_20140122" -name "*.m" -exec sed -i "s/ | ~usejava('jvm')//g" {} +                   # drop obsolete JVM guard: R2026a gunzip is native \
     && sed -i "s|^function sepia_addpath(method, isStartCheck)$|&\nif isdeployed, return, end|" "$DEPS/sepia/sepia_addpath.m"  # no-op in deployed apps (upstream sepia PR 142): Compiler forbids addpath/rmpath \
+    && sed -i "s|run(fullfile(curr_dir,'addon_config.m'))|eval(fileread(fullfile(curr_dir,'addon_config.m')))|g" "$DEPS/sepia/sepia_load_addons.m"  # run() can't read CTF files in deployed apps \
 RUN cd /opt/quidbbids/containers \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \

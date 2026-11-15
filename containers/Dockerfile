@@ -41,13 +41,9 @@ ENV FREESURFER_HOME=/freesurfer PATH=/freesurfer:${PATH}
 ENV PYTHONUSERBASE=/freesurfer/env
 ENV SEPIA_TOOLBOXES=/opt/quidbbids/dependencies/sepia/external
 ENV DEPS=/opt/quidbbids/dependencies
-# R2026a ships an unsupported Java 8 JRE and R2026b+ ships none; either way, point the MCR at the
-# installed modern JRE so the JVM can start in the compiled app (needed e.g. by SEPIA's NIfTI
-# toolbox gunzip on .nii.gz); also baked into the app at mcc time
-ENV MATLAB_JAVA=/usr/lib/jvm/default-java
 
 # ---- 1. Clone QuIDBBIDS (the MATLAB dependencies come along as git submodules) ----
-RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core default-jre \
+RUN apt-get update && apt-get install -y --no-install-recommends git fonts-noto-color-emoji fonts-noto-core \
     && git clone --recurse-submodules --depth 1 https://github.com/Donders-Institute/quidbbids.git /opt/quidbbids
 
 # SEPIA's external toolboxes from the build context (repo root); moved into place in section 2
@@ -93,9 +89,7 @@ RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "
     && rm -rf "$DEPS/spm/external" "$DEPS/spm/toolbox" "$DEPS/spm/@gifti"  # Not needed; @gifti/private/zstream.m has an unresolvable com.mathworks import that breaks mcc \
     && find "$DEPS/sepia/external" -name sfb3D_A.m -delete  # STI Suite HTML 404 page misnamed .m, breaks mcc \
     && cp "$DEPS/spm/Contents.m" "$DEPS/spm/Contents.txt"   # spm_version reads Contents.txt when deployed (as in spm_make_standalone.m) \
-# NB: unset MATLAB_JAVA for mcc - a JVM at build time makes depfun fail on Java imports (e.g. spm/@gifti/private/zstream.m)
 RUN cd /opt/quidbbids/containers \
-    && unset MATLAB_JAVA \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \
          '-a','/opt/quidbbids/+qb','-a','/opt/quidbbids/project.json'}; \

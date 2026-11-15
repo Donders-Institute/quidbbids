@@ -93,15 +93,6 @@ function quidbbids_mcr(varargin)
         return
     end
 
-    % Start the MCR's lazily-started JVM: SEPIA's NIfTI toolbox requires usejava('jvm') for gunzip on .nii.gz
-    if isdeployed
-        try
-            java.lang.System.currentTimeMillis();
-        catch
-            warning('QuIDBBIDS:NoJVM', 'Could not start the JVM; reading .nii.gz files may fail')
-        end
-    end
-
     % Create a QuIDBBIDS object and set its properties
     if opts.gui
         quidb = qb.QuIDBBIDS();                             % GUI mode per docs/GUI.rst (no arguments given)

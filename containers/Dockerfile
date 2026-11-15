@@ -91,7 +91,10 @@ RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "
     && cp "$DEPS/spm/Contents.m" "$DEPS/spm/Contents.txt"   # spm_version reads Contents.txt when deployed (as in spm_make_standalone.m) \
     && find "$DEPS/sepia/utils/nifti/NIfTI_20140122" -name "*.m" -exec sed -i "s/ | ~usejava('jvm')//g" {} +                   # drop obsolete JVM guard: R2026a gunzip is native \
     && sed -i "s|^function sepia_addpath(method, isStartCheck)$|&\nif isdeployed, return, end|" "$DEPS/sepia/sepia_addpath.m"  # no-op in deployed apps (upstream sepia PR 142): Compiler forbids addpath/rmpath \
-    && sed -i "s|run(fullfile(curr_dir,'addon_config.m'))|eval(fileread(fullfile(curr_dir,'addon_config.m')))|g" "$DEPS/sepia/sepia_load_addons.m"  # run() can't read CTF files in deployed apps \
+    # deployed apps can't run() CTF-embedded .m scripts (encrypted, not extracted): store addon configs as
+    # plain .txt data files (not encrypted in the CTF) and eval their content instead
+    && find "$DEPS/sepia/addons" -name addon_config.m -exec sh -c 'mv "\$1" "\${1%.m}.txt"' _ {} \; \
+    && sed -i -e "s|run(fullfile(curr_dir,'addon_config\.m'))|eval(fileread(fullfile(curr_dir,'addon_config.txt')))|g" -e "s|addon_config\.m|addon_config.txt|g" "$DEPS/sepia/sepia_load_addons.m" \
 RUN cd /opt/quidbbids/containers \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \

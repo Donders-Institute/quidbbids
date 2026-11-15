@@ -63,3 +63,7 @@ New methods added to the `Coordinator`, `Manager`, or other classes in `+workers
 - You can run all available unit tests using: `matlab -batch "addpath('tests'); runtests('tests')"`.
 - Run dedicated tests for confined edits, e.g. run `matlab -batch "addpath('tests'); runtests('TestWorkers')"` when you edited worker code only.
 - Do not run tests for insignificant or straightforward edits.
+
+# Devops
+
+- Unless explicitly asked, you do not run git stage, commit, merge, pull or push.

@@ -25,10 +25,6 @@
 #
 # GPU workers (MCR_GPUWorker/R1R2starWorker): add --gpus all (NVIDIA container runtime); if CUDA libraries are
 #   missing, switch the base image to mathworks/matlab-deep-learning:${MCR_TAG}
-#
-# Java: the compiled app needs no JVM. R2026a's gunzip is native (verified with matlab -nojvm), so the
-# NIfTI_20140122 usejava('jvm') guards are patched out at build time (see the mcc RUN); the same holds for
-# R2026b+, which ships no JRE at all.
 
 ARG MCR_TAG=r2026a
 ARG MLM_LICENSE_FILE=""
@@ -93,9 +89,8 @@ RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "
     && rm -rf "$DEPS/spm/external" "$DEPS/spm/toolbox" "$DEPS/spm/@gifti"  # Not needed; @gifti/private/zstream.m has an unresolvable com.mathworks import that breaks mcc \
     && find "$DEPS/sepia/external" -name sfb3D_A.m -delete  # STI Suite HTML 404 page misnamed .m, breaks mcc \
     && cp "$DEPS/spm/Contents.m" "$DEPS/spm/Contents.txt"   # spm_version reads Contents.txt when deployed (as in spm_make_standalone.m) \
-    # R2026a's gunzip is native (no Java), so the NIfTI_20140122 guards' usejava('jvm') clause is obsolete: in the
-    # JVM-less compiled app it would wrongly abort all .nii.gz I/O. Drop the clause, keep the version check.
-    && find "$DEPS/sepia/utils/nifti/NIfTI_20140122" -name "*.m" -exec sed -i "s/ | ~usejava('jvm')//g" {} + \
+    && find "$DEPS/sepia/utils/nifti/NIfTI_20140122" -name "*.m" -exec sed -i "s/ | ~usejava('jvm')//g" {} +                   # drop obsolete JVM guard: R2026a gunzip is native \
+    && sed -i "s|^function sepia_addpath(method, isStartCheck)$|&\nif isdeployed, return, end|" "$DEPS/sepia/sepia_addpath.m"  # no-op in deployed apps (upstream sepia PR 142): Compiler forbids addpath/rmpath \
 RUN cd /opt/quidbbids/containers \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \

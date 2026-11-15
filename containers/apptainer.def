@@ -23,16 +23,13 @@
 #
 # GPU workers (MCR_GPUWorker/R1R2starWorker): add --nv (NVIDIA driver); if CUDA libraries are missing, switch the
 # base image to mathworks/matlab-deep-learning:r2026a
-#
-# Java: the compiled app needs no JVM. R2026a's gunzip is native (verified with matlab -nojvm), so the
-# NIfTI_20140122 usejava('jvm') guards are patched out at build time (see %post); the same holds for R2026b+,
-# which ships no JRE at all.
 
 # ---- SynthStrip stage: mri_synthstrip (brain extraction) from the official SynthStrip image ----
 Bootstrap: docker
 From: freesurfer/synthstrip:latest
 Stage: synthstrip
 
+# ---- Main image: full MATLAB + compiled app + external tools ----
 Bootstrap: docker
 From: mathworks/matlab:r2026a
 
@@ -124,9 +121,8 @@ From: mathworks/matlab:r2026a
     rm -rf "$deps/spm/external" "$deps/spm/toolbox" "$deps/spm/@gifti"  # Not needed; @gifti/private/zstream.m has an unresolvable com.mathworks import that breaks mcc
     find "$deps/sepia/external" -name sfb3D_A.m -delete     # STI Suite HTML 404 page misnamed .m, breaks mcc
     cp "$deps/spm/Contents.m" "$deps/spm/Contents.txt"      # spm_version reads Contents.txt when deployed (as in spm_make_standalone.m)
-    # R2026a's gunzip is native (no Java), so the NIfTI_20140122 guards' usejava('jvm') clause is obsolete: in the
-    # JVM-less compiled app it would wrongly abort all .nii.gz I/O. Drop the clause, keep the version check.
-    find "$deps/sepia/utils/nifti/NIfTI_20140122" -name "*.m" -exec sed -i "s/ | ~usejava('jvm')//g" {} +
+    find "$deps/sepia/utils/nifti/NIfTI_20140122" -name "*.m" -exec sed -i "s/ | ~usejava('jvm')//g" {} +                   # drop obsolete JVM guard: R2026a gunzip is native
+    sed -i "s|^function sepia_addpath(method, isStartCheck)$|&\nif isdeployed, return, end|" "$deps/sepia/sepia_addpath.m"  # no-op in deployed apps (upstream sepia PR 142): Compiler forbids addpath/rmpath
     cd /opt/quidbbids/containers
     matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \

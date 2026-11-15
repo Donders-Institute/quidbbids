@@ -23,6 +23,11 @@
 #
 # GPU workers (MCR_GPUWorker/R1R2starWorker): add --nv (NVIDIA driver); if CUDA libraries are missing, switch the
 # base image to mathworks/matlab-deep-learning:r2026a
+#
+# Java: R2026a bundles a JRE under $MATLAB_ROOT/sys/java/jre (factory setting). The compiled app force-starts
+# the JVM at startup (quidbbids_mcr.m; the MCR starts it lazily), and the mcc-generated run_quidbbids.sh is
+# patched at build time (%post) to add the JRE lib dir to LD_LIBRARY_PATH, which the wrapper resets itself.
+# R2026b+ ships no JRE, then install openjdk-17-jre and run: matlab_jenv -allusers system
 
 # ---- SynthStrip stage: mri_synthstrip (brain extraction) from the official SynthStrip image ----
 Bootstrap: docker
@@ -129,6 +134,11 @@ From: mathworks/matlab:r2026a
     end, \
     mcc(a{:})"
     test -f /opt/quidbbids/containers/build/run_quidbbids.sh    # Fail the build if mcc did not complete
+    # The mcc-generated wrapper resets LD_LIBRARY_PATH, so patch it to also include the bundled JRE's lib
+    # dirs: the compiled app force-starts the JVM (quidbbids_mcr.m) and MathWorks says to set the MCR library
+    # path for Java on Linux. R2026a JRE layout: $MCRROOT/sys/java/jre/glnxa64/jre/lib/server/libjvm.so
+    sed -i 's|^  export LD_LIBRARY_PATH;|  LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${MCRROOT}/sys/java/jre/glnxa64/jre/lib/server:${MCRROOT}/sys/java/jre/glnxa64/jre/lib;\n  export LD_LIBRARY_PATH;|' \
+        /opt/quidbbids/containers/build/run_quidbbids.sh
 
     # ---- 5. MRtrix3 (DWIprepWorker calls fod2fixel/fixel2voxel/fixel2peaks via system()) ----
     apt-get install -y --no-install-recommends mrtrix3 && apt-get clean && rm -rf /var/lib/apt/lists/*

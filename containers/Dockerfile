@@ -26,10 +26,9 @@
 # GPU workers (MCR_GPUWorker/R1R2starWorker): add --gpus all (NVIDIA container runtime); if CUDA libraries are
 #   missing, switch the base image to mathworks/matlab-deep-learning:${MCR_TAG}
 #
-# Java: R2026a bundles a JRE under /opt/matlab/${MCR_TAG}/sys/java/jre (factory setting). The compiled app
-# force-starts the JVM at startup (quidbbids_mcr.m; the MCR starts it lazily), and the mcc-generated
-# run_quidbbids.sh is patched at build time to add the JRE lib dir to LD_LIBRARY_PATH (the wrapper resets it).
-# R2026b+ ships no JRE, then install openjdk-17-jre and run: matlab_jenv -allusers system
+# Java: the compiled app needs no JVM. R2026a's gunzip is native (verified with matlab -nojvm), so the
+# NIfTI_20140122 usejava('jvm') guards are patched out at build time (see the mcc RUN); the same holds for
+# R2026b+, which ships no JRE at all.
 
 ARG MCR_TAG=r2026a
 ARG MLM_LICENSE_FILE=""
@@ -94,6 +93,9 @@ RUN rm -f "$DEPS/EPG-X/Additional_bSSFPX_CEST.m" "$DEPS/MEDI_toolbox/README.m" "
     && rm -rf "$DEPS/spm/external" "$DEPS/spm/toolbox" "$DEPS/spm/@gifti"  # Not needed; @gifti/private/zstream.m has an unresolvable com.mathworks import that breaks mcc \
     && find "$DEPS/sepia/external" -name sfb3D_A.m -delete  # STI Suite HTML 404 page misnamed .m, breaks mcc \
     && cp "$DEPS/spm/Contents.m" "$DEPS/spm/Contents.txt"   # spm_version reads Contents.txt when deployed (as in spm_make_standalone.m) \
+    # R2026a's gunzip is native (no Java), so the NIfTI_20140122 guards' usejava('jvm') clause is obsolete: in the
+    # JVM-less compiled app it would wrongly abort all .nii.gz I/O. Drop the clause, keep the version check.
+    && find "$DEPS/sepia/utils/nifti/NIfTI_20140122" -name "*.m" -exec sed -i "s/ | ~usejava('jvm')//g" {} + \
 RUN cd /opt/quidbbids/containers \
     && matlab -batch "addpath('/opt/quidbbids', '/opt/quidbbids/containers'), \
     a = {'-m','quidbbids_mcr','-o','quidbbids','-d','/opt/quidbbids/containers/build','-v', \
@@ -102,13 +104,7 @@ RUN cd /opt/quidbbids/containers \
         a(end+1:end+2) = {'-a', char(d)}; \
     end, \
     mcc(a{:})" \
-    && test -f /opt/quidbbids/containers/build/run_quidbbids.sh    # Fail the build if mcc did not complete \
-    # The mcc-generated wrapper resets LD_LIBRARY_PATH, so patch it to also include the bundled JRE's lib
-    # dirs: the compiled app force-starts the JVM (quidbbids_mcr.m) and MathWorks says to set the MCR library
-    # path for Java on Linux. R2026a JRE layout: $MCRROOT/sys/java/jre/glnxa64/jre/lib/server/libjvm.so
-    # (backslash-dollar: Dockerfile substitution must not touch the wrapper's own variables)
-    && sed -i 's|^  export LD_LIBRARY_PATH;|  LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${MCRROOT}/sys/java/jre/glnxa64/jre/lib/server:\${MCRROOT}/sys/java/jre/glnxa64/jre/lib;\n  export LD_LIBRARY_PATH;|' \
-        /opt/quidbbids/containers/build/run_quidbbids.sh
+    && test -f /opt/quidbbids/containers/build/run_quidbbids.sh    # Fail the build if mcc did not complete
 
 # ---- 5. MRtrix3 (DWIprepWorker calls fod2fixel/fixel2voxel/fixel2peaks via system()) ----
 RUN apt-get install -y --no-install-recommends mrtrix3 && apt-get clean && rm -rf /var/lib/apt/lists/*

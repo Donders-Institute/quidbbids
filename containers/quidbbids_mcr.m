@@ -8,6 +8,17 @@ function quidbbids_mcr(varargin)
 % via str2func on the method-name strings, so mcc's static analysis never sees these calls)
 %#function lsqnonlin optimoptions lsqcurvefit
 
+    % Start the JVM explicitly: in the compiled app (MCR) the JVM starts lazily on the first Java call,
+    % but SEPIA's NIfTI tools guard the Java-based gunzip with usejava('jvm') before any Java call happens.
+    % The runtime root ships a JRE (R2026a and earlier; see the container file headers).
+    if isdeployed
+        try
+            java.lang.System.currentTimeMillis();
+        catch ME
+            warning('QuIDBBIDS:NoJVM', 'Could not start the JVM in the compiled app: %s', ME.message);
+        end
+    end
+
     % Parse the command line arguments
     opts = struct('bidsdir', "", 'outputdir', "", 'workdir', "", 'configfile', "", 'deliverables', "", ...
                   'subjects', "", 'prefer', "", 'force', "", 'set', {{}}, 'gui', false, 'help', false);

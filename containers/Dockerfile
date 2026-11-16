@@ -78,7 +78,7 @@ RUN for var in $(sed -n "s/^\([A-Za-z]*_HOME\) *=.*/\1/p" $DEPS/sepia/SpecifyToo
 RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm \
     && MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")" \
     && /tmp/mpm install --matlabroot "$MATLAB_ROOT" --release "$(basename "$MATLAB_ROOT")" \
-        --products "MATLAB_Compiler Image_Processing_Toolbox Optimization_Toolbox Statistics_and_Machine_Learning_Toolbox Signal_Processing_Toolbox" \
+        --products "MATLAB_Compiler,Image_Processing_Toolbox,Optimization_Toolbox,Statistics_and_Machine_Learning_Toolbox,Signal_Processing_Toolbox" \
     && rm /tmp/mpm
 # -a bundles +qb, project.json and each top-level dependency dir (bundling every subdir makes the
 # deployed app crash at startup). Workers are instantiated dynamically (str2func) and invisible to

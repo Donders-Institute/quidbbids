@@ -4,10 +4,9 @@ function quidbbids_mcr(varargin)
 % calls you would type in MATLAB. CLI mode takes the BIDS dir as the first (positional) argument and runs
 % the workflow; GUI mode (Workflow Control Panel with folder picker) is inferred when run without arguments.
 
-% Force mcc to bundle toolbox functions that are only reached through dynamic dispatch (str2func in
-% Coordinator/sepia), which mcc's static analysis cannot see. The worker classes themselves are bundled
-% via -a; these are the toolbox functions their methods call.
-%#function lsqnonlin optimoptions lsqcurvefit padarray imerode imdilate imfill imclose imopen bwconncomp regionprops histeq imgaussfilt3 imresize medfilt3 niftiread niftiwrite spm_vol spm_read_vols strel
+% -a-bundled code (workers, dependencies) is not dependency-analyzed by mcc, so declare the toolbox
+% functions it calls (also via str2func) here to register their runtime addons (see apptainer.def).
+%#function padarray imerode imdilate imfill imclose imopen bwconncomp regionprops histeq imgaussfilt3 imresize medfilt3 strel imfilter fspecial edge medfilt2 imrotate rgb2gray watershed lsqnonlin lsqcurvefit optimoptions fminunc fminsearch prctile quantile iqr mad zscore rmoutliers corr regress kstest tinv nanmean nanstd nanvar hilbert findpeaks spectrogram periodogram pwelch detrend resample
 
     % Parse the command line arguments
     opts = struct('bidsdir', "", 'outputdir', "", 'workdir', "", 'configfile', "", 'deliverables', "", ...

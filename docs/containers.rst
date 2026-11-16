@@ -129,7 +129,30 @@ or ``docker run --rm quidbbids:<version> --help``.
 
 .. note::
 
-   - GPU workers (``MCR_GPUWorker``, ``R1R2starWorker``): add ``--nv`` (Apptainer) or ``--gpus all`` (Docker);
-     if CUDA libraries are missing, build from ``mathworks/matlab-deep-learning`` instead of ``mathworks/matlab``.
    - In-container HPC submission (``config.General.useHPC``) needs the scheduler's ``qsub`` binary, which is
      not included; submit from the host instead.
+
+GPU usage
+^^^^^^^^^
+
+The container image is built on ``mathworks/matlab-deep-learning``, which bundles the CUDA/cuDNN runtime libraries,
+which includes the CUDA runtime. What the container still needs from the host is the NVIDIA **driver**: add ``--nv``
+(Apptainer, with the NVIDIA container toolkit installed) or ``--gpus all`` (Docker) on a GPU node, which injects
+``libcuda.so.1`` and the GPU devices into the container:
+
+.. code-block:: console
+
+   # Apptainer, on a GPU node
+   apptainer run --nv --bind /data/bids:/data/bids quidbbids-<version>.sif /data/bids \
+       --prefer MCR_GPUWorker,R1R2starWorker
+
+   # Docker, on a GPU node
+   docker run --rm --gpus all -v /data/bids:/data/bids quidbbids:<version> \
+       /data/bids --prefer MCR_GPUWorker,R1R2starWorker
+
+``MCR_GPUWorker`` and ``R1R2starWorker`` (``usesGPU = true``) then use ``gpuArray`` for their computations; select
+them with ``--prefer`` (CLI) or by marking them preferred in the GUI resumes. Without ``--nv``/``--gpus all``,
+``gpuDevice`` is unavailable and the app falls back to the CPU workers. Brain extraction: HD-BET is installed
+with the CPU-only torch wheel, so on GPU nodes build the SynthStrip stage from
+``freesurfer/synthstrip:latest-gpu`` (Docker: ``--build-arg SYNTHSTRIP_IMAGE=freesurfer/synthstrip:latest-gpu``;
+Apptainer: change the stage's ``From:``) so ``mri_synthstrip`` uses CUDA.

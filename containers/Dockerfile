@@ -23,10 +23,13 @@
 #   docker build -t quidbbids:v1.0.0 -f containers/Dockerfile . --build-arg MCR_TAG=r2026a \
 #       --build-arg MLM_LICENSE_FILE=27000@your-license-server
 #
-# GPU workers (MCR_GPUWorker/R1R2starWorker): add --gpus all (NVIDIA container runtime); if CUDA libraries are
-#   missing, switch the base image to mathworks/matlab-deep-learning:${MCR_TAG}
+# GPU workers (MCR_GPUWorker/R1R2starWorker, via gpuArray): run with --gpus all (NVIDIA container runtime). The
+#   base image below is mathworks/matlab-deep-learning, which bundles the CUDA/cuDNN runtime libs (the plain
+#   mathworks/matlab image ships none). CPU-only runs simply omit --gpus. To use the smaller plain image instead,
+#   build with --build-arg MATLAB_BASE_IMAGE=mathworks/matlab (GPU workers will then lack the CUDA runtime).
 
 ARG MCR_TAG=r2026a
+ARG MATLAB_BASE_IMAGE=mathworks/matlab-deep-learning
 ARG MLM_LICENSE_FILE=""
 ARG SYNTHSTRIP_IMAGE=freesurfer/synthstrip:latest    # GPU nodes: freesurfer/synthstrip:latest-gpu
 
@@ -34,7 +37,7 @@ ARG SYNTHSTRIP_IMAGE=freesurfer/synthstrip:latest    # GPU nodes: freesurfer/syn
 FROM ${SYNTHSTRIP_IMAGE} AS synthstrip
 
 # ---- Main image: full MATLAB + compiled app + external tools ----
-FROM mathworks/matlab:${MCR_TAG}
+FROM ${MATLAB_BASE_IMAGE}:${MCR_TAG}
 ARG MCR_TAG
 ARG MLM_LICENSE_FILE
 ENV FREESURFER_HOME=/freesurfer PATH=/freesurfer:${PATH}
@@ -78,7 +81,7 @@ RUN for var in $(sed -n "s/^\([A-Za-z]*_HOME\) *=.*/\1/p" $DEPS/sepia/SpecifyToo
 RUN wget -q https://www.mathworks.com/mpm/glnxa64/mpm -O /tmp/mpm && chmod +x /tmp/mpm \
     && MATLAB_ROOT="$(dirname "$(dirname "$(readlink -f "$(command -v matlab)")")")" \
     && /tmp/mpm install --matlabroot "$MATLAB_ROOT" --release "$(basename "$MATLAB_ROOT")" \
-        --products MATLAB_Compiler Image_Processing_Toolbox Optimization_Toolbox Statistics_and_Machine_Learning_Toolbox Signal_Processing_Toolbox \
+        --products MATLAB_Compiler Image_Processing_Toolbox Optimization_Toolbox Statistics_and_Machine_Learning_Toolbox Signal_Processing_Toolbox Parallel_Computing_Toolbox \
     && rm /tmp/mpm
 # -a bundles +qb, project.json and each top-level dependency dir (bundling every subdir makes the
 # deployed app crash at startup). Workers are instantiated dynamically (str2func) and invisible to

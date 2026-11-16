@@ -6,7 +6,7 @@ function quidbbids_mcr(varargin)
 
 % -a-bundled code (workers, dependencies) is not dependency-analyzed by mcc, so declare the toolbox
 % functions it calls (also via str2func) here to register their runtime addons (see apptainer.def).
-%#function padarray imerode imdilate imfill imclose imopen bwconncomp regionprops histeq imgaussfilt3 imresize medfilt3 strel imfilter fspecial edge medfilt2 imrotate rgb2gray watershed lsqnonlin lsqcurvefit optimoptions fminunc fminsearch prctile quantile iqr mad zscore rmoutliers corr regress kstest tinv nanmean nanstd nanvar hilbert findpeaks spectrogram periodogram pwelch detrend resample
+%#function padarray imerode imdilate imfill imclose imopen bwconncomp regionprops histeq imgaussfilt3 imresize medfilt3 strel imfilter fspecial edge medfilt2 imrotate rgb2gray watershed lsqnonlin lsqcurvefit optimoptions fminunc fminsearch prctile quantile iqr mad zscore rmoutliers corr regress kstest tinv nanmean nanstd nanvar hilbert findpeaks spectrogram periodogram pwelch detrend resample gpuArray gpuDevice
 
     % Parse the command line arguments
     opts = struct('bidsdir', "", 'outputdir', "", 'workdir', "", 'configfile', "", 'deliverables', "", ...

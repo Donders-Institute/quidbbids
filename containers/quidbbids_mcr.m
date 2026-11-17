@@ -14,19 +14,19 @@ function quidbbids_mcr(varargin)
     i = 1;
     while i <= numel(varargin)
         opt = lower(string(varargin{i}));
-        if opt == "-h"                                      % Alias for --help
+        if opt == "-h"
             opts.help = true; i = i + 1;
             continue
         end
-        if ~startsWith(opt, "--")                           % Positional argument: the BIDS dir
+        if ~startsWith(opt, "--")                           % Positional argument: the raw BIDS folder
             if strlength(opts.bidsdir) > 0
                 error('QuIDBBIDS:UnknownOption', 'Unexpected argument: %s (try --help)', opt);
             end
             opts.bidsdir = string(varargin{i}); i = i + 1;
             continue
         end
-        key = char(erase(opt, "--"));
-        if key == "help"                                    % Boolean flag
+        key = erase(opt, "--");
+        if key == "help"
             opts.(key) = true; i = i + 1;
         elseif key == "set" && i < numel(varargin)          % Repeatable KEY=VALUE
             opts.set{end+1} = string(varargin{i+1}); i = i + 2;
@@ -42,7 +42,7 @@ function quidbbids_mcr(varargin)
 
     % Show help
     if opts.help || (strlength(opts.bidsdir) == 0 && ~opts.gui)
-        ver = qb.version();                                 % From project.json (bundled into the compiled app)
+        ver = qb.version();
         disp(strjoin([
             "  ___       ___ ___  ___ ___ ___ ___  ___"
             " / _ \ _  _|_ _|   \| _ ) _ )_ _|   \/ __|"
@@ -68,7 +68,7 @@ function quidbbids_mcr(varargin)
             "  --configfile PATH    config file (e.g. BIDSDIR/code/quidbbids_config.json)"
             "  --deliverables LIST  comma-separated deliverables (e.g. MWFmap,Chimap)"
             "  --subjects LIST      comma-separated subjects to process (default: all)"
-            "  --prefer LIST        workers to prefer for resumes"
+            "  --prefer LIST        workers to prefer for making workitems"
             "  --force LIST         workers to force re-run"
             "  --set KEY=VALUE      set config.<KEY>.value (repeatable), e.g."
             "                       --set MEGREprepWorker.brainmask.method=hd-bet"
@@ -105,11 +105,11 @@ function quidbbids_mcr(varargin)
     end
     for k = 1:numel(opts.set)                               % --set maps to config.<KEY>.value
         eq = strfind(opts.set{k}, '=');
-        key = regexp(char(extractBefore(opts.set{k}, eq(1))), '[^.]+', 'match');
+        key = regexp(extractBefore(opts.set{k}, eq(1)), '[^.]+', 'match');
         quidb.config = set_config_value(quidb.config, key, convert_value(extractAfter(opts.set{k}, eq(1))));
     end
     for w = split_list(opts.prefer)                         % --prefer maps to resumes.<worker>.preferred
-        if isfield(quidb.resumes, char(w)), quidb.resumes.(char(w)).preferred = true; end
+        if isfield(quidb.resumes, w), quidb.resumes.(w).preferred = true; end
     end
 
     %--- GUI MODE: Open the workflow panel and wait until all GUIs are closed
@@ -152,7 +152,7 @@ function val = convert_value(s)
 end
 
 function s = set_config_value(s, parts, val)
-    f = char(parts{1});
+    f = parts{1};
     if isscalar(parts)
         if ~(isfield(s, f) && isstruct(s.(f)) && isfield(s.(f), 'value'))
             error('QuIDBBIDS:BadConfigKey', 'Unknown config key: %s', f);

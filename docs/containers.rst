@@ -108,7 +108,7 @@ bidsdir argument):
 - ``--configfile PATH`` -- config file (e.g. ``BIDSDIR/code/quidbbids_config.json``)
 - ``--deliverables LIST`` -- comma-separated deliverables (e.g. ``MWFmap,Chimap``)
 - ``--subjects LIST`` -- comma-separated subjects to process (default: all)
-- ``--prefer LIST`` -- workers to prefer for resumes
+- ``--prefer LIST`` -- workers to prefer for making workitems
 - ``--force LIST`` -- workers to force re-run
 - ``--set KEY=VALUE`` -- set ``config.<KEY>.value`` (repeatable), e.g.
   ``--set MEGREprepWorker.brainmask.method=hd-bet``
@@ -121,8 +121,8 @@ bidsdir argument):
        --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 
    # Docker
-   docker run --rm -v /data/bids:/data/bids quidbbids:<version> \
-       /data/bids --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
+   docker run --rm -v /data/bids:/data/bids quidbbids:<version> /data/bids \
+       --deliverables MWFmap,Chimap --configfile /data/bids/code/quidbbids_config.json
 
 For the full list of flags, run the app with ``--help``, e.g. ``apptainer run quidbbids-<version>.sif --help``
 or ``docker run --rm quidbbids:<version> --help``.

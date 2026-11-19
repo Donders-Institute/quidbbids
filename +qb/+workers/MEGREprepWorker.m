@@ -189,6 +189,14 @@ methods (Static)
                                 opts = num2cell(str2num(conf.options, Evaluation='restricted'));    %#ok<ST2NM>
                             end
                             mask = BET(spm_read_vols(Hdr), Hdr.dim, abs(Par(7:9)), opts{:}) & mask;
+                        case 'mimrat'
+                            % TODO: Implement MIMRAT deeplearning method for masking rat brains
+                        case 'external'  % Use an external mask file (e.g. from another software package). The mask file must be in the same space as the echo-1_mag image
+                            maskfile = obj.query_ses(BIDS, 'data', conf.options);
+                            if length(maskfile) ~= 1
+                                obj.logger.exception("Expected one external mask file but got:%s", sprintf(' %s', maskfile{:}))
+                            end
+                            mask = spm_read_vols(spm_vol(maskfile)) & mask;
                         otherwise
                             obj.logger.exception("Unknown brainmask.method: " + conf.method + ". Must be one of: mri_synthstrip, HD-BET, BET")
                     end

@@ -17,7 +17,7 @@
       "kernel": {"value": [5,5,5], "description": "Size of the sliding window (patch) used for the PCA, specified as [x y z]."}
     },
     "brainmask": {
-      "method": {"value": "mri_synthstrip", "description": "Method for brain extraction. Options: 'mri_synthstrip' (requires FreeSurfer), 'HD-BET' (requires HD-BET), 'BET' (FSL - as distributed in the MEDI toolbox), 'mimrat' (reserved, not yet implemented), 'external' (use an externally prepared mask file instead of running brain extraction)"},
+      "method": {"value": "mri_synthstrip", "description": "Method for brain extraction. Options: 'mri_synthstrip' (requires FreeSurfer), 'HD-BET' (requires HD-BET), 'BET' (FSL - as distributed in the MEDI toolbox), 'mimrat' (MIMRAT deep-learning method for masking rat brains; not yet implemented), 'external' (use an externally prepared mask file instead of running brain extraction)"},
       "options": {"value": "", "description": "Additional options passed to the selected brain extraction method. The available options depend on the method:\n\n(1) mri_synthstrip: command-line flags appended to the command, such as '--no-cuda' to disable GPU usage, '--border 2' to add a 2-voxel border around the brain mask, or '--no-csf' to exclude CSF from the segmentation.\n\n(2) HD-BET: command-line flags appended to the command, such as '-device cpu' to run on CPU instead of GPU, '--disable_tta' to disable test-time augmentation for faster inference, or '--save-mask' to additionally save the mask.\n\n(3) BET (MEDI toolbox): space-separated numeric arguments passed to the BET function, e.g. '0.3 -0.1' sets the fractional intensity threshold to 0.3 and the vertical gradient threshold to -0.1 (leave empty for defaults; see `help BET` for more information on the available options).\n\n(4) MIMRAT deeplearning method for masking rat brains: not yet implemented, so no options are used.\n\n(5) external: a BIDS filter (a JSON object with BIDS entities, e.g. {\"modality\": \"anat\", \"suffix\": \"mask\", \"desc\": \"brain\"}) that must match exactly ONE mask file in the BIDS dataset. The mask file must be in the same space as the echo-1 magnitude image."}
     }
   },
@@ -66,7 +66,9 @@
       "initialLearnRate": {"value": 0.001, "description": "Initial learning rate for optimizer"},
       "decayRate": {"value": 0, "description": "Learning rate decay factor"},
       "tol": {"value": 1e-3, "description": "Tolerance for optimization termination"},
-      "isWeighted": {"value": false, "description": "Use weighted residuals"}
+      "isWeighted": {"value": false, "description": "Use weighted residuals"},
+      "parameterTransform": {"value": "linear", "description": "'linear' = askAdam v1.0 behaviour"},
+      "convergenceModel": {"value": "linear", "description": "'linear' = askAdam v1.0 behaviour"}
     }
   },
 

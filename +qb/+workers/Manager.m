@@ -134,6 +134,7 @@ methods
                     workitem_ = char(item);
                     obj.selectworker(workitem_)             % Keep the preferred worker only (if multiple)
                     if length(obj.team.(workitem_)) > 1     % User cancelled the selection
+                        obj.team = struct();                % Reset the team to avoid inconsistent state
                         return
                     end
                     obj.create_team(obj.team.(workitem_).needs, true)   % Recursively add upstream workers to the team
@@ -307,8 +308,13 @@ methods
             for node = forcedflow'
                 if ismember(node, workers)
                     depworker = obj.coord.resumes.(node).handle(obj.coord.BIDS, struct(), obj.coord.config);
+                    if depwroker.workdir ~= obj.coord.workdir   % The worker uses a custom workdir (e.g. for SEPIA) -> index it
+                        BIDSW_ = bids.layout(char(depworker.workdir), use_schema=false, index_dependencies=false, verbose=false);
+                    else
+                        BIDSW_ = BIDSW;
+                    end
                     for workitem = depworker.makes
-                        items = replace(erase(bids.query(BIDSW, 'data', depworker.bidsfilter.(workitem)),'.gz'),'.nii','.*');   % TODO: Fix BIDSW for QSMWorker, which uses a custom workdir
+                        items = replace(erase(bids.query(BIDSW_, 'data', depworker.bidsfilter.(workitem)),'.gz'),'.nii','.*');   % TODO: Fix BIDSW for QSMWorker, which uses a custom workdir
                         if ~isempty(items)
                             fprintf('🗑️ Deleting %s -> %s items from the workdir\n', depworker.name, workitem)
                             delete(items{:})

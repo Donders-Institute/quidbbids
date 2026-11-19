@@ -101,7 +101,9 @@
       "start": {"value": "prior", "description": "Initialization strategy"},
       "patience": {"value": 20, "description": "Early stopping patience"},
       "isFitExchange": {"value": true, "description": "Fit exchange parameters"},
-      "isEPG": {"value": false, "description": "Use EPG simulation model"}
+      "isEPG": {"value": false, "description": "Use EPG simulation model"},
+      "parameterTransform": {"value": "linear", "description": "'linear' = askAdam v1.0 behaviour"},
+      "convergenceModel": {"value": "linear", "description": "'linear' = askAdam v1.0 behaviour"}
     }
   },
 

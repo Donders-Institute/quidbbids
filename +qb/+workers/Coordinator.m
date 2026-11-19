@@ -233,6 +233,10 @@ methods
                 else                                % Custom workers in the user config directory should be on the MATLAB-path
                     worker = feval(erase(wfile.name, '.m'), obj.BIDS, struct(name='',session=''), obj.config);
                 end
+                if ~isa(worker, 'qb.workers.Worker')
+                    fprintf('   ⚠ Skipping %s as it is not a subclass of qb.workers.Worker\n', wfile.name)
+                    continue
+                end
                 resumes.(worker.name).handle      = str2func(class(worker));
                 resumes.(worker.name).name        = worker.name;
                 resumes.(worker.name).description = worker.description;

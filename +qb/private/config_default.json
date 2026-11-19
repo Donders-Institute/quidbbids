@@ -67,8 +67,8 @@
       "decayRate": {"value": 0, "description": "Learning rate decay factor"},
       "tol": {"value": 1e-3, "description": "Tolerance for optimization termination"},
       "isWeighted": {"value": false, "description": "Use weighted residuals"},
-      "parameterTransform": {"value": "linear", "description": "'linear' = askAdam v1.0 behaviour"},
-      "convergenceModel": {"value": "linear", "description": "'linear' = askAdam v1.0 behaviour"}
+      "parameterTransform": {"value": "linear", "description": "Parameter space transform for the gacelle askAdam optimizer. Options: 'linear' = rescale01/unscale01 mapping to [0,1] with hard clamping (askAdam v1.0 behaviour, fully backward compatible); 'sigmoid' = logit initialisation + sigmoid recovery, where Adam optimises unconstrained z in (-inf,+inf), eliminating artificial boundary sticking at the cost of modified loss surface geometry near bounds."},
+      "convergenceModel": {"value": "linear", "description": "Convergence model for the gacelle askAdam optimizer. Options: 'linear' = slope of loss over last convergenceWindow iterations (askAdam v1.0 behaviour); 'ema' = relative change in exponential moving average of loss."}
     }
   },
 
@@ -104,8 +104,8 @@
       "patience": {"value": 20, "description": "Early stopping patience"},
       "isFitExchange": {"value": true, "description": "Fit exchange parameters"},
       "isEPG": {"value": false, "description": "Use EPG simulation model"},
-      "parameterTransform": {"value": "linear", "description": "'linear' = askAdam v1.0 behaviour"},
-      "convergenceModel": {"value": "linear", "description": "'linear' = askAdam v1.0 behaviour"}
+      "parameterTransform": {"value": "linear", "description": "Parameter space transform for the gacelle askAdam optimizer. Options: 'linear' = rescale01/unscale01 mapping to [0,1] with hard clamping (askAdam v1.0 behaviour, fully backward compatible); 'sigmoid' = logit initialisation + sigmoid recovery, where Adam optimises unconstrained z in (-inf,+inf), eliminating artificial boundary sticking at the cost of modified loss surface geometry near bounds."},
+      "convergenceModel": {"value": "linear", "description": "Convergence model for the gacelle askAdam optimizer. Options: 'linear' = slope of loss over last convergenceWindow iterations (askAdam v1.0 behaviour); 'ema' = relative change in exponential moving average of loss."}
     }
   },
 

@@ -140,7 +140,6 @@ methods
         TE1  = reshape(cellfun(@(te) te(1), TE), 1, 1, 1, []);                      % First echo time of each acquisition
         pini = unwrappedPhase(:,:,:,te_indexrange(:,1)) - 2*pi*totalField .* TE1;   % Dimensions: [x,y,z,FA]
         pini = polyfit3D_NthOrder(double(mean(pini(:,:,:,1:end-1), 4)), mask, 6);
-        clear unwrappedPhase                                                    % not used after this line
 
         % Construct the fixed parameters and extra data for the MCR model
         fixed_params      = obj.config.MCR_GPUWorker.fixed_params;
@@ -154,9 +153,6 @@ methods
         % We need to override isEPG for VTR, and mutating obj.config would leak the change into other subjects processed in the same session
         fitting = obj.config.MCR_GPUWorker.fitting; 
         if isVTR
-            if ~exist('gpuMCRMWI_VFAVTR', 'class')
-                obj.logger.exception('%s found a variable-TR protocol but gpuMCRMWI_VFAVTR is not on the MATLAB-path.\nPossible solution:\ngit submodule update --init dependencies/vTR-qMRI', obj.name)
-            end
             if fitting.isEPG
                 obj.logger.warning('%s: the EPG-X networks assume a single TR for all flip angles, using the Bloch-McConnell solution instead', obj.name)
                 fitting.isEPG = false;

@@ -198,7 +198,7 @@ methods (Static)
                             end
                             mask = spm_read_vols(spm_vol(maskfile)) & mask;
                         otherwise
-                            obj.logger.exception("Unknown brainmask.method: " + conf.method + ". Must be one of: mri_synthstrip, HD-BET, BET")
+                            obj.logger.exception("Unknown brainmask.method: " + conf.method + ". Must be one of: mri_synthstrip, HD-BET, BET, mimrat, external")
                     end
                 end
 

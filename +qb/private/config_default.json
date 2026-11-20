@@ -164,8 +164,8 @@
       "refine_order": {"value": 4, "description": "Order of polynomial/spherical harmonic fitting"},
       "erode_radius": {"value": 0, "description": "Voxel to be removed from mask edges after background field removal"},
       "erode_before_radius": {"value": 0, "description": "Voxel to be removed from mask edges before background field removal"},
-      "method": {"value": "VSHARP", "description": "Method for background field removal"},
-      "radius": {"value": [12,11,10,9,8,7,6,5,4,3,2,1], "description": "Vector of radii of the spherical mean value operation in descending order"}
+      "method": {"value": "VSHARP (STI suite)", "description": "Method for background field removal (SEPIA). Options: 'LBV', 'PDF', 'RESHARP', 'SHARP', 'VSHARP', 'VSHARP (STI suite)', 'VSHARP (STI suite 2D)', 'iHARPERELLA'. External toolbox requirements: MEDI for LBV/PDF/RESHARP/SHARP, STI Suite for the STI-suite variants and iHARPERELLA; 'VSHARP' is built into SEPIA. Note: the expected type of bfr.radius depends on the method (vector for 'VSHARP', scalar for the STI-suite variants)."},
+      "radius": {"value": 12, "description": "Spherical mean value (SMV) kernel radius, in mm. Depends on bfr.method: for 'VSHARP' (SEPIA built-in) use a vector of radii in descending order, e.g. [12,11,10,...,1] (equivalent to [Max:-1:Min]); for 'VSHARP (STI suite)' and 'VSHARP (STI suite 2D)' use a single scalar SMV size (default 12), which is passed to STI Suite's V_SHARP/V_SHARP_2d as 'smvsize'."}
     },
     "qsm": {
       "reference_tissue": {"value": "None", "description": "Magnetic susceptibility map in ppm"},

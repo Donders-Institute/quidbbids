@@ -206,15 +206,9 @@ methods
         % end
 
         % Estimate the DI-MWI-MCR model
-        [lastMsg, lastId] = lastwarn;
-        ws = warning('off', 'MATLAB:nearlySingularMatrix');  % Suppress the "Matrix is close to singular or badly scaled" warnings from mwi_3cx_2R1R2s_dimwi -> @(y)CostFunc()
-        warning('off', 'MWI:IdentifierFile:NotFound')
+        ws = warning('off', 'MWI:IdentifierFile:NotFound');     % See https://github.com/kschan0214/mwi/pull/3
         fitRes = mwi_3cx_2R1R2s_dimwi(algoPara, imgPara);
         warning(ws)
-        [~, newId] = lastwarn;
-        if ismember(newId, {'MATLAB:nearlySingularMatrix'})
-            lastwarn(lastMsg, lastId)
-        end
 
         % Extract and save the output data
         V(1).dim = [size(mask,1) size(mask,2) size(mask,3)];

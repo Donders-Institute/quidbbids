@@ -38,11 +38,12 @@ if ismember("ABRIM_MEGRE", datasets)
 
     % Make QC reports
     if isunix
-        fprintf('Generating QC reports for the ABRIM_MEGRE dataset\n')
+        fprintf('Generating QC reports for the ABRIM_MEGRE dataset...')
         system(sprintf(['(module load bidscoin; cd %s;' ...
             'slicereport %s anat/*R2starmap* -r report_R2starmap --options i 5 50;' ...
             'slicereport %s anat/*Chimap*    -r report_Chimap    --options i -0.15 0.3) < /dev/null > /dev/null 2>&1'], ...
             fileparts(quidb.outputdir), repmat(quidb.outputdir,1,2)));
+        fprintf(' Done\n')
     end
 end
 
@@ -84,13 +85,14 @@ if ismember("MCR-MWI_VFA", datasets)
 
     % Make QC reports
     if isunix
-        fprintf('Generating QC reports for the MCR-MWI_VFA dataset\n')
+        fprintf('Generating QC reports for the MCR-MWI_VFA dataset...')
         system(sprintf(['(module load bidscoin; cd %s;' ...
             'slicereport %s anat/*R1R2s*R1map*     -r report_R1map_gacelle     --options i 0.2 1.5;' ...
             'slicereport %s anat/*R1R2s*R2starmap* -r report_R2starmap_gacelle --options i 5 50;' ...
             'slicereport %s anat/*MWFmap*          -r report_MWFmap            --options i 0 0.2;' ...
             'slicereport %s anat/*Chimap*          -r report_Chimap            --options i -0.15 0.3) < /dev/null > /dev/null 2>&1'], ...
             fileparts(quidb.outputdir), repmat(quidb.outputdir,1,4)));
+        fprintf(' Done\n')
     end
 end
 
@@ -116,12 +118,13 @@ if ismember("Hamburg_MPM", datasets)
 
     % Make QC reports
     if isunix
-        fprintf('Generating QC reports for the Hamburg_MPM dataset\n')
+        fprintf('Generating QC reports for the Hamburg_MPM dataset...')
         system(sprintf(['(module load bidscoin; cd %s;' ...
             'slicereport %s anat/*R1R2s*R1map*     -r report_R1map_gacelle     --options i 0.2 1.5;' ...
             'slicereport %s anat/*R1R2s*R2starmap* -r report_R2starmap_gacelle --options i 5 50;' ...
             'slicereport %s anat/*MWFmap*          -r report_MWFmap            --options i 0 0.2;' ...
             'slicereport %s anat/*Chimap*          -r report_Chimap            --options i -0.15 0.3) < /dev/null > /dev/null 2>&1'], ...
             fileparts(quidb.outputdir), repmat(quidb.outputdir,1,4)));
+        fprintf(' Done\n')
     end
 end

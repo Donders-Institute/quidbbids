@@ -97,11 +97,11 @@ methods
             TR(n) = bfile.metadata.RepetitionTime;          %#ok<AGROW>
             TE{n} = bfile.metadata.EchoTime(:);             %#ok<AGROW>
         end
-        nTE       = cellfun(@numel, TE);
-        TErange   = [cumsum(nTE(:)) - nTE(:) + 1, cumsum(nTE(:))];  % First/last index of each acquisition along the echo dimension
-        isVTR     = ~all(abs(TR - TR(1)) < 1e-6*TR(1)) || ...       % Different repetition times
-                    ~all(nTE == nTE(1))                || ...       % Different numbers of echoes
-                    ~all(cellfun(@(t) isequal(t, TE{1}), TE));      % Different echo times
+        nTE     = cellfun(@numel, TE);
+        TErange = [cumsum(nTE(:)) - nTE(:) + 1, cumsum(nTE(:))];    % First/last index of each acquisition along the echo dimension
+        isVTR   = ~all(abs(TR - TR(1)) < 1e-6*TR(1)) || ...         % Different repetition times
+                  ~all(nTE == nTE(1))                || ...         % Different numbers of echoes
+                  ~all(cellfun(@(t) isequal(t, TE{1}), TE));        % Different echo times
 
         % Load the data + metadata
         V              = spm_vol(ME4Dmag{1});                       % For reading the 3D image dimensions
@@ -146,9 +146,10 @@ methods
             extraData.te_indexrange = TErange;
             objGPU = gpuMCRMWI_VFAVTR(TE, TR, FA, fixed_params);
         else
-            img    = reshape(img, [dims(1:3) nTE(1) length(ME4Dmag)]);          % Back to [x,y,z,TE,FA] for gpuMCRMWI
-            dims   = size(img);
-            objGPU = gpuMCRMWI(TE{1}, TR(1), FA, fixed_params);
+            img            = reshape(img, [dims(1:3) nTE(1) length(ME4Dmag)]);  % Back to [x,y,z,TE,FA] for gpuMCRMWI
+            dims           = size(img);
+            extraData.pini = reshape(extraData.pini, dims);                     % Back to [x,y,z,1,FA] for gpuMCRMWI
+            objGPU         = gpuMCRMWI(TE{1}, TR(1), FA, fixed_params);
         end
 
         % Estimate the MCR model (variable-TR protocols need the vTR-qMRI implementation)

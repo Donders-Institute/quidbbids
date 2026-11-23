@@ -104,7 +104,7 @@ the ``bidsfilter``, and the ``get_work_done()`` method where the actual work hap
                % Do the actual work for WORKITEM, e.g.:
                raw  = obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.raw_MEGRE);  % query raw data for this sub/ses
                fmap = obj.ask_team("fieldmap");                                   % get input workitems from a team member
-               mask = obj.ask_team("brainmask");                                  % get input workitems from a team member
+               mask = obj.ask_team("brainmask", numel(fmap));                     % get input workitems from a team member
                img  = run_my_method(raw, fmap, mask);                             % run your method -> image data
 
                % Save the output image and its JSON sidecar (metadata) to disk
@@ -162,7 +162,7 @@ important ones (as illustrated in the skeleton above, see the methods help for d
   subject/session at a time (``obj.subject``); you do not need to loop over subjects or sessions — the
   QuIDBBIDS framework takes care of that, as well as of locking, done-files, and reuse of existing results.
 * ``ask_team()`` — ask a teammate to produce a needed input workitem (supports regexp patterns); returns
-  the produced file(s) and their bidsfilter.
+  the produced file(s) and their bidsfilter. Optionally pass the expected number of workitems for verification.
 * ``query_ses()`` / ``query_sub()`` — thin wrappers around ``bids.query`` that add the current subject (and session)
   filter and always return row cell arrays; ``bidsfilter`` structs are used as the filter, e.g.
   ``obj.query_ses(obj.BIDS, 'data', obj.bidsfilter.raw_MEGRE)``.
@@ -175,7 +175,17 @@ important ones (as illustrated in the skeleton above, see the methods help for d
   the command from trusted input — it is a security risk otherwise.
 * ``logger()`` — the worker's logger; always display messages via ``obj.logger.verbose/info/warning/error/exception(...)``
   instead of ``fprintf()``, ``disp()``, ``warning()``, etc., so that messages are also written to the per-subject
-  log files in ``derivatives/QuIDBBIDS/logs/<Worker>/``.
+  log files in ``derivatives/QuIDBBIDS/logs/<Worker>/``. The available logging methods are:
+
+    - ``verbose()`` — write a formatted message to the per-subject log file only (``<sub_ses>.log``); not shown in the terminal
+    - ``info()`` — write a formatted message to the log file and always echo it to the terminal (level ``INFO``)
+    - ``warning()`` — like ``info()``, but also issue a MATLAB warning (id ``QuIDBBIDS:<Worker>:Warning``) and append the message to ``<sub_ses>_warnings.log``
+    - ``error()`` — like ``info()``, but level ``ERROR``: append the message to ``<sub_ses>_errors.log`` and capture a stack trace (via a caught internal ``error``); does not stop execution
+    - ``exception()`` — like ``error()``, but raises ``error('QuIDBBIDS:FatalException', ...)`` after logging, so it stops the workflow; use for fatal errors
+
+  All logging methods share the same signature: ``message`` (any text, with optional ``sprintf`` format
+  specifiers such as ``%s``/``%d``) followed by optional ``varargin`` values that are substituted into those
+  specifiers, e.g. ``obj.logger.info('Saving: %s', bfile.filename)``.
 
 .. dropdown:: Other base-class methods
 

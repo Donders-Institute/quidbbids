@@ -308,7 +308,7 @@ methods
             for node = forcedflow'
                 if ismember(node, workers)
                     depworker = obj.coord.resumes.(node).handle(obj.coord.BIDS, struct(), obj.coord.config);
-                    if depwroker.workdir ~= obj.coord.workdir   % The worker uses a custom workdir (e.g. for SEPIA) -> index it
+                    if depworker.workdir ~= obj.coord.workdir   % The worker uses a custom workdir (e.g. for SEPIA) -> index it
                         BIDSW_ = bids.layout(char(depworker.workdir), use_schema=false, index_dependencies=false, verbose=false);
                     else
                         BIDSW_ = BIDSW;

@@ -73,12 +73,8 @@
   },
 
   "SCRWorker": {
-    "nNewton": {
-        "value": 1,
-        "description": "Number of Gauss-Newton refinement steps on the exact signal equation (0 = closed-form Pade estimate only)"
-    }
+    "nNewton": {"value": 1, "description": "Number of Gauss-Newton refinement steps on the exact signal equation (0 = closed-form Pade estimate only)"}
   },
-
 
   "MCR_GPUWorker": {
     "fixed_params": {

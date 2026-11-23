@@ -146,10 +146,9 @@ methods
             extraData.te_indexrange = TErange;
             objGPU = gpuMCRMWI_VFAVTR(TE, TR, FA, fixed_params);
         else
-            img            = reshape(img, [dims(1:3) nTE(1) length(ME4Dmag)]);  % Back to [x,y,z,TE,FA] for gpuMCRMWI
-            dims           = size(img);
-            extraData.pini = reshape(extraData.pini, dims);                     % Back to [x,y,z,1,FA] for gpuMCRMWI
-            objGPU         = gpuMCRMWI(TE{1}, TR(1), FA, fixed_params);
+            img    = reshape(img, [dims(1:3) nTE(1) length(ME4Dmag)]);  % Back to [x,y,z,TE,FA] for gpuMCRMWI
+            dims   = size(img);
+            objGPU = gpuMCRMWI(TE{1}, TR(1), FA, fixed_params);
         end
 
         % Estimate the MCR model (variable-TR protocols need the vTR-qMRI implementation)

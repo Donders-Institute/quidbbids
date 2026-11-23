@@ -83,27 +83,12 @@ methods
             return
         end
 
-        % Get the workitems we need from a colleague
-        ME4Dmag    = obj.ask_team('ME4Dmag');       % Multiple FA-images per run
-        unwrapped  = obj.ask_team('unwrapped');     % Multiple FA-images per run
-        fieldmap   = obj.ask_team('fieldmap');      % Multiple FA-images per run
-        localfmask = obj.ask_team('localfmask');    % Multiple FA-images per run
-        TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
-
-        % Check the number of items we got: TODO: FIXME: multi-run acquisitions
-        if numel(unique([length(unwrapped), length(fieldmap)])) > 1
-            obj.logger.exception('%s received an ambiguous number of unwrapped (%d) or fieldmaps (%d):%s', obj.name, ...
-                                 length(unwrapped), length(fieldmap), sprintf('\n%s', unwrapped{:}, fieldmap{:}))
-        end
-        if length(ME4Dmag) < 2
-            obj.logger.exception('%s received data for only %d flip angles', obj.name, length(ME4Dmag))
-        end
-        if length(TB1map_GRE) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-            obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', TB1map_GRE{:}))
-        end
-        if length(localfmask) ~= length(ME4Dmag)
-            obj.logger.exception('%s expected %d brainmasks but got:%s', obj.name, length(ME4Dmag), sprintf(' %s', localfmask{:}))
-        end
+        % Get the workitems we need from a colleague. TODO: FIXME: multi-run acquisitions
+        ME4Dmag    = obj.ask_team('ME4Dmag', -2);           % Must have at least 2 FA-images per run
+        unwrapped  = obj.ask_team('unwrapped', numel(ME4Dmag));
+        fieldmap   = obj.ask_team('fieldmap', numel(ME4Dmag));
+        localfmask = obj.ask_team('localfmask', numel(ME4Dmag));
+        TB1map_GRE = obj.ask_team('TB1map_GRE', 1);         % Single image per run. TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
 
         % Read the protocol of each acquisition. This is done before allocating because acquisitions may differ in TR and in the number of echoes
         for n = 1:length(ME4Dmag)
@@ -112,33 +97,33 @@ methods
             TR(n) = bfile.metadata.RepetitionTime;          %#ok<AGROW>
             TE{n} = bfile.metadata.EchoTime(:);             %#ok<AGROW>
         end
-        nTE           = cellfun(@numel, TE);
-        te_indexrange = [cumsum(nTE(:)) - nTE(:) + 1, cumsum(nTE(:))];      % First/last index of each acquisition along the echo dimension
-        isVTR         = ~all(abs(TR - TR(1)) < 1e-6*TR(1)) || ...           % Different repetition times
-                        ~all(nTE == nTE(1))                || ...           % Different numbers of echoes
-                        ~all(cellfun(@(t) isequal(t, TE{1}), TE));          % Different echo times
-   
+        nTE       = cellfun(@numel, TE);
+        TErange   = [cumsum(nTE(:)) - nTE(:) + 1, cumsum(nTE(:))];  % First/last index of each acquisition along the echo dimension
+        isVTR     = ~all(abs(TR - TR(1)) < 1e-6*TR(1)) || ...       % Different repetition times
+                    ~all(nTE == nTE(1))                || ...       % Different numbers of echoes
+                    ~all(cellfun(@(t) isequal(t, TE{1}), TE));      % Different echo times
+
         % Load the data + metadata
-        V              = spm_vol(ME4Dmag{1});                        % For reading the 3D image dimensions
-        dims           = [V(1).dim sum(nTE)];                        % Dimensions: [x,y,z,echo], all acquisitions concatenated
+        V              = spm_vol(ME4Dmag{1});                       % For reading the 3D image dimensions
+        dims           = [V(1).dim sum(nTE)];                       % Dimensions: [x,y,z,echo], all acquisitions concatenated
         img            = single(NaN(dims));
         unwrappedPhase = single(NaN(dims));
-        totalField     = single(NaN([dims(1:3) length(ME4Dmag)]));   % Dimensions: [x,y,z,FA]
+        totalField     = single(NaN([dims(1:3) length(ME4Dmag)]));  % Dimensions: [x,y,z,FA]
         mask           = true;
         for n = 1:length(ME4Dmag)
-            idx                       = te_indexrange(n,1):te_indexrange(n,2);
+            idx                       = TErange(n,1):TErange(n,2);
             img(:,:,:,idx)            = spm_read_vols(spm_vol(ME4Dmag{n}));
             unwrappedPhase(:,:,:,idx) = spm_read_vols(spm_vol(unwrapped{n}));
             totalField(:,:,:,n)       = spm_read_vols(spm_vol(fieldmap{n}));
             mask                      = spm_read_vols(spm_vol(localfmask{n})) & mask;
         end
         B1 = spm_read_vols(spm_vol(char(TB1map_GRE)));
-        
+
         % Obtain the initial estimation of the initial B1 phase (NB: img is still 4D here, i.e. with all acquisitions concatenated)
         img  = img .* exp(1i*unwrappedPhase);
         mask = mask & all(~isnan(img), 4);
-        TE1  = reshape(cellfun(@(te) te(1), TE), 1, 1, 1, []);                      % First echo time of each acquisition
-        pini = unwrappedPhase(:,:,:,te_indexrange(:,1)) - 2*pi*totalField .* TE1;   % Dimensions: [x,y,z,FA]
+        TE1  = reshape(cellfun(@(te) te(1), TE), 1, 1, 1, []);                  % First echo time of each acquisition
+        pini = unwrappedPhase(:,:,:,TErange(:,1)) - 2*pi*totalField .* TE1;     % Dimensions: [x,y,z,FA]
         pini = polyfit3D_NthOrder(double(mean(pini(:,:,:,1:end-1), 4)), mask, 6);
 
         % Construct the fixed parameters and extra data for the MCR model
@@ -158,7 +143,7 @@ methods
                 fitting.isEPG = false;
             end
             obj.logger.info('%s detected a variable protocol (TR = [%s] ms), using gpuMCRMWI_VFAVTR', obj.name, num2str(TR*1e3, ' %.1f'))
-            extraData.te_indexrange = te_indexrange;
+            extraData.te_indexrange = TErange;
             objGPU = gpuMCRMWI_VFAVTR(TE, TR, FA, fixed_params);
         else
             img    = reshape(img, [dims(1:3) nTE(1) length(ME4Dmag)]);          % Back to [x,y,z,TE,FA] for gpuMCRMWI
@@ -166,7 +151,7 @@ methods
             objGPU = gpuMCRMWI(TE{1}, TR(1), FA, fixed_params);
         end
 
-       % Estimate the MCR model (variable-TR protocols need the vTR-qMRI implementation)
+        % Estimate the MCR model (variable-TR protocols need the vTR-qMRI implementation)
         askadam_mcr = objGPU.estimate(img, mask, extraData, fitting);
 
         % Extract and save the output data

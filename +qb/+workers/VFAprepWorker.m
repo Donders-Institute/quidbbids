@@ -253,7 +253,7 @@ methods
 
         % Get the B1 images from the team
         B1famp = obj.ask_team('TB1map_angle');
-        B1anat = obj.ask_team('TB1map_anat');
+        B1anat = obj.ask_team('TB1map_anat', numel(B1famp));
 
         % Process all acq/runs independently
         for acq = obj.query_ses(obj.BIDS, 'acquisitions', bfilter)

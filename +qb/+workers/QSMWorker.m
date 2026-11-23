@@ -87,42 +87,39 @@ methods
         end
 
         % Check if the parent is QSMWorker -> needs phase data, otherwise R2starWorker -> only needs magnitude data
-        getQSM = strcmp(obj.config.Parent, 'QSMWorker');
+        isQSM = strcmp(obj.config.Parent, 'QSMWorker');
 
         % Get preprocessed workitems from a colleague
         obj.workdir = replace(obj.workdir, "SEPIA", "QuIDBBIDS");       % SEPIA has it's own directory, temporarily put it back to what it was
         mask        = obj.ask_team('brainmask');
         magfiles    = obj.ask_team('ME4Dmag');
-        if getQSM
-            phasefiles = obj.ask_team('ME4Dphase');
+        if isQSM
+            phasefiles = obj.ask_team('ME4Dphase', numel(magfiles));    % Must have the same number of phase files as magnitude files
         else
             phasefiles = repmat({''}, size(magfiles));
         end
         obj.workdir = replace(obj.workdir, "QuIDBBIDS", "SEPIA");
 
-        % Check the received workitems
-        if length(magfiles) ~= length(phasefiles)
-            obj.logger.exception('%s got %d magnitude vs %d phase files', obj.name, length(magfiles), length(phasefiles))
+        % Select a suitable mask
+        entmag = bids.File(magfiles{1}).entities;
+        for mask_ = mask
+            entmask = bids.File(char(mask_)).entities;
+            if ( isfield(entmag, 'space') &&  isfield(entmask, 'space') && entmag.space == entmask.space) || ...
+               (~isfield(entmag, 'space') && ~isfield(entmask, 'space'))
+                obj.logger.verbose("Selected mask (out of %d): %s", length(mask), mask_)
+                mask = mask_;
+                break
+            end
         end
         if length(mask) ~= 1
-            obj.logger.warning('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', mask{:}))
-            entmag = bids.File(magfiles{1}).entities;
-            for mask_ = mask
-                entmask = bids.File(char(mask_)).entities;
-                if  ( isfield(entmag, 'space') &&  isfield(entmask, 'space') && entmag.space == entmask.space) || ...
-                    (~isfield(entmag, 'space') && ~isfield(entmask, 'space'))
-                    obj.logger.verbose("Selecting mask: " + mask_)
-                    mask = mask_;
-                    break
-                end
-            end
+            obj.logger.error('Could not select a suitable %s brainmask from:%s', obj.name, sprintf(' %s', mask{:}))
         end
 
         % Process all acquisition protocols, runs and flip angles independently
         for n = 1:length(magfiles)
 
             % Make sure the magnitude and phase images belong together
-            if getQSM && ~strcmp(magfiles{n}, replace(phasefiles{n}, '_part-phase_','_part-mag_'))
+            if isQSM && ~strcmp(magfiles{n}, replace(phasefiles{n}, '_part-phase_','_part-mag_'))
                 obj.logger.exception("Magnitude and phase images do not match:\n%s\n%s", magfiles{n}, phasefiles{n})
             end
 

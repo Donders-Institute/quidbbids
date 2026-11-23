@@ -143,7 +143,7 @@ methods
                     elseif length(T1src) > 1
                         obj.logger.warning('%d T1w "ACPC" reference images found, using the first image: %s', length(T1src), T1src{1})
                     end
-                    T1tgt = obj.ask_team('syntheticT1');
+                    T1tgt = obj.ask_team('syntheticT1', []);
                     if isempty(T1tgt)
                         obj.logger.info('No synthetic T1w target image found for: %s. Using the raw T1w image as the target for coregistration.', obj.sub_ses())
                         T1tgt = obj.query_ses(obj.BIDS, 'data', struct(modality='anat', suffix='T1w'));

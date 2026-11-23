@@ -70,10 +70,10 @@ methods (Access = private)
         import qb.utils.write_vol
         import qb.utils.spm_vol
 
-        % Get the QSM workitems we need from a colleague (instead of just getting the files, use the filters to get the right runs ourselves)
-        [~, S0filter]   = obj.ask_team('S0map');
-        [~, Chifilter]  = obj.ask_team('Chimap');
-        [~, maskfilter] = obj.ask_team('localfmask');
+        % Get the QSM workitems we need (instead of just getting the files, use the filters to get the right runs ourselves)
+        [~, S0filter]   = obj.ask_team('S0map', -2);        % Must have at least 2 images
+        [~, Chifilter]  = obj.ask_team('Chimap', -2);       % Must have at least 2 images
+        [~, maskfilter] = obj.ask_team('localfmask', -2);   % Must have at least 2 images
 
         % Index the (special) SEPIA workdir layout
         BIDSWS = obj.BIDS_ses(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
@@ -89,9 +89,6 @@ methods (Access = private)
             if numel(unique([length(S0data), length(Chidata), length(maskdata)])) > 1
                 obj.logger.exception('%s received an ambiguous number of S0maps, Chimaps or localfmasks:%s', obj.name, ...
                                         sprintf('\n%s', S0data{:}, Chidata{:}, maskdata{:}))
-            end
-            if length(S0data) < 2
-                obj.logger.exception('%s received data for only %d flip angle(s)', obj.name, length(S0data))
             end
 
             % Read the QSM images (4th dimension = flip angle)

@@ -75,20 +75,9 @@ methods
         import qb.utils.spm_vol
 
         % Get the workitems we need from a colleague
-        ME4Dmag    = obj.ask_team('ME4Dmag');       % Multiple FA-images per run
-        TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
-        brainmask  = obj.ask_team('brainmask');     % Multiple FA-images per run
-
-        % Check the number of items we got: TODO: FIXME: multi-run acquisitions
-        if length(ME4Dmag) < 2
-            obj.logger.exception('%s received data for only %d flip angles', obj.name, length(ME4Dmag))
-        end
-        if length(TB1map_GRE) ~= 1          % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-            obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', TB1map_GRE{:}))
-        end
-        if length(brainmask) ~= 1           % TODO: FIXME
-            obj.logger.exception('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', brainmask{:}))
-        end
+        ME4Dmag    = obj.ask_team('ME4Dmag', -2);   % Must have at least 2 FA-images per run
+        TB1map_GRE = obj.ask_team('TB1map_GRE', 1); % Single image per run. TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
+        brainmask  = obj.ask_team('brainmask', 1);  % Multiple FA-images per run. TODO: FIXME
 
         % Load the data + metadata
         V    = spm_vol(ME4Dmag{1});                          % For reading the 3D image dimensions

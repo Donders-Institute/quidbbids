@@ -87,21 +87,11 @@ methods (Access = private)
             return
         end
 
-        % Get the workitems we need from a colleague
-        ME4Dmag    = obj.ask_team('ME4Dmag');       % One multi-echo 4D file per flip angle
-        TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
-        brainmask  = obj.ask_team('brainmask');     % Single image per run
-
-        % Check the number of items we got. TODO: FIXME: multi-run acquisitions
-        if length(ME4Dmag) < 2
-            obj.logger.exception('%s received data for only %d flip angle(s)', obj.name, length(ME4Dmag))
-        end
-        if length(TB1map_GRE) ~= 1      % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-            obj.logger.exception('%s expected only one B1map file but got:%s', obj.name, sprintf(' %s', TB1map_GRE{:}))
-        end
-        if length(brainmask) ~= 1       % TODO: FIXME
-            obj.logger.exception('%s expected one brainmask but got:%s', obj.name, sprintf(' %s', brainmask{:}))
-        end
+        % Get the workitems we need from a colleague. TODO: FIXME: multi-run acquisitions
+        nruns      = 1;                                 % TODO: Replace with length(obj.query_ses(obj.BIDS, 'runs', bfilter))
+        ME4Dmag    = obj.ask_team('ME4Dmag', -2*nruns); % One multi-echo 4D file per flip angle
+        TB1map_GRE = obj.ask_team('TB1map_GRE', nruns); % Single image per run
+        brainmask  = obj.ask_team('brainmask', nruns);  % Single image per run
 
         % Load the data + the protocol of each acquisition (= flip angle). NB: The echo trains are
         % concatenated along the 4th dimension, so the TE/TR do not have to be the same for each acquisition

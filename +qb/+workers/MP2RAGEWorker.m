@@ -76,11 +76,8 @@ methods
         import qb.utils.spm_vol
 
         % Get the B1 images from the team
-        B1famp = obj.ask_team('TB1map_angle');
-        B1anat = obj.ask_team('TB1map_anat');
-        if length(B1famp) > 1 || length(B1anat) > 1
-            obj.logger.error("Expected one TB1map_angle and one TB1map_anat file, but got %d and %d files", length(B1famp), length(B1anat))
-        end
+        B1famp = obj.ask_team('TB1map_angle', 1);
+        B1anat = obj.ask_team('TB1map_anat', 1);
 
         % Process all runs independently. TODO: think about multi-echo?
         for run = obj.query_ses(obj.BIDS, 'runs', obj.bidsfilter.raw_UNIT1)

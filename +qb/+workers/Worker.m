@@ -219,12 +219,15 @@ methods
         end
     end
 
-    function [work, bidsfilter] = ask_team(obj, workitem)
-        %ASK_TEAM Asks a team member to fetch a (regexp) WORKITEM needed to get the work done
+    function [work, bidsfilter] = ask_team(obj, workitem, nritems)
+        %ASK_TEAM(WORKITEM, NRITEMS) Asks a team member to fetch a (regexp) WORKITEM needed to get the work done. Passing a
+        % finite NRITEMS performs an errorcheck to see if the number of fetched workitems is as expected ([] = no check,
+        % negative integer = at least NRITEMS, positive integer = exactly NRITEMS; Default = -1).
 
         arguments
             obj
-            workitem {mustBeTextScalar, mustBeNonempty}
+            workitem        {mustBeTextScalar, mustBeNonempty}
+            nritems  double {mustBeInteger} = -1
         end
 
         % See if someone in the team can make a matching workitem
@@ -244,6 +247,15 @@ methods
         coworker   = obj.team.(workitem).handle(obj.BIDS, obj.subject, obj.config, obj.workdir, obj.outputdir, obj.team);
         work       = coworker.fetch(workitem);
         bidsfilter = coworker.bidsfilter.(workitem);
+
+        % Check if the number of fetched workitems is as expected
+        if isfinite(nritems)
+            if (nritems < 0) && (length(work) < abs(nritems))
+                obj.logger.error("%s asked for at least %d %s workitem(s) but got %d", obj.name, abs(nritems), workitem, length(work))
+            elseif length(work) ~= nritems
+                obj.logger.error("%s asked for %d %s workitem(s) but got %d", obj.name, nritems, workitem, length(work))
+            end
+        end
 
     end
 

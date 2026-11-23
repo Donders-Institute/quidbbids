@@ -89,30 +89,15 @@ methods
             return
         end
 
-        % Get the workitems we need from our colleagues
-        ME4Dmag    = obj.ask_team('ME4Dmag');       % Multiple FA-images per run
-        unwrapped  = obj.ask_team('unwrapped');     % Multiple FA-images per run
-        fieldmap   = obj.ask_team('fieldmap');      % Multiple FA-images per run
-        localfmask = obj.ask_team('localfmask');    % Multiple FA-images per run
-        TB1map_GRE = obj.ask_team('TB1map_GRE');    % Single image per run
-        DWItheta   = obj.ask_team('DWItheta');
-        DWIicvf    = obj.ask_team('DWIicvf');
-        DWIff      = obj.ask_team('DWIff');
-
-        % Check the number of items we got: TODO: FIXME: multi-run acquisitions
-        if numel(unique([length(unwrapped), length(fieldmap)])) > 1
-            obj.logger.exception('%s received an ambiguous number of unwrapped (%d) or fieldmaps (%d):%s', obj.name, ...
-                                 length(unwrapped), length(fieldmap), sprintf('\n%s', unwrapped{:}, fieldmap{:}))
-        end
-        if length(ME4Dmag) < 2
-            obj.logger.exception('%s received data for only %d flip angles', obj.name, length(ME4Dmag))
-        end
-        if length(TB1map_GRE) ~= 1         % TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
-            obj.logger.exception('%s expected only one B1map file but got: %s', obj.name, sprintf('%s ', TB1map_GRE{:}))
-        end
-        if length(localfmask) ~= length(ME4Dmag)
-            obj.logger.exception('%s expected %d brainmasks but got:%s', obj.name, length(ME4Dmag), sprintf(' %s', localfmask{:}))
-        end
+        % Get the workitems we need from our colleagues. TODO: FIXME: multi-run acquisitions
+        ME4Dmag    = obj.ask_team('ME4Dmag', -2);   % Multiple FA-images per run
+        unwrapped  = obj.ask_team('unwrapped', numel(ME4Dmag));
+        fieldmap   = obj.ask_team('fieldmap', numel(ME4Dmag));
+        localfmask = obj.ask_team('localfmask', numel(ME4Dmag));
+        TB1map_GRE = obj.ask_team('TB1map_GRE', 1); % Single image per run. TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
+        DWItheta   = obj.ask_team('DWItheta', []);  % Optional, may be empty if no diffusion data is available
+        DWIicvf    = obj.ask_team('DWIicvf', []);   % Optional, may be empty if no diffusion data is available
+        DWIff      = obj.ask_team('DWIff', []);     % Optional, may be empty if no diffusion data is available
 
         % Load the data + metadata
         V              = spm_vol(ME4Dmag{1});                    % For reading the 3D image dimensions
@@ -150,7 +135,7 @@ methods
         ortho = '';
         if endsWith(workitem, 'ortho')
             obj.logger.verbose('Constructing orthoview montages')
-            ortho = '_ortho';
+            ortho       = '_ortho';
             [mask, sel] = obj.orthoslice(mask, 'tight');
             B1          = obj.orthoslice(B1(sel{:}));
             pini        = obj.orthoslice(pini(sel{:}));

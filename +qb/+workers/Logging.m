@@ -132,7 +132,8 @@ methods
         obj.verbose(message, {level_}, varargin{:})
 
         % Also log in the terminal (colorize the level tag if the terminal renders ANSI colors)
-        fprintf('%s\t| %s\n', obj.colorize(level_), sprintf(message, varargin{:}))
+        [pre, post] = Logging.colorize(level_);
+        fprintf([pre '%s' post '\t| %s\n'], level_, sprintf(message, varargin{:}))
     end
 
     function warning(obj, message, varargin)
@@ -254,21 +255,26 @@ end
 
 methods (Static, Access = private)
 
-    function tag = colorize(level)
-        %COLORIZE Wrap a log-level tag in ANSI escape codes for terminal display (plain if unsupported).
-        % Only affects terminal output via info(); log files are always written plain.
-        tag = level;
+    function [pre, post] = colorize(level)
+        %COLORIZE ANSI format fragments for colorizing a log-level tag in the terminal: the literal '\x1b[..m'
+        % text to embed in fprintf's formatSpec (the Command Window only renders ANSI escape sequences that
+        % appear in the format string, not in substituted arguments). Empty when the target cannot render
+        % ANSI. Only affects terminal output via info(); log files are always written plain.
+        pre = '';  post = '';
+        % No colors in -batch mode (tests/CI) or when NO_COLOR is set; the desktop Command Window renders
+        % ANSI only on the R2025a+ JavaScript desktop; a real terminal (unix TERM, Windows console) does.
+        term = isunix && ~isempty(getenv('TERM')) && ~strcmp(getenv('TERM'), 'dumb');
         if ~isempty(getenv('NO_COLOR')) || batchStartupOptionUsed() || ...
-           ~(usejava('desktop') || ispc || (~isempty(getenv('TERM')) && ~strcmp(getenv('TERM'), 'dumb')))
+           ~((usejava('desktop') && ~verLessThan('matlab', 'R2025a')) || ispc || term)
             return
         end
-        esc = char(27);     % ESC
-        switch upper(level)
-            case "ERROR",   tag = esc + "[1;31m" + level + esc + "[0m";   % bold red
-            case "WARNING", tag = esc + "[1;33m" + level + esc + "[0m";   % bold yellow
-            case "INFO",    tag = esc + "[32m"   + level + esc + "[0m";   % green
-            otherwise,      tag = esc + "[90m"   + level + esc + "[0m";   % grey (VERBOSE/DEBUG)
+        switch upper(string(level))
+            case "ERROR",   pre = '\x1b[1;31m';   % bold red
+            case "WARNING", pre = '\x1b[1;33m';   % bold yellow
+            case "INFO",    pre = '\x1b[32m';     % green
+            otherwise,      pre = '\x1b[90m';     % grey (VERBOSE/DEBUG)
         end
+        post = '\x1b[0m';   % reset
     end
 
 end

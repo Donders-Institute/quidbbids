@@ -131,9 +131,8 @@ methods
         % Log to disk
         obj.verbose(message, {level_}, varargin{:})
 
-        % Also log in the terminal (colorize the level tag if the terminal renders ANSI colors)
-        [pre, post] = obj.colorize(level_);
-        fprintf([pre '%s' post '\t| %s\n'], level_, sprintf(message, varargin{:}))
+        % Also log in the terminal
+        fprintf('%s\t| %s\n', level_, sprintf(message, varargin{:}))  % TODO: colorize it with cprintf from the File Exchange???
     end
 
     function warning(obj, message, varargin)
@@ -249,32 +248,6 @@ methods (Access = ?TestLogging)
 
         % Write to the info file and terminal
         obj.info(message, {upper(suffix(2:end-1))}, varargin{:})   % Assumes suffix starts with a '_' and ends with a plural 's'
-    end
-
-end
-
-methods (Static, Access = private)
-
-    function [pre, post] = colorize(level)
-        %COLORIZE ANSI format fragments for colorizing a log-level tag in the terminal: the literal '\x1b[..m'
-        % text to embed in fprintf's formatSpec (the Command Window only renders ANSI escape sequences that
-        % appear in the format string, not in substituted arguments). Empty when the target cannot render
-        % ANSI. Only affects terminal output via info(); log files are always written plain.
-        pre = '';  post = '';
-        % No colors in -batch mode (tests/CI) or when NO_COLOR is set; the desktop Command Window renders
-        % ANSI only on the R2025a+ JavaScript desktop; a real terminal (unix TERM, Windows console) does.
-        term = isunix && ~isempty(getenv('TERM')) && ~strcmp(getenv('TERM'), 'dumb');
-        if ~isempty(getenv('NO_COLOR')) || batchStartupOptionUsed() || ...
-           ~((usejava('desktop') && ~verLessThan('matlab', 'R2025a')) || ispc || term)
-            return
-        end
-        switch upper(string(level))
-            case "ERROR",   pre = '\x1b[1;31m';   % bold red
-            case "WARNING", pre = '\x1b[1;33m';   % bold yellow
-            case "INFO",    pre = '\x1b[32m';     % green
-            otherwise,      pre = '\x1b[90m';     % grey (VERBOSE/DEBUG)
-        end
-        post = '\x1b[0m';   % reset
     end
 
 end

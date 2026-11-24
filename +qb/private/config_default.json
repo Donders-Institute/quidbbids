@@ -83,7 +83,7 @@
       "x_i": {"value": -0.1, "description": "Myelin isotropic susceptibility, in ppm"},
       "x_a": {"value": -0.1, "description": "Myelin anisotropic susceptibility, in ppm"},
       "E": {"value": 0.02, "description": "Exchange effect in signal phase, in ppm"},
-      "thres_R2star": {"value": 150, "description": "1/seconds, upper bound"},
+      "thres_R2star": {"value": 2, "description": "Single-compartment R2* threshold [1/s] used by gacelle to refine the fit mask. Since gacelle v1.1 this is a LOWER bound (voxels kept only if R2* >= thres_R2star; default 2, drops signal-void voxels) -- in gacelle v1.0 it was an upper bound (R2* <= thres_R2star) and user-supplied values were silently ignored due to a typo, so a large value like 150 empties the mask under v1.1. To exclude high-R2* voxels, erode/filter the localfmask upstream instead."},
       "thres_T1": {"value": 3.1, "description": "seconds, upper bound"}
     },
     "fitting": {

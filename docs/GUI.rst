@@ -148,6 +148,15 @@ particular interest:
    * ``useParallel``. Set to ``true`` to process subjects in parallel on the local machine with ``parfeval()``
      (this option is ignored when ``useHPC`` is ``true``).
 
+.. tip::
+
+   The options shown in the config editor (and defined in ``config_default.json``) are only a *subset* of all
+   options that the workers and their underlying toolboxes (e.g. SEPIA, gacelle/askAdam) accept. Any extra key
+   added to the study ``config.json`` (``<outputdir>/code/config.json``) is passed through to the worker/toolbox
+   as-is, so non-standard options can be set by editing that file with any regular text editor. Alternatively, in
+   CLI mode you can add or override options directly on the config struct before starting the workflow, e.g.
+   ``quidb.config.MCR_GPUWorker.fitting.convergenceStepTol.value = 1e-6;`` (see :doc:`CLI`).
+
 Run the workflow
 ----------------
 

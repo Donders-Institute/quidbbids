@@ -134,11 +134,10 @@ methods
         extraData.pini    = pini;
         extraData.b1      = B1;
 
-        % Variable-TR protocols need the echo index ranges and cannot use the EPG-X networks
-        % We need to override isEPG for VTR, and mutating obj.config would leak the change into other subjects processed in the same session
-        fitting = obj.config.MCR_GPUWorker.fitting; 
-        if isVTR
-            if fitting.isEPG
+        % Setup the MCR model object for GPU fitting
+        fitting = obj.config.MCR_GPUWorker.fitting;
+        if isVTR                    % Variable-TR protocols need the echo index ranges and cannot use the EPG-X networks
+            if fitting.isEPG        % We need to override isEPG for VTR (and not leak a mutated obj.config)
                 obj.logger.warning('%s: the EPG-X networks assume a single TR for all flip angles, using the Bloch-McConnell solution instead', obj.name)
                 fitting.isEPG = false;
             end

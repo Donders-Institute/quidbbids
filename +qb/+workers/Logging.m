@@ -93,7 +93,7 @@ methods
 
         % TODO: Also log in the terminal if user sets the terminal logging level to VERBOSE
         % if strcmpi(obj.config.loglevel, "VERBOSE")
-        %     fprintf('%s\t| %s\n', level_, message)  % TODO: colorize it with cprintf from the File Exchange???
+        %     fprintf('%s\t| %s\n', level_, message)
         % end
     end
 
@@ -131,8 +131,8 @@ methods
         % Log to disk
         obj.verbose(message, {level_}, varargin{:})
 
-        % Also log in the terminal
-        fprintf('%s\t| %s\n', level_, sprintf(message, varargin{:}))  % TODO: colorize it with cprintf from the File Exchange???
+        % Also log in the terminal (colorize the level tag if the terminal renders ANSI colors)
+        fprintf('%s\t| %s\n', Logging.colorize(level_), sprintf(message, varargin{:}))
     end
 
     function warning(obj, message, varargin)
@@ -248,6 +248,27 @@ methods (Access = ?TestLogging)
 
         % Write to the info file and terminal
         obj.info(message, {upper(suffix(2:end-1))}, varargin{:})   % Assumes suffix starts with a '_' and ends with a plural 's'
+    end
+
+end
+
+methods (Static, Access = private)
+
+    function tag = colorize(level)
+        %COLORIZE Wrap a log-level tag in ANSI escape codes for terminal display (plain if unsupported).
+        % Only affects terminal output via info(); log files are always written plain.
+        tag = level;
+        if ~isempty(getenv('NO_COLOR')) || batchStartupOptionUsed() || ...
+           ~(usejava('desktop') || ispc || (~isempty(getenv('TERM')) && ~strcmp(getenv('TERM'), 'dumb')))
+            return
+        end
+        esc = char(27);     % ESC
+        switch upper(level)
+            case "ERROR",   tag = esc + "[1;31m" + level + esc + "[0m";   % bold red
+            case "WARNING", tag = esc + "[1;33m" + level + esc + "[0m";   % bold yellow
+            case "INFO",    tag = esc + "[32m"   + level + esc + "[0m";   % green
+            otherwise,      tag = esc + "[90m"   + level + esc + "[0m";   % grey (VERBOSE/DEBUG)
+        end
     end
 
 end

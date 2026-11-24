@@ -101,7 +101,9 @@
       "isFitExchange": {"value": true, "description": "Fit exchange parameters"},
       "isEPG": {"value": false, "description": "Use EPG simulation model"},
       "parameterTransform": {"value": "linear", "description": "Parameter space transform for the gacelle askAdam optimizer. Options: 'linear' = rescale01/unscale01 mapping to [0,1] with hard clamping (askAdam v1.0 behaviour, fully backward compatible); 'sigmoid' = logit initialisation + sigmoid recovery, where Adam optimises unconstrained z in (-inf,+inf), eliminating artificial boundary sticking at the cost of modified loss surface geometry near bounds."},
-      "convergenceModel": {"value": "linear", "description": "Convergence model for the gacelle askAdam optimizer. Options: 'linear' = slope of loss over last convergenceWindow iterations (askAdam v1.0 behaviour); 'ema' = relative change in exponential moving average of loss."}
+      "convergenceModel": {"value": "linear", "description": "Convergence model for the gacelle askAdam optimizer. Options: 'linear' = slope of loss over last convergenceWindow iterations (askAdam v1.0 behaviour); 'ema' = relative change in exponential moving average of loss."},
+      "convergenceGradTol": {"value": 0, "description": "Optional extra stopping signal in the gacelle askAdam optimizer: tolerance on the raw gradient norm sqrt(sum(|grad|^2)) over all fitted parameters, computed before the Adam correction. Active only when > 0 (0 = disabled; gacelle's own default when unset is 1e-6). The fit stops when the gradient norm stays below this tolerance for 'patienceGrad' consecutive iterations (patienceGrad defaults to 'patience')."},
+      "convergenceStepTol": {"value": 0, "description": "Optional extra stopping signal in the gacelle askAdam optimizer: tolerance on the relative parameter step norm sqrt(sum(|delta param|^2)) / (1 + sqrt(sum(|param|^2))), analogous to StepTolerance in lsqnonlin. Active only when > 0 (0 = disabled; gacelle's own default when unset is 1e-6). The fit stops when the step norm stays below this tolerance for 'patienceStep' consecutive iterations (patienceStep defaults to 'patience')."}
     }
   },
 

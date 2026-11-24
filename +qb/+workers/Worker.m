@@ -220,9 +220,9 @@ methods
     end
 
     function [work, bidsfilter] = ask_team(obj, workitem, nritems)
-        %ASK_TEAM(WORKITEM, NRITEMS) Asks a team member to fetch a (regexp) WORKITEM needed to get the work done. Passing a
-        % finite NRITEMS performs an errorcheck to see if the number of fetched workitems is as expected ([] = no check,
-        % negative integer = at least NRITEMS, positive integer = exactly NRITEMS; Default = -1).
+        %ASK_TEAM(WORKITEM, NRITEMS) Asks a team member to fetch a (regexp) WORKITEM needed to get the work done. Passing
+        % NRITEMS performs an errorcheck to see if the number of fetched workitems is as expected ([] = no check,
+        % negative integer = at least abs(NRITEMS), non-negative integer = exactly NRITEMS (Default = -1)).
 
         arguments
             obj
@@ -248,11 +248,11 @@ methods
         work       = coworker.fetch(workitem);
         bidsfilter = coworker.bidsfilter.(workitem);
 
-        % Check if the number of fetched workitems is as expected
-        if isfinite(nritems)
+        % Check if the number of fetched workitems is as expected ([] = no check)
+        if ~isempty(nritems)
             if (nritems < 0) && (length(work) < abs(nritems))
                 obj.logger.error("%s asked for at least %d %s workitem(s) but got %d", obj.name, abs(nritems), workitem, length(work))
-            elseif length(work) ~= nritems
+            elseif (nritems >= 0) && (length(work) ~= nritems)
                 obj.logger.error("%s asked for %d %s workitem(s) but got %d", obj.name, nritems, workitem, length(work))
             end
         end

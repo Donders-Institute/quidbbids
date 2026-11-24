@@ -132,7 +132,7 @@ methods
         obj.verbose(message, {level_}, varargin{:})
 
         % Also log in the terminal (colorize the level tag if the terminal renders ANSI colors)
-        [pre, post] = Logging.colorize(level_);
+        [pre, post] = obj.colorize(level_);
         fprintf([pre '%s' post '\t| %s\n'], level_, sprintf(message, varargin{:}))
     end
 

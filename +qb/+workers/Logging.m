@@ -132,7 +132,7 @@ methods
         obj.verbose(message, {level_}, varargin{:})
 
         % Also log in the terminal (colorize the level tag if the terminal renders ANSI colors)
-        fprintf('%s\t| %s\n', Logging.colorize(level_), sprintf(message, varargin{:}))
+        fprintf('%s\t| %s\n', obj.colorize(level_), sprintf(message, varargin{:}))
     end
 
     function warning(obj, message, varargin)

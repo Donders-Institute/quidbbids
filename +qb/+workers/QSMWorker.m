@@ -104,7 +104,7 @@ methods
         entmag = bids.File(magfiles{1}).entities;
         for mask_ = mask
             entmask = bids.File(char(mask_)).entities;
-            if ( isfield(entmag, 'space') &&  isfield(entmask, 'space') && entmag.space == entmask.space) || ...
+            if ( isfield(entmag, 'space') &&  isfield(entmask, 'space') && strcmp(entmag.space, entmask.space)) || ...
                (~isfield(entmag, 'space') && ~isfield(entmask, 'space'))
                 obj.logger.verbose("Selected mask (out of %d): %s", length(mask), string(mask_))
                 mask = mask_;

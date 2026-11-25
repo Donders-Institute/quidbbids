@@ -79,16 +79,16 @@ methods (Access = private)
         BIDSWS = obj.BIDS_ses(replace(obj.workdir, "QuIDBBIDS", "SEPIA"));
 
         % Process all runs independently
-        for run = obj.query_ses(BIDSWS, 'runs', S0filter)     % NB: Assumes all workitems have the same number of runs
+        for run = str2double(obj.query_ses(BIDSWS, 'runs', S0filter))     % NB: Assumes all workitems have the same number of runs
 
-            S0data   = obj.query_ses(BIDSWS, 'data', S0filter,   run=char(run));
-            Chidata  = obj.query_ses(BIDSWS, 'data', Chifilter,  run=char(run));
-            maskdata = obj.query_ses(BIDSWS, 'data', maskfilter, run=char(run));
+            S0data   = obj.query_ses(BIDSWS, 'data', S0filter,   run=run);
+            Chidata  = obj.query_ses(BIDSWS, 'data', Chifilter,  run=run);
+            maskdata = obj.query_ses(BIDSWS, 'data', maskfilter, run=run);
 
             % Check the queried workitems
             if numel(unique([length(S0data), length(Chidata), length(maskdata)])) > 1
-                obj.logger.exception('%s received an ambiguous number of S0maps, Chimaps or localfmasks:%s', obj.name, ...
-                                        sprintf('\n%s', S0data{:}, Chidata{:}, maskdata{:}))
+                obj.logger.error('%s received an ambiguous number of S0maps, Chimaps or localfmasks:%s', obj.name, ...
+                                 sprintf('\n%s', S0data{:}, Chidata{:}, maskdata{:}))
             end
 
             % Read the QSM images (4th dimension = flip angle)

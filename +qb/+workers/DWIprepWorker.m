@@ -123,10 +123,10 @@ methods
             for run = str2double(obj.query_ses(NODDI, 'runs'))
                 
                 % Query the NODDI icvf and fdir files for the current acquisition and run
-                icvf = obj.query_ses(NODDI, 'data', obj.bidsfilter.deriv_ICVF, acq=char(acq), run=char(run));
-                fdir = obj.query_ses(NODDI, 'data', obj.bidsfilter.deriv_FDir, acq=char(acq), run=char(run));
+                icvf = obj.query_ses(NODDI, 'data', obj.bidsfilter.deriv_ICVF, acq=char(acq), run=run);
+                fdir = obj.query_ses(NODDI, 'data', obj.bidsfilter.deriv_FDir, acq=char(acq), run=run);
                 if isempty(icvf)
-                    obj.logger.verbose('No QSIRecon acq-%s_run-%s icvf-files found in: %s..', char(acq), char(run), fullfile(NODDIdir, obj.sub_ses()))
+                    obj.logger.verbose('No QSIRecon acq-%s_run-%d icvf-files found in: %s..', char(acq), run, fullfile(NODDIdir, obj.sub_ses()))
                     continue
                 end
                 if length(icvf) ~= 1 || length(fdir) > 1
@@ -167,10 +167,10 @@ methods
 
                     case 'MRtrix3'
                         % Query MRtrix FOD from QSIRecon derivatives
-                        fod  = obj.query_ses(MRtrix, 'data', obj.bidsfilter.deriv_FOD, acq=char(acq), run=char(run));
+                        fod  = obj.query_ses(MRtrix, 'data', obj.bidsfilter.deriv_FOD, acq=char(acq), run=run);
                         fdir = replace(fod, '.mif', '.nii');
                         if length(fod) ~= 1
-                            obj.logger.error('Expected one MRtrix3 FOD file for acq-%s_run-%s but found %d', char(acq), char(run), length(fod));
+                            obj.logger.error('Expected one MRtrix3 FOD file for acq-%s_run-%d but found %d', char(acq), run, length(fod));
                             continue
                         end
                         

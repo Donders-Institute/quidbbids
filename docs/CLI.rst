@@ -121,6 +121,7 @@ To run the workflow only for specific subjects, pass them to ``start_workflow``:
 .. code-block:: matlab
 
    >> quidb.manager.start_workflow(["sub-01", "sub-02"])       % Only these subjects
+   >> quidb.manager.start_workflow("sub-01", "ses-01")         % ...or only a specific subject/session
 
 For fully scripted (non-interactive) runs, disable the interactive popups (worker selection, lockfile cleanup) with:
 

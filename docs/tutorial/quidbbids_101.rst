@@ -228,6 +228,14 @@ Open MATLAB and follow these steps:
       >> quidb.manager.start_workflow()                          % All subjects
       >> quidb.manager.start_workflow(["sub-100"])               % ...or only specific subjects
 
+   To additionally restrict the run to specific sessions, pass them as the second argument
+   (the two filters are combined):
+
+   .. code-block:: matlab
+
+      >> quidb.manager.start_workflow("sub-100", "ses-01")       % Only sub-100/ses-01
+      >> quidb.manager.start_workflow([], "ses-01")              % Session ses-01 of all subjects
+
    QuIDBBIDS will now process each subject in your dataset. It automatically handles all
    intermediate steps: creating brain masks, merging echoes, running SEPIA for phase
    unwrapping, background field removal, R2* fitting, and dipole inversion for QSM.

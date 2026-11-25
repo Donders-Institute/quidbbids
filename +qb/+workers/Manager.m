@@ -207,19 +207,23 @@ methods
         end
     end
 
-    function start_workflow(obj, subjects)
+    function start_workflow(obj, subjects, sessions)
         %START_WORKFLOW For each deliverable, asks the responsible team worker to fetch it. Logs the screen output in a diary.
         %
         % Inputs:
-        %   SUBJECTS - String array with subject names for which the workflow should be executed. Default is all subjects in the BIDS layout
+        %   SUBJECTS - String array with subject names (e.g. "sub-01") for which the workflow should be executed. Default is all subjects in the BIDS layout
+        %   SESSIONS - String array with session names (e.g. "ses-01") that additionally restricts the selection to entries with a matching subject.session. Default is all sessions
         %
         % Examples:
-        %   mgr.start_workflow()                      % Starts the workflow for all subjects
-        %   mgr.start_workflow(["sub-01", "sub-02"])  % Starts the workflow for subjects sub-01 and sub-02 only
+        %   mgr.start_workflow()                                % Starts the workflow for all subjects and sessions
+        %   mgr.start_workflow(["sub-01", "sub-02"])            % Starts the workflow for subjects sub-01 and sub-02 only (all their sessions)
+        %   mgr.start_workflow("sub-01", "ses-01")              % Starts the workflow for sub-01/ses-01 only
+        %   mgr.start_workflow([], "ses-01")                    % Starts the workflow for session ses-01 of all subjects
 
         arguments
             obj
             subjects string = "";
+            sessions string = "";
         end
 
         % Start a diary to log the screen output
@@ -256,16 +260,22 @@ methods
             end
         end
 
-        % Parse the subjects for which the workflow should be executed
+        % Parse the subjects and sessions for which the workflow should be executed
+        sel = true(size(obj.coord.BIDS.subjects));
         if strlength(subjects)
             sel = false(size(obj.coord.BIDS.subjects));
             for subject = subjects(:)'
                 sel(strcmp({obj.coord.BIDS.subjects.name}, subject)) = true;
             end
-            subjects = obj.coord.BIDS.subjects(sel);
-        else
-            subjects = obj.coord.BIDS.subjects;
         end
+        if strlength(sessions)
+            keep = false(size(obj.coord.BIDS.subjects));
+            for session = sessions(:)'
+                keep(strcmp({obj.coord.BIDS.subjects.session}, session)) = true;
+            end
+            sel = sel & keep;
+        end
+        subjects = obj.coord.BIDS.subjects(sel);
 
         % Check if there are still lock-files around from previous crashes
         lockfiles = [dir(fullfile(obj.coord.workdir, '**', '*.lock'));

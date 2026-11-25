@@ -211,6 +211,7 @@ methods
                     % theta = acos(abs(dot(FDIR, b0dir, 4)) ./ (vecnorm(FDIR,2,4) .* vecnorm(b0dir,2,4))); % The absolute value is taken to make it agnostic to the sign of the fiber direction, i.e. within [0, pi/2].
                     b0dir = [0; 0; 1];                                      % Compute the above two lines more efficiently, i.e. without broadcasting b0dir
                     theta = acos(abs(tensorprod(FDIR, b0dir, 4, 1)) ./ (vecnorm(FDIR,2,4) * norm(b0dir)));
+                    theta(isnan(theta)) = 0;            % Zero-padded fixels (ff=0) get an arbitrary valid angle instead of NaN
 
                     Vicvf.private      = struct();      % Clear private nifti object to allow overriding the memory map, i.e. re/misuse Vicvf to save the rotated theta map
                     Vicvf.private.dat  = theta;         % Override the memory map

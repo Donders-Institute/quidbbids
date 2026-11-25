@@ -32,7 +32,7 @@ properties (Constant)
                    "   MCR_GPUWorker provides significant speed improvements over MCRWorker,"
                    "   particularly for high-resolution datasets or when processing multiple subjects."
                    "   Requires GPU hardware with CUDA support."]   % Description should be in ReStructuredText format
-    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask"]           % List of workitems the worker needs. Workitems can contain regexp patterns
+    needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "DWItheta", "DWIicvf", "DWIff"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = true
 end
 
@@ -89,6 +89,9 @@ methods
         fieldmap   = obj.ask_team('fieldmap', numel(ME4Dmag));
         localfmask = obj.ask_team('localfmask', numel(ME4Dmag));
         TB1map_GRE = obj.ask_team('TB1map_GRE', 1);         % Single image per run. TODO: Figure out which run/protocol to take (use IntendedFor or the average or so?)
+        DWItheta   = obj.ask_team('DWItheta', []);          % Optional, may be empty if no diffusion data is available
+        DWIicvf    = obj.ask_team('DWIicvf', []);           % Optional, may be empty if no diffusion data is available
+        DWIff      = obj.ask_team('DWIff', []);             % Optional, may be empty if no diffusion data is available
 
         % Read the protocol of each acquisition. This is done before allocating because acquisitions may differ in TR and in the number of echoes
         for n = 1:length(ME4Dmag)
@@ -148,6 +151,21 @@ methods
             img    = reshape(img, [dims(1:3) nTE(1) length(ME4Dmag)]);  % Back to [x,y,z,TE,FA] for gpuMCRMWI
             dims   = size(img);
             objGPU = gpuMCRMWI(TE{1}, TR(1), FA, fixed_params);
+        end
+
+        % Add the diffusion priors for the DI-MWI model if available. NB: unlike MCRWorker (mwi toolbox), where  algoPara.DIMWI.* = true means
+        % "use the DWI prior", gacelle uses the opposite polarity: fitting.DIMWI.isFit* = true means the parameter is fitted (prior NOT used)
+        if isempty(DWItheta) || isempty(DWIicvf) || isempty(DWIff)
+            obj.logger.info('%s: estimating the MCR model without diffusion priors', obj.name)
+        else
+            obj.logger.info('%s: estimating the DI-MWI-MCR model', obj.name)
+            extraData.theta = spm_read_vols(spm_vol(DWItheta{1}));
+            extraData.IWF   = spm_read_vols(spm_vol(DWIicvf{1}));
+            extraData.ff    = spm_read_vols(spm_vol(DWIff{1}));
+            fitting.DIMWI.isFitIWF    = false;      % Use the DWI-derived maps (extraData) instead of fitting these parameters
+            fitting.DIMWI.isFitFreqMW = false;
+            fitting.DIMWI.isFitFreqIW = false;
+            fitting.DIMWI.isFitR2sEW  = false;
         end
 
         % Estimate the MCR model (variable-TR protocols need the vTR-qMRI implementation)

@@ -237,6 +237,27 @@ methods
             return
         end
 
+        % Parse the subjects and sessions for which the workflow should be executed
+        sel = true(size(obj.coord.BIDS.subjects));
+        if strlength(subjects)
+            sel = false(size(obj.coord.BIDS.subjects));
+            for subject = subjects(:)'
+                sel(strcmp({obj.coord.BIDS.subjects.name}, subject)) = true;
+            end
+        end
+        if strlength(sessions)
+            keep = false(size(obj.coord.BIDS.subjects));
+            for session = sessions(:)'
+                keep(strcmp({obj.coord.BIDS.subjects.session}, session)) = true;
+            end
+            sel = sel & keep;
+        end
+        subjects = obj.coord.BIDS.subjects(sel);
+        if isempty(subjects)
+            disp('❌ No subjects/sessions found for the requested selection, there is nothing to do')
+            return
+        end
+
         % Save the config and workflow data, so that the workflow can be resumed later
         obj.coord.get_config(obj.coord.config);
         obj.coord.save_properties(obj.coord.workflowfile)
@@ -259,23 +280,6 @@ methods
                 end
             end
         end
-
-        % Parse the subjects and sessions for which the workflow should be executed
-        sel = true(size(obj.coord.BIDS.subjects));
-        if strlength(subjects)
-            sel = false(size(obj.coord.BIDS.subjects));
-            for subject = subjects(:)'
-                sel(strcmp({obj.coord.BIDS.subjects.name}, subject)) = true;
-            end
-        end
-        if strlength(sessions)
-            keep = false(size(obj.coord.BIDS.subjects));
-            for session = sessions(:)'
-                keep(strcmp({obj.coord.BIDS.subjects.session}, session)) = true;
-            end
-            sel = sel & keep;
-        end
-        subjects = obj.coord.BIDS.subjects(sel);
 
         % Check if there are still lock-files around from previous crashes
         lockfiles = [dir(fullfile(obj.coord.workdir, '**', '*.lock'));
@@ -331,10 +335,9 @@ methods
                             [~, name] = fileparts(items{i});
                             del(i) = any(startsWith(name, subses));
                         end
-                        items = items(del);
-                        if ~isempty(items)
+                        if any(del)
                             fprintf('🗑️ Deleting %s -> %s items from the workdir\n', depworker.name, workitem)
-                            delete(items{:})
+                            delete(items{del})
                         end
                     end
                 end

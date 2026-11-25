@@ -145,13 +145,15 @@ methods
         obj.deliverables = qb.GUI.set_deliverables(items, descriptions, obj.deliverables);
     end
 
-    function manager = get_manager(obj)
-        %GET_MANAGER Initializes a workflow manager to get work done
+    function manager = get_manager(obj, restart)
+        %GET_MANAGER Initializes a workflow manager to get work done. Use RESTART = true to re-create
+        % the team of workers with the current deliverables (default = false)
         %
         % See also: qb.workers.Manager
 
         arguments
             obj
+            restart logical = false
         end
 
         if isempty(obj.deliverables)
@@ -160,6 +162,9 @@ methods
 
         obj.manager = qb.workers.Manager(obj);
         obj.manager.interactive = obj.interactive;
+        if restart
+            obj.manager.create_team()
+        end
 
         if nargout
             manager = obj.manager;

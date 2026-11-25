@@ -38,7 +38,7 @@ if ismember("ABRIM_MEGRE", datasets)
 
     % Make QC reports
     if isunix
-        fprintf('Generating QC reports for the ABRIM_MEGRE dataset...')
+        fprintf('Generating QC reports for the ABRIM_MEGRE dataset -> %s', quidb.outputdir)
         system(sprintf(['(module load bidscoin; cd %s;' ...
             'slicereport %s anat/*R2starmap* -r report_R2starmap --options i 5 50;' ...
             'slicereport %s anat/*Chimap*    -r report_Chimap    --options i -0.15 0.3) < /dev/null > /dev/null 2>&1'], ...
@@ -64,7 +64,7 @@ if ismember("MCR-MWI_VFA", datasets)
     % Then run the GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',20e9, 'timreq',10*36e2, 'options','--partition=gpu --gres=gpu:1 --constraint=nomig'};    % MIG/NOMIG -> Crashes with NVML errors on partitioned GPUs
     quidb.deliverables = ["R1map_SCR", "R2starmap_SCR", "Chimap", "MWFmap"];
-    quidb.get_manager()
+    quidb.get_manager(true)         % Restart = true to re-create the team of workers with the new deliverables
     quidb.manager.start_workflow()
 
     % Expected warnings (due to missing data):
@@ -82,10 +82,11 @@ if ismember("MCR-MWI_VFA", datasets)
     % | [22-Oct-2026 22:52:51] DWIprepWorker could not produce the requested DWItheta item (sub-003/ses-mri02)
     % | [22-Oct-2026 22:52:53] DWIprepWorker could not produce the requested DWIicvf item (sub-003/ses-mri02)
     % | [22-Oct-2026 22:52:55] DWIprepWorker could not produce the requested DWIff item (sub-003/ses-mri02)    
+    % Warning: MATLAB:nearlySingularMatrix: Matrix is close to singular or badly scaled. Results may be inaccurate. RCOND =  6.625125e-17. 
 
     % Make QC reports
     if isunix
-        fprintf('Generating QC reports for the MCR-MWI_VFA dataset...')
+        fprintf('Generating QC reports for the MCR-MWI_VFA dataset -> %s', quidb.outputdir)
         system(sprintf(['(module load bidscoin; cd %s;' ...
             'slicereport %s anat/*R1R2s*R1map*     -r report_R1map_gacelle     --options i 0.2 1.5;' ...
             'slicereport %s anat/*R1R2s*R2starmap* -r report_R2starmap_gacelle --options i 5 50;' ...
@@ -113,12 +114,12 @@ if ismember("Hamburg_MPM", datasets)
     % Then run the GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1 --constraint=nomig'};    % MIG/NOMIG -> Crashes with NVML errors on partitioned GPUs
     quidb.deliverables = ["R1map_SCR", "R2starmap_SCR", "Chimap", "MWFmap"];
-    quidb.get_manager()
+    quidb.get_manager(true)         % Restart = true to re-create the team of workers with the new deliverables
     quidb.manager.start_workflow()
 
     % Make QC reports
     if isunix
-        fprintf('Generating QC reports for the Hamburg_MPM dataset...')
+        fprintf('Generating QC reports for the Hamburg_MPM dataset -> %s', quidb.outputdir);
         system(sprintf(['(module load bidscoin; cd %s;' ...
             'slicereport %s anat/*R1R2s*R1map*     -r report_R1map_gacelle     --options i 0.2 1.5;' ...
             'slicereport %s anat/*R1R2s*R2starmap* -r report_R2starmap_gacelle --options i 5 50;' ...

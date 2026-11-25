@@ -145,7 +145,7 @@ run e.g. the CPU part first and the GPU part later with different HPC resources:
 
    >> quidb.deliverables = ["R1map", "R2starmap", "Chimap", "MWFmap"];  % GPU part
    >> quidb.config.General.HPC.value = {'memreq', 20e9, 'timreq', 10*36e2, 'options', '--partition=gpu --gres=gpu:1'};
-   >> quidb.get_manager(true)       % NB: Use get_manager(true) to re-create the team for the new deliverables
+   >> quidb.get_manager()
    >> quidb.manager.start_workflow()
 
 The ``HPC`` setting is passed to ``qsubfeval()``, so it accepts any qsub option (memory, walltime, GPU partitions,

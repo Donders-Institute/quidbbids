@@ -67,7 +67,7 @@ if ismember("MCR-MWI_VFA", datasets)
     quidb.config.General.tag.value = "NODDI";
     quidb.config.DWIprepWorker.Model.value = "NODDI";  % Use the NODDI model to derive the diffusion priors for DI-MWI
     quidb.deliverables = ["R1map_SCR", "R2starmap_SCR", "Chimap", "MWFmap"];
-    quidb.get_manager(true)         % Restart = true to re-create the team of workers with the new deliverables
+    quidb.get_manager()
     quidb.manager.force = "DWIprepWorker";
     quidb.manager.start_workflow()
 
@@ -118,7 +118,7 @@ if ismember("Hamburg_MPM", datasets)
     % Then run the GPU part of the workflow
     quidb.config.General.HPC.value = {'memreq',100e9, 'timreq',10*36e2, 'options','--partition=gpu40g --gres=gpu:1 --constraint=nomig'};    % MIG/NOMIG -> Crashes with NVML errors on partitioned GPUs
     quidb.deliverables = ["R1map_SCR", "R2starmap_SCR", "Chimap", "MWFmap"];
-    quidb.get_manager(true)         % Restart = true to re-create the team of workers with the new deliverables
+    quidb.get_manager()
     quidb.manager.start_workflow()
 
     % Make QC reports

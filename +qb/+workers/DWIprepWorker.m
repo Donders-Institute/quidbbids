@@ -162,7 +162,7 @@ methods
                 % Load the qsirecon data
                 switch obj.config.DWIprepWorker.Model
                     case 'NODDI'
-                        AFDs  = ones(Vtgt.dim);                     % NODDI models a single neurite population per voxel, so the fiber fraction is set to 1 for all voxels
+                        AFDs  = ones(Vicvf.dim);                    % NODDI models a single neurite population per voxel, so the fiber fraction is set to 1 for all voxels
                         FDIRs = spm_read_vols(spm_vol(fdir{1}));    % The fiber directions in world coordinates (size: [X Y Z 3])
 
                     case 'MRtrix3'

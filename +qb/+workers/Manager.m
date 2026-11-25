@@ -53,6 +53,11 @@ methods
         if isempty(fieldnames(obj.team))
             obj.create_team()
         else
+            % Check if our team is up-to-date (after loading the workflowfile)
+            if ~all(isfield(obj.team, obj.coord.deliverables))
+                disp("🔄 Manager updates the team")
+                obj.create_team()
+            end
             obj.draw_workflow(true);
         end
     end

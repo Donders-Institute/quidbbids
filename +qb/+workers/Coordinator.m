@@ -162,12 +162,6 @@ methods
         obj.manager = qb.workers.Manager(obj);
         obj.manager.interactive = obj.interactive;
 
-        % Check if our team is up-to-date
-        if ~all(isfield(obj.manager.team, obj.deliverables))
-            disp("🔄 Manager updates the team")
-            obj.manager.create_team()
-        end
-
         if nargout
             manager = obj.manager;
         end

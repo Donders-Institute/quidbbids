@@ -324,7 +324,14 @@ methods
                         BIDSW_ = BIDSW;
                     end
                     for workitem = depworker.makes
-                        items = replace(erase(bids.query(BIDSW_, 'data', depworker.bidsfilter.(workitem)),'.gz'),'.nii','.*');   % TODO: Fix BIDSW for QSMWorker, which uses a custom workdir
+                        items  = replace(erase(bids.query(BIDSW_, 'data', depworker.bidsfilter.(workitem)),'.gz'),'.nii','.*');   % TODO: Fix BIDSW for QSMWorker, which uses a custom workdir
+                        del    = false(size(items));            % Delete only the items of the selected subjects/sessions
+                        subses = obj.sub_ses(subjects) + "_";
+                        for i = 1:numel(items)
+                            [~, name] = fileparts(items{i});
+                            del(i) = any(startsWith(name, subses));
+                        end
+                        items = items(del);
                         if ~isempty(items)
                             fprintf('🗑️ Deleting %s -> %s items from the workdir\n', depworker.name, workitem)
                             delete(items{:})
@@ -660,8 +667,8 @@ methods (Access = private)
     end
 
     function subses = sub_ses(obj, subject)
-        % Parses the sub-#_ses-# prefix from a BIDS.subjects item
-        subses = replace(erase(subject.path, [obj.coord.BIDS.pth filesep]), filesep,'_');
+        % Parses the sub-#_ses-# prefix from BIDS.subjects item(s)
+        subses = replace(erase(string({subject.path}), [obj.coord.BIDS.pth filesep]), filesep, '_');
     end
 
     function selectworker(obj, workitem)

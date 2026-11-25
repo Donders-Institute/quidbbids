@@ -165,6 +165,11 @@ Gacelle et al., Imaging Neuroscience 2026 (under review), https://arxiv.org/abs/
    particularly for high-resolution datasets or when processing multiple subjects.
    Requires GPU hardware with CUDA support.
 
+   MCR_GPUWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors
+   (DWItheta, DWIicvf, DWIff) are available from DWIprepWorker, the DI-MWI model incorporates
+   fiber orientation and compartment fraction information to improve parameter estimation
+   specificity.
+
 Properties
 ----------
 
@@ -172,7 +177,7 @@ Properties
    :widths: 25 75
 
    - - ``needs``
-     - ME4Dmag, unwrapped, TB1map_GRE, fieldmap, localfmask
+     - ME4Dmag, unwrapped, TB1map_GRE, fieldmap, localfmask, DWItheta, DWIicvf, DWIff
    - - ``makes``
      - MWFmap, FMW_exrate, FitMask, MW_M0map, MW_R2starmap, FW_M0map, FW_T1map, FW_R1map, IAW_R2starmap
    - - ``usesGPU``

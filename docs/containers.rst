@@ -108,6 +108,7 @@ bidsdir argument):
 - ``--configfile PATH`` -- config file (e.g. ``BIDSDIR/code/quidbbids_config.json``)
 - ``--deliverables LIST`` -- comma-separated deliverables (e.g. ``MWFmap,Chimap``)
 - ``--subjects LIST`` -- comma-separated subjects to process (default: all)
+- ``--sessions LIST`` -- comma-separated sessions to process, combined with ``--subjects`` (default: all)
 - ``--prefer LIST`` -- workers to prefer for making workitems
 - ``--force LIST`` -- workers to force re-run
 - ``--set KEY=VALUE`` -- set ``config.<KEY>.value`` (repeatable), e.g.

@@ -10,7 +10,7 @@ function quidbbids_mcr(varargin)
 
     % Parse the command line arguments
     opts = struct('bidsdir', "", 'outputdir', "", 'workdir', "", 'configfile', "", 'deliverables', "", ...
-                  'subjects', "", 'prefer', "", 'force', "", 'set', {{}}, 'gui', false, 'help', false);
+                  'subjects', "", 'sessions', "", 'prefer', "", 'force', "", 'set', {{}}, 'gui', false, 'help', false);
     i = 1;
     while i <= numel(varargin)
         opt = lower(string(varargin{i}));
@@ -68,6 +68,7 @@ function quidbbids_mcr(varargin)
             "  --configfile PATH    config file (e.g. BIDSDIR/code/quidbbids_config.json)"
             "  --deliverables LIST  comma-separated deliverables (e.g. MWFmap,Chimap)"
             "  --subjects LIST      comma-separated subjects to process (default: all)"
+            "  --sessions LIST      comma-separated sessions to process (default: all)"
             "  --prefer LIST        workers to prefer for making workitems"
             "  --force LIST         workers to force re-run"
             "  --set KEY=VALUE      set config.<KEY>.value (repeatable), e.g."
@@ -126,11 +127,7 @@ function quidbbids_mcr(varargin)
     if strlength(opts.force) > 0
         mgr.force = split_list(opts.force);
     end
-    if strlength(opts.subjects) > 0
-        mgr.start_workflow(split_list(opts.subjects));
-    else
-        mgr.start_workflow();
-    end
+    mgr.start_workflow(split_list(opts.subjects), split_list(opts.sessions))   % Empty lists default to all subjects/sessions
 end
 
 %% Helper functions for parsing CLI arguments

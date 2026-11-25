@@ -94,7 +94,7 @@ From: mathworks/matlab-deep-learning:r2026a
               $deps/sepia/SpecifyToolboxesDirectory.m
 
     # ---- 3. CompileMRI's prebuilt mritools bundle (ROMEO, CLEAR-SWI, ...); MRITOOLS_HOME points here ----
-    COMPILEMRI_VERSION=4.9.1
+    COMPILEMRI_VERSION=4.9.2
     wget -q "https://github.com/korbinian90/CompileMRI.jl/releases/download/v$COMPILEMRI_VERSION/"\
 "mritools_linux_x64_$COMPILEMRI_VERSION.tar.gz" -O /tmp/mritools.tar.gz
     mkdir -p $deps/sepia/external/MRITOOLS

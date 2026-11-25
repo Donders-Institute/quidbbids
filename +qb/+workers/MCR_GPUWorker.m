@@ -31,7 +31,12 @@ properties (Constant)
                    ""
                    "   MCR_GPUWorker provides significant speed improvements over MCRWorker,"
                    "   particularly for high-resolution datasets or when processing multiple subjects."
-                   "   Requires GPU hardware with CUDA support."]   % Description should be in ReStructuredText format
+                   "   Requires GPU hardware with CUDA support."
+                   ""
+                   "   MCR_GPUWorker supports both standard MCR-MWI and DI-MWI variants. When diffusion priors"
+                   "   (DWItheta, DWIicvf, DWIff) are available from DWIprepWorker, the DI-MWI model incorporates"
+                   "   fiber orientation and compartment fraction information to improve parameter estimation"
+                   "   specificity."]   % Description should be in ReStructuredText format
     needs       = ["ME4Dmag", "unwrapped", "TB1map_GRE", "fieldmap", "localfmask", "DWItheta", "DWIicvf", "DWIff"]   % List of workitems the worker needs. Workitems can contain regexp patterns
     usesGPU     = true
 end
@@ -153,19 +158,19 @@ methods
             objGPU = gpuMCRMWI(TE{1}, TR(1), FA, fixed_params);
         end
 
-        % Add the diffusion priors for the DI-MWI model if available. NB: unlike MCRWorker (mwi toolbox), where  algoPara.DIMWI.* = true means
+        % Add the diffusion priors for the DI-MWI model if available. NB: unlike MCRWorker (mwi toolbox), where algoPara.DIMWI.* = true means
         % "use the DWI prior", gacelle uses the opposite polarity: fitting.DIMWI.isFit* = true means the parameter is fitted (prior NOT used)
         if isempty(DWItheta) || isempty(DWIicvf) || isempty(DWIff)
             obj.logger.info('%s: estimating the MCR model without diffusion priors', obj.name)
+            fitting.DIMWI.isFitIWF    = true;      % Fit the parameters instead of using the DWI-derived maps (extraData) as priors
+            fitting.DIMWI.isFitFreqMW = true;
+            fitting.DIMWI.isFitFreqIW = true;
+            fitting.DIMWI.isFitR2sEW  = true;
         else
             obj.logger.info('%s: estimating the DI-MWI-MCR model', obj.name)
             extraData.theta = spm_read_vols(spm_vol(DWItheta{1}));
             extraData.IWF   = spm_read_vols(spm_vol(DWIicvf{1}));
             extraData.ff    = spm_read_vols(spm_vol(DWIff{1}));
-            fitting.DIMWI.isFitIWF    = false;      % Use the DWI-derived maps (extraData) instead of fitting these parameters
-            fitting.DIMWI.isFitFreqMW = false;
-            fitting.DIMWI.isFitFreqIW = false;
-            fitting.DIMWI.isFitR2sEW  = false;
         end
 
         % Estimate the MCR model (variable-TR protocols need the vTR-qMRI implementation)

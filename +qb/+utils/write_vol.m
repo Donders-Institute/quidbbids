@@ -52,6 +52,11 @@ if ~isfield(V, 'dim') || isempty(V.dim)
     V.dim = [size(Y, 1) size(Y, 2) size(Y, 3)];
 end
 
+% Ensure all standard spm_vol fields exist
+if ~isfield(V, 'pinfo'),   V.pinfo   = [Inf; Inf; 0]; end
+if ~isfield(V, 'descrip'), V.descrip = '';            end
+if ~isfield(V, 'private'), V.private = struct;        end
+
 % Choose appropriate data type
 if dt
     V.dt    = [spm_type(dt) spm_platform('bigend')];

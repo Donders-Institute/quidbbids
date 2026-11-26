@@ -165,6 +165,7 @@ methods
 
         import qb.utils.write_vol
         import qb.utils.spm_vol
+        import qb.utils.reorient2std
 
         GRESignal = @(FlipAngle, TR, T1) sind(FlipAngle) .* (1-exp(-TR./T1)) ./ (1-(exp(-TR./T1)) .* cosd(FlipAngle));
 
@@ -223,7 +224,8 @@ methods
                     bfile                  = obj.bfile_set(VFA_e1{n}, obj.bidsfilter.syntheticT1);
                     bfile.metadata.Sources = {['bids::' bfile.bids_path '/' bfile.filename]};
                     obj.logger.verbose("-> Saving T1-like synthetic reference " + fullfile(bfile.bids_path, bfile.filename))
-                    write_vol(Vref, T1w, bfile);
+                    [Vt, T1w] = reorient2std(Vref, T1w);    % Reorient to standard MNI space (NB: keep Vref unchanged for the other data below)
+                    write_vol(Vt, T1w, bfile);
                 end
 
                 % Save the M0 volume as well
@@ -232,7 +234,8 @@ methods
                 bfile.metadata.FlipAngle = flipangles;
                 bfile.metadata.RepetitionTime = TRs;
                 obj.logger.verbose("-> Saving M0 map " + fullfile(bfile.bids_path, bfile.filename))
-                write_vol(Vref, M0, bfile);
+                [Vt, M0] = reorient2std(Vref, M0);          % Reorient to standard MNI space
+                write_vol(Vt, M0, bfile);
             end
         end
     end
@@ -246,6 +249,7 @@ methods
         import qb.utils.write_vol
         import qb.utils.spm_vol
         import qb.utils.read_vols_phase
+        import qb.utils.reorient2std
         import qb.utils.setfields
 
         % Index the workdir layout
@@ -340,10 +344,11 @@ methods
                             bfile.metadata.DenoisingMethod = obj.config.(obj.name).denoising.method;
                             bfile.metadata.DenoisingKernel = obj.config.(obj.name).denoising.kernel;
                         end
+                        [Vt, img_r] = reorient2std(Vref, img_r);    % Reorient to standard MNI space (NB: keep Vref unchanged for the reslicing loops)
                         if isempty(Vfe_p)
-                            write_vol(Vref, img_r, bfile);
+                            write_vol(Vt, img_r, bfile);
                         else
-                            write_vol(Vref, hypot(img_r(:,:,:,1), img_r(:,:,:,2)), bfile);  % Numerically stable sqrt(Re.^2 + Im.^2)
+                            write_vol(Vt, hypot(img_r(:,:,:,1), img_r(:,:,:,2)), bfile);  % Numerically stable sqrt(Re.^2 + Im.^2)
 
                             % Save the phase image
                             bfile = obj.bfile_set(Vfe_p.fname, struct(space=obj.bidsfilter.syntheticT1.space, desc='temp3D'));  % Will be merged to desc=ME4D
@@ -352,7 +357,7 @@ methods
                                 bfile.metadata.DenoisingMethod = obj.config.(obj.name).denoising.method;
                                 bfile.metadata.DenoisingKernel = obj.config.(obj.name).denoising.kernel;
                             end
-                            write_vol(Vref, atan2(img_r(:,:,:,2), img_r(:,:,:,1)), bfile);  % Quadrant-correct phase in radians, range [-pi, pi]
+                            write_vol(Vt, atan2(img_r(:,:,:,2), img_r(:,:,:,1)), bfile);  % Quadrant-correct phase in radians, range [-pi, pi]
                         end
 
                     end
@@ -387,12 +392,14 @@ methods
                     % Save the resliced FA-map
                     bfile = obj.bfile_set(B1famp, obj.bidsfilter.TB1map_GRE);
                     obj.logger.verbose("-> Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
-                    write_vol(Vref, B1_famp, bfile);
+                    [Vt, B1_famp] = reorient2std(Vref, B1_famp);     % Reorient to standard MNI space
+                    write_vol(Vt, B1_famp, bfile);
 
                     % Save the resliced FA-anat
                     bfile = obj.bfile_set(B1anat, obj.bidsfilter.TB1anat_GRE);
                     obj.logger.verbose("-> Saving coregistered " + fullfile(bfile.bids_path, bfile.filename))
-                    write_vol(Vref, B1_anat, bfile);
+                    [Vt, B1_anat] = reorient2std(Vref, B1_anat);     % Reorient to standard MNI space
+                    write_vol(Vt, B1_anat, bfile);
 
                 end
 

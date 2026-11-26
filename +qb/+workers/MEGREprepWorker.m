@@ -137,6 +137,13 @@ methods (Static)
                         bfile = obj.bfile_set(dfiles{1}, setfield(obj.bidsfilter.ME4Dmag, part=part));
                         obj.logger.info("-> Merging echo-1..%d %s images -> %s", length(dfiles), part, bfile.filename)
                         file_merge(dfiles(idx), bfile.path, {'EchoNumber', 'EchoTime'}, cleanup);
+
+                        % Reorient the merged 4D image to standard (MNI-style) orientation (a no-op if already in standard orientation)
+                        V0       = qb.utils.spm_vol(bfile.path);
+                        [V4, Y4] = qb.utils.reorient2std(V0, spm_read_vols(V0));
+                        if ~isequal(V4(1).mat, V0(1).mat) || ~isequal(V4(1).dim, V0(1).dim)
+                            qb.utils.write_vol(V4, Y4, bfile.path);   % NB: char filename keeps the JSON sidecar written by file_merge
+                        end
                     end
                 end
             end
@@ -205,7 +212,8 @@ methods (Static)
                 % Save the combined mask
                 bfile = obj.bfile_set(echo1, obj.bidsfilter.brainmask);
                 obj.logger.info("-> Saving: %s", bfile.filename)
-                qb.utils.write_vol(spm_vol(char(echo1)), mask, bfile);
+                [V, mask] = qb.utils.reorient2std(spm_vol(char(echo1)), mask);   % Reorient to standard MNI space (same grid as the merged 4D echo images)
+                qb.utils.write_vol(V, mask, bfile);
             end
         end
     end
@@ -278,6 +286,7 @@ methods (Static)
             bfile.metadata.DenoisingMethod = obj.config.(obj.name).denoising.method;
             bfile.metadata.DenoisingKernel = obj.config.(obj.name).denoising.kernel;
             obj.logger.info("-> Saving: %s", V(1).fname)
+            [V, img] = qb.utils.reorient2std(V, img);     % No-op if already in standard orientation
             qb.utils.write_vol(V, img, bfile);
         end
     end

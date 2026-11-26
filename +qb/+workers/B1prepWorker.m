@@ -69,6 +69,7 @@ methods
             % Save the scaled/regularized FA-map image & json file
             bfile = obj.bfile_set(bfile, obj.bidsfilter.TB1map_angle);
             obj.logger.verbose('-> Copying %s scaled/regularized B1 data to %s', FAVol.fname, bfile.filename)
+            [FAVol, FA] = qb.utils.reorient2std(FAVol, FA);     % Reorient to standard MNI space
             qb.utils.write_vol(FAVol, FA, bfile);
 
             % Copy the normal anat image & json file

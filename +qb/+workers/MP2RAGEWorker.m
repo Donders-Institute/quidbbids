@@ -142,15 +142,18 @@ methods
             bfile.metadata.InversionEfficiency = MP2RAGE.InvEff;
             bfile.metadata.NumberShots         = MP2RAGE.NumberShots;
             bfile.metadata.EchoSpacing         = MP2RAGE.EchoSpacing;
-            write_vol(UNIhdr, R1map, bfile);
+            [Vt, R1map] = qb.utils.reorient2std(UNIhdr, R1map);      % NB: keep UNIhdr unchanged for reorienting the other data below
+            write_vol(Vt, R1map, bfile);
 
             % Save the M0-map
-            bfile = obj.bfile_set(bfile, obj.bidsfilter.M0map);
-            write_vol(UNIhdr, M0map, bfile);
+            bfile           = obj.bfile_set(bfile, obj.bidsfilter.M0map);
+            [Vt, M0map] = qb.utils.reorient2std(UNIhdr, M0map);
+            write_vol(Vt, M0map, bfile);
 
             % Save the corrected UNIT1
-            bfile = obj.bfile_set(bfile, obj.bidsfilter.MP2RAGE_T1w);
-            write_vol(UNIhdr, UNIcorr, bfile);
+            bfile             = obj.bfile_set(bfile, obj.bidsfilter.MP2RAGE_T1w);
+            [Vt, UNIcorr] = qb.utils.reorient2std(UNIhdr, UNIcorr);
+            write_vol(Vt, UNIcorr, bfile);
 
         end
     end

@@ -237,7 +237,8 @@ methods
         function write_vol_qsi(fname, bfilter, data, type)
             bfile = obj.bfile_set(fname, bfilter);
             obj.logger.info('-> Saving %s data to: %s', type, bfile.filename)
-            qb.utils.write_vol(Vtgt, data, bfile);
+            [Vt, data] = qb.utils.reorient2std(Vtgt, data);     % Reorient to standard MNI space (no-op if the target is already standard; NB: keep Vtgt unchanged for the reslicing loops)
+            qb.utils.write_vol(Vt, data, bfile);
         end
     end
 
